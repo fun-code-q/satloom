@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - Free Calling</title>
+    <title>SatLoom - Free Calling & Chat</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -17,6 +17,8 @@
             --success-color: #4CAF50;
             --warning-color: #ff9800;
             --error-color: #f44336;
+            --user-message-bg: rgba(58, 123, 213, 0.2);
+            --remote-message-bg: rgba(255, 255, 255, 0.1);
         }
 
         .light-mode {
@@ -27,6 +29,8 @@
             --card-bg: rgba(255, 255, 255, 0.9);
             --text-primary: #333;
             --text-secondary: #666;
+            --user-message-bg: rgba(30, 144, 255, 0.2);
+            --remote-message-bg: rgba(0, 0, 0, 0.05);
         }
 
         * {
@@ -173,6 +177,7 @@
         .input-group {
             display: flex;
             margin-bottom: 15px;
+            gap: 10px;
         }
 
         .input-styled {
@@ -203,7 +208,7 @@
             align-items: center;
             justify-content: center;
             transition: all 0.3s ease;
-            margin: 5px;
+            min-width: 120px;
         }
 
         .btn i {
@@ -224,6 +229,7 @@
             display: flex;
             justify-content: center;
             margin-top: 20px;
+            gap: 15px;
         }
 
         .control-btn {
@@ -234,7 +240,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 10px;
             cursor: pointer;
             transition: all 0.2s ease;
             color: white;
@@ -373,27 +378,48 @@
         }
         
         .chat-container {
-            height: 200px;
+            height: 250px;
             overflow-y: auto;
             background: rgba(0, 0, 0, 0.1);
             border-radius: 8px;
             padding: 10px;
             margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
         
         .chat-message {
-            margin: 8px 0;
-            padding: 8px;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 12px;
+            max-width: 80%;
+            position: relative;
+            animation: fadeIn 0.3s ease;
         }
         
-        .chat-message.remote {
-            background: rgba(58, 123, 213, 0.15);
+        .user-message {
+            background: var(--user-message-bg);
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
         }
         
-        .chat-message strong {
+        .remote-message {
+            background: var(--remote-message-bg);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .message-sender {
+            font-weight: 600;
+            margin-bottom: 4px;
             color: var(--accent-color);
+        }
+        
+        .message-time {
+            font-size: 10px;
+            text-align: right;
+            margin-top: 4px;
+            opacity: 0.7;
         }
         
         .theme-toggle {
@@ -442,6 +468,23 @@
         
         .status-disconnected {
             color: var(--error-color);
+        }
+
+        .chat-empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+            text-align: center;
+            padding: 20px;
+        }
+
+        .chat-empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: var(--accent-color);
         }
 
         /* Animations */
@@ -615,7 +658,12 @@
                             <i class="fas fa-phone-slash"></i>
                         </button>
                     </div>
-                    <div id="videoChat" class="chat-container"></div>
+                    <div id="videoChat" class="chat-container">
+                        <div class="chat-empty-state">
+                            <i class="fas fa-comment-alt"></i>
+                            <p>No messages yet. Start the conversation!</p>
+                        </div>
+                    </div>
                     <div class="input-group">
                         <input type="text" id="videoMessage" class="input-styled" placeholder="Type a message...">
                         <button class="btn" id="sendVideoMessage">
@@ -640,6 +688,9 @@
                         <button class="btn btn-secondary" id="joinTextRoom">
                             <i class="fas fa-sign-in-alt"></i> Join Room
                         </button>
+                        <button class="btn btn-secondary" id="leaveTextRoom" style="display: none;">
+                            <i class="fas fa-sign-out-alt"></i> Leave Room
+                        </button>
                     </div>
                     <div id="textRoomLinkContainer" class="share-link-container" style="display: none;">
                         <div class="share-link" id="textRoomLink"></div>
@@ -647,10 +698,15 @@
                             <i class="fas fa-copy"></i>
                         </button>
                     </div>
-                    <div id="textChat" class="chat-container"></div>
+                    <div id="textChat" class="chat-container">
+                        <div class="chat-empty-state">
+                            <i class="fas fa-comment-alt"></i>
+                            <p>Join or create a chat room to start messaging</p>
+                        </div>
+                    </div>
                     <div class="input-group">
-                        <input type="text" id="textMessage" class="input-styled" placeholder="Type a message...">
-                        <button class="btn" id="sendTextMessage">
+                        <input type="text" id="textMessage" class="input-styled" placeholder="Type a message..." disabled>
+                        <button class="btn" id="sendTextMessage" disabled>
                             <i class="fas fa-paper-plane"></i> Send
                         </button>
                     </div>
@@ -686,8 +742,9 @@
                     </div>
                     <div class="about-content">
                         <p>A free, open-source communication platform using WebRTC technology.</p>
-                        <p><strong>Version:</strong> 1.2.0</p>
+                        <p><strong>Version:</strong> 1.3.0</p>
                         <p><strong>Developed by:</strong> SatLoom Developers</p>
+                        <p><strong>New Features:</strong> Real-time text chat with Firebase</p>
                     </div>
                 </div>
             </div>
@@ -699,6 +756,36 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
     <script>
+        // ========== FIREBASE CONFIG ========== //
+        const firebaseConfig = {
+            apiKey: "AIzaSyDeksN3qPZCmNuoASlEqG38XVmag6ecTh8",
+            authDomain: "satloom-rtc.firebaseapp.com",
+            databaseURL: "https://satloom-rtc-default-rtdb.firebaseio.com",
+            projectId: "satloom-rtc",
+            storageBucket: "satloom-rtc.firebasestorage.app",
+            messagingSenderId: "273627860564",
+            appId: "1:273627860564:web:c326b1bb6ffcb32fb0e7c1"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // ========== STATE MANAGEMENT ========== //
+        const appState = {
+            localStream: null,
+            remoteStream: null,
+            peerConnection: null,
+            roomId: null,
+            isInitiator: false,
+            isStarted: false,
+            timer: null,
+            startTime: null,
+            currentMode: 'audio-call',
+            userId: generateUserId(),
+            chatRef: null
+        };
+
         // ========== DOM ELEMENT REFERENCES ========== //
         const domRefs = {
             themeToggle: document.getElementById('themeToggle'),
@@ -715,31 +802,10 @@
                 'text-chat': document.getElementById('text-chat-section'),
                 'settings': document.getElementById('settings-section'),
                 'about': document.getElementById('about-section')
-            }
-        };
-
-        // ========== STATE MANAGEMENT ========== //
-        const appState = {
-            localStream: null,
-            remoteStream: null,
-            peerConnection: null,
-            roomId: null,
-            isInitiator: false,
-            isStarted: false,
-            timer: null,
-            startTime: null,
-            currentMode: 'audio-call'
-        };
-
-        // ========== FIREBASE CONFIG ========== //
-        const firebaseConfig = {
-            apiKey: "AIzaSyDeksN3qPZCmNuoASlEqG38XVmag6ecTh8",
-            authDomain: "satloom-rtc.firebaseapp.com",
-            databaseURL: "https://satloom-rtc-default-rtdb.firebaseio.com",
-            projectId: "satloom-rtc",
-            storageBucket: "satloom-rtc.firebasestorage.app",
-            messagingSenderId: "273627860564",
-            appId: "1:273627860564:web:c326b1bb6ffcb32fb0e7c1"
+            },
+            textMessageInput: document.getElementById('textMessage'),
+            sendTextMessageBtn: document.getElementById('sendTextMessage'),
+            leaveTextRoomBtn: document.getElementById('leaveTextRoom')
         };
 
         // ========== WEBRTC CONFIG ========== //
@@ -754,15 +820,10 @@
         // ========== INITIALIZATION ========== //
         document.addEventListener('DOMContentLoaded', initApp);
 
-        async function initApp() {
-            initFirebase();
+        function initApp() {
             setupEventListeners();
             loadSettings();
             autoJoinRoom();
-        }
-
-        function initFirebase() {
-            firebase.initializeApp(firebaseConfig);
         }
 
         function setupEventListeners() {
@@ -795,6 +856,14 @@
             document.getElementById('joinTextRoom').addEventListener('click', () => joinRoom('text'));
             document.getElementById('sendTextMessage').addEventListener('click', () => sendChatMessage('text'));
             document.getElementById('copyTextLink').addEventListener('click', () => copyLink('text'));
+            domRefs.leaveTextRoomBtn.addEventListener('click', () => leaveTextRoom());
+            
+            // Text message input (allow sending with Enter key)
+            domRefs.textMessageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendChatMessage('text');
+                }
+            });
 
             // Settings
             document.getElementById('notifications-toggle').addEventListener('change', saveSettings);
@@ -822,6 +891,127 @@
                 document.getElementById(`${modeParam}-room-id`).value = roomParam;
                 setTimeout(() => joinRoom(modeParam), 1000);
             }
+        }
+
+        function generateUserId() {
+            // Generate a random user ID for chat
+            if (!localStorage.getItem('userId')) {
+                const userId = 'user-' + Math.random().toString(36).substr(2, 8);
+                localStorage.setItem('userId', userId);
+            }
+            return localStorage.getItem('userId');
+        }
+
+        // ========== TEXT CHAT IMPLEMENTATION ========== //
+        function initTextChat(roomId) {
+            // Clear any previous chat
+            clearTextChat();
+            
+            // Enable chat input
+            domRefs.textMessageInput.disabled = false;
+            domRefs.sendTextMessageBtn.disabled = false;
+            domRefs.leaveTextRoomBtn.style.display = 'block';
+            
+            // Set up Firebase listener for chat messages
+            appState.chatRef = database.ref(`chats/${roomId}/messages`);
+            
+            appState.chatRef.on('child_added', snapshot => {
+                const message = snapshot.val();
+                appendMessageToChat(message, message.senderId === appState.userId, 'text');
+            });
+            
+            showNotification('Chat Room', `Joined text room: ${roomId}`, 'success');
+            updateStatus(`In text chat (${roomId})`, true);
+        }
+
+        function sendChatMessage(mode) {
+            const input = mode === 'text' ? 
+                domRefs.textMessageInput : document.getElementById(`${mode}Message`);
+                
+            const messageText = input.value.trim();
+            if (!messageText) return;
+            
+            if (mode === 'text') {
+                // Send text message to Firebase
+                const message = {
+                    text: messageText,
+                    senderId: appState.userId,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                };
+                
+                database.ref(`chats/${appState.roomId}/messages`).push(message);
+                input.value = '';
+            } else {
+                // For video chat, just simulate for now
+                const chat = document.getElementById(`${mode}Chat`);
+                if (chat.querySelector('.chat-empty-state')) {
+                    chat.innerHTML = '';
+                }
+                
+                appendMessageToChat({
+                    text: messageText,
+                    senderId: appState.userId,
+                    timestamp: Date.now()
+                }, true, mode);
+                
+                // Simulate remote response
+                setTimeout(() => {
+                    appendMessageToChat({
+                        text: "Thanks for your message!",
+                        senderId: 'remote-user',
+                        timestamp: Date.now()
+                    }, false, mode);
+                }, 1000);
+                
+                input.value = '';
+            }
+        }
+
+        function appendMessageToChat(message, isLocal, mode) {
+            const chatContainer = document.getElementById(`${mode}Chat`);
+            
+            // Remove empty state if present
+            if (chatContainer.querySelector('.chat-empty-state')) {
+                chatContainer.innerHTML = '';
+            }
+            
+            const messageElement = document.createElement('div');
+            messageElement.className = `chat-message ${isLocal ? 'user-message' : 'remote-message'}`;
+            
+            // Format timestamp
+            const time = new Date(message.timestamp);
+            const timeString = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
+            
+            messageElement.innerHTML = `
+                <div class="message-sender">${isLocal ? 'You' : 'Remote User'}</div>
+                <div>${message.text}</div>
+                <div class="message-time">${timeString}</div>
+            `;
+            
+            chatContainer.appendChild(messageElement);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function clearTextChat() {
+            const textChat = document.getElementById('textChat');
+            textChat.innerHTML = '<div class="chat-empty-state"><i class="fas fa-comment-alt"></i><p>No messages yet. Start the conversation!</p></div>';
+        }
+
+        function leaveTextRoom() {
+            if (appState.chatRef) {
+                appState.chatRef.off();
+                appState.chatRef = null;
+            }
+            
+            document.getElementById('textRoomLinkContainer').style.display = 'none';
+            domRefs.textMessageInput.disabled = true;
+            domRefs.sendTextMessageBtn.disabled = true;
+            domRefs.leaveTextRoomBtn.style.display = 'none';
+            clearTextChat();
+            
+            updateStatus('Ready to connect', false);
+            showNotification('Chat Ended', 'You left the text chat room');
+            appState.roomId = null;
         }
 
         // ========== NAVIGATION ========== //
@@ -974,7 +1164,7 @@
 
         // ========== SIGNALING ========== //
         function initSignaling() {
-            const dbRef = firebase.database().ref(`rooms/${appState.roomId}/messages`);
+            const dbRef = database.ref(`rooms/${appState.roomId}/messages`);
             
             dbRef.on('child_added', snapshot => {
                 const message = JSON.parse(snapshot.val());
@@ -1022,7 +1212,7 @@
         }
 
         function sendMessage(message) {
-            const dbRef = firebase.database().ref(`rooms/${appState.roomId}/messages`);
+            const dbRef = database.ref(`rooms/${appState.roomId}/messages`);
             dbRef.push(JSON.stringify(message));
         }
 
@@ -1037,6 +1227,12 @@
             document.getElementById(`${mode}RoomLinkContainer`).style.display = 'block';
             
             showNotification('Room Generated', `Room ID: ${appState.roomId}. Share with others.`, 'success');
+            
+            // Special handling for text chat
+            if (mode === 'text') {
+                initTextChat(appState.roomId);
+                return;
+            }
             
             // Initialize media and connection
             const mediaInitialized = await initMedia(mode);
@@ -1069,6 +1265,12 @@
             appState.roomId = document.getElementById(`${mode}-room-id`).value.trim();
             if (!appState.roomId) {
                 showNotification('Error', 'Please enter a room ID', 'error');
+                return;
+            }
+            
+            // Special handling for text chat
+            if (mode === 'text') {
+                initTextChat(appState.roomId);
                 return;
             }
             
@@ -1147,23 +1349,6 @@
         }
 
         // ========== UTILITY FUNCTIONS ========== //
-        function sendChatMessage(mode) {
-            const input = document.getElementById(`${mode}Message`);
-            const message = input.value.trim();
-            
-            if (message) {
-                const chat = document.getElementById(`${mode}Chat`);
-                const messageElement = document.createElement('div');
-                
-                messageElement.className = 'chat-message';
-                messageElement.innerHTML = `<strong>You:</strong> ${message}`;
-                chat.appendChild(messageElement);
-                chat.scrollTop = chat.scrollHeight;
-                
-                input.value = '';
-            }
-        }
-
         function copyLink(mode) {
             const link = document.getElementById(`${mode}RoomLink`).textContent;
             navigator.clipboard.writeText(link).then(() => {
