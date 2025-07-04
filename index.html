@@ -851,34 +851,24 @@
             updateSidebarState();
         }
 
-        // ========== AUTO JOIN ROOM WITH TAB SWITCHING ========== //
         function autoJoinRoom() {
             const urlParams = new URLSearchParams(window.location.search);
             const roomParam = urlParams.get('room');
             const modeParam = urlParams.get('mode');
             
             if (roomParam && modeParam) {
-                // Switch to the correct tab based on the mode parameter
-                switchToTab(modeParam === 'video' ? 'video-call' : 'audio-call');
-                
                 document.getElementById(`${modeParam}-room-id`).value = roomParam;
                 setTimeout(() => joinRoom(modeParam), 1000);
             }
         }
 
-        // ========== TAB SWITCHING FUNCTION ========== //
-        function switchToTab(sectionId) {
-            // Update navigation state
-            document.querySelectorAll('.nav-link').forEach(link => 
-                link.classList.remove('active'));
-            document.querySelector(`.nav-link[data-section="${sectionId}"]`).classList.add('active');
-            
-            // Update UI sections
-            document.querySelectorAll('.section').forEach(section => 
-                section.classList.remove('active'));
-            domRefs.sections[sectionId].classList.add('active');
-            
-            appState.currentMode = sectionId;
+        function generateUserId() {
+            // Generate a random user ID for chat
+            if (!localStorage.getItem('userId')) {
+                const userId = 'user-' + Math.random().toString(36).substr(2, 8);
+                localStorage.setItem('userId', userId);
+            }
+            return localStorage.getItem('userId');
         }
 
         // ========== SIDEBAR MANAGEMENT ========== //
@@ -1107,14 +1097,14 @@
             dbRef.push(JSON.stringify(message));
         }
 
-         // ========== ROOM MANAGEMENT ========== //
+        // ========== ROOM MANAGEMENT ========== //
         async function generateRoom(mode) {
             appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
             
             // Update UI
             document.getElementById(`${mode}-room-id`).value = appState.roomId;
             
-            // Fixed: Include the correct path in the generated link
+            // FIXED: Include the correct path in the generated link
             const basePath = location.origin + location.pathname;
             const roomLink = `${basePath}?room=${appState.roomId}&mode=${mode}`;
             
