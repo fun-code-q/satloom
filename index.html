@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - Free Calling</title>
+    <title>SatLoom - Free Audio Calling</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -270,34 +270,6 @@
             background: linear-gradient(135deg, #e53935, #f44336);
         }
 
-        #videoRemoteVideoContainer {
-            position: relative;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 12px;
-            overflow: hidden;
-            height: 300px;
-            margin: 15px 0;
-        }
-        
-        #video-remote-video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            background: #000;
-        }
-        
-        #video-local-video {
-            position: absolute;
-            bottom: 15px;
-            right: 15px;
-            width: 100px;
-            height: 75px;
-            border-radius: 8px;
-            border: 2px solid var(--accent-color);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            background: #000;
-        }
-
         .notification {
             position: fixed;
             top: 20px;
@@ -439,30 +411,6 @@
             text-decoration: underline;
         }
         
-        .chat-container {
-            height: 200px;
-            overflow-y: auto;
-            background: rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 10px;
-        }
-        
-        .chat-message {
-            margin: 8px 0;
-            padding: 8px;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-        }
-        
-        .chat-message.remote {
-            background: rgba(58, 123, 213, 0.15);
-        }
-        
-        .chat-message strong {
-            color: var(--accent-color);
-        }
-        
         .theme-toggle {
             position: absolute;
             top: 20px;
@@ -539,6 +487,67 @@
             color: var(--text-secondary);
             margin-top: 5px;
         }
+        
+        .connection-status {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        
+        .remote-audio-container {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        
+        .remote-audio-container i {
+            font-size: 48px;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+        
+        .remote-audio-container p {
+            color: var(--text-secondary);
+        }
+        
+        .debug-info {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .debug-toggle {
+            text-align: center;
+            margin-top: 10px;
+            color: var(--accent-color);
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .debug-info ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .debug-info li {
+            margin-bottom: 5px;
+            word-break: break-all;
+        }
     </style>
 </head>
 <body class="dark-mode">
@@ -605,7 +614,6 @@
                         </button>
                     </div>
                     
-                    <!-- Updated room link container -->
                     <div id="audioRoomLinkContainer" class="generated-room-container" style="display: none;">
                         <div>
                             <div class="room-id-display" id="roomIdDisplay"></div>
@@ -614,6 +622,11 @@
                         <button class="copy-btn" id="copyAudioLink">
                             <i class="fas fa-copy"></i>
                         </button>
+                    </div>
+                    
+                    <div class="remote-audio-container" id="remoteAudioContainer">
+                        <i class="fas fa-user-friends"></i>
+                        <p>Remote audio will appear here</p>
                     </div>
                     
                     <div class="audio-visualizer" id="audioVisualizer">
@@ -630,6 +643,16 @@
                         <button type="button" class="control-btn end" id="endAudioCall">
                             <i class="fas fa-phone-slash"></i>
                         </button>
+                    </div>
+                    
+                    <div class="connection-status">
+                        <div id="iceStatus">ICE Connection: Not started</div>
+                        <div id="signalingStatus">Signaling: Not connected</div>
+                    </div>
+                    
+                    <div class="debug-toggle" id="debugToggle">Show Debug Info</div>
+                    <div class="debug-info" id="debugInfo">
+                        <ul id="debugLog"></ul>
                     </div>
                 </div>
             </div>
@@ -648,9 +671,8 @@
                             <input type="checkbox" id="notification-sound-toggle" checked>
                         </div>
                         <div class="setting-item">
-                            <label>Call Recording:</label>
-                            <input type="checkbox" id="call-recording-toggle" disabled>
-                            <span>(Coming soon)</span>
+                            <label>Debug Mode:</label>
+                            <input type="checkbox" id="debug-mode-toggle">
                         </div>
                     </div>
                 </div>
@@ -661,8 +683,8 @@
                     <div class="section-title">
                         <i class="fas fa-info-circle"></i> About</div>
                     <div class="about-content">
-                        <p>A free, open-source communication platform.</p>
-                        <p><strong>Version:</strong> 1.0.0</p>
+                        <p>A free, open-source communication platform using WebRTC technology.</p>
+                        <p><strong>Version:</strong> 1.2.0</p>
                         <p><strong>Developed by:</strong> SatLoom Developers</p>
                     </div>
                 </div>
@@ -677,6 +699,32 @@
     <script>
         // Initialize the application
         document.addEventListener('DOMContentLoaded', () => {
+            // Debug logging function
+            function logDebug(message) {
+                if (!document.getElementById('debug-mode-toggle').checked) return;
+                
+                const debugLog = document.getElementById('debugLog');
+                const li = document.createElement('li');
+                li.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                debugLog.appendChild(li);
+                debugLog.scrollTop = debugLog.scrollHeight;
+            }
+            
+            // Show debug info
+            document.getElementById('debugToggle').addEventListener('click', function() {
+                const debugInfo = document.getElementById('debugInfo');
+                debugInfo.style.display = debugInfo.style.display === 'none' ? 'block' : 'none';
+                this.textContent = debugInfo.style.display === 'none' ? 'Show Debug Info' : 'Hide Debug Info';
+            });
+            
+            // Enable debug mode
+            document.getElementById('debug-mode-toggle').addEventListener('change', function() {
+                if (this.checked) {
+                    document.getElementById('debugInfo').style.display = 'block';
+                    document.getElementById('debugToggle').textContent = 'Hide Debug Info';
+                }
+            });
+            
             // Fixed navigation functionality
             const navLinks = document.querySelectorAll('.nav-link');
             navLinks.forEach(link => {
@@ -713,17 +761,6 @@
                 localStorage.setItem('theme', isDark ? 'light' : 'dark');
             });
             
-            // Theme selector
-            const themeSelect = document.getElementById('theme-select');
-            if(themeSelect) {
-                themeSelect.addEventListener('change', () => {
-                    const theme = themeSelect.value;
-                    document.body.className = theme + '-mode';
-                    themeToggle.innerHTML = theme === 'dark' ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
-                    localStorage.setItem('theme', theme);
-                });
-            }
-            
             // Settings toggles
             document.getElementById('notifications-toggle').addEventListener('change', function() {
                 localStorage.setItem('notifications', this.checked);
@@ -738,10 +775,6 @@
             document.body.className = savedTheme + '-mode';
             themeToggle.innerHTML = savedTheme === 'dark' ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
             
-            if(themeSelect) {
-                themeSelect.value = savedTheme;
-            }
-            
             document.getElementById('notifications-toggle').checked = 
                 localStorage.getItem('notifications') !== 'false';
             document.getElementById('notification-sound-toggle').checked = 
@@ -751,6 +784,7 @@
             const firebaseConfig = {
                 apiKey: "AIzaSyDeksN3qPZCmNuoASlEqG38XVmag6ecTh8",
                 authDomain: "satloom-rtc.firebaseapp.com",
+                databaseURL: "https://satloom-rtc-default-rtdb.firebaseio.com",
                 projectId: "satloom-rtc",
                 storageBucket: "satloom-rtc.appspot.com",
                 messagingSenderId: "273627860564",
@@ -766,8 +800,7 @@
             let peerConnection;
             let roomId;
             let isInitiator = false;
-            let isChannelReady = false;
-            let isStarted = false;
+            let roomRef;
             let timer;
             let startTime;
             let generatedRoomLink = "";
@@ -777,7 +810,17 @@
                 iceServers: [
                     { urls: 'stun:stun.l.google.com:19302' },
                     { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' }
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { 
+                        urls: 'turn:global.relay.metered.ca:80',
+                        username: '83ad1b89f0d4a2d8e3d0d8d9',
+                        credential: 'gF6v1h9i3C2SJ0yJ'
+                    },
+                    { 
+                        urls: 'turn:global.relay.metered.ca:80?transport=tcp',
+                        username: '83ad1b89f0d4a2d8e3d0d8d9',
+                        credential: 'gF6v1h9i3C2SJ0yJ'
+                    }
                 ]
             };
             
@@ -809,6 +852,16 @@
                     `status-indicator ${isConnected ? 'status-connected' : ''}`;
             }
             
+            // Update ICE status
+            function updateIceStatus(status) {
+                document.getElementById('iceStatus').textContent = `ICE Connection: ${status}`;
+            }
+            
+            // Update signaling status
+            function updateSignalingStatus(status) {
+                document.getElementById('signalingStatus').textContent = `Signaling: ${status}`;
+            }
+            
             // Start call timer
             function startTimer() {
                 startTime = new Date().getTime();
@@ -818,7 +871,6 @@
                     const seconds = Math.floor((time % 60000) / 1000);
                     const timerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                     
-                    // Update all timers
                     document.getElementById('audioCallTimer').textContent = timerText;
                 }, 1000);
             }
@@ -834,15 +886,23 @@
                 try {
                     // Get local audio stream
                     localStream = await navigator.mediaDevices.getUserMedia({
-                        audio: true
+                        audio: true,
+                        video: false
                     });
                     
                     // Show controls
                     document.getElementById('audioControls').style.display = 'flex';
                     
+                    // Update UI
+                    document.getElementById('remoteAudioContainer').innerHTML = `
+                        <i class="fas fa-microphone-alt"></i>
+                        <p>Your microphone is active. Waiting for connection...</p>
+                    `;
+                    
                     return true;
                 } catch (err) {
                     showNotification('Media Error', `Could not access microphone: ${err.message}`, 'error');
+                    logDebug(`Microphone access error: ${err.message}`);
                     return false;
                 }
             }
@@ -859,53 +919,107 @@
                         });
                     }
                     
+                    // When remote stream arrives
+                    peerConnection.ontrack = event => {
+                        logDebug('Received remote stream');
+                        remoteStream = event.streams[0];
+                        
+                        // Create audio element for remote stream
+                        const remoteAudio = document.createElement('audio');
+                        remoteAudio.id = 'remoteAudio';
+                        remoteAudio.autoplay = true;
+                        remoteAudio.controls = false;
+                        remoteAudio.style.display = 'none';
+                        remoteAudio.srcObject = remoteStream;
+                        document.getElementById('remoteAudioContainer').innerHTML = '';
+                        document.getElementById('remoteAudioContainer').appendChild(remoteAudio);
+                        
+                        // Update UI
+                        document.getElementById('remoteAudioContainer').innerHTML = `
+                            <i class="fas fa-volume-up"></i>
+                            <p>Connected! You are now in a call.</p>
+                        `;
+                        
+                        // Start timer once connection is established
+                        startTimer();
+                        updateStatus(`Call connected to room: ${roomId}`, true);
+                    };
+                    
                     // When ICE candidate is available
                     peerConnection.onicecandidate = event => {
                         if (event.candidate) {
+                            logDebug('Sending ICE candidate');
                             sendMessage({
                                 type: 'candidate',
-                                label: event.candidate.sdpMLineIndex,
-                                id: event.candidate.sdpMid,
-                                candidate: event.candidate.candidate
+                                candidate: event.candidate
                             });
                         }
                     };
                     
                     // When connection state changes
                     peerConnection.oniceconnectionstatechange = () => {
-                        if (peerConnection.iceConnectionState === 'disconnected') {
+                        logDebug(`ICE connection state: ${peerConnection.iceConnectionState}`);
+                        updateIceStatus(peerConnection.iceConnectionState);
+                        
+                        if (peerConnection.iceConnectionState === 'disconnected' || 
+                            peerConnection.iceConnectionState === 'failed') {
                             hangup('audio');
                         }
+                    };
+                    
+                    peerConnection.onicegatheringstatechange = () => {
+                        logDebug(`ICE gathering state: ${peerConnection.iceGatheringState}`);
+                    };
+                    
+                    peerConnection.onsignalingstatechange = () => {
+                        logDebug(`Signaling state: ${peerConnection.signalingState}`);
                     };
                     
                     return true;
                 } catch (err) {
                     showNotification('Connection Error', `Failed to create peer connection: ${err.message}`, 'error');
+                    logDebug(`Peer connection error: ${err.message}`);
                     return false;
                 }
             }
             
             // Generate room
-        async function generateRoom(mode) {
-            try {
-                // Create unique room ID
-                roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-                
-                // Create room link with full path
-                const currentPath = window.location.pathname;
-                generatedRoomLink = `${window.location.origin}${currentPath}?room=${roomId}&mode=${mode}`;
-                
-                // Update UI
-                document.getElementById(`${mode}-room-id`).value = roomId;
-                document.getElementById('roomIdDisplay').textContent = `Room ID: ${roomId}`;
-                document.getElementById(`${mode}RoomLinkContainer`).style.display = 'flex';
-                
-                showNotification('Room Created', 'Your audio room has been created!', 'success');
-            } catch (err) {
-                console.error('Error generating room:', err);
-                showNotification('Error', 'Failed to generate room. Please try again.', 'error');
+            async function generateRoom(mode) {
+                try {
+                    // Create unique room ID
+                    roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+                    
+                    // Create room link
+                    generatedRoomLink = `${window.location.origin}${window.location.pathname}?room=${roomId}&mode=${mode}`;
+                    
+                    // Update UI
+                    document.getElementById(`${mode}-room-id`).value = roomId;
+                    document.getElementById('roomIdDisplay').textContent = `Room ID: ${roomId}`;
+                    document.getElementById(`${mode}RoomLinkContainer`).style.display = 'flex';
+                    
+                    // Set as initiator
+                    isInitiator = true;
+                    
+                    // Create Firebase room reference
+                    roomRef = database.ref('rooms/' + roomId);
+                    
+                    // Initialize media and peer connection
+                    if (await initAudioCall()) {
+                        createPeerConnection();
+                        listenForMessages();
+                        
+                        // Create offer after short delay
+                        setTimeout(() => createOffer(), 1000);
+                    }
+                    
+                    showNotification('Room Created', 'Your audio room has been created!', 'success');
+                    logDebug(`Room created: ${roomId}`);
+                } catch (err) {
+                    console.error('Error generating room:', err);
+                    showNotification('Error', 'Failed to generate room. Please try again.', 'error');
+                    logDebug(`Room creation error: ${err.message}`);
+                }
             }
-        }
             
             // Join room
             async function joinRoom(mode) {
@@ -917,16 +1031,117 @@
                 }
                 
                 showNotification('Connecting', `Joining room ${roomId}...`);
+                logDebug(`Attempting to join room: ${roomId}`);
+                
+                isInitiator = false;
+                
+                // Create Firebase room reference
+                roomRef = database.ref('rooms/' + roomId);
                 
                 if (await initAudioCall()) {
                     createPeerConnection();
-                    startTimer();
+                    listenForMessages();
                     updateStatus(`Connected to room: ${roomId}`, true);
+                    logDebug(`Joined room: ${roomId}`);
+                }
+            }
+            
+            // Listen for signaling messages
+            function listenForMessages() {
+                updateSignalingStatus('Listening for messages');
+                
+                roomRef.on('value', snapshot => {
+                    if (!snapshot.exists()) {
+                        updateSignalingStatus('Room not found');
+                        return;
+                    }
+                    
+                    const data = snapshot.val();
+                    logDebug(`Received signaling message: ${JSON.stringify(data)}`);
+                    
+                    if (data.offer && !isInitiator) {
+                        updateSignalingStatus('Received offer');
+                        handleOffer(data.offer);
+                    } else if (data.answer && isInitiator) {
+                        updateSignalingStatus('Received answer');
+                        handleAnswer(data.answer);
+                    } else if (data.candidate) {
+                        updateSignalingStatus('Received ICE candidate');
+                        handleCandidate(data.candidate);
+                    }
+                });
+            }
+            
+            // Send signaling message
+            function sendMessage(message) {
+                if (!roomRef) return;
+                
+                roomRef.update(message);
+                logDebug(`Sent signaling message: ${JSON.stringify(message)}`);
+                updateSignalingStatus('Message sent');
+            }
+            
+            // Create offer
+            async function createOffer() {
+                try {
+                    const offer = await peerConnection.createOffer();
+                    await peerConnection.setLocalDescription(offer);
+                    sendMessage({
+                        type: 'offer',
+                        offer: offer
+                    });
+                    logDebug('Offer created and sent');
+                    updateSignalingStatus('Offer sent');
+                } catch (err) {
+                    showNotification('Error', `Failed to create offer: ${err.message}`, 'error');
+                    logDebug(`Offer creation error: ${err.message}`);
+                }
+            }
+            
+            // Handle incoming offer
+            async function handleOffer(offer) {
+                try {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+                    const answer = await peerConnection.createAnswer();
+                    await peerConnection.setLocalDescription(answer);
+                    sendMessage({
+                        type: 'answer',
+                        answer: answer
+                    });
+                    logDebug('Answer created and sent');
+                    updateSignalingStatus('Answer sent');
+                } catch (err) {
+                    showNotification('Error', `Failed to handle offer: ${err.message}`, 'error');
+                    logDebug(`Offer handling error: ${err.message}`);
+                }
+            }
+            
+            // Handle incoming answer
+            async function handleAnswer(answer) {
+                try {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+                    logDebug('Answer processed');
+                    updateSignalingStatus('Answer processed');
+                } catch (err) {
+                    showNotification('Error', `Failed to handle answer: ${err.message}`, 'error');
+                    logDebug(`Answer handling error: ${err.message}`);
+                }
+            }
+            
+            // Handle ICE candidate
+            async function handleCandidate(candidate) {
+                try {
+                    await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                    logDebug('ICE candidate added');
+                } catch (err) {
+                    logDebug(`Error adding ICE candidate: ${err.message}`);
                 }
             }
             
             // Hang up call
             function hangup(mode) {
+                logDebug('Hanging up call');
+                
                 if (peerConnection) {
                     peerConnection.close();
                     peerConnection = null;
@@ -937,17 +1152,36 @@
                     localStream = null;
                 }
                 
+                // Remove remote audio element
+                const remoteAudio = document.getElementById('remoteAudio');
+                if (remoteAudio) remoteAudio.remove();
+                
+                // Clean up Firebase room
+                if (roomRef) {
+                    roomRef.off();
+                    roomRef.remove();
+                    roomRef = null;
+                }
+                
                 // Hide controls
                 document.getElementById('audioControls').style.display = 'none';
                 
                 // Hide room link
                 document.getElementById('audioRoomLinkContainer').style.display = 'none';
                 
+                // Reset UI
+                document.getElementById('remoteAudioContainer').innerHTML = `
+                    <i class="fas fa-user-friends"></i>
+                    <p>Remote audio will appear here</p>
+                `;
+                
                 // Stop timer
                 stopTimer();
                 
                 // Update status
                 updateStatus('Call ended', false);
+                updateIceStatus('Not started');
+                updateSignalingStatus('Not connected');
                 showNotification('Call Ended', 'Your call has been disconnected');
             }
             
@@ -961,6 +1195,11 @@
                         button.innerHTML = audioTrack.enabled ? 
                             '<i class="fas fa-microphone"></i>' : 
                             '<i class="fas fa-microphone-slash"></i>';
+                            
+                        showNotification(
+                            audioTrack.enabled ? 'Microphone On' : 'Microphone Off', 
+                            audioTrack.enabled ? 'Your microphone is now active' : 'Your microphone is muted'
+                        );
                     }
                 }
             }
