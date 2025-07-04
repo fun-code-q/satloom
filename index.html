@@ -555,8 +555,6 @@
                         <i class="fas fa-video"></i> Video Call
                     </a>
                 </li>
-               
-                </li>
                 <li class="nav-item">
                     <a class="nav-link" data-section="settings">
                         <i class="fas fa-cog"></i> Settings
@@ -743,13 +741,9 @@
             sections: {
                 'audio-call': document.getElementById('audio-call-section'),
                 'video-call': document.getElementById('video-call-section'),
-                'text-chat': document.getElementById('text-chat-section'),
                 'settings': document.getElementById('settings-section'),
                 'about': document.getElementById('about-section')
-            },
-            textMessageInput: document.getElementById('textMessage'),
-            sendTextMessageBtn: document.getElementById('sendTextMessage'),
-            leaveTextRoomBtn: document.getElementById('leaveTextRoom')
+            }
         };
 
         // ========== WEBRTC CONFIG ========== //
@@ -792,22 +786,7 @@
             document.getElementById('endVideoCall').addEventListener('click', () => hangup('video'));
             document.getElementById('videoVideoToggle').addEventListener('click', toggleVideo);
             document.getElementById('videoAudioToggle').addEventListener('click', () => toggleAudio('video'));
-            document.getElementById('sendVideoMessage').addEventListener('click', () => sendChatMessage('video'));
             document.getElementById('copyVideoLink').addEventListener('click', () => copyLink('video'));
-
-            // Text chat controls
-            document.getElementById('generateTextRoom').addEventListener('click', () => generateRoom('text'));
-            document.getElementById('joinTextRoom').addEventListener('click', () => joinRoom('text'));
-            document.getElementById('sendTextMessage').addEventListener('click', () => sendChatMessage('text'));
-            document.getElementById('copyTextLink').addEventListener('click', () => copyLink('text'));
-            domRefs.leaveTextRoomBtn.addEventListener('click', () => leaveTextRoom());
-            
-            // Text message input (allow sending with Enter key)
-            domRefs.textMessageInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    sendChatMessage('text');
-                }
-            });
 
             // Settings
             document.getElementById('notifications-toggle').addEventListener('change', saveSettings);
@@ -844,118 +823,6 @@
                 localStorage.setItem('userId', userId);
             }
             return localStorage.getItem('userId');
-        }
-
-        // ========== TEXT CHAT IMPLEMENTATION ========== //
-        function initTextChat(roomId) {
-            // Clear any previous chat
-            clearTextChat();
-            
-            // Enable chat input
-            domRefs.textMessageInput.disabled = false;
-            domRefs.sendTextMessageBtn.disabled = false;
-            domRefs.leaveTextRoomBtn.style.display = 'block';
-            
-            // Set up Firebase listener for chat messages
-            appState.chatRef = database.ref(`chats/${roomId}/messages`);
-            
-            appState.chatRef.on('child_added', snapshot => {
-                const message = snapshot.val();
-                appendMessageToChat(message, message.senderId === appState.userId, 'text');
-            });
-            
-            showNotification('Chat Room', `Joined text room: ${roomId}`, 'success');
-            updateStatus(`In text chat (${roomId})`, true);
-        }
-
-        function sendChatMessage(mode) {
-            const input = mode === 'text' ? 
-                domRefs.textMessageInput : document.getElementById(`${mode}Message`);
-                
-            const messageText = input.value.trim();
-            if (!messageText) return;
-            
-            if (mode === 'text') {
-                // Send text message to Firebase
-                const message = {
-                    text: messageText,
-                    senderId: appState.userId,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                };
-                
-                database.ref(`chats/${appState.roomId}/messages`).push(message);
-                input.value = '';
-            } else {
-                // For video chat, just simulate for now
-                const chat = document.getElementById(`${mode}Chat`);
-                if (chat.querySelector('.chat-empty-state')) {
-                    chat.innerHTML = '';
-                }
-                
-                appendMessageToChat({
-                    text: messageText,
-                    senderId: appState.userId,
-                    timestamp: Date.now()
-                }, true, mode);
-                
-                // Simulate remote response
-                setTimeout(() => {
-                    appendMessageToChat({
-                        text: "Thanks for your message!",
-                        senderId: 'remote-user',
-                        timestamp: Date.now()
-                    }, false, mode);
-                }, 1000);
-                
-                input.value = '';
-            }
-        }
-
-        function appendMessageToChat(message, isLocal, mode) {
-            const chatContainer = document.getElementById(`${mode}Chat`);
-            
-            // Remove empty state if present
-            if (chatContainer.querySelector('.chat-empty-state')) {
-                chatContainer.innerHTML = '';
-            }
-            
-            const messageElement = document.createElement('div');
-            messageElement.className = `chat-message ${isLocal ? 'user-message' : 'remote-message'}`;
-            
-            // Format timestamp
-            const time = new Date(message.timestamp);
-            const timeString = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
-            
-            messageElement.innerHTML = `
-                <div class="message-sender">${isLocal ? 'You' : 'Remote User'}</div>
-                <div>${message.text}</div>
-                <div class="message-time">${timeString}</div>
-            `;
-            
-            chatContainer.appendChild(messageElement);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        function clearTextChat() {
-            const textChat = document.getElementById('textChat');
-            textChat.innerHTML = '<div class="chat-empty-state"><i class="fas fa-comment-alt"></i><p>No messages yet. Start the conversation!</p></div>';
-        }
-
-        function leaveTextRoom() {
-            if (appState.chatRef) {
-                appState.chatRef.off();
-                appState.chatRef = null;
-            }
-            
-            document.getElementById('textRoomLinkContainer').style.display = 'none';
-            domRefs.textMessageInput.disabled = true;
-            domRefs.sendTextMessageBtn.disabled = true;
-            domRefs.leaveTextRoomBtn.style.display = 'none';
-            clearTextChat();
-            
-            updateStatus('Ready to connect', false);
-            showNotification('Chat Ended', 'You left the text chat room');
-            appState.roomId = null;
         }
 
         // ========== NAVIGATION ========== //
@@ -1087,6 +954,9 @@
             const remoteVideo = document.getElementById('video-remote-video');
             remoteVideo.srcObject = event.streams[0];
             appState.remoteStream = event.streams[0];
+            
+            // Hide spinner when video starts playing
+            document.getElementById('videoSpinner').style.display = 'none';
         }
 
         function handleICECandidate(event) {
@@ -1166,17 +1036,15 @@
             
             // Update UI
             document.getElementById(`${mode}-room-id`).value = appState.roomId;
-            document.getElementById(`${mode}RoomLink`).textContent = 
-                `${location.origin}?room=${appState.roomId}&mode=${mode}`;
+            
+            // FIXED: Include the correct path in the generated link
+            const basePath = location.origin + location.pathname;
+            const roomLink = `${basePath}?room=${appState.roomId}&mode=${mode}`;
+            
+            document.getElementById(`${mode}RoomLink`).textContent = roomLink;
             document.getElementById(`${mode}RoomLinkContainer`).style.display = 'block';
             
             showNotification('Room Generated', `Room ID: ${appState.roomId}. Share with others.`, 'success');
-            
-            // Special handling for text chat
-            if (mode === 'text') {
-                initTextChat(appState.roomId);
-                return;
-            }
             
             // Initialize media and connection
             const mediaInitialized = await initMedia(mode);
@@ -1209,12 +1077,6 @@
             appState.roomId = document.getElementById(`${mode}-room-id`).value.trim();
             if (!appState.roomId) {
                 showNotification('Error', 'Please enter a room ID', 'error');
-                return;
-            }
-            
-            // Special handling for text chat
-            if (mode === 'text') {
-                initTextChat(appState.roomId);
                 return;
             }
             
