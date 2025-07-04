@@ -690,8 +690,7 @@
                 <p>A free, open-source communication platform using WebRTC technology.</p>
                 <p><strong>Version:</strong> 1.5.0 (Firebase Integration)</p>
                 <p><strong>Developed by:</strong> SatLoom Developers</p>
-                <p>Integrated Firebase Realtime Database and STUN servers for peer-to-peer connections.</p>
-                <p><strong>Note:</strong> This demo uses public Firebase configuration. For production, secure your database.</p>
+                
             </div>
         </div>
     </div>
@@ -985,190 +984,192 @@
         }
 
         // Join an existing room
-        async function joinRoom(mode) {
-            currentMode = mode;
-            isCaller = false;
-            
-            // Get room ID from input
-            roomId = mode === 'audio' ? 
-                document.getElementById('audio-room-id').value : 
-                document.getElementById('video-room-id').value;
-            
-            if (!roomId) {
-                showNotification('Error', 'Please enter a room ID', 'error');
-                return;
-            }
-            
-            // Update UI
-            if (mode === 'audio') {
-                document.getElementById('audioControls').style.display = 'flex';
-                document.getElementById('audioConnectionStatus').style.display = 'flex';
-                document.getElementById('audioStatusText').textContent = 'Joining room...';
-            } else {
-                document.getElementById('videoControls').style.display = 'flex';
-                document.getElementById('videoConnectionStatus').style.display = 'flex';
-                document.getElementById('videoStatusText').textContent = 'Joining room...';
-            }
-            
-            document.getElementById('statusText').textContent = `Joining ${mode} room (${roomId})`;
-            
-            // Create the peer connection FIRST
-            createPeerConnection();
-            
-            // Get user media
-            try {
-                const constraints = mode === 'audio' ? 
-                    { audio: true, video: false } : 
-                    { audio: true, video: true };
-                
-                localStream = await navigator.mediaDevices.getUserMedia(constraints);
-                
-                // Add tracks to peer connection
-                localStream.getTracks().forEach(track => {
-                    peerConnection.addTrack(track, localStream);
-                });
-                
-                // Display local video for video calls
-                if (mode === 'video') {
-                    document.getElementById('video-local-video').srcObject = localStream;
-                }
-                
-                // Get room reference
-                roomRef = database.ref(`rooms/${roomId}`);
-                messagesRef = roomRef.child('messages');
-                
-                // Check if room exists
-                const roomSnapshot = await roomRef.once('value');
-                if (!roomSnapshot.exists()) {
-                    showNotification('Error', 'Room does not exist', 'error');
-                    endCall(mode);
-                    return;
-                }
-                
-                // Listen for messages
-                messagesRef.on('child_added', handleMessage);
-                
-               showNotification('Room Joined', `Connected to room: ${roomId}`);
-                startCallTimer();
-            } catch (error) {
-                console.error('Error joining room:', error);
-                let errorMessage = error.message;
-                if (error.name === 'NotAllowedError') {
-                    errorMessage = 'Permission denied. Please allow microphone access.';
-                } else if (error.name === 'NotFoundError' && mode === 'video') {
-                    errorMessage = 'Camera not found. Please check your device.';
-                }
-                showNotification('Error', `Failed to join room: ${errorMessage}`, 'error');
-                endCall(mode);
-            }
+async function joinRoom(mode) {
+    currentMode = mode;
+    isCaller = false;
+    
+    // Get room ID from input
+    roomId = mode === 'audio' ? 
+        document.getElementById('audio-room-id').value : 
+        document.getElementById('video-room-id').value;
+    
+    if (!roomId) {
+        showNotification('Error', 'Please enter a room ID', 'error');
+        return;
+    }
+    
+    // Update UI
+    if (mode === 'audio') {
+        document.getElementById('audioControls').style.display = 'flex';
+        document.getElementById('audioConnectionStatus').style.display = 'flex';
+        document.getElementById('audioStatusText').textContent = 'Joining room...';
+    } else {
+        document.getElementById('videoControls').style.display = 'flex';
+        document.getElementById('videoConnectionStatus').style.display = 'flex';
+        document.getElementById('videoStatusText').textContent = 'Joining room...';
+    }
+    
+    document.getElementById('statusText').textContent = `Joining ${mode} room (${roomId})`;
+    
+    // Create the peer connection FIRST
+    createPeerConnection();
+    
+    // Get user media
+    try {
+        const constraints = mode === 'audio' ? 
+            { audio: true, video: false } : 
+            { audio: true, video: true };
+        
+        localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        
+        // Add tracks to peer connection
+        localStream.getTracks().forEach(track => {
+            peerConnection.addTrack(track, localStream);
+        });
+        
+        // Display local video for video calls
+        if (mode === 'video') {
+            document.getElementById('video-local-video').srcObject = localStream;
         }
+        
+        // Get room reference
+        roomRef = database.ref(`rooms/${roomId}`);
+        messagesRef = roomRef.child('messages');
+        
+        // Check if room exists
+        const roomSnapshot = await roomRef.once('value');
+        if (!roomSnapshot.exists()) {
+            showNotification('Error', 'Room does not exist', 'error');
+            endCall(mode);
+            return;
+        }
+        
+        // Listen for messages
+        messagesRef.on('child_added', handleMessage);
+        
+        showNotification('Room Joined', `Connected to room: ${roomId}`);
+        startCallTimer();
+    } catch (error) {
+        console.error('Error joining room:', error);
+        let errorMessage = error.message;
+        if (error.name === 'NotAllowedError') {
+            errorMessage = 'Permission denied. Please allow microphone access.';
+        } else if (error.name === 'NotFoundError' && mode === 'video') {
+            errorMessage = 'Camera not found. Please check your device.';
+        }
+        showNotification('Error', `Failed to join room: ${errorMessage}`, 'error');
+        endCall(mode);
+    }
+}
 
-        // Create a peer connection
-        function createPeerConnection() {
-            // Clean up any existing connection
-            if (peerConnection) {
-                peerConnection.close();
+// Create a peer connection
+function createPeerConnection() {
+    // Clean up any existing connection
+    if (peerConnection) {
+        peerConnection.close();
+    }
+    
+    // Create new peer connection
+    peerConnection = new RTCPeerConnection(rtcConfig);
+    
+    // Set up event handlers
+    peerConnection.onicecandidate = event => {
+        if (event.candidate) {
+            sendMessage({
+                type: 'candidate',
+                candidate: event.candidate.toJSON(), // FIX: Convert to JSON
+                userId: userId
+            });
+        }
+    };
+    
+    peerConnection.ontrack = event => {
+        if (currentMode === 'video') {
+            if (!remoteStream) {
+                remoteStream = new MediaStream();
+                document.getElementById('video-remote-video').srcObject = remoteStream;
             }
-            
-            // Create new peer connection
-            peerConnection = new RTCPeerConnection(rtcConfig);
-            
-            // Set up event handlers
-            peerConnection.onicecandidate = event => {
-                if (event.candidate) {
+            remoteStream.addTrack(event.track);
+        }
+    };
+    
+    peerConnection.onconnectionstatechange = () => {
+        if (peerConnection.connectionState === 'connected') {
+            updateStatus('Connection established!', true);
+        } else if (peerConnection.connectionState === 'disconnected') {
+            updateStatus('Connection lost', false);
+            setTimeout(() => {
+                endCall(currentMode);
+            }, 3000);
+        }
+    };
+    
+    peerConnection.oniceconnectionstatechange = () => {
+        if (peerConnection.iceConnectionState === 'disconnected') {
+            updateStatus('Connection lost', false);
+            setTimeout(() => {
+                endCall(currentMode);
+            }, 3000);
+        }
+    };
+}
+
+// Handle incoming messages
+async function handleMessage(snapshot) {
+    if (!peerConnection || peerConnection.signalingState === 'closed') return;
+    
+    const message = snapshot.val();
+    if (message.userId === userId) return; // Ignore our own messages
+    
+    try {
+        switch (message.type) {
+            case 'offer':
+                if (!isCaller) {
+                    // FIX: Use the message directly
+                    await peerConnection.setRemoteDescription(
+                        new RTCSessionDescription(message)
+                    );
+                    
+                    const answer = await peerConnection.createAnswer();
+                    await peerConnection.setLocalDescription(answer);
+                    
                     sendMessage({
-                        type: 'candidate',
-                        candidate: event.candidate,
+                        type: 'answer',
+                        sdp: answer.sdp,
                         userId: userId
                     });
+                    
+                    updateStatus(`Connected to peer!`, true);
                 }
-            };
-            
-            peerConnection.ontrack = event => {
-                if (currentMode === 'video') {
-                    if (!remoteStream) {
-                        remoteStream = new MediaStream();
-                        document.getElementById('video-remote-video').srcObject = remoteStream;
-                    }
-                    remoteStream.addTrack(event.track);
+                break;
+                
+            case 'answer':
+                if (isCaller) {
+                    // FIX: Use the message directly
+                    await peerConnection.setRemoteDescription(
+                        new RTCSessionDescription(message)
+                    );
+                    updateStatus(`Peer connected!`, true);
                 }
-            };
-            
-            peerConnection.onconnectionstatechange = () => {
-                if (peerConnection.connectionState === 'connected') {
-                    updateStatus('Connection established!', true);
-                } else if (peerConnection.connectionState === 'disconnected') {
-                    updateStatus('Connection lost', false);
-                    setTimeout(() => {
-                        endCall(currentMode);
-                    }, 3000);
+                break;
+                
+            case 'candidate':
+                if (message.candidate) {
+                    await peerConnection.addIceCandidate(
+                        new RTCIceCandidate(message.candidate)
+                    );
                 }
-            };
-            
-            peerConnection.oniceconnectionstatechange = () => {
-                if (peerConnection.iceConnectionState === 'disconnected') {
-                    updateStatus('Connection lost', false);
-                    setTimeout(() => {
-                        endCall(currentMode);
-                    }, 3000);
-                }
-            };
+                break;
+                
+            case 'bye':
+                updateStatus('Peer disconnected', false);
+                setTimeout(() => endCall(currentMode), 2000);
+                break;
         }
-
-        // Handle incoming messages
-        async function handleMessage(snapshot) {
-            if (!peerConnection || peerConnection.signalingState === 'closed') return;
-            
-            const message = snapshot.val();
-            if (message.userId === userId) return; // Ignore our own messages
-            
-            try {
-                switch (message.type) {
-                    case 'offer':
-                        if (!isCaller) {
-                            await peerConnection.setRemoteDescription(
-                                new RTCSessionDescription({ type: 'offer', sdp: message.sdp })
-                            );
-                            
-                            const answer = await peerConnection.createAnswer();
-                            await peerConnection.setLocalDescription(answer);
-                            
-                            sendMessage({
-                                type: 'answer',
-                                sdp: answer.sdp,
-                                userId: userId
-                            });
-                            
-                            updateStatus(`Connected to peer!`, true);
-                        }
-                        break;
-                        
-                    case 'answer':
-                        if (isCaller) {
-                            await peerConnection.setRemoteDescription(
-                                new RTCSessionDescription({ type: 'answer', sdp: message.sdp })
-                            );
-                            updateStatus(`Peer connected!`, true);
-                        }
-                        break;
-                        
-                    case 'candidate':
-                        if (message.candidate) {
-                            await peerConnection.addIceCandidate(
-                                new RTCIceCandidate(message.candidate)
-                            );
-                        }
-                        break;
-                        
-                    case 'bye':
-                        updateStatus('Peer disconnected', false);
-                        setTimeout(() => endCall(currentMode), 2000);
-                        break;
-                }
-            } catch (error) {
-                console.error('Error handling message:', error);
-            }
-        }
+    } catch (error) {
+        console.error('Error handling message:', error);
+    }
+}
 
         // Send signaling message
         function sendMessage(message) {
