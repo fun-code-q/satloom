@@ -565,57 +565,7 @@
             </ul>
         </div>
 
-        <div class="main-content">
-            <div class="section active" id="video-call-section">
-                <div class="card">
-                    <div class="section-title">
-                        <i class="fas fa-video"></i> Video Call
-                        <div class="call-timer" id="videoCallTimer">00:00</div>
-                    </div>
-                    <div class="input-group">
-                        <input type="text" id="video-room-id" class="input-styled" placeholder="Enter Room ID">
-                    </div>
-                    <div class="call-controls">
-                        <button class="btn" id="generateVideoRoom">
-                            <i class="fas fa-network-wired"></i> Generate Room
-                        </button>
-                        <button class="btn btn-secondary" id="joinVideoRoom">
-                            <i class="fas fa-sign-in-alt"></i> Join Room
-                        </button>
-                    </div>
-                    <div id="videoRoomLinkContainer" class="share-link-container" style="display: none;">
-                        <div class="share-link" id="videoRoomLink"></div>
-                        <button class="copy-btn" id="copyVideoLink">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                    </div>
-                    <div id="videoRemoteVideoContainer">
-                        <video id="video-remote-video" autoplay playsinline></video>
-                        <video id="video-local-video" autoplay playsinline muted></video>
-                        <div class="spinner" id="videoSpinner"></div>
-                    </div>
-                    <div class="call-controls" id="videoControls" style="display: none;">
-                        <button class="control-btn mute" id="videoVideoToggle">
-                            <i class="fas fa-video"></i>
-                        </button>
-                        <button class="control-btn mute" id="videoAudioToggle">
-                            <i class="fas fa-microphone"></i>
-                        </button>
-                        <button class="control-btn end" id="endVideoCall">
-                            <i class="fas fa-phone-slash"></i>
-                        </button>
-                    </div>
-                    <div id="videoChat" class="chat-container"></div>
-                    <div class="input-group">
-                        <input type="text" id="videoMessage" class="input-styled" placeholder="Type a message...">
-                        <button class="btn" id="sendVideoMessage">
-                            <i class="fas fa-paper-plane"></i> Send
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section" id="audio-call-section">
+     <div class="section active" id="audio-call-section">
                 <div class="card">
                     <div class="section-title">
                         <i class="fas fa-phone"></i> Audio Call
@@ -653,48 +603,8 @@
                             <i class="fas fa-phone-slash"></i>
                         </button>
                     </div>
-                    <div id="audioChat" class="chat-container"></div>
-                    <div class="input-group">
-                        <input type="text" id="audioMessage" class="input-styled" placeholder="Type a message...">
-                        <button class="btn" id="sendAudioMessage">
-                            <i class="fas fa-paper-plane"></i> Send
-                        </button>
-                    </div>
                 </div>
             </div>
-
-            <div class="section" id="text-chat-section">
-                <div class="card">
-                    <div class="section-title">
-                        <i class="fas fa-comments"></i> Text Chat
-                    </div>
-                    <div class="input-group">
-                        <input type="text" id="text-room-id" class="input-styled" placeholder="Enter Room ID">
-                    </div>
-                    <div class="call-controls">
-                        <button class="btn" id="generateTextRoom">
-                            <i class="fas fa-network-wired"></i> Generate Room
-                        </button>
-                        <button class="btn btn-secondary" id="joinTextRoom">
-                            <i class="fas fa-sign-in-alt"></i> Join Room
-                        </button>
-                    </div>
-                    <div id="textRoomLinkContainer" class="share-link-container" style="display: none;">
-                        <div class="share-link" id="textRoomLink"></div>
-                        <button class="copy-btn" id="copyTextLink">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                    </div>
-                    <div id="textChat" class="chat-container"></div>
-                    <div class="input-group">
-                        <input type="text" id="textMessage" class="input-styled" placeholder="Type a message...">
-                        <button class="btn" id="sendTextMessage">
-                            <i class="fas fa-paper-plane"></i> Send
-                        </button>
-                    </div>
-                </div>
-            </div>
-
             <div class="section" id="settings-section">
                 <div class="card">
                     <div class="section-title">
@@ -735,13 +645,8 @@
                         <h2>About SatLoom</h2>
                         <p>SatLoom is a free, open-source communication platform designed to connect people seamlessly through video calls, audio calls, and text chats.</p>
                         <p><strong>Version:</strong> 1.0.0</p>
-                        <p><strong>Developed by:</strong> WebRTC Developers</p>
+                        <p><strong>Developed by:</strong> SatLoom Developers</p>
                         <p><strong>Purpose:</strong> To provide a simple, secure, and accessible way to communicate in real-time using WebRTC technology.</p>
-                        <p>For more information or to contribute, visit <a href="https://github.com/webrtc" target="_blank">our GitHub repository</a>.</p>
-                    </div>
-                    <div class="demo-content">
-                        <h3>Our Mission</h3>
-                        <p>SatLoom was created to provide free communication tools to everyone, regardless of location or device. Our goal is to make high-quality communication accessible to all.</p>
                     </div>
                 </div>
             </div>
