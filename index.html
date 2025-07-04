@@ -472,6 +472,7 @@
             z-index: 10;
         }
         
+        /* Status indicator styles */
         .status-indicator {
             padding: 8px 12px;
             background: rgba(255, 255, 255, 0.1);
@@ -486,6 +487,7 @@
             margin-right: 8px;
         }
         
+        /* Loading spinner */
         .spinner {
             border: 4px solid rgba(0, 0, 0, 0.1);
             border-left-color: var(--accent-color);
@@ -507,19 +509,6 @@
         
         .status-disconnected {
             color: var(--error-color);
-        }
-        
-        .server-info {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-            font-size: 14px;
-        }
-        
-        .server-info h3 {
-            margin-bottom: 10px;
-            color: var(--accent-color);
         }
     </style>
 </head>
@@ -727,16 +716,15 @@
                             <label>Notification Sound:</label>
                             <input type="checkbox" id="notification-sound-toggle" checked>
                         </div>
+                        <div class="setting-item">
+                            <label>Call Recording:</label>
+                            <input type="checkbox" id="call-recording-toggle" disabled>
+                            <span>(Coming soon)</span>
+                        </div>
                     </div>
-                    <div class="server-info">
-                        <h3>Connection Information</h3>
-                        <p>Using OpenRelay STUN/TURN servers for enhanced connectivity:</p>
-                        <ul>
-                            <li>stun:openrelay.metered.ca:80</li>
-                            <li>turn:openrelay.metered.ca:80</li>
-                            <li>turn:openrelay.metered.ca:443</li>
-                            <li>turn:openrelay.metered.ca:443?transport=tcp</li>
-                        </ul>
+                    <div class="demo-content">
+                        <h3>App Preferences</h3>
+                        <p>Customize your SatLoom experience with these settings. Choose your preferred theme, notification preferences, and more.</p>
                     </div>
                 </div>
             </div>
@@ -746,11 +734,14 @@
                     <div class="about-content">
                         <h2>About SatLoom</h2>
                         <p>SatLoom is a free, open-source communication platform designed to connect people seamlessly through video calls, audio calls, and text chats.</p>
-                        <p><strong>Version:</strong> 1.2.0</p>
+                        <p><strong>Version:</strong> 1.0.0</p>
                         <p><strong>Developed by:</strong> WebRTC Developers</p>
                         <p><strong>Purpose:</strong> To provide a simple, secure, and accessible way to communicate in real-time using WebRTC technology.</p>
-                        <p><strong>Connectivity:</strong> Powered by OpenRelay servers for reliable NAT traversal</p>
                         <p>For more information or to contribute, visit <a href="https://github.com/webrtc" target="_blank">our GitHub repository</a>.</p>
+                    </div>
+                    <div class="demo-content">
+                        <h3>Our Mission</h3>
+                        <p>SatLoom was created to provide free communication tools to everyone, regardless of location or device. Our goal is to make high-quality communication accessible to all.</p>
                     </div>
                 </div>
             </div>
@@ -850,24 +841,13 @@
             let timer;
             let startTime;
             
-            // STUN/TURN servers configuration with OpenRelay
+            // STUN/TURN servers configuration
             const pcConfig = {
                 iceServers: [
-                    {
-                        urls: [
-                            'stun:openrelay.metered.ca:80',
-                            'turn:openrelay.metered.ca:80',
-                            'turn:openrelay.metered.ca:443',
-                            'turn:openrelay.metered.ca:443?transport=tcp'
-                        ],
-                        username: 'openrelayproject',
-                        credential: 'openrelayproject'
-                    },
-                    // Fallback servers
                     { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' }
-                ],
-                iceTransportPolicy: 'all' // Use both UDP and TCP
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' }
+                ]
             };
             
             // Notification system
@@ -978,7 +958,6 @@
                         const remoteVideo = document.getElementById('video-remote-video');
                         remoteVideo.srcObject = event.streams[0];
                         remoteStream = event.streams[0];
-                        document.getElementById('videoSpinner').style.display = 'none';
                     };
                     
                     // When ICE candidate is available
@@ -986,7 +965,9 @@
                         if (event.candidate) {
                             sendMessage({
                                 type: 'candidate',
-                                candidate: event.candidate
+                                label: event.candidate.sdpMLineIndex,
+                                id: event.candidate.sdpMid,
+                                candidate: event.candidate.candidate
                             });
                         }
                     };
@@ -997,16 +978,6 @@
                             hangup('video');
                             hangup('audio');
                         }
-                    };
-                    
-                    // Log ICE gathering state
-                    peerConnection.onicegatheringstatechange = () => {
-                        console.log('ICE gathering state:', peerConnection.iceGatheringState);
-                    };
-                    
-                    // Log signaling state
-                    peerConnection.onsignalingstatechange = () => {
-                        console.log('Signaling state:', peerConnection.signalingState);
                     };
                     
                     return true;
@@ -1036,7 +1007,11 @@
                     } else if (message.type === 'answer' && isStarted) {
                         peerConnection.setRemoteDescription(new RTCSessionDescription(message));
                     } else if (message.type === 'candidate' && isStarted) {
-                        peerConnection.addIceCandidate(new RTCIceCandidate(message.candidate));
+                        const candidate = new RTCIceCandidate({
+                            sdpMLineIndex: message.label,
+                            candidate: message.candidate
+                        });
+                        peerConnection.addIceCandidate(candidate);
                     } else if (message.type === 'bye' && isStarted) {
                         hangup('video');
                         hangup('audio');
@@ -1056,10 +1031,6 @@
                 
                 sendMessage(answer);
                 isStarted = true;
-                
-                // Start call timer
-                startTimer();
-                updateStatus(`In call (${roomId})`, true);
             }
             
             // Generate room
@@ -1118,7 +1089,6 @@
                 let mediaInitialized = false;
                 if (mode === 'video') {
                     mediaInitialized = await initVideoCall();
-                    document.getElementById('videoSpinner').style.display = 'block';
                 } else if (mode === 'audio') {
                     mediaInitialized = await initAudioCall();
                 }
@@ -1130,6 +1100,11 @@
                     // Initialize signaling
                     isInitiator = false;
                     initSignaling();
+                    
+                    // Show spinner while connecting
+                    if (mode === 'video') {
+                        document.getElementById('videoSpinner').style.display = 'block';
+                    }
                     
                     // Update status
                     updateStatus(`Joining ${mode} call...`, false);
