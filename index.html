@@ -750,12 +750,11 @@
             // Initialize Firebase
             const firebaseConfig = {
                 apiKey: "AIzaSyDeksN3qPZCmNuoASlEqG38XVmag6ecTh8",
-  authDomain: "satloom-rtc.firebaseapp.com",
-  databaseURL: "https://satloom-rtc-default-rtdb.firebaseio.com",
-  projectId: "satloom-rtc",
-  storageBucket: "satloom-rtc.firebasestorage.app",
-  messagingSenderId: "273627860564",
-  appId: "1:273627860564:web:c326b1bb6ffcb32fb0e7c1"
+                authDomain: "satloom-rtc.firebaseapp.com",
+                projectId: "satloom-rtc",
+                storageBucket: "satloom-rtc.appspot.com",
+                messagingSenderId: "273627860564",
+                appId: "1:273627860564:web:c326b1bb6ffcb32fb0e7c1"
             };
             
             firebase.initializeApp(firebaseConfig);
@@ -887,25 +886,26 @@
             }
             
             // Generate room
-            async function generateRoom(mode) {
-                try {
-                    // Create unique room ID
-                    roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-                    
-                    // Create room link
-                    generatedRoomLink = `${window.location.origin}?room=${roomId}&mode=${mode}`;
-                    
-                    // Update UI
-                    document.getElementById(`${mode}-room-id`).value = roomId;
-                    document.getElementById('roomIdDisplay').textContent = `Room ID: ${roomId}`;
-                    document.getElementById(`${mode}RoomLinkContainer`).style.display = 'flex';
-                    
-                    showNotification('Room Created', 'Your audio room has been created!', 'success');
-                } catch (err) {
-                    console.error('Error generating room:', err);
-                    showNotification('Error', 'Failed to generate room. Please try again.', 'error');
-                }
+        async function generateRoom(mode) {
+            try {
+                // Create unique room ID
+                roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+                
+                // Create room link with full path
+                const currentPath = window.location.pathname;
+                generatedRoomLink = `${window.location.origin}${currentPath}?room=${roomId}&mode=${mode}`;
+                
+                // Update UI
+                document.getElementById(`${mode}-room-id`).value = roomId;
+                document.getElementById('roomIdDisplay').textContent = `Room ID: ${roomId}`;
+                document.getElementById(`${mode}RoomLinkContainer`).style.display = 'flex';
+                
+                showNotification('Room Created', 'Your audio room has been created!', 'success');
+            } catch (err) {
+                console.error('Error generating room:', err);
+                showNotification('Error', 'Failed to generate room. Please try again.', 'error');
             }
+        }
             
             // Join room
             async function joinRoom(mode) {
