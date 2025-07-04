@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - For Login Free Calling</title>
+    <title>SatLoom - Collapsible Sidebar</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -17,10 +17,9 @@
             --success-color: #4CAF50;
             --warning-color: #ff9800;
             --error-color: #f44336;
-            --user-message-bg: rgba(58, 123, 213, 0.2);
-            --remote-message-bg: rgba(255, 255, 255, 0.1);
             --sidebar-width: 280px;
-            --sidebar-collapsed-width: 60px;
+            --sidebar-toggle-size: 50px;
+            --transition-speed: 0.3s;
         }
 
         .light-mode {
@@ -31,8 +30,6 @@
             --card-bg: rgba(255, 255, 255, 0.9);
             --text-primary: #333;
             --text-secondary: #666;
-            --user-message-bg: rgba(30, 144, 255, 0.2);
-            --remote-message-bg: rgba(0, 0, 0, 0.05);
         }
 
         * {
@@ -48,25 +45,11 @@
             animation: gradient 15s ease infinite;
             color: var(--text-primary);
             min-height: 100vh;
-            display: flex;
             padding: 20px;
+            overflow-x: hidden;
         }
 
-        .app-container {
-            max-width: 1400px;
-            width: 100%;
-            display: grid;
-            grid-template-columns: var(--sidebar-collapsed-width) 1fr;
-            gap: 20px;
-            padding: 20px;
-            transition: all 0.3s ease;
-        }
-
-        .app-container.sidebar-open {
-            grid-template-columns: var(--sidebar-width) 1fr;
-        }
-
-       /* Toggle button */
+        /* Toggle button */
         .sidebar-toggle {
             position: fixed;
             top: 25px;
@@ -125,17 +108,13 @@
             margin-left: var(--sidebar-width);
         }
 
+        /* Logo and navigation */
         .logo {
             display: flex;
             align-items: center;
             margin-bottom: 30px;
-            height: 40px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .app-container.sidebar-open .logo {
-            height: auto;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .logo-icon {
@@ -148,7 +127,6 @@
             justify-content: center;
             margin-right: 10px;
             animation: pulse 2s infinite;
-            flex-shrink: 0;
         }
 
         .logo-text {
@@ -158,7 +136,6 @@
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            white-space: nowrap;
         }
 
         .nav-menu {
@@ -170,11 +147,10 @@
             margin-bottom: 10px;
             border-radius: 8px;
             transition: all 0.3s ease;
-            overflow: hidden;
         }
 
         .nav-item.active {
-            transform: scale(1.02);
+            background: rgba(58, 123, 213, 0.15);
             box-shadow: 0 4px 15px rgba(58, 123, 213, 0.3);
         }
 
@@ -187,7 +163,6 @@
             border-radius: 8px;
             transition: all 0.3s ease;
             cursor: pointer;
-            white-space: nowrap;
         }
 
         .nav-link:hover, .nav-link.active {
@@ -199,46 +174,38 @@
             margin-right: 10px;
             width: 20px;
             text-align: center;
-            flex-shrink: 0;
         }
 
-        .nav-text {
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .app-container.sidebar-open .nav-text {
-            opacity: 1;
-        }
-
-        .main-content {
+        .status-indicator {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 14px;
+            margin-top: auto;
+            margin-bottom: 20px;
             display: flex;
-            flex-direction: column;
-            gap: 20px;
+            align-items: center;
         }
 
-        .section {
-            display: none;
+        .status-indicator i {
+            margin-right: 8px;
         }
 
-        .section.active {
-            display: block;
-            animation: fadeIn 0.3s ease;
-        }
-
+        /* Content styling */
         .card {
             background: var(--card-bg);
             border-radius: 16px;
-            padding: 20px;
+            padding: 30px;
             backdrop-filter: blur(10px);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-            animation: fadeIn 0.5s ease;
+            max-width: 800px;
+            margin: 0 auto;
         }
 
         .section-title {
-            font-size: 20px;
+            font-size: 24px;
             font-weight: 600;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
             color: var(--accent-color);
@@ -250,48 +217,51 @@
 
         .input-group {
             display: flex;
-            margin-bottom: 15px;
-            gap: 10px;
+            margin-bottom: 20px;
+            gap: 15px;
         }
 
         .input-styled {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 12px 15px;
+            padding: 14px 18px;
             color: var(--text-primary);
-            border-radius: 8px;
+            border-radius: 10px;
             width: 100%;
             outline: none;
             transition: all 0.3s ease;
+            font-size: 16px;
         }
 
         .input-styled:focus {
             border-color: var(--accent-color);
             background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 3px rgba(58, 123, 213, 0.2);
         }
 
         .btn {
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
             border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
+            padding: 14px 24px;
+            border-radius: 10px;
             cursor: pointer;
             font-weight: 500;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             transition: all 0.3s ease;
-            min-width: 120px;
+            min-width: 160px;
+            font-size: 16px;
         }
 
         .btn i {
-            margin-right: 8px;
+            margin-right: 10px;
         }
 
         .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(58, 123, 213, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(58, 123, 213, 0.5);
         }
 
         .btn-secondary {
@@ -302,38 +272,18 @@
         .call-controls {
             display: flex;
             justify-content: center;
-            margin-top: 20px;
-            gap: 15px;
+            margin-top: 30px;
+            gap: 20px;
         }
 
-        .control-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            color: white;
-        }
-
-        .control-btn.mute {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .control-btn.end {
-            background: linear-gradient(135deg, #e53935, #f44336);
-        }
-
+        /* Video container */
         #videoRemoteVideoContainer {
             position: relative;
             background: rgba(0, 0, 0, 0.2);
             border-radius: 12px;
             overflow: hidden;
             height: 300px;
-            margin: 15px 0;
+            margin: 30px 0;
         }
         
         #video-remote-video {
@@ -347,173 +297,12 @@
             position: absolute;
             bottom: 15px;
             right: 15px;
-            width: 100px;
-            height: 75px;
+            width: 120px;
+            height: 90px;
             border-radius: 8px;
             border: 2px solid var(--accent-color);
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             background: #000;
-        }
-
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--card-bg);
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            display: flex;
-            align-items: center;
-            max-width: 300px;
-            z-index: 1000;
-            backdrop-filter: blur(10px);
-            display: none;
-        }
-
-        .call-timer {
-            font-size: 24px;
-            text-align: center;
-            margin: 15px 0;
-            color: var(--accent-color);
-        }
-
-        .share-link-container {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 15px;
-            position: relative;
-        }
-
-        .share-link {
-            font-size: 14px;
-            color: var(--text-secondary);
-            word-break: break-all;
-            margin-bottom: 10px;
-        }
-
-        .copy-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: var(--text-primary);
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-        }
-
-        .audio-visualizer {
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 20px 0;
-        }
-
-        .settings-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .setting-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .about-content h2 {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 15px;
-            color: var(--accent-color);
-        }
-
-        .about-content p {
-            font-size: 16px;
-            color: var(--text-secondary);
-            margin-bottom: 10px;
-        }
-
-        .about-content a {
-            color: var(--accent-color);
-            text-decoration: none;
-        }
-
-        .about-content a:hover {
-            text-decoration: underline;
-        }
-        
-        .theme-toggle {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 10;
-        }
-        
-        .status-indicator {
-            padding: 8px 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            font-size: 14px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            overflow: hidden;
-            height: 40px;
-            transition: all 0.3s ease;
-        }
-        
-        .app-container.sidebar-open .status-indicator {
-            height: auto;
-        }
-        
-        .status-text {
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        
-        .app-container.sidebar-open .status-text {
-            opacity: 1;
-        }
-        
-        .status-indicator i {
-            margin-right: 8px;
-            flex-shrink: 0;
-        }
-        
-        .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            border-left-color: var(--accent-color);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-            display: none;
-        }
-        
-        .status-connected {
-            color: var(--success-color);
-        }
-        
-        .status-disconnected {
-            color: var(--error-color);
         }
 
         /* Animations */
@@ -525,234 +314,230 @@
 
         @keyframes pulse {
             0% {box-shadow: 0 0 0 0 rgba(58, 123, 213, 0.7)}
-            70% {box-shadow: 0 0 0 10px rgba(58, 123, 213, 0)}
+            70% {box-shadow: 0 0 0 12px rgba(58, 123, 213, 0)}
             100% {box-shadow: 0 0 0 0 rgba(58, 123, 213, 0)}
         }
 
         @keyframes fadeIn {
-            from {opacity: 0; transform: translateY(10px)}
+            from {opacity: 0; transform: translateY(20px)}
             to {opacity: 1; transform: translateY(0)}
         }
 
-        @keyframes slideIn {
-            from {transform: translateX(100%); opacity: 0}
-            to {transform: translateX(0); opacity: 1}
+        /* Notification styling */
+        .notification {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            background: rgba(58, 123, 213, 0.9);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            max-width: 350px;
+            animation: fadeIn 0.3s ease;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .notification.error {
+            background: rgba(244, 67, 54, 0.9);
         }
 
-        @keyframes equalizer {
-            0%, 100% {height: 5px;}
-            50% {height: 40px;}
+        .notification i {
+            margin-right: 15px;
+            font-size: 24px;
         }
-        
+
+        .notification-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            font-size: 18px;
+        }
+
         /* Responsive design */
         @media (max-width: 768px) {
-            .app-container {
-                grid-template-columns: 1fr;
-            }
-            
-            .sidebar {
-                position: fixed;
-                left: 0;
-                top: 0;
-                height: 100%;
-                z-index: 99;
-                transform: translateX(-100%);
-                width: var(--sidebar-width);
-            }
-            
-            .app-container.sidebar-open .sidebar {
-                transform: translateX(0);
+            .sidebar.open + .main-content {
+                margin-left: 0;
             }
             
             .sidebar-toggle {
-                display: block;
+                top: 15px;
+                left: 15px;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
             }
         }
     </style>
 </head>
 <body class="dark-mode">
+    <!-- Sidebar Toggle Button -->
     <button class="sidebar-toggle" id="sidebarToggle">
         <i class="fas fa-bars"></i>
     </button>
 
-    <div class="theme-toggle" id="themeToggle">
-        <i class="fas fa-moon"></i>
-    </div>
-
-    <div class="notification" id="globalNotification">
-        <i class="notification-icon fas fa-info-circle"></i>
-        <div class="notification-content">
-            <div class="notification-title" id="notificationTitle"></div>
-            <div class="notification-message" id="notificationMessage"></div>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="logo">
+            <div class="logo-icon">
+                <i class="fas fa-satellite-dish"></i>
+            </div>
+            <div class="logo-text">SatLoom</div>
+        </div>
+        
+        <ul class="nav-menu">
+            <li class="nav-item active">
+                <a class="nav-link active" data-section="audio-call">
+                    <i class="fas fa-phone"></i> Audio Call
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-section="video-call">
+                    <i class="fas fa-video"></i> Video Call
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-section="settings">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-section="about">
+                    <i class="fas fa-info-circle"></i> About
+                </a>
+            </li>
+        </ul>
+        
+        <div class="status-indicator">
+            <i class="fas fa-signal"></i> <span id="statusText">Ready to connect</span>
         </div>
     </div>
 
-    <div class="app-container" id="appContainer">
-        <div class="sidebar">
-            <div class="logo">
-                <div class="logo-icon">
-                    <i class="fas fa-satellite-dish"></i>
-                </div>
-                <div class="logo-text">SatLoom</div>
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <div class="card" id="audio-call-section">
+            <div class="section-title">
+                <i class="fas fa-phone"></i> Audio Call
             </div>
-            <div class="status-indicator" id="connectionStatus">
-                <i class="fas fa-signal"></i> 
-                <span class="status-text" id="statusText">Ready to connect</span>
+            
+            <div class="input-group">
+                <input type="text" id="audio-room-id" class="input-styled" placeholder="Enter Room ID">
             </div>
-            <ul class="nav-menu">
-                <li class="nav-item active">
-                    <a class="nav-link active" data-section="audio-call">
-                        <i class="fas fa-phone"></i> 
-                        <span class="nav-text">Audio Call</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-section="video-call">
-                        <i class="fas fa-video"></i> 
-                        <span class="nav-text">Video Call</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-section="settings">
-                        <i class="fas fa-cog"></i> 
-                        <span class="nav-text">Settings</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-section="about">
-                        <i class="fas fa-info-circle"></i> 
-                        <span class="nav-text">About</span>
-                    </a>
-                </li>
-            </ul>
+            
+            <div class="call-controls">
+                <button class="btn" id="generateAudioRoom">
+                    <i class="fas fa-network-wired"></i> Generate Room
+                </button>
+                <button class="btn btn-secondary" id="joinAudioRoom">
+                    <i class="fas fa-sign-in-alt"></i> Join Room
+                </button>
+            </div>
+            
+            <div id="audioRoomLinkContainer" class="input-group" style="margin-top: 30px; display: none;">
+                <input type="text" id="audioRoomLink" class="input-styled" readonly>
+                <button class="btn" id="copyAudioLink">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+            </div>
+            
+            <div class="call-controls" id="audioControls" style="display: none; margin-top: 30px;">
+                <button class="btn mute" id="audioAudioToggle">
+                    <i class="fas fa-microphone"></i> Mute
+                </button>
+                <button class="btn end" style="background: linear-gradient(135deg, #e53935, #f44336);" id="endAudioCall">
+                    <i class="fas fa-phone-slash"></i> End Call
+                </button>
+            </div>
         </div>
-
-        <div class="main-content">
-            <div class="section active" id="audio-call-section">
-                <div class="card">
-                    <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <i class="fas fa-phone"></i> Audio Call
-                        </div>
-                        <div class="call-timer" id="audioCallTimer">00:00</div>
-                    </div>
-                    <div class="input-group">
-                        <input type="text" id="audio-room-id" class="input-styled" placeholder="Enter Room ID">
-                    </div>
-                    <div class="call-controls">
-                        <button class="btn" id="generateAudioRoom">
-                            <i class="fas fa-network-wired"></i> Generate Room
-                        </button>
-                        <button class="btn btn-secondary" id="joinAudioRoom">
-                            <i class="fas fa-sign-in-alt"></i> Join Room
-                        </button>
-                    </div>
-                    <div id="audioRoomLinkContainer" class="share-link-container" style="display: none;">
-                        <div class="share-link" id="audioRoomLink"></div>
-                        <button class="copy-btn" id="copyAudioLink">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                    </div>
-                    <div class="audio-visualizer" id="audioVisualizer">
-                        <div class="audio-bar"></div>
-                        <div class="audio-bar"></div>
-                        <div class="audio-bar"></div>
-                        <div class="audio-bar"></div>
-                        <div class="audio-bar"></div>
-                    </div>
-                    <div class="call-controls" id="audioControls" style="display: none;">
-                        <button class="control-btn mute" id="audioAudioToggle">
-                            <i class="fas fa-microphone"></i>
-                        </button>
-                        <button class="control-btn end" id="endAudioCall">
-                            <i class="fas fa-phone-slash"></i>
-                        </button>
-                    </div>
+        
+        <div class="card" id="video-call-section" style="display: none;">
+            <div class="section-title">
+                <i class="fas fa-video"></i> Video Call
+            </div>
+            
+            <div class="input-group">
+                <input type="text" id="video-room-id" class="input-styled" placeholder="Enter Room ID">
+            </div>
+            
+            <div class="call-controls">
+                <button class="btn" id="generateVideoRoom">
+                    <i class="fas fa-network-wired"></i> Generate Room
+                </button>
+                <button class="btn btn-secondary" id="joinVideoRoom">
+                    <i class="fas fa-sign-in-alt"></i> Join Room
+                </button>
+            </div>
+            
+            <div id="videoRoomLinkContainer" class="input-group" style="margin-top: 30px; display: none;">
+                <input type="text" id="videoRoomLink" class="input-styled" readonly>
+                <button class="btn" id="copyVideoLink">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+            </div>
+            
+            <div id="videoRemoteVideoContainer">
+                <video id="video-remote-video" autoplay playsinline></video>
+                <video id="video-local-video" autoplay playsinline muted></video>
+            </div>
+            
+            <div class="call-controls" id="videoControls" style="display: none; margin-top: 30px;">
+                <button class="btn" id="videoVideoToggle">
+                    <i class="fas fa-video"></i> Video
+                </button>
+                <button class="btn" id="videoAudioToggle">
+                    <i class="fas fa-microphone"></i> Audio
+                </button>
+                <button class="btn end" style="background: linear-gradient(135deg, #e53935, #f44336);" id="endVideoCall">
+                    <i class="fas fa-phone-slash"></i> End Call
+                </button>
+            </div>
+        </div>
+        
+        <div class="card" id="settings-section" style="display: none;">
+            <div class="section-title">
+                <i class="fas fa-cog"></i> Settings
+            </div>
+            
+            <div class="settings-list">
+                <div class="setting-item">
+                    <label>Notifications:</label>
+                    <input type="checkbox" id="notifications-toggle" checked>
+                </div>
+                <div class="setting-item">
+                    <label>Notification Sound:</label>
+                    <input type="checkbox" id="notification-sound-toggle" checked>
+                </div>
+                <div class="setting-item">
+                    <label>Debug Mode:</label>
+                    <input type="checkbox" id="debug-mode-toggle">
                 </div>
             </div>
-
-            <div class="section" id="video-call-section">
-                <div class="card">
-                    <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <i class="fas fa-video"></i> Video Call
-                        </div>
-                        <div class="call-timer" id="videoCallTimer">00:00</div>
-                    </div>
-                    <div class="input-group">
-                        <input type="text" id="video-room-id" class="input-styled" placeholder="Enter Room ID">
-                    </div>
-                    <div class="call-controls">
-                        <button class="btn" id="generateVideoRoom">
-                            <i class="fas fa-network-wired"></i> Generate Room
-                        </button>
-                        <button class="btn btn-secondary" id="joinVideoRoom">
-                            <i class="fas fa-sign-in-alt"></i> Join Room
-                        </button>
-                    </div>
-                    <div id="videoRoomLinkContainer" class="share-link-container" style="display: none;">
-                        <div class="share-link" id="videoRoomLink"></div>
-                        <button class="copy-btn" id="copyVideoLink">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                    </div>
-                    <div id="videoRemoteVideoContainer">
-                        <video id="video-remote-video" autoplay playsinline></video>
-                        <video id="video-local-video" autoplay playsinline muted></video>
-                        <div class="spinner" id="videoSpinner"></div>
-                    </div>
-                    <div class="call-controls" id="videoControls" style="display: none;">
-                        <button class="control-btn mute" id="videoVideoToggle">
-                            <i class="fas fa-video"></i>
-                        </button>
-                        <button class="control-btn mute" id="videoAudioToggle">
-                            <i class="fas fa-microphone"></i>
-                        </button>
-                        <button class="control-btn end" id="endVideoCall">
-                            <i class="fas fa-phone-slash"></i>
-                        </button>
-                    </div>
-                </div>
+        </div>
+        
+        <div class="card" id="about-section" style="display: none;">
+            <div class="section-title">
+                <i class="fas fa-info-circle"></i> About
             </div>
-
-            <div class="section" id="settings-section">
-                <div class="card">
-                    <div class="section-title">
-                        <i class="fas fa-cog"></i> Settings
-                    </div>
-                    <div class="settings-list">
-                        <div class="setting-item">
-                            <label>Notifications:</label>
-                            <input type="checkbox" id="notifications-toggle" checked>
-                        </div>
-                        <div class="setting-item">
-                            <label>Notification Sound:</label>
-                            <input type="checkbox" id="notification-sound-toggle" checked>
-                        </div>
-                        <div class="setting-item">
-                            <label>Debug Mode:</label>
-                            <input type="checkbox" id="debug-mode-toggle">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section" id="about-section">
-                <div class="card">
-                    <div class="section-title">
-                        <i class="fas fa-info-circle"></i> About
-                    </div>
-                    <div class="about-content">
-                        <p>A free, open-source communication platform using WebRTC technology.</p>
-                        <p><strong>Version:</strong> 1.3.0</p>
-                        <p><strong>Developed by:</strong> SatLoom Developers</p>
-                        <p>Collapsible sidebar implementation for improved user experience.</p>
-                    </div>
-                </div>
+            
+            <div class="about-content">
+                <p>A free, open-source communication platform using WebRTC technology.</p>
+                <p><strong>Version:</strong> 1.4.0</p>
+                <p><strong>Developed by:</strong> SatLoom Developers</p>
+                <p>Collapsible sidebar implementation for improved user experience.</p>
             </div>
         </div>
     </div>
@@ -760,12 +545,12 @@
     <script>
         // Toggle sidebar functionality
         const sidebarToggle = document.getElementById('sidebarToggle');
-        const appContainer = document.getElementById('appContainer');
+        const sidebar = document.getElementById('sidebar');
         
         sidebarToggle.addEventListener('click', () => {
-            appContainer.classList.toggle('sidebar-open');
+            sidebar.classList.toggle('open');
             const icon = sidebarToggle.querySelector('i');
-            if (appContainer.classList.contains('sidebar-open')) {
+            if (sidebar.classList.contains('open')) {
                 icon.classList.remove('fa-bars');
                 icon.classList.add('fa-times');
             } else {
@@ -792,46 +577,84 @@
                 this.classList.add('active');
                 
                 // Update UI sections
-                document.querySelectorAll('.section').forEach(section => 
-                    section.classList.remove('active'));
-                document.getElementById(`${sectionId}-section`).classList.add('active');
+                document.querySelectorAll('.card').forEach(section => 
+                    section.style.display = 'none');
+                document.getElementById(`${sectionId}-section`).style.display = 'block';
+                
+                // Close sidebar after selection on mobile
+                if (window.innerWidth < 768) {
+                    sidebar.classList.remove('open');
+                    sidebarToggle.querySelector('i').classList.remove('fa-times');
+                    sidebarToggle.querySelector('i').classList.add('fa-bars');
+                }
             });
         });
         
-        // Theme toggle functionality
-        document.getElementById('themeToggle').addEventListener('click', function() {
-            const isDark = document.body.classList.contains('dark-mode');
-            document.body.classList.toggle('dark-mode', !isDark);
-            document.body.classList.toggle('light-mode', isDark);
-            const icon = this.querySelector('i');
-            if (isDark) {
-                icon.classList.remove('fa-moon');
-                icon.classList.add('fa-sun');
-            } else {
-                icon.classList.remove('fa-sun');
-                icon.classList.add('fa-moon');
+        // Theme toggle simulation
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('#themeToggle')) {
+                const isDark = document.body.classList.contains('dark-mode');
+                document.body.classList.toggle('dark-mode', !isDark);
+                document.body.classList.toggle('light-mode', isDark);
+                const icon = document.querySelector('#themeToggle i');
+                if (isDark) {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                } else {
+                    icon.classList.remove('fa-sun');
+                    icon.classList.add('fa-moon');
+                }
             }
         });
         
-        // Simulate call functionality
+        // Generate room functionality
         document.getElementById('generateAudioRoom').addEventListener('click', function() {
             const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
             document.getElementById('audio-room-id').value = roomId;
             const link = `${window.location.href}?room=${roomId}&mode=audio`;
-            document.getElementById('audioRoomLink').textContent = link;
-            document.getElementById('audioRoomLinkContainer').style.display = 'block';
+            document.getElementById('audioRoomLink').value = link;
+            document.getElementById('audioRoomLinkContainer').style.display = 'flex';
             document.getElementById('audioControls').style.display = 'flex';
             document.getElementById('statusText').textContent = `In audio call (${roomId})`;
+            
+            // Show notification
+            showNotification('Room Generated', `Room ID: ${roomId} created successfully!`);
         });
         
         document.getElementById('generateVideoRoom').addEventListener('click', function() {
             const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
             document.getElementById('video-room-id').value = roomId;
             const link = `${window.location.href}?room=${roomId}&mode=video`;
-            document.getElementById('videoRoomLink').textContent = link;
-            document.getElementById('videoRoomLinkContainer').style.display = 'block';
+            document.getElementById('videoRoomLink').value = link;
+            document.getElementById('videoRoomLinkContainer').style.display = 'flex';
             document.getElementById('videoControls').style.display = 'flex';
             document.getElementById('statusText').textContent = `In video call (${roomId})`;
+            
+            // Show notification
+            showNotification('Room Generated', `Room ID: ${roomId} created successfully!`);
+        });
+        
+        // Join room functionality
+        document.getElementById('joinAudioRoom').addEventListener('click', function() {
+            const roomId = document.getElementById('audio-room-id').value;
+            if (!roomId) {
+                showNotification('Error', 'Please enter a room ID', 'error');
+                return;
+            }
+            document.getElementById('audioControls').style.display = 'flex';
+            document.getElementById('statusText').textContent = `Joined audio call (${roomId})`;
+            showNotification('Room Joined', `Connected to room: ${roomId}`);
+        });
+        
+        document.getElementById('joinVideoRoom').addEventListener('click', function() {
+            const roomId = document.getElementById('video-room-id').value;
+            if (!roomId) {
+                showNotification('Error', 'Please enter a room ID', 'error');
+                return;
+            }
+            document.getElementById('videoControls').style.display = 'flex';
+            document.getElementById('statusText').textContent = `Joined video call (${roomId})`;
+            showNotification('Room Joined', `Connected to room: ${roomId}`);
         });
         
         // End call functionality
@@ -839,22 +662,72 @@
             document.getElementById('audioControls').style.display = 'none';
             document.getElementById('audioRoomLinkContainer').style.display = 'none';
             document.getElementById('statusText').textContent = 'Ready to connect';
+            showNotification('Call Ended', 'Your audio call has been disconnected');
         });
         
         document.getElementById('endVideoCall').addEventListener('click', function() {
             document.getElementById('videoControls').style.display = 'none';
             document.getElementById('videoRoomLinkContainer').style.display = 'none';
             document.getElementById('statusText').textContent = 'Ready to connect';
+            showNotification('Call Ended', 'Your video call has been disconnected');
         });
         
         // Copy link functionality
-        document.querySelectorAll('.copy-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const link = this.previousElementSibling.textContent;
-                navigator.clipboard.writeText(link).then(() => {
-                    alert('Link copied to clipboard!');
-                });
+        document.getElementById('copyAudioLink').addEventListener('click', function() {
+            const link = document.getElementById('audioRoomLink').value;
+            navigator.clipboard.writeText(link).then(() => {
+                showNotification('Copied', 'Room link copied to clipboard!');
             });
+        });
+        
+        document.getElementById('copyVideoLink').addEventListener('click', function() {
+            const link = document.getElementById('videoRoomLink').value;
+            navigator.clipboard.writeText(link).then(() => {
+                showNotification('Copied', 'Room link copied to clipboard!');
+            });
+        });
+        
+        // Notification function
+        function showNotification(title, message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification ${type === 'error' ? 'error' : ''}`;
+            notification.innerHTML = `
+                <i class="fas ${type === 'error' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
+                <div class="notification-content">
+                    <div class="notification-title">${title}</div>
+                    <div>${message}</div>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Remove after delay
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateY(-20px)';
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+        
+        // Simulate video elements
+        window.addEventListener('load', () => {
+            // Simulate local video stream
+            navigator.mediaDevices.getUserMedia({video: true})
+                .then(stream => {
+                    document.getElementById('video-local-video').srcObject = stream;
+                })
+                .catch(err => {
+                    console.log("Error accessing camera: ", err);
+                });
+            
+            // Simulate remote video stream
+            setTimeout(() => {
+                document.getElementById('video-remote-video').src = "https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4";
+                document.getElementById('video-remote-video').play();
+            }, 1000);
         });
     </script>
 </body>
