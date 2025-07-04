@@ -805,25 +805,35 @@
                 localStorage.getItem('notificationSound') !== 'false';
         }
 
+        // ========== AUTO JOIN ROOM WITH TAB SWITCHING ========== //
         function autoJoinRoom() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomParam = urlParams.get('room');
-    const modeParam = urlParams.get('mode');
-
-    if (roomParam && modeParam) {
-        // Set the room ID in the correct input field
-        document.getElementById(`${modeParam}-room-id`).value = roomParam;
-
-        // Find and click the corresponding navigation link to activate the section
-        const targetLink = document.querySelector(`.nav-link[data-section="${modeParam}"]`);
-        if (targetLink) {
-            targetLink.click(); // Triggers handleNavigation
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomParam = urlParams.get('room');
+            const modeParam = urlParams.get('mode');
+            
+            if (roomParam && modeParam) {
+                // Switch to the correct tab based on the mode parameter
+                switchToTab(modeParam === 'video' ? 'video-call' : 'audio-call');
+                
+                document.getElementById(`${modeParam}-room-id`).value = roomParam;
+                setTimeout(() => joinRoom(modeParam), 1000);
+            }
         }
 
-        // Wait a bit before joining to allow UI to update
-        setTimeout(() => joinRoom(modeParam), 1000);
-    }
-}
+        // ========== TAB SWITCHING FUNCTION ========== //
+        function switchToTab(sectionId) {
+            // Update navigation state
+            document.querySelectorAll('.nav-link').forEach(link => 
+                link.classList.remove('active'));
+            document.querySelector(`.nav-link[data-section="${sectionId}"]`).classList.add('active');
+            
+            // Update UI sections
+            document.querySelectorAll('.section').forEach(section => 
+                section.classList.remove('active'));
+            domRefs.sections[sectionId].classList.add('active');
+            
+            appState.currentMode = sectionId;
+        }
 
         function generateUserId() {
             // Generate a random user ID for chat
@@ -1039,14 +1049,14 @@
             dbRef.push(JSON.stringify(message));
         }
 
-        // ========== ROOM MANAGEMENT ========== //
+       // ========== ROOM MANAGEMENT ========== //
         async function generateRoom(mode) {
             appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
             
             // Update UI
             document.getElementById(`${mode}-room-id`).value = appState.roomId;
             
-            // FIXED: Include the correct path in the generated link
+            // Fixed: Include the correct path in the generated link
             const basePath = location.origin + location.pathname;
             const roomLink = `${basePath}?room=${appState.roomId}&mode=${mode}`;
             
