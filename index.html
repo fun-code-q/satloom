@@ -88,7 +88,7 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
             animation: fadeIn 0.5s ease;
             display: flex;
-            flex-direction: column;
+            flex-direction: column  ;
         }
 
         .logo {
@@ -143,6 +143,7 @@
             border-radius: 8px;
             transition: all 0.3s ease;
             cursor: pointer;
+();
         }
 
         .nav-link:hover, .nav-link.active {
@@ -556,9 +557,7 @@
         </div>
 
         <div class="main-content">
-            
-
-             <div class="section active" id="audio-call-section">
+            <div class="section active" id="audio-call-section">
                 <div class="card">
                     <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
@@ -598,7 +597,6 @@
                             <i class="fas fa-phone-slash"></i>
                         </button>
                     </div>
-                    
                 </div>
             </div>
 
@@ -651,7 +649,6 @@
                 </div>
             </div>
 
-
             <div class="section" id="text-chat-section">
                 <div class="card">
                     <div class="section-title">
@@ -684,7 +681,7 @@
                 </div>
             </div>
 
-           <div class="section" id="settings-section">
+            <div class="section" id="settings-section">
                 <div class="card">
                     <div class="section-title">
                         <i class="fas fa-cog"></i> Settings
@@ -706,10 +703,11 @@
                 </div>
             </div>
 
-           <div class="section" id="about-section">
+            <div class="section" id="about-section">
                 <div class="card">
                     <div class="section-title">
-                        <i class="fas fa-info-circle"></i> About</div>
+                        <i class="fas fa-info-circle"></i> About
+                    </div>
                     <div class="about-content">
                         <p>A free, open-source communication platform using WebRTC technology.</p>
                         <p><strong>Version:</strong> 1.2.0</p>
@@ -732,18 +730,10 @@
             navLinks.forEach(link => {
                 link.addEventListener('click', function(e) {
                     e.preventDefault();
-                    
-                    // Remove active class from all links
                     navLinks.forEach(link => link.classList.remove('active'));
-                    
-                    // Add active class to clicked link
                     this.classList.add('active');
-                    
-                    // Hide all sections
                     document.querySelectorAll('.section').forEach(section => 
                         section.classList.remove('active'));
-                    
-                    // Show selected section
                     const sectionId = this.getAttribute('data-section');
                     document.getElementById(`${sectionId}-section`).classList.add('active');
                 });
@@ -759,15 +749,6 @@
                 localStorage.setItem('theme', isDark ? 'light' : 'dark');
             });
             
-            // Theme selector
-            const themeSelect = document.getElementById('theme-select');
-            themeSelect.addEventListener('change', () => {
-                const theme = themeSelect.value;
-                document.body.className = theme + '-mode';
-                themeToggle.innerHTML = theme === 'dark' ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
-                localStorage.setItem('theme', theme);
-            });
-            
             // Settings toggles
             document.getElementById('notifications-toggle').addEventListener('change', function() {
                 localStorage.setItem('notifications', this.checked);
@@ -781,7 +762,6 @@
             const savedTheme = localStorage.getItem('theme') || 'dark';
             document.body.className = savedTheme + '-mode';
             themeToggle.innerHTML = savedTheme === 'dark' ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
-            themeSelect.value = savedTheme;
             
             document.getElementById('notifications-toggle').checked = 
                 localStorage.getItem('notifications') !== 'false';
@@ -791,12 +771,12 @@
             // Initialize Firebase
             const firebaseConfig = {
                 apiKey: "AIzaSyDeksN3qPZCmNuoASlEqG38XVmag6ecTh8",
-  authDomain: "satloom-rtc.firebaseapp.com",
-  databaseURL: "https://satloom-rtc-default-rtdb.firebaseio.com",
-  projectId: "satloom-rtc",
-  storageBucket: "satloom-rtc.firebasestorage.app",
-  messagingSenderId: "273627860564",
-  appId: "1:273627860564:web:c326b1bb6ffcb32fb0e7c1"
+                authDomain: "satloom-rtc.firebaseapp.com",
+                databaseURL: "https://satloom-rtc-default-rtdb.firebaseio.com",
+                projectId: "satloom-rtc",
+                storageBucket: "satloom-rtc.firebasestorage.app",
+                messagingSenderId: "273627860564",
+                appId: "1:273627860564:web:c326b1bb6ffcb32fb0e7c1"
             };
             
             firebase.initializeApp(firebaseConfig);
@@ -858,8 +838,6 @@
                     const minutes = Math.floor(time / 60000);
                     const seconds = Math.floor((time % 60000) / 1000);
                     const timerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                    
-                    // Update all timers
                     document.getElementById('videoCallTimer').textContent = timerText;
                     document.getElementById('audioCallTimer').textContent = timerText;
                 }, 1000);
@@ -875,22 +853,19 @@
             // Initialize media for video call
             async function initVideoCall() {
                 try {
-                    // Get local media stream
+                    console.log('Attempting to access video and audio devices');
                     localStream = await navigator.mediaDevices.getUserMedia({
                         video: true,
                         audio: true
                     });
-                    
-                    // Display local video
                     const localVideo = document.getElementById('video-local-video');
                     localVideo.srcObject = localStream;
-                    
-                    // Show controls
                     document.getElementById('videoControls').style.display = 'flex';
-                    
+                    console.log('Video call media initialized successfully');
                     return true;
                 } catch (err) {
-                    showNotification('Media Error', `Could not access media devices: ${err.message}`, 'error');
+                    console.error('Media access error:', err);
+                    showNotification('Media Error', `Could not access media devices: ${err.message}. Please check permissions.`, 'error');
                     return false;
                 }
             }
@@ -898,17 +873,16 @@
             // Initialize media for audio call
             async function initAudioCall() {
                 try {
-                    // Get local audio stream
+                    console.log('Attempting to access audio device');
                     localStream = await navigator.mediaDevices.getUserMedia({
                         audio: true
                     });
-                    
-                    // Show controls
                     document.getElementById('audioControls').style.display = 'flex';
-                    
+                    console.log('Audio call media initialized successfully');
                     return true;
                 } catch (err) {
-                    showNotification('Media Error', `Could not access microphone: ${err.message}`, 'error');
+                    console.error('Media access error:', err);
+                    showNotification('Media Error', `Could not access microphone: ${err.message}. Please check permissions.`, 'error');
                     return false;
                 }
             }
@@ -916,25 +890,22 @@
             // Create peer connection
             function createPeerConnection() {
                 try {
+                    console.log('Creating peer connection');
                     peerConnection = new RTCPeerConnection(pcConfig);
-                    
-                    // Add local stream to connection
                     if (localStream) {
                         localStream.getTracks().forEach(track => {
                             peerConnection.addTrack(track, localStream);
                         });
                     }
-                    
-                    // When remote stream is received
                     peerConnection.ontrack = event => {
+                        console.log('Remote stream received');
                         const remoteVideo = document.getElementById('video-remote-video');
                         remoteVideo.srcObject = event.streams[0];
                         remoteStream = event.streams[0];
                     };
-                    
-                    // When ICE candidate is available
                     peerConnection.onicecandidate = event => {
                         if (event.candidate) {
+                            console.log('Sending ICE candidate');
                             sendMessage({
                                 type: 'candidate',
                                 label: event.candidate.sdpMLineIndex,
@@ -943,17 +914,17 @@
                             });
                         }
                     };
-                    
-                    // When connection state changes
                     peerConnection.oniceconnectionstatechange = () => {
+                        console.log('ICE connection state:', peerConnection.iceConnectionState);
                         if (peerConnection.iceConnectionState === 'disconnected') {
                             hangup('video');
                             hangup('audio');
                         }
                     };
-                    
+                    console.log('Peer connection created successfully');
                     return true;
                 } catch (err) {
+                    console.error('Peer connection error:', err);
                     showNotification('Connection Error', `Failed to create peer connection: ${err.message}`, 'error');
                     return false;
                 }
@@ -961,17 +932,18 @@
             
             // Send message through signaling channel
             function sendMessage(message) {
+                console.log('Sending message:', message);
                 const msgString = JSON.stringify(message);
                 database.ref(`rooms/${roomId}/messages`).push(msgString);
             }
             
             // Initialize signaling
             function initSignaling() {
+                console.log('Initializing signaling for room:', roomId);
                 database.ref(`rooms/${roomId}/messages`).on('child_added', snapshot => {
                     const message = JSON.parse(snapshot.val());
-                    
+                    console.log('Received message:', message);
                     if (!peerConnection) createPeerConnection();
-                    
                     if (message.type === 'offer') {
                         if (!isInitiator && !isStarted) {
                             handleOffer(message);
@@ -993,28 +965,29 @@
             
             // Handle offer from remote peer
             async function handleOffer(offer) {
+                console.log('Handling offer');
                 if (!peerConnection) createPeerConnection();
-                
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-                
-                // Create answer
                 const answer = await peerConnection.createAnswer();
                 await peerConnection.setLocalDescription(answer);
-                
                 sendMessage(answer);
                 isStarted = true;
+                console.log('Answer sent, call started');
             }
             
             // Generate room
             async function generateRoom(mode) {
-                // Create unique room ID
+                console.log(`generateRoom called for mode: ${mode}`);
                 roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+                console.log(`Generated room ID: ${roomId}`);
                 
-                // Update UI
+                // Update UI regardless of media initialization
                 document.getElementById(`${mode}-room-id`).value = roomId;
                 document.getElementById(`${mode}RoomLink`).textContent = 
                     `${window.location.origin}?room=${roomId}&mode=${mode}`;
                 document.getElementById(`${mode}RoomLinkContainer`).style.display = 'block';
+                console.log('UI updated with room ID and link');
+                showNotification('Room Generated', `Room ID: ${roomId}. Share this with others.`, 'success');
                 
                 // Initialize media
                 let mediaInitialized = false;
@@ -1023,41 +996,55 @@
                 } else if (mode === 'audio') {
                     mediaInitialized = await initAudioCall();
                 }
+                console.log(`Media initialized: ${mediaInitialized}`);
                 
-                if (mediaInitialized) {
-                    // Create peer connection
-                    createPeerConnection();
-                    
-                    // Initialize signaling
-                    isInitiator = true;
-                    initSignaling();
-                    
-                    // Create offer
+                if (!mediaInitialized) {
+                    showNotification('Media Error', 'Could not access media devices. Please check permissions and try again.', 'error');
+                    updateStatus(`Room generated but media failed (${roomId})`, false);
+                    return;
+                }
+                
+                // Create peer connection
+                const peerCreated = createPeerConnection();
+                console.log(`Peer connection created: ${peerCreated}`);
+                
+                if (!peerCreated) {
+                    updateStatus(`Room generated but connection failed (${roomId})`, false);
+                    return;
+                }
+                
+                // Initialize signaling
+                isInitiator = true;
+                initSignaling();
+                console.log('Signaling initialized');
+                
+                try {
                     const offer = await peerConnection.createOffer();
                     await peerConnection.setLocalDescription(offer);
-                    
+                    console.log('Offer created and set');
                     sendMessage(offer);
                     isStarted = true;
-                    
-                    // Start call timer
+                    console.log('Offer sent');
                     startTimer();
-                    
-                    // Update status
+                    console.log('Timer started');
                     updateStatus(`In ${mode} call (${roomId})`, true);
-                    showNotification('Room Created', `Share this room ID: ${roomId}`, 'success');
+                    showNotification('Call Started', `Connected to room: ${roomId}`, 'success');
+                } catch (err) {
+                    console.error('Error creating offer:', err);
+                    showNotification('Error', 'Failed to start call', 'error');
+                    updateStatus('Call failed', false);
                 }
             }
             
             // Join room
             async function joinRoom(mode) {
                 roomId = document.getElementById(`${mode}-room-id`).value.trim();
-                
                 if (!roomId) {
                     showNotification('Error', 'Please enter a room ID', 'error');
                     return;
                 }
+                console.log(`Joining room: ${roomId} in mode: ${mode}`);
                 
-                // Initialize media
                 let mediaInitialized = false;
                 if (mode === 'video') {
                     mediaInitialized = await initVideoCall();
@@ -1066,19 +1053,12 @@
                 }
                 
                 if (mediaInitialized) {
-                    // Create peer connection
                     createPeerConnection();
-                    
-                    // Initialize signaling
                     isInitiator = false;
                     initSignaling();
-                    
-                    // Show spinner while connecting
                     if (mode === 'video') {
                         document.getElementById('videoSpinner').style.display = 'block';
                     }
-                    
-                    // Update status
                     updateStatus(`Joining ${mode} call...`, false);
                     showNotification('Joining Room', `Connecting to room: ${roomId}`);
                 }
@@ -1086,37 +1066,29 @@
             
             // Hang up call
             function hangup(mode) {
+                console.log(`Hanging up ${mode} call`);
                 if (peerConnection) {
                     peerConnection.close();
                     peerConnection = null;
                 }
-                
                 if (localStream) {
                     localStream.getTracks().forEach(track => track.stop());
                     localStream = null;
                 }
-                
-                // Update UI
                 document.getElementById(`${mode}Controls`).style.display = 'none';
                 document.getElementById(`${mode}RoomLinkContainer`).style.display = 'none';
-                
                 if (mode === 'video') {
                     document.getElementById('video-remote-video').srcObject = null;
                     document.getElementById('video-local-video').srcObject = null;
                     document.getElementById('videoSpinner').style.display = 'none';
                 }
-                
-                // Stop timer
                 stopTimer();
-                
-                // Update status
                 updateStatus('Call ended', false);
                 showNotification('Call Ended', 'Your call has been disconnected');
-                
-                // Send bye message
                 if (roomId) {
                     sendMessage({ type: 'bye' });
                 }
+                isStarted = false;
             }
             
             // Toggle video
@@ -1151,7 +1123,6 @@
             function sendChatMessage(mode) {
                 const input = document.getElementById(`${mode}Message`);
                 const message = input.value.trim();
-                
                 if (message) {
                     const chat = document.getElementById(`${mode}Chat`);
                     const messageElement = document.createElement('div');
@@ -1159,9 +1130,6 @@
                     messageElement.innerHTML = `<strong>You:</strong> ${message}`;
                     chat.appendChild(messageElement);
                     chat.scrollTop = chat.scrollHeight;
-                    
-                    // In a real app, you would send this to the other peer
-                    // For demo, simulate a response after a delay
                     setTimeout(() => {
                         const responseElement = document.createElement('div');
                         responseElement.className = 'chat-message remote';
@@ -1169,7 +1137,6 @@
                         chat.appendChild(responseElement);
                         chat.scrollTop = chat.scrollHeight;
                     }, 1000);
-                    
                     input.value = '';
                 }
             }
@@ -1195,7 +1162,6 @@
             document.getElementById('joinAudioRoom').addEventListener('click', () => joinRoom('audio'));
             document.getElementById('endAudioCall').addEventListener('click', () => hangup('audio'));
             document.getElementById('audioAudioToggle').addEventListener('click', () => toggleAudio('audio'));
-            document.getElementById('sendAudioMessage').addEventListener('click', () => sendChatMessage('audio'));
             document.getElementById('copyAudioLink').addEventListener('click', () => copyLink('audio'));
             
             document.getElementById('generateTextRoom').addEventListener('click', () => generateRoom('text'));
@@ -1207,7 +1173,6 @@
             const urlParams = new URLSearchParams(window.location.search);
             const roomParam = urlParams.get('room');
             const modeParam = urlParams.get('mode');
-            
             if (roomParam && modeParam) {
                 document.getElementById(`${modeParam}-room-id`).value = roomParam;
                 setTimeout(() => {
