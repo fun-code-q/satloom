@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - Login Free Calling </title>
+    <title>SatLoom - Login Free Calling</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -50,21 +50,21 @@
             justify-content: center;
             align-items: center;
             padding: 20px;
+            transition: all 0.3s ease;
         }
 
         .app-container {
             max-width: 1200px;
             width: 100%;
             display: grid;
-            grid-template-columns: 1fr;
+            grid-template-columns: 0fr 1fr; /* Sidebar hidden by default */
             gap: 20px;
             padding: 20px;
+            transition: all 0.3s ease;
         }
 
-        @media (min-width: 992px) {
-            .app-container {
-                grid-template-columns: 280px 1fr;
-            }
+        .sidebar-visible .app-container {
+            grid-template-columns: 280px 1fr; /* Sidebar visible */
         }
 
         .sidebar, .card {
@@ -79,12 +79,25 @@
         .sidebar {
             display: flex;
             flex-direction: column;
+            overflow: hidden;
+            width: 0;
+            opacity: 0;
+            transform: translateX(-20px);
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-visible .sidebar {
+            width: 280px;
+            opacity: 1;
+            transform: translateX(0);
         }
 
         .logo {
             display: flex;
             align-items: center;
             margin-bottom: 30px;
+            white-space: nowrap;
+            overflow: hidden;
         }
 
         .logo-icon {
@@ -97,6 +110,7 @@
             justify-content: center;
             margin-right: 10px;
             animation: pulse 2s infinite;
+            flex-shrink: 0;
         }
 
         .logo-text {
@@ -106,6 +120,7 @@
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
+            white-space: nowrap;
         }
 
         .nav-menu {
@@ -133,6 +148,7 @@
             border-radius: 8px;
             transition: all 0.3s ease;
             cursor: pointer;
+            white-space: nowrap;
         }
 
         .nav-link:hover, .nav-link.active {
@@ -150,6 +166,7 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
+            transition: all 0.3s ease;
         }
 
         .section {
@@ -437,6 +454,21 @@
             z-index: 10;
         }
         
+        .sidebar-toggle {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+        }
+        
         .status-indicator {
             padding: 8px 12px;
             background: rgba(255, 255, 255, 0.1);
@@ -521,6 +553,10 @@
     </style>
 </head>
 <body class="dark-mode">
+    <div class="sidebar-toggle" id="sidebarToggle">
+        <i class="fas fa-bars"></i>
+    </div>
+    
     <div class="theme-toggle" id="themeToggle">
         <i class="fas fa-moon"></i>
     </div>
@@ -725,11 +761,13 @@
             startTime: null,
             currentMode: 'audio-call',
             userId: generateUserId(),
-            chatRef: null
+            chatRef: null,
+            sidebarVisible: false
         };
 
         // ========== DOM ELEMENT REFERENCES ========== //
         const domRefs = {
+            sidebarToggle: document.getElementById('sidebarToggle'),
             themeToggle: document.getElementById('themeToggle'),
             notification: document.getElementById('globalNotification'),
             notificationTitle: document.getElementById('notificationTitle'),
@@ -762,6 +800,7 @@
             setupEventListeners();
             loadSettings();
             autoJoinRoom();
+            updateSidebarToggleIcon();
         }
 
         function setupEventListeners() {
@@ -772,6 +811,9 @@
 
             // Theme toggle
             domRefs.themeToggle.addEventListener('click', toggleTheme);
+            
+            // Sidebar toggle
+            domRefs.sidebarToggle.addEventListener('click', toggleSidebar);
 
             // Audio call controls
             document.getElementById('generateAudioRoom').addEventListener('click', () => generateRoom('audio'));
@@ -803,36 +845,21 @@
                 localStorage.getItem('notifications') !== 'false';
             document.getElementById('notification-sound-toggle').checked = 
                 localStorage.getItem('notificationSound') !== 'false';
+            
+            // Load sidebar state
+            appState.sidebarVisible = localStorage.getItem('sidebarVisible') === 'true';
+            updateSidebarState();
         }
 
-        // ========== AUTO JOIN ROOM WITH TAB SWITCHING ========== //
         function autoJoinRoom() {
             const urlParams = new URLSearchParams(window.location.search);
             const roomParam = urlParams.get('room');
             const modeParam = urlParams.get('mode');
             
             if (roomParam && modeParam) {
-                // Switch to the correct tab based on the mode parameter
-                switchToTab(modeParam === 'video' ? 'video-call' : 'audio-call');
-                
                 document.getElementById(`${modeParam}-room-id`).value = roomParam;
                 setTimeout(() => joinRoom(modeParam), 1000);
             }
-        }
-
-        // ========== TAB SWITCHING FUNCTION ========== //
-        function switchToTab(sectionId) {
-            // Update navigation state
-            document.querySelectorAll('.nav-link').forEach(link => 
-                link.classList.remove('active'));
-            document.querySelector(`.nav-link[data-section="${sectionId}"]`).classList.add('active');
-            
-            // Update UI sections
-            document.querySelectorAll('.section').forEach(section => 
-                section.classList.remove('active'));
-            domRefs.sections[sectionId].classList.add('active');
-            
-            appState.currentMode = sectionId;
         }
 
         function generateUserId() {
@@ -842,6 +869,27 @@
                 localStorage.setItem('userId', userId);
             }
             return localStorage.getItem('userId');
+        }
+
+        // ========== SIDEBAR MANAGEMENT ========== //
+        function toggleSidebar() {
+            appState.sidebarVisible = !appState.sidebarVisible;
+            localStorage.setItem('sidebarVisible', appState.sidebarVisible);
+            updateSidebarState();
+        }
+
+        function updateSidebarState() {
+            if (appState.sidebarVisible) {
+                document.body.classList.add('sidebar-visible');
+            } else {
+                document.body.classList.remove('sidebar-visible');
+            }
+            updateSidebarToggleIcon();
+        }
+
+        function updateSidebarToggleIcon() {
+            domRefs.sidebarToggle.innerHTML = appState.sidebarVisible ? 
+                '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
         }
 
         // ========== NAVIGATION ========== //
@@ -1049,14 +1097,14 @@
             dbRef.push(JSON.stringify(message));
         }
 
-       // ========== ROOM MANAGEMENT ========== //
+        // ========== ROOM MANAGEMENT ========== //
         async function generateRoom(mode) {
             appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
             
             // Update UI
             document.getElementById(`${mode}-room-id`).value = appState.roomId;
             
-            // Fixed: Include the correct path in the generated link
+            // FIXED: Include the correct path in the generated link
             const basePath = location.origin + location.pathname;
             const roomLink = `${basePath}?room=${appState.roomId}&mode=${mode}`;
             
