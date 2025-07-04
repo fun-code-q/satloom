@@ -793,6 +793,27 @@
             ]
         };
 
+        // ========== SECTION ACTIVATION ========== //
+        function activateSection(sectionId) {
+            // Update navigation state
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('data-section') === sectionId) {
+                    link.classList.add('active');
+                }
+            });
+            
+            // Update UI sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+                if (section.id === `${sectionId}-section`) {
+                    section.classList.add('active');
+                }
+            });
+            
+            appState.currentMode = sectionId;
+        }
+
         // ========== INITIALIZATION ========== //
         document.addEventListener('DOMContentLoaded', initApp);
 
@@ -851,45 +872,32 @@
             updateSidebarState();
         }
 
-        // ========== SECTION ACTIVATION ========== //
-function activateSection(sectionId) {
-    // Update navigation state
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
-        if (link.getAttribute('data-section') === sectionId) {
-            link.classList.add('active');
+        function autoJoinRoom() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomParam = urlParams.get('room');
+            const modeParam = urlParams.get('mode');
+            
+            if (roomParam && modeParam) {
+                // Activate the correct section based on mode
+                if (modeParam === 'video') {
+                    activateSection('video-call');
+                } else {
+                    activateSection('audio-call');
+                }
+                
+                document.getElementById(`${modeParam}-room-id`).value = roomParam;
+                setTimeout(() => joinRoom(modeParam), 1000);
+            }
         }
-    });
-    
-    // Update UI sections
-    document.querySelectorAll('.section').forEach(section => {
-        section.classList.remove('active');
-        if (section.id === `${sectionId}-section`) {
-            section.classList.add('active');
-        }
-    });
-    
-    appState.currentMode = sectionId;
-}
 
-       // ========== AUTO JOIN ROOM ========== //
-function autoJoinRoom() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomParam = urlParams.get('room');
-    const modeParam = urlParams.get('mode');
-    
-    if (roomParam && modeParam) {
-        // Activate the correct section based on mode
-        if (modeParam === 'video') {
-            activateSection('video-call');
-        } else {
-            activateSection('audio-call');
+        function generateUserId() {
+            // Generate a random user ID for chat
+            if (!localStorage.getItem('userId')) {
+                const userId = 'user-' + Math.random().toString(36).substr(2, 8);
+                localStorage.setItem('userId', userId);
+            }
+            return localStorage.getItem('userId');
         }
-        
-        document.getElementById(`${modeParam}-room-id`).value = roomParam;
-        setTimeout(() => joinRoom(modeParam), 1000);
-    }
-}
 
         // ========== SIDEBAR MANAGEMENT ========== //
         function toggleSidebar() {
@@ -912,12 +920,12 @@ function autoJoinRoom() {
                 '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
         }
 
-       // ========== NAVIGATION ========== //
-function handleNavigation(e) {
-    e.preventDefault();
-    const sectionId = this.getAttribute('data-section');
-    activateSection(sectionId);
-}
+        // ========== NAVIGATION ========== //
+        function handleNavigation(e) {
+            e.preventDefault();
+            const sectionId = this.getAttribute('data-section');
+            activateSection(sectionId);
+        }
 
         // ========== THEME MANAGEMENT ========== //
         function toggleTheme() {
