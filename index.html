@@ -806,15 +806,24 @@
         }
 
         function autoJoinRoom() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const roomParam = urlParams.get('room');
-            const modeParam = urlParams.get('mode');
-            
-            if (roomParam && modeParam) {
-                document.getElementById(`${modeParam}-room-id`).value = roomParam;
-                setTimeout(() => joinRoom(modeParam), 1000);
-            }
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomParam = urlParams.get('room');
+    const modeParam = urlParams.get('mode');
+
+    if (roomParam && modeParam) {
+        // Set the room ID in the correct input field
+        document.getElementById(`${modeParam}-room-id`).value = roomParam;
+
+        // Find and click the corresponding navigation link to activate the section
+        const targetLink = document.querySelector(`.nav-link[data-section="${modeParam}"]`);
+        if (targetLink) {
+            targetLink.click(); // Triggers handleNavigation
         }
+
+        // Wait a bit before joining to allow UI to update
+        setTimeout(() => joinRoom(modeParam), 1000);
+    }
+}
 
         function generateUserId() {
             // Generate a random user ID for chat
