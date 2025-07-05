@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - Ultra-Resilient WebRTC Calling</title>
+    <title>SatLoom - Enhanced Video Calling</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -276,7 +276,7 @@
         }
 
         /* VIDEO CALL CONTAINER IMPROVEMENTS */
-        #videoRemoteVideoContainer {
+        .video-container {
             position: relative;
             background: rgba(0, 0, 0, 0.2);
             border-radius: 12px;
@@ -286,7 +286,7 @@
             margin: 15px 0;
         }
         
-        #video-remote-video {
+        .remote-video {
             position: absolute;
             top: 0;
             left: 0;
@@ -297,7 +297,7 @@
             transform: rotateY(180deg); /* Mirror effect for front camera */
         }
         
-        #video-local-video {
+        .local-video {
             position: absolute;
             bottom: 15px;
             right: 15px;
@@ -728,6 +728,59 @@
             z-index: 1000;
             display: none;
         }
+        
+        .video-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 20;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 25px;
+        }
+        
+        .fullscreen-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 15;
+        }
+        
+        .device-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border-radius: 8px;
+            padding: 8px 15px;
+            margin-top: 10px;
+            width: 100%;
+        }
+        
+        .camera-switch {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 15;
+        }
 
         @keyframes gradient {
             0% {background-position: 0% 50%}
@@ -780,10 +833,11 @@
                 box-shadow: 5px 0 15px rgba(0,0,0,0.3);
             }
             
-            #video-local-video {
+            .local-video {
                 width: 30%;
                 max-width: 120px;
                 max-height: 90px;
+                bottom: 60px;
             }
             
             .call-controls {
@@ -791,8 +845,37 @@
             }
             
             .control-btn {
+                width: 55px;
+                height: 55px;
+                font-size: 16px;
+            }
+            
+            .video-controls {
+                bottom: 10px;
+            }
+            
+            .fullscreen-btn, .camera-switch {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .local-video {
+                max-width: 100px;
+                max-height: 75px;
+                bottom: 70px;
+            }
+            
+            .control-btn {
                 width: 45px;
                 height: 45px;
+            }
+            
+            .btn {
+                padding: 10px 15px;
+                min-width: 100px;
                 font-size: 14px;
             }
         }
@@ -838,13 +921,13 @@
                 <i class="fas fa-signal"></i> <span id="statusText">Ready to connect</span>
             </div>
             <ul class="nav-menu">
-                <li class="nav-item active">
-                    <a class="nav-link active" data-section="audio-call">
+                <li class="nav-item">
+                    <a class="nav-link" data-section="audio-call">
                         <i class="fas fa-phone"></i> Audio Call
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-section="video-call">
+                <li class="nav-item active">
+                    <a class="nav-link active" data-section="video-call">
                         <i class="fas fa-video"></i> Video Call
                     </a>
                 </li>
@@ -862,7 +945,7 @@
         </div>
 
         <div class="main-content">
-            <div class="section active" id="audio-call-section">
+            <div class="section" id="audio-call-section">
                 <div class="card">
                     <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
@@ -932,7 +1015,7 @@
                 </div>
             </div>
 
-            <div class="section" id="video-call-section">
+            <div class="section active" id="video-call-section">
                 <div class="card">
                     <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
@@ -957,24 +1040,44 @@
                             <i class="fas fa-copy"></i>
                         </button>
                     </div>
-                    <div id="videoRemoteVideoContainer">
-                        <video id="video-remote-video" autoplay playsinline></video>
-                        <video id="video-local-video" autoplay playsinline muted></video>
+                    
+                    <div class="video-container">
+                        <video id="video-remote-video" class="remote-video" autoplay playsinline></video>
+                        <video id="video-local-video" class="local-video" autoplay playsinline muted></video>
                         <div class="spinner" id="videoSpinner"></div>
-                    </div>
-                    <div class="call-controls" id="videoControls" style="display: none;">
-                        <button class="control-btn mute" id="videoVideoToggle">
-                            <i class="fas fa-video"></i>
-                        </button>
-                        <button class="control-btn mute" id="videoAudioToggle">
-                            <i class="fas fa-microphone"></i>
-                        </button>
-                        <button class="control-btn reconnect" id="reconnectVideo">
+                        
+                        <!-- Fullscreen button -->
+                        <div class="fullscreen-btn" id="fullscreenBtn">
+                            <i class="fas fa-expand"></i>
+                        </div>
+                        
+                        <!-- Camera switch button for mobile -->
+                        <div class="camera-switch" id="cameraSwitch">
                             <i class="fas fa-sync-alt"></i>
-                        </button>
-                        <button class="control-btn end" id="endVideoCall">
-                            <i class="fas fa-phone-slash"></i>
-                        </button>
+                        </div>
+                        
+                        <!-- Video controls -->
+                        <div class="video-controls" id="videoControls" style="display: none;">
+                            <button class="control-btn mute" id="videoVideoToggle">
+                                <i class="fas fa-video"></i>
+                            </button>
+                            <button class="control-btn mute" id="videoAudioToggle">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                            <button class="control-btn end" id="endVideoCall">
+                                <i class="fas fa-phone-slash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Device selection dropdown -->
+                    <div class="input-group" style="margin-top: 15px;">
+                        <select id="cameraSelect" class="device-select">
+                            <option value="">Select Camera</option>
+                        </select>
+                        <select id="microphoneSelect" class="device-select">
+                            <option value="">Select Microphone</option>
+                        </select>
                     </div>
                     
                     <div class="reconnect-overlay" id="videoReconnectOverlay">
@@ -1034,6 +1137,14 @@
                             <label><strong>Mobile Optimization:</strong></label>
                             <input type="checkbox" id="mobile-optimization" checked>
                         </div>
+                        <div class="setting-item">
+                            <label><strong>Video Resolution:</strong></label>
+                            <select id="video-resolution">
+                                <option value="high">High (720p)</option>
+                                <option value="medium" selected>Medium (480p)</option>
+                                <option value="low">Low (360p)</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1043,17 +1154,24 @@
                     <div class="section-title">
                         <i class="fas fa-info-circle"></i> About
                     </div>
-                        <p>An Open-source communication platform.</p>
-                        <p><strong>Version:</strong> 3.0.1</p>
-                        <p><strong>Designed By:</strong> SatLoom Developers</p>
+                    <div class="about-content">
+                        <p>SatLoom is an open-source communication platform built with WebRTC technology.</p>
+                        <p><strong>Version:</strong> 4.1.0</p>
+                        <p><strong>Features:</strong></p>
+                        <ul style="margin-left: 20px; margin-top: 10px; color: var(--text-secondary);">
+                            <li>Cross-platform video calling</li>
+                            <li>End-to-end encryption</li>
+                            <li>Network resilience</li>
+                            <li>Device switching</li>
+                            <li>Mobile optimization</li>
+                        </ul>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Firebase for signaling -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
     <script>
@@ -1082,7 +1200,7 @@
             isStarted: false,
             timer: null,
             startTime: null,
-            currentMode: 'audio-call',
+            currentMode: 'video-call',
             userId: generateUserId(),
             sidebarVisible: false,
             diagnosticsEnabled: false,
@@ -1096,7 +1214,11 @@
             backgroundPersistence: true,
             networkResilience: true,
             lastIceRestart: 0,
-            signalingRef: null
+            signalingRef: null,
+            cameras: [],
+            microphones: [],
+            currentCamera: null,
+            currentMicrophone: null
         };
 
         // ========== DOM ELEMENT REFERENCES ========== //
@@ -1130,25 +1252,29 @@
             deviceType: document.getElementById('deviceType'),
             videoDeviceStatus: document.getElementById('videoDeviceStatus'),
             videoDeviceType: document.getElementById('videoDeviceType'),
-            connectionPersistence: document.getElementById('connectionPersistence')
+            connectionPersistence: document.getElementById('connectionPersistence'),
+            cameraSelect: document.getElementById('cameraSelect'),
+            microphoneSelect: document.getElementById('microphoneSelect'),
+            fullscreenBtn: document.getElementById('fullscreenBtn'),
+            cameraSwitch: document.getElementById('cameraSwitch')
         };
 
         // ========== WEBRTC CONFIG ========== //
         function getRTCConfiguration() {
             const strategy = domRefs.connectionStrategy.value;
             
-            // Updated ICE servers configuration with ExpressTurn STUN
+            // High-reliability ICE servers
             const iceServers = [
+                { urls: 'stun:stun.expressturn.com:3478' },
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
                 { urls: 'stun:stun2.l.google.com:19302' },
                 { urls: 'stun:stun3.l.google.com:19302' },
                 { urls: 'stun:stun4.l.google.com:19302' },
-                
                 {
-                    urls: 'turn:global.turn.twilio.com:3478?transport=udp',
-                    username: 'satloom',
-                    credential: 'satloom123'
+                    urls: 'turn:relay1.expressturn.com:3480',
+                    username: 'efPVTROUWWJ55A39IT',
+                    credential: 'yP21Uvqy20rU7Zgj'
                 },
                 {
                     urls: 'turn:global.turn.twilio.com:3478?transport=tcp',
@@ -1209,6 +1335,7 @@
             startNetworkMonitoring();
             detectDeviceType();
             applyMobileOptimization();
+            enumerateDevices();
             
             // Add event handlers for resilience
             document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -1224,18 +1351,11 @@
             const deviceType = appState.isMobile ? 'Mobile Device' : 'Desktop/Laptop';
             domRefs.deviceType.textContent = deviceType;
             domRefs.videoDeviceType.textContent = deviceType;
-            
-            if (appState.isMobile) {
-                document.body.classList.add('mobile-optimized');
-                logDiagnostic(`Running on mobile: ${navigator.userAgent}`, 'info');
-            } else {
-                logDiagnostic(`Running on desktop: ${navigator.userAgent}`, 'info');
-            }
         }
         
         function applyMobileOptimization() {
             if (appState.isMobile && document.getElementById('mobile-optimization').checked) {
-                logDiagnostic('Applying mobile optimization settings', 'info');
+                document.body.classList.add('mobile-optimized');
             }
         }
 
@@ -1271,6 +1391,16 @@
             document.getElementById('toggleVideoDiagnostics').addEventListener('click', () => toggleDiagnostics('video'));
             document.getElementById('reconnectVideo').addEventListener('click', () => restartICE('video'));
             document.getElementById('forceReconnectVideo').addEventListener('click', () => forceReconnect('video'));
+            
+            // Device selection
+            domRefs.cameraSelect.addEventListener('change', switchCamera);
+            domRefs.microphoneSelect.addEventListener('change', switchMicrophone);
+            
+            // Camera switch button
+            domRefs.cameraSwitch.addEventListener('click', toggleCamera);
+            
+            // Fullscreen button
+            domRefs.fullscreenBtn.addEventListener('click', toggleFullscreen);
 
             // Settings
             document.getElementById('notifications-toggle').addEventListener('change', saveSettings);
@@ -1279,6 +1409,7 @@
             domRefs.connectionStrategy.addEventListener('change', saveSettings);
             document.getElementById('reconnect-attempts').addEventListener('change', saveSettings);
             document.getElementById('mobile-optimization').addEventListener('change', saveSettings);
+            document.getElementById('video-resolution').addEventListener('change', saveSettings);
         }
 
         function loadSettings() {
@@ -1302,11 +1433,14 @@
             
             // Connection strategy
             const savedStrategy = localStorage.getItem('connectionStrategy') || 'balanced';
-            domRefs.connectionStrategy.value = savedStrategy;
+            document.getElementById('connection-strategy').value = savedStrategy;
             
             // Reconnection attempts
             appState.maxReconnectAttempts = parseInt(localStorage.getItem('reconnectAttempts') || 10);
             document.getElementById('reconnect-attempts').value = appState.maxReconnectAttempts;
+            
+            // Video resolution
+            document.getElementById('video-resolution').value = localStorage.getItem('videoResolution') || 'medium';
             
             // Load sidebar state
             appState.sidebarVisible = localStorage.getItem('sidebarVisible') === 'true';
@@ -1426,26 +1560,33 @@
         // ========== MEDIA MANAGEMENT ========== //
         async function initMedia(mode) {
             try {
+                const resolution = document.getElementById('video-resolution').value;
+                let videoConstraints = {
+                    width: { min: 320, ideal: resolution === 'high' ? 1280 : resolution === 'medium' ? 640 : 480 },
+                    height: { min: 240, ideal: resolution === 'high' ? 720 : resolution === 'medium' ? 480 : 360 },
+                    frameRate: { ideal: 24, max: 30 },
+                    facingMode: appState.isMobile ? { ideal: "user" } : "user"
+                };
+                
+                // Use selected camera if available
+                if (appState.currentCamera) {
+                    videoConstraints.deviceId = { exact: appState.currentCamera };
+                }
+                
+                // Use selected microphone if available
+                let audioConstraints = { 
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                };
+                
+                if (appState.currentMicrophone) {
+                    audioConstraints.deviceId = { exact: appState.currentMicrophone };
+                }
+                
                 const constraints = mode === 'video' ? 
-                    { 
-                        video: { 
-                            width: { min: 640, ideal: 1280 },
-                            height: { min: 480, ideal: 720 },
-                            frameRate: { ideal: 15, max: 30 },
-                            facingMode: appState.isMobile ? { ideal: "environment" } : "user"
-                        }, 
-                        audio: { 
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            autoGainControl: true
-                        } 
-                    } : { 
-                        audio: { 
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            autoGainControl: true
-                        } 
-                    };
+                    { video: videoConstraints, audio: audioConstraints } : 
+                    { audio: audioConstraints };
                 
                 appState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
                 
@@ -1463,6 +1604,177 @@
                     `Could not access ${mode === 'video' ? 'camera/microphone' : 'microphone'}. 
                     Please check permissions.`, 'error');
                 return false;
+            }
+        }
+        
+        // Enumerate available devices
+        async function enumerateDevices() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                appState.cameras = devices.filter(device => device.kind === 'videoinput');
+                appState.microphones = devices.filter(device => device.kind === 'audioinput');
+                
+                // Update camera dropdown
+                domRefs.cameraSelect.innerHTML = '<option value="">Select Camera</option>';
+                appState.cameras.forEach(camera => {
+                    const option = document.createElement('option');
+                    option.value = camera.dev极Id;
+                    option.text = camera.label || `Camera ${domRefs.cameraSelect.options.length}`;
+                    domRefs.cameraSelect.appendChild(option);
+                });
+                
+                // Update microphone dropdown
+                domRefs.microphoneSelect.innerHTML = '<option value="">Select Microphone</option>';
+                appState.microphones.forEach(mic => {
+                    const option = document.createElement('option');
+                    option.value = mic.deviceId;
+                    option.text = mic.label || `Microphone ${domRefs.microphoneSelect.options.length}`;
+                    domRefs.microphoneSelect.appendChild(option);
+                });
+                
+                if (appState.cameras.length > 0) {
+                    appState.currentCamera = appState.cameras[0].deviceId;
+                }
+                
+                if (appState.microphones.length > 0) {
+                    appState.currentMicrophone = appState.microphones[0].deviceId;
+                }
+                
+            } catch (err) {
+                console.error('Error enumerating devices:', err);
+            }
+        }
+        
+        // Switch camera
+        async function switchCamera() {
+            const deviceId = domRefs.cameraSelect.value;
+            if (!deviceId || !appState.localStream) return;
+            
+            try {
+                appState.currentCamera = deviceId;
+                
+                // Stop existing video tracks
+                appState.localStream.getVideoTracks().forEach(track => track.stop());
+                
+                // Get new video stream
+                const videoConstraints = {
+                    deviceId: { exact: deviceId },
+                    width: { min: 320, ideal: 640 },
+                    height: { min: 240, ideal: 480 },
+                    frameRate: { ideal: 24, max: 30 }
+                };
+                
+                const videoStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
+                
+                // Replace video track in local stream
+                const videoTrack = videoStream.getVideoTracks()[0];
+                const sender = appState.peerConnection.getSenders().find(s => s.track.kind === 'video');
+                if (sender) {
+                    sender.replaceTrack(videoTrack);
+                }
+                
+                // Update local video element
+                document.getElementById('video-local-video').srcObject = new MediaStream([videoTrack, ...appState.localStream.getAudioTracks()]);
+                
+                // Update appState localStream
+                appState.localStream = new MediaStream([videoTrack, ...appState.localStream.getAudioTracks()]);
+                
+                // Show notification
+                showNotification('Camera Changed', 'Camera has been switched successfully', 'success');
+                
+            } catch (err) {
+                console.error('Error switching camera:', err);
+                showNotification('Camera Error', 'Failed to switch camera', 'error');
+            }
+        }
+        
+        // Switch microphone
+        async function switchMicrophone() {
+            const deviceId = domRefs.microphoneSelect.value;
+            if (!deviceId || !appState.localStream) return;
+            
+            try {
+                appState.currentMicrophone = deviceId;
+                
+                // Stop existing audio tracks
+                appState.localStream.getAudioTracks().forEach(track => track.stop());
+                
+                // Get new audio stream
+                const audioConstraints = {
+                    deviceId: { exact: deviceId },
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                };
+                
+                const audioStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+                
+                // Replace audio track in local stream
+                const audioTrack = audioStream.getAudioTracks()[0];
+                const sender = appState.peerConnection.getSenders().find(s => s.track.kind === 'audio');
+                if (sender) {
+                    sender.replaceTrack(audioTrack);
+                }
+                
+                // Update appState localStream
+                appState.localStream = new MediaStream([...appState.localStream.getVideoTracks(), audioTrack]);
+                
+                // Show notification
+                showNotification('Microphone Changed', 'Microphone has been switched successfully', 'success');
+                
+            } catch (err) {
+                console.error('Error switching microphone:', err);
+                showNotification('Microphone Error', 'Failed to switch microphone', 'error');
+            }
+        }
+        
+        // Toggle between front and back camera
+        async function toggleCamera() {
+            if (appState.cameras.length < 2) {
+                showNotification('Camera Error', 'Only one camera available', 'warning');
+                return;
+            }
+            
+            // Find current camera index
+            const currentIndex = appState.cameras.findIndex(cam => cam.deviceId === appState.currentCamera);
+            
+            // Switch to next camera
+            const nextIndex = (currentIndex + 1) % appState.cameras.length;
+            appState.currentCamera = appState.cameras[nextIndex].deviceId;
+            
+            // Update dropdown selection
+            domRefs.cameraSelect.value = appState.currentCamera;
+            
+            // Switch camera
+            await switchCamera();
+        }
+        
+        // Toggle fullscreen mode
+        function toggleFullscreen() {
+            const videoContainer = document.querySelector('.video-container');
+            
+            if (!document.fullscreenElement) {
+                if (videoContainer.requestFullscreen) {
+                    videoContainer.requestFullscreen();
+                } else if (videoContainer.mozRequestFullScreen) { /* Firefox */
+                    videoContainer.mozRequestFullScreen();
+                } else if (videoContainer.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+                    videoContainer.webkitRequestFullscreen();
+                } else if (videoContainer.msRequestFullscreen) { /* IE/Edge */
+                    videoContainer.msRequestFullscreen();
+                }
+                domRefs.fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.mozCancelFullScreen) { /* Firefox */
+                    document.mozCancelFullScreen();
+                } else if (document.webkitExitFullscreen) { /* Chrome, Safari & Opera */
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) { /* IE/Edge */
+                    document.msExitFullscreen();
+                }
+                domRefs.fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
             }
         }
 
@@ -1499,7 +1811,6 @@
 
         function handleRemoteStream(event) {
             console.log('Remote stream received');
-            logDiagnostic('Remote stream received', 'success');
             appState.remoteStream = event.streams[0];
             
             if (appState.currentMode === 'video-call') {
@@ -1529,8 +1840,6 @@
                              candidate.includes('typ srflx') ? 'STUN (Reflexive)' : 
                              'Host (Direct)';
                 
-                logDiagnostic(`ICE candidate gathered: ${type}`, 'info');
-                
                 sendMessage({
                     type: 'candidate',
                     candidate: event.candidate.candidate,
@@ -1542,7 +1851,6 @@
 
         function handleICEConnectionStateChange() {
             const state = appState.peerConnection.iceConnectionState;
-            logDiagnostic(`ICE connection state changed: ${state}`, 'info');
             
             if (state === 'connected' || state === 'completed') {
                 updateStatus(`Call connected (${appState.roomId})`, true);
@@ -1551,7 +1859,6 @@
             } else if (state === 'disconnected' || state === 'failed') {
                 // Attempt to reconnect automatically
                 if (appState.reconnectAttempts < appState.maxReconnectAttempts) {
-                    logDiagnostic(`Connection lost, attempting to reconnect (${appState.reconnectAttempts + 1}/${appState.maxReconnectAttempts})`, 'warning');
                     appState.reconnectAttempts++;
                     
                     // Use exponential backoff for reconnection attempts
@@ -1565,7 +1872,6 @@
         
         function handleConnectionStateChange() {
             const state = appState.peerConnection.connectionState;
-            logDiagnostic(`Connection state changed: ${state}`, 'info');
             
             if (state === 'connected') {
                 // Update network status
@@ -1577,15 +1883,14 @@
         }
 
         function handleICEGatheringStateChange() {
-            logDiagnostic(`ICE gathering state: ${appState.peerConnection.iceGatheringState}`, 'info');
+            // Handle ICE gathering state changes if needed
         }
         
         function handleSignalingStateChange() {
-            logDiagnostic(`Signaling state: ${appState.peerConnection.signalingState}`, 'info');
+            // Handle signaling state changes if needed
         }
         
         function handleNegotiationNeeded() {
-            logDiagnostic('Negotiation needed event triggered', 'info');
             if (appState.isInitiator && appState.isStarted) {
                 createOffer();
             }
@@ -1635,7 +1940,6 @@
                         break;
                     case 'keepalive':
                         // Just acknowledge keepalive
-                        logDiagnostic('Received keepalive from peer', 'info');
                         break;
                 }
             });
@@ -1643,7 +1947,7 @@
 
         async function handleOffer(offer) {
             await appState.peerConnection.setRemoteDescription(
-                new RTCSessionDescription(offer));
+                new R极C SessionDescription(offer));
             
             const answer = await appState.peerConnection.createAnswer();
             await appState.peerConnection.setLocalDescription(answer);
@@ -1665,11 +1969,8 @@
                 const answer = await appState.peerConnection.createAnswer();
                 await appState.peerConnection.setLocalDescription(answer);
                 sendMessage(answer);
-                
-                logDiagnostic('ICE renegotiation completed', 'success');
             } catch (err) {
                 console.error('Renegotiation error:', err);
-                logDiagnostic(`ICE renegotiation failed: ${err.message}`, 'error');
             }
         }
 
@@ -1689,7 +1990,7 @@
                     sdp: offer.sdp
                 });
             } catch (err) {
-                logDiagnostic(`Failed to create offer: ${err.message}`, 'error');
+                console.error('Failed to create offer:', err);
             }
         }
 
@@ -1813,9 +2114,6 @@
             
             // Release wake lock
             releaseWakeLock();
-            
-            // Clear diagnostics
-            clearDiagnostics(mode);
         }
 
         function toggleVideo() {
@@ -1847,14 +2145,12 @@
         // ========== RECONNECTION MANAGEMENT ========== //
         async function restartICE(mode) {
             if (!appState.peerConnection || !appState.isStarted) {
-                logDiagnostic('Cannot restart ICE - no active connection', 'warning');
                 return;
             }
             
             // Rate limit ICE restarts (max once every 5 seconds)
             const now = Date.now();
             if (now - appState.lastIceRestart < 5000) {
-                logDiagnostic('ICE restart throttled (too frequent)', 'warning');
                 return;
             }
             appState.lastIceRestart = now;
@@ -1872,21 +2168,9 @@
                 await appState.peerConnection.setLocalDescription(offer);
                 sendMessage(offer);
                 
-                logDiagnostic('ICE restart initiated', 'info');
                 showNotification('Reconnecting', 'Attempting to re-establish connection');
-                
-                // Add timeout for faster fallback
-                setTimeout(() => {
-                    if (appState.peerConnection && 
-                        appState.peerConnection.iceConnectionState !== 'connected' &&
-                        appState.peerConnection.iceConnectionState !== 'completed') {
-                        logDiagnostic('Fast reconnect failed, trying full reconnect', 'warning');
-                        forceReconnect(mode);
-                    }
-                }, 5000);
             } catch (err) {
                 console.error('Error restarting ICE:', err);
-                logDiagnostic(`ICE restart failed: ${err.message}`, 'error');
                 showNotification('Reconnect Failed', 'Could not restart connection', 'error');
                 
                 // Hide reconnect overlay
@@ -1899,8 +2183,6 @@
         }
         
         function forceReconnect(mode) {
-            logDiagnostic('Force reconnection initiated', 'info');
-            
             // Close existing connection
             if (appState.peerConnection) {
                 appState.peerConnection.close();
@@ -1924,8 +2206,6 @@
                 
                 // Listen for network changes
                 navigator.connection.addEventListener('change', handleNetworkChange);
-            } else {
-                logDiagnostic('Network Information API not available', 'warning');
             }
             
             // Fallback to online/offline events
@@ -1940,8 +2220,6 @@
             const newEffectiveType = navigator.connection.effectiveType;
             const downlink = navigator.connection.downlink;
             
-            logDiagnostic(`Network changed: ${appState.networkType} → ${newNetworkType} (${newEffectiveType}, ${downlink}Mbps)`, 'info');
-            
             // Update network status
             if (newNetworkType === 'cellular' || newEffectiveType === 'slow-2g' || downlink < 1) {
                 updateNetworkStatus('poor');
@@ -1953,23 +2231,19 @@
             
             // If network quality degraded, consider restarting ICE
             if (appState.isStarted && (newNetworkType === 'cellular' || newEffectiveType === 'slow-2g')) {
-                logDiagnostic('Network quality degraded, attempting ICE restart', 'warning');
                 restartICE(appState.currentMode);
             }
         }
         
         function handleNetworkOnline() {
-            logDiagnostic('Network online event', 'info');
             updateNetworkStatus('good');
             
             if (appState.isStarted && appState.networkResilience) {
-                logDiagnostic('Network restored, attempting to reconnect', 'info');
                 restartICE(appState.currentMode);
             }
         }
         
         function handleNetworkOffline() {
-            logDiagnostic('Network offline event', 'warning');
             updateNetworkStatus('disconnected');
         }
         
@@ -2015,82 +2289,32 @@
             localStorage.setItem('networkResilience', 
                 document.getElementById('network-resilience').checked);
             localStorage.setItem('connectionStrategy', 
-                domRefs.connectionStrategy.value);
+                document.getElementById('connection-strategy').value);
             localStorage.setItem('reconnectAttempts', 
                 document.getElementById('reconnect-attempts').value);
             localStorage.setItem('mobileOptimization', 
                 document.getElementById('mobile-optimization').checked);
+            localStorage.setItem('videoResolution', 
+                document.getElementById('video-resolution').value);
             
             appState.backgroundPersistence = document.getElementById('background-persistence').checked;
             appState.networkResilience = document.getElementById('network-resilience').checked;
         }
-
+        
         // ========== DIAGNOSTICS ========== //
         function initDiagnostics() {
             // Load debug mode setting
             appState.diagnosticsEnabled = localStorage.getItem('debugMode') === 'true';
         }
         
-        function logDiagnostic(message, type = 'info') {
-            if (!appState.diagnosticsEnabled) return;
-            
-            const mode = appState.currentMode;
-            const diagnosticsContent = mode === 'audio-call' ? 
-                domRefs.audioDiagnosticsContent : domRefs.videoDiagnosticsContent;
-                
-            const diagnosticsContainer = mode === 'audio-call' ? 
-                domRefs.audioDiagnostics : domRefs.videoDiagnostics;
-                
-            const diagnosticEntry = document.createElement('div');
-            diagnosticEntry.className = `diagnostic-entry diagnostic-${type}`;
-            
-            const timestamp = new Date().toLocaleTimeString();
-            diagnosticEntry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
-            
-            diagnosticsContent.appendChild(diagnosticEntry);
-            diagnosticsContent.scrollTop = diagnosticsContent.scrollHeight;
-            
-            // Show diagnostics container if hidden
-            if (diagnosticsContainer.style.display === 'none') {
-                diagnosticsContainer.style.display = 'block';
-            }
-        }
-        
-        function clearDiagnostics(mode) {
-            const diagnosticsContent = mode === 'audio' ? 
-                domRefs.audioDiagnosticsContent : domRefs.videoDiagnosticsContent;
-                
-            diagnosticsContent.innerHTML = '';
-        }
-        
-        function toggleDiagnostics(mode) {
-            const diagnosticsContainer = mode === 'audio' ? 
-                domRefs.audioDiagnostics : domRefs.videoDiagnostics;
-                
-            const toggleButton = mode === 'audio' ? 
-                document.getElementById('toggleAudioDiagnostics') : 
-                document.getElementById('toggleVideoDiagnostics');
-                
-            if (diagnosticsContainer.style.display === 'none') {
-                diagnosticsContainer.style.display = 'block';
-                toggleButton.innerHTML = '<i class="fas fa-times"></i> Hide';
-            } else {
-                diagnosticsContainer.style.display = 'none';
-                toggleButton.innerHTML = '<i class="fas fa-eye"></i> Show';
-            }
-        }
-        
         // ========== CONNECTION RESILIENCE ========== //
         function handleVisibilityChange() {
             if (document.visibilityState === 'hidden') {
-                logDiagnostic('App backgrounded', 'info');
                 if (appState.isStarted && appState.backgroundPersistence) {
                     domRefs.connectionPersistence.style.display = 'block';
-                    logDiagnostic('Connection persistence enabled', 'success');
                 }
             } else {
                 domRefs.connectionPersistence.style.display = 'none';
-                logDiagnostic('App foregrounded', 'info');
                 
                 if (appState.isStarted) {
                     // Check if we need to reconnect
@@ -2098,10 +2322,7 @@
                         appState.peerConnection.iceConnectionState : 'disconnected';
                     
                     if (state !== 'connected' && state !== 'completed') {
-                        logDiagnostic('Connection lost in background, reconnecting', 'warning');
                         restartICE(appState.currentMode);
-                    } else {
-                        logDiagnostic('Connection maintained in background', 'success');
                     }
                 }
             }
@@ -2119,9 +2340,8 @@
                 const dummyRef = database.ref('dummy-connection');
                 await dummyRef.set({ timestamp: Date.now() });
                 await dummyRef.remove();
-                logDiagnostic('Signaling pre-connected', 'success');
             } catch (err) {
-                logDiagnostic('Signaling pre-connect failed', 'warning');
+                console.error('Signaling pre-connect failed');
             }
         }
         
@@ -2130,9 +2350,8 @@
             if ('wakeLock' in navigator) {
                 try {
                     appState.wakeLock = await navigator.wakeLock.request('screen');
-                    logDiagnostic('Wake lock acquired', 'success');
                 } catch (err) {
-                    logDiagnostic('Wake lock failed: ' + err.message, 'warning');
+                    console.error('Wake lock failed:', err);
                 }
             }
         }
@@ -2141,7 +2360,6 @@
             if (appState.wakeLock) {
                 appState.wakeLock.release();
                 appState.wakeLock = null;
-                logDiagnostic('Wake lock released', 'info');
             }
         }
         
