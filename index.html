@@ -661,13 +661,15 @@
         }
 
         function handleRemoteStream(event) {
-            appState.remoteStream = event.streams[0];
-            const remoteAudio = new Audio();
-            remoteAudio.srcObject = event.streams[0];
-            remoteAudio.play();
-            appState.reconnectAttempts = 0;
-            showNotification('Connected', 'Call established successfully', 'success');
-        }
+    appState.remoteStream = event.streams[0];
+    const remoteAudio = new Audio();
+    remoteAudio.srcObject = event.streams[0];
+    remoteAudio.autoplay = true; // Ensures audio plays without user interaction
+    remoteAudio.playsInline = true; // Helps on mobile browsers
+    document.getElementById('audioVisualizer').appendChild(remoteAudio);
+    appState.reconnectAttempts = 0;
+    showNotification('Connected', 'Call established successfully', 'success');
+}
 
         function handleICECandidate(event) {
             if (event.candidate) {
