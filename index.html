@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - Ultra-Resilient WebRTC Calling</title>
+    <title>SatLoom - For Login Free Calling</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -567,6 +567,67 @@
             display: none;
         }
 
+        .diagnostics-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .diagnostics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .diagnostics-content {
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .diagnostic-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.1);
+        }
+        
+        .diagnostic-success {
+            color: var(--success-color);
+        }
+        
+        .diagnostic-warning {
+            color: var(--warning-color);
+        }
+        
+        .diagnostic-error {
+            color: var(--error-color);
+        }
+        
+        .toggle-diagnostics {
+            background: none;
+            border: none;
+            color: var(--accent-color);
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .device-status {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 14px;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         @keyframes gradient {
             0% {background-position: 0% 50%}
             50% {background-position: 100% 50%}
@@ -693,6 +754,10 @@
     </style>
 </head>
 <body class="dark-mode">
+   <!-- <div class="connection-persistence-indicator" id="connectionPersistence">
+        <i class="fas fa-shield-alt"></i> Connection preserved in background
+    </div>-->
+    
     <div class="sidebar-toggle" id="sidebarToggle">
         <i class="fas fa-bars"></i>
     </div>
@@ -806,6 +871,19 @@
                             <i class="fas fa-bolt"></i> Force Reconnect
                         </button>
                     </div>
+                    
+                    <div class="diagnostics-container" id="audioDiagnostics">
+                        <div class="diagnostics-header">
+                            <h3><i class="fas fa-wrench"></i> Connection Diagnostics</h3>
+                            <button class="toggle-diagnostics" id="toggleAudioDiagnostics">
+                                <i class="fas fa-times"></i> Hide
+                            </button>
+                        </div>
+                        <div class="diagnostics-content" id="audioDiagnosticsContent"></div>
+                    </div>
+                  <!--  <div class="device-status" id="deviceStatus">
+                        <i class="fas fa-mobile-alt"></i> <span id="deviceType">Detecting device...</span>
+                    </div>-->
                 </div>
             </div>
 
@@ -843,6 +921,10 @@
                             <label><strong>Mobile Optimization:</strong></label>
                             <input type="checkbox" id="mobile-optimization" checked>
                         </div>
+                        <div class="setting-item">
+                            <label><strong>Diagnostics Mode:</strong></label>
+                            <input type="checkbox" id="diagnostics-toggle">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -854,8 +936,9 @@
                     </div>
                     <div class="about-content">
                         <p>An Open-source communication platform.</p>
-                        <p><strong>Version:</strong> 3.0.1</p>
+                        <p><strong>Version:</strong> 3.1.0</p>
                         <p><strong>Designed By:</strong> SatLoom Developers</p>
+                        <p><strong>Features:</strong> Network resilience and Fast reconnection</p>
                     </div>
                 </div>
             </div>
@@ -895,6 +978,7 @@
             currentMode: 'audio-call',
             userId: generateUserId(),
             sidebarVisible: false,
+            diagnosticsEnabled: false,
             networkType: 'unknown',
             networkQuality: 'good',
             reconnectAttempts: 0,
@@ -924,12 +1008,16 @@
                 'settings': document.getElementById('settings-section'),
                 'about': document.getElementById('about-section')
             },
+            audioDiagnostics: document.getElementById('audioDiagnostics'),
+            audioDiagnosticsContent: document.getElementById('audioDiagnosticsContent'),
             connectionStrategy: document.getElementById('connection-strategy'),
             networkStatus: document.getElementById('networkStatus'),
             networkIcon: document.getElementById('networkIcon'),
             networkText: document.getElementById('networkText'),
             audioReconnectOverlay: document.getElementById('audioReconnectOverlay'),
-            connectionPersistence: document.getElementById('connectionPersistence')
+            connectionPersistence: document.getElementById('connectionPersistence'),
+            deviceStatus: document.getElementById('deviceStatus'),
+            deviceType: document.getElementById('deviceType')
         };
 
         // ========== WEBRTC CONFIG ========== //
@@ -942,7 +1030,6 @@
                 { urls: 'stun:stun2.l.google.com:19302' },
                 { urls: 'stun:stun3.l.google.com:19302' },
                 { urls: 'stun:stun4.l.google.com:19302' },
-                
                 {
                     urls: 'turn:global.turn.twilio.com:3478?transport=udp',
                     username: 'satloom',
@@ -1001,6 +1088,7 @@
             autoJoinRoom();
             updateSidebarToggleIcon();
             startNetworkMonitoring();
+            detectDeviceType();
             applyMobileOptimization();
             
             document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -1011,9 +1099,14 @@
             startBackgroundConnectionKeeper();
         }
         
+        function detectDeviceType() {
+            const deviceType = appState.isMobile ? 'Mobile Device' : 'Desktop/Laptop';
+            domRefs.deviceType.textContent = deviceType;
+        }
+        
         function applyMobileOptimization() {
             if (appState.isMobile && document.getElementById('mobile-optimization').checked) {
-                // Mobile-specific optimizations
+                logDiagnostic('Applying mobile optimization settings', 'info');
             }
         }
 
@@ -1033,6 +1126,7 @@
             document.getElementById('copyAudioLink').addEventListener('click', () => copyLink('audio'));
             document.getElementById('reconnectAudio').addEventListener('click', () => restartICE('audio'));
             document.getElementById('forceReconnectAudio').addEventListener('click', () => forceReconnect('audio'));
+            document.getElementById('toggleAudioDiagnostics').addEventListener('click', () => toggleDiagnostics('audio'));
 
             document.getElementById('notifications-toggle').addEventListener('change', saveSettings);
             document.getElementById('background-persistence').addEventListener('change', saveSettings);
@@ -1040,6 +1134,7 @@
             domRefs.connectionStrategy.addEventListener('change', saveSettings);
             document.getElementById('reconnect-attempts').addEventListener('change', saveSettings);
             document.getElementById('mobile-optimization').addEventListener('change', saveSettings);
+            document.getElementById('diagnostics-toggle').addEventListener('change', saveSettings);
         }
 
         function loadSettings() {
@@ -1056,9 +1151,12 @@
                 localStorage.getItem('networkResilience') !== 'false';
             document.getElementById('mobile-optimization').checked = 
                 localStorage.getItem('mobileOptimization') !== 'false';
+            document.getElementById('diagnostics-toggle').checked = 
+                localStorage.getItem('diagnosticsEnabled') === 'true';
                 
             appState.backgroundPersistence = document.getElementById('background-persistence').checked;
             appState.networkResilience = document.getElementById('network-resilience').checked;
+            appState.diagnosticsEnabled = document.getElementById('diagnostics-toggle').checked;
             
             const savedStrategy = localStorage.getItem('connectionStrategy') || 'balanced';
             domRefs.connectionStrategy.value = savedStrategy;
@@ -1224,25 +1322,14 @@
         }
 
         function handleRemoteStream(event) {
-            console.log('Remote stream received');
             logDiagnostic('Remote stream received', 'success');
             appState.remoteStream = event.streams[0];
             
-            if (appState.currentMode === 'video-call') {
-                const remoteVideo = document.getElementById('video-remote-video');
-                remoteVideo.srcObject = event.streams[0];
-                document.getElementById('videoSpinner').style.display = 'none';
-            } else if (appState.currentMode === 'audio-call') {
-                const remoteAudio = document.getElementById('audio-remote-audio');
-                remoteAudio.srcObject = event.streams[0];
-            }
+            const remoteAudio = document.getElementById('audio-remote-audio');
+            remoteAudio.srcObject = event.streams[0];
             
-            // Hide reconnect overlay if visible
-            if (appState.currentMode === 'audio-call') {
-                domRefs.audioReconnectOverlay.style.display = 'none';
-            } else if (appState.currentMode === 'video-call') {
-                domRefs.videoReconnectOverlay.style.display = 'none';
-            }
+            // Hide reconnect overlay
+            domRefs.audioReconnectOverlay.style.display = 'none';
             
             // Reset reconnection attempts on successful stream
             appState.reconnectAttempts = 0;
@@ -1282,7 +1369,7 @@
                     
                     // Use exponential backoff for reconnection attempts
                     const delay = Math.min(1000 * Math.pow(2, appState.reconnectAttempts), 30000);
-                    setTimeout(() => restartICE(appState.currentMode), delay);
+                    setTimeout(() => restartICE('audio'), delay);
                 } else {
                     showNotification('Connection Failed', 'Maximum reconnection attempts reached', 'error');
                 }
@@ -1316,7 +1403,6 @@
                 createOffer();
             }
         }
-
 
         // ========== SIGNALING ========== //
         function initSignaling() {
@@ -1593,7 +1679,7 @@
             appState.networkType = newNetworkType;
             
             if (appState.isStarted && (newNetworkType === 'cellular' || newEffectiveType === 'slow-2g')) {
-                restartICE(appState.currentMode);
+                restartICE('audio');
             }
         }
         
@@ -1601,7 +1687,7 @@
             updateNetworkStatus('good');
             
             if (appState.isStarted && appState.networkResilience) {
-                restartICE(appState.currentMode);
+                restartICE('audio');
             }
         }
         
@@ -1656,26 +1742,71 @@
                 document.getElementById('reconnect-attempts').value);
             localStorage.setItem('mobileOptimization', 
                 document.getElementById('mobile-optimization').checked);
+            localStorage.setItem('diagnosticsEnabled', 
+                document.getElementById('diagnostics-toggle').checked);
             
             appState.backgroundPersistence = document.getElementById('background-persistence').checked;
             appState.networkResilience = document.getElementById('network-resilience').checked;
+            appState.diagnosticsEnabled = document.getElementById('diagnostics-toggle').checked;
         }
 
+        // ========== DIAGNOSTICS ========== //
+        function logDiagnostic(message, type = 'info') {
+            if (!appState.diagnosticsEnabled) return;
+            
+            const diagnosticsContent = domRefs.audioDiagnosticsContent;
+            const diagnosticsContainer = domRefs.audioDiagnostics;
+                
+            const diagnosticEntry = document.createElement('div');
+            diagnosticEntry.className = `diagnostic-entry diagnostic-${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            diagnosticEntry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+            
+            diagnosticsContent.appendChild(diagnosticEntry);
+            diagnosticsContent.scrollTop = diagnosticsContent.scrollHeight;
+            
+            // Show diagnostics container if hidden
+            if (diagnosticsContainer.style.display === 'none') {
+                diagnosticsContainer.style.display = 'block';
+            }
+        }
+        
+        function toggleDiagnostics(mode) {
+            const diagnosticsContainer = domRefs.audioDiagnostics;
+            const toggleButton = document.getElementById('toggleAudioDiagnostics');
+                
+            if (diagnosticsContainer.style.display === 'none') {
+                diagnosticsContainer.style.display = 'block';
+                toggleButton.innerHTML = '<i class="fas fa-times"></i> Hide';
+            } else {
+                diagnosticsContainer.style.display = 'none';
+                toggleButton.innerHTML = '<i class="fas fa-eye"></i> Show';
+            }
+        }
+        
         // ========== CONNECTION RESILIENCE ========== //
         function handleVisibilityChange() {
             if (document.visibilityState === 'hidden') {
+                logDiagnostic('App backgrounded', 'info');
                 if (appState.isStarted && appState.backgroundPersistence) {
                     domRefs.connectionPersistence.style.display = 'block';
+                    logDiagnostic('Connection persistence enabled', 'success');
                 }
             } else {
                 domRefs.connectionPersistence.style.display = 'none';
+                logDiagnostic('App foregrounded', 'info');
                 
                 if (appState.isStarted) {
+                    // Check if we need to reconnect
                     const state = appState.peerConnection ? 
                         appState.peerConnection.iceConnectionState : 'disconnected';
                     
                     if (state !== 'connected' && state !== 'completed') {
-                        restartICE(appState.currentMode);
+                        logDiagnostic('Connection lost in background, reconnecting', 'warning');
+                        restartICE('audio');
+                    } else {
+                        logDiagnostic('Connection maintained in background', 'success');
                     }
                 }
             }
@@ -1692,14 +1823,21 @@
                 const dummyRef = database.ref('dummy-connection');
                 await dummyRef.set({ timestamp: Date.now() });
                 await dummyRef.remove();
-            } catch (err) {}
+                logDiagnostic('Signaling pre-connected', 'success');
+            } catch (err) {
+                logDiagnostic('Signaling pre-connect failed', 'warning');
+            }
         }
         
+        // Wake Lock API to prevent device sleep during calls
         async function acquireWakeLock() {
             if ('wakeLock' in navigator) {
                 try {
                     appState.wakeLock = await navigator.wakeLock.request('screen');
-                } catch (err) {}
+                    logDiagnostic('Wake lock acquired', 'success');
+                } catch (err) {
+                    logDiagnostic('Wake lock failed: ' + err.message, 'warning');
+                }
             }
         }
         
@@ -1707,17 +1845,19 @@
             if (appState.wakeLock) {
                 appState.wakeLock.release();
                 appState.wakeLock = null;
+                logDiagnostic('Wake lock released', 'info');
             }
         }
         
         function startBackgroundConnectionKeeper() {
             if (!appState.backgroundPersistence) return;
             
+            // Send periodic keepalive messages to maintain signaling connection
             setInterval(() => {
                 if (appState.isStarted && appState.roomId) {
                     sendMessage({ type: 'keepalive', timestamp: Date.now() });
                 }
-            }, 20000);
+            }, 20000); // Every 20 seconds
         }
     </script>
 </body>
