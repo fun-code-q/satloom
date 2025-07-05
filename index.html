@@ -78,6 +78,7 @@
             background: linear-gradient(135deg, #3a7bd5, #00d2ff);
         }
 
+        /* Consistent logo text gradient in both themes */
         .logo-text {
             font-size: 32px;
             font-weight: 700;
@@ -408,6 +409,53 @@
                 height: 50px;
             }
         }
+        
+        /* Audio activation panel */
+        .audio-activation-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(7, 25, 43, 0.95);
+            border-radius: 12px;
+            padding: 15px 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(58, 123, 213, 0.3);
+            display: none;
+            z-index: 1000;
+        }
+        
+        .light-mode .audio-activation-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(30, 144, 255, 0.3);
+        }
+        
+        .audio-activation-panel p {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .audio-activation-panel button {
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .light-mode .audio-activation-panel button {
+            background: linear-gradient(135deg, #1e90ff, #00bfff);
+        }
+        
+        .audio-activation-panel button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(58, 123, 213, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -421,6 +469,11 @@
             <div class="notification-title" id="notificationTitle">Notification</div>
             <div id="notificationMessage"></div>
         </div>
+    </div>
+    
+    <div class="audio-activation-panel" id="audioActivationPanel">
+        <p>Audio playback is blocked. Click to enable:</p>
+        <button id="activateAudioBtn">Enable Audio</button>
     </div>
 
     <div class="app-container">
@@ -473,6 +526,9 @@
     <div class="footer">
         <p>v3.1.0 | Powered by <a href="#">SatLoom Developers</a></p>
     </div>
+    
+    <!-- Hidden audio element for remote stream -->
+    <audio id="remoteAudio" autoplay playsinline style="display: none;"></audio>
 
     <!-- Firebase for signaling -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -496,6 +552,7 @@
 
         // ========== WEBRTC CONFIG ========== //
         function getRTCConfiguration() {
+            // ICE servers configuration
             const iceServers = [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
@@ -537,17 +594,20 @@
             maxReconnectAttempts: 10,
             lastIceRestart: 0,
             signalingRef: null,
-            isMuted: false
+            isMuted: false,
+            remoteAudioElement: null
         };
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', initApp);
 
         function initApp() {
+            appState.remoteAudioElement = document.getElementById('remoteAudio');
             setupEventListeners();
             autoJoinRoom();
             updateThemeIcon();
             
+            // Load saved theme preference
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme === 'light') {
                 document.body.classList.add('light-mode');
@@ -556,11 +616,13 @@
         }
 
         function setupEventListeners() {
+            // Audio call controls
             document.getElementById('generateAudioRoom').addEventListener('click', generateAudioRoom);
             document.getElementById('copyRoomLink').addEventListener('click', copyRoomLink);
             document.getElementById('audioAudioToggle').addEventListener('click', toggleAudio);
             document.getElementById('endAudioCall').addEventListener('click', endAudioCall);
             document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+            document.getElementById('activateAudioBtn').addEventListener('click', activateAudio);
         }
 
         function generateUserId() {
@@ -636,12 +698,14 @@
                 const pcConfig = getRTCConfiguration();
                 appState.peerConnection = new RTCPeerConnection(pcConfig);
                 
+                // Add local stream tracks
                 if (appState.localStream) {
                     appState.localStream.getTracks().forEach(track => {
                         appState.peerConnection.addTrack(track, appState.localStream);
                     });
                 }
                 
+                // Set up event handlers
                 appState.peerConnection.ontrack = handleRemoteStream;
                 appState.peerConnection.onicecandidate = handleICECandidate;
                 appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
@@ -656,19 +720,31 @@
 
         function handleRemoteStream(event) {
             appState.remoteStream = event.streams[0];
-            const audioTracks = appState.remoteStream.getAudioTracks();
-            if (audioTracks.length > 0) {
-                const remoteAudio = new Audio();
-                remoteAudio.srcObject = appState.remoteStream;
-                remoteAudio.play().catch(err => {
-                    console.error('Failed to play remote audio:', err);
-                    showNotification('Audio Error', 'Failed to play remote audio', 'error');
+            
+            // Use the hidden audio element for remote audio
+            if (appState.remoteAudioElement) {
+                appState.remoteAudioElement.srcObject = appState.remoteStream;
+                
+                // Handle autoplay restrictions
+                appState.remoteAudioElement.play().catch(e => {
+                    console.error('Autoplay blocked:', e);
+                    document.getElementById('audioActivationPanel').style.display = 'block';
                 });
-            } else {
-                showNotification('No Audio', 'Remote stream has no audio tracks', 'warning');
             }
+            
             appState.reconnectAttempts = 0;
             showNotification('Connected', 'Call established successfully', 'success');
+        }
+
+        function activateAudio() {
+            if (appState.remoteAudioElement && appState.remoteAudioElement.srcObject) {
+                appState.remoteAudioElement.play().then(() => {
+                    document.getElementById('audioActivationPanel').style.display = 'none';
+                }).catch(e => {
+                    console.error('Still cannot play audio:', e);
+                    showNotification('Audio Error', 'Failed to enable audio. Try clicking the page first.', 'error');
+                });
+            }
         }
 
         function handleICECandidate(event) {
@@ -686,11 +762,6 @@
             const state = appState.peerConnection.iceConnectionState;
             
             if (state === 'connected' || state === 'completed') {
-                if (!appState.isStarted) {
-                    appState.isStarted = true;
-                    startTimer();
-                    document.getElementById('audioControls').style.display = 'flex';
-                }
                 updateStatus(`Call connected (${appState.roomId})`, true);
                 appState.reconnectAttempts = 0;
             } else if (state === 'disconnected' || state === 'failed') {
@@ -751,6 +822,10 @@
             await appState.peerConnection.setLocalDescription(answer);
             
             sendMessage(answer);
+            appState.isStarted = true;
+            startTimer();
+            updateStatus(`In audio call (${appState.roomId})`, true);
+            document.getElementById('audioControls').style.display = 'flex';
         }
 
         function sendMessage(message) {
@@ -758,26 +833,47 @@
             const dbRef = database.ref(`rooms/${appState.roomId}/messages`);
             dbRef.push(JSON.stringify(message));
         }
+        
+        async function createOffer() {
+            try {
+                const offer = await appState.peerConnection.createOffer();
+                await appState.peerConnection.setLocalDescription(offer);
+                sendMessage({
+                    type: 'offer',
+                    sdp: offer.sdp
+                });
+            } catch (err) {
+                console.error('Failed to create offer:', err);
+            }
+        }
 
         async function generateAudioRoom() {
             appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
             
+            // Show copy button
             document.getElementById('copyRoomLink').style.display = 'flex';
             
             showNotification('Room Created', `Room ID: ${appState.roomId}`, 'success');
             
             try {
+                // Initialize media
                 const mediaInitialized = await initMedia();
                 if (!mediaInitialized) return;
                 
+                // Create peer connection
                 if (!createPeerConnection()) return;
                 
+                // Create offer
                 appState.isInitiator = true;
                 initSignaling();
                 const offer = await appState.peerConnection.createOffer();
                 await appState.peerConnection.setLocalDescription(offer);
                 sendMessage({ type: 'offer', sdp: offer.sdp });
                 
+                appState.isStarted = true;
+                startTimer();
+                updateStatus(`In call (${appState.roomId})`, true);
+                document.getElementById('audioControls').style.display = 'flex';
                 document.getElementById('generateAudioRoom').style.display = 'none';
                 
                 showNotification('Call Started', 'You are now the host', 'success');
@@ -800,6 +896,7 @@
             navigator.clipboard.writeText(fullLink).then(() => {
                 showNotification('Copied', 'Room link copied to clipboard', 'success');
                 
+                // Visual feedback
                 const copyBtn = document.getElementById('copyRoomLink');
                 copyBtn.innerHTML = '<i class="fas fa-check"></i>';
                 copyBtn.style.background = 'linear-gradient(135deg, #4CAF50, #2E7D32)';
@@ -835,6 +932,7 @@
         async function restartICE() {
             if (!appState.peerConnection || !appState.isStarted) return;
             
+            // Rate limit ICE restarts
             const now = Date.now();
             if (now - appState.lastIceRestart < 5000) return;
             appState.lastIceRestart = now;
@@ -860,21 +958,31 @@
                 appState.localStream = null;
             }
             
+            // Reset UI elements
             document.getElementById('audioControls').style.display = 'none';
             document.getElementById('copyRoomLink').style.display = 'none';
             document.getElementById('generateAudioRoom').style.display = 'flex';
+            document.getElementById('audioActivationPanel').style.display = 'none';
             stopTimer();
             updateStatus('Call ended', false);
             showNotification('Call Ended', 'Your call has been disconnected');
             
+            // Clean up remote audio
+            if (appState.remoteAudioElement) {
+                appState.remoteAudioElement.srcObject = null;
+            }
+            
+            // Send bye message if in room
             if (appState.roomId) {
                 sendMessage({ type: 'bye' });
             }
             
+            // Reset state
             appState.isStarted = false;
             appState.roomId = null;
             appState.reconnectAttempts = 0;
             
+            // Reset mute button
             const muteBtn = document.getElementById('audioAudioToggle');
             muteBtn.innerHTML = '<i class="fas fa-microphone"></i>';
             muteBtn.style.background = 'linear-gradient(135deg, #3a7bd5, #00bfff)';
@@ -894,9 +1002,11 @@
             appState.roomId = roomId;
             
             try {
+                // Initialize media
                 const mediaInitialized = await initMedia();
                 if (!mediaInitialized) return;
                 
+                // Create peer connection
                 if (!createPeerConnection()) return;
                 
                 appState.isInitiator = false;
