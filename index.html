@@ -1000,43 +1000,160 @@
                 </div>
             </div>
 
-            <div class="section" id="settings-section">
-                <div class="card">
-                    <div class="section-title">
-                        <i class="fas fa-cog"></i> Settings
-                    </div>
-                    <div class="settings-list">
-                        <div class="setting-item">
-                            <label><strong>Notifications:</strong></label>
-                            <input type="checkbox" id="notifications-toggle" checked>
-                        </div>
-                        <div class="setting-item">
-                            <label><strong>Background Persistence:</strong></label>
-                            <input type="checkbox" id="background-persistence" checked>
-                        </div>
-                        <div class="setting-item">
-                            <label><strong>Network Resilience:</strong></label>
-                            <input type="checkbox" id="network-resilience" checked>
-                        </div>
-                        <div class="setting-item">
-                            <label><strong>Connection Strategy:</strong></label>
-                            <select id="connection-strategy">
-                                <option value="balanced">Balanced (Recommended)</option>
-                                <option value="relay">Force Relay (VPN/Firewall)</option>
-                                <option value="direct">Direct Connection Only</option>
-                            </select>
-                        </div>
-                        <div class="setting-item">
-                            <label><strong>Reconnection Attempts:</strong></label>
-                            <input type="number" id="reconnect-attempts" min="1" max="20" value="10">
-                        </div>
-                        <div class="setting-item">
-                            <label><strong>Mobile Optimization:</strong></label>
-                            <input type="checkbox" id="mobile-optimization" checked>
-                        </div>
-                    </div>
-                </div>
+          <div class="section" id="settings-section">
+    <div class="card">
+        <div class="section-title">
+            <i class="fas fa-cog"></i> Settings
+        </div>
+        
+        <!-- Settings Categories -->
+        <div class="settings-categories">
+            <button class="category-tab active" data-category="general">General</button>
+            <button class="category-tab" data-category="media">Media</button>
+            <button class="category-tab" data-category="network">Network</button>
+            <button class="category-tab" data-category="performance">Performance</button>
+        </div>
+
+        <!-- General Settings -->
+        <div class="settings-group" data-category="general">
+            <div class="setting-item">
+                <label for="notifications-toggle">
+                    <i class="fas fa-bell"></i> Notifications
+                </label>
+                <input type="checkbox" id="notifications-toggle" checked>
+                <span class="tooltip">Enable system notifications</span>
             </div>
+            <div class="setting-item">
+                <label for="notification-sound-toggle">
+                    <i class="fas fa-volume-up"></i> Notification Sound
+                </label>
+                <input type="checkbox" id="notification-sound-toggle" checked>
+                <span class="tooltip">Play sound for incoming notifications</span>
+            </div>
+            <div class="setting-item">
+                <label for="mobile-optimization">
+                    <i class="fas fa-mobile-alt"></i> Mobile Optimization
+                </label>
+                <input type="checkbox" id="mobile-optimization" checked>
+                <span class="tooltip">Optimize UI for mobile devices</span>
+            </div>
+        </div>
+
+        <!-- Media Settings -->
+        <div class="settings-group hidden" data-category="media">
+            <div class="setting-item">
+                <label for="audio-device">
+                    <i class="fas fa-microphone"></i> Audio Input Device
+                </label>
+                <select id="audio-device" class="device-select">
+                    <option value="default">Default Device</option>
+                    <!-- Filled dynamically via JS -->
+                </select>
+            </div>
+            <div class="setting-item">
+                <label for="video-device">
+                    <i class="fas fa-video"></i> Video Device
+                </label>
+                <select id="video-device" class="device-select">
+                    <option value="default">Default Device</option>
+                    <!-- Filled dynamically via JS -->
+                </select>
+            </div>
+            <div class="setting-item">
+                <label for="audio-quality">
+                    <i class="fas fa-signal"></i> Audio Quality
+                </label>
+                <select id="audio-quality">
+                    <option value="high">High (48kHz)</option>
+                    <option value="medium" selected>Medium (16kHz)</option>
+                    <option value="low">Low (8kHz)</option>
+                </select>
+            </div>
+            <div class="setting-item">
+                <label for="video-quality">
+                    <i class="fas fa-video"></i> Video Quality
+                </label>
+                <select id="video-quality">
+                    <option value="full">Full Resolution</option>
+                    <option value="hd">HD (720p)</option>
+                    <option value="sd" selected>Standard (480p)</option>
+                    <option value="low">Low (360p)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Network Settings -->
+        <div class="settings-group hidden" data-category="network">
+            <div class="setting-item">
+                <label for="connection-strategy">
+                    <i class="fas fa-network-wired"></i> Connection Strategy
+                </label>
+                <select id="connection-strategy">
+                    <option value="balanced">Balanced (Recommended)</option>
+                    <option value="relay">Force Relay (VPN/Firewall)</option>
+                    <option value="direct">Direct Connection Only</option>
+                </select>
+                <span class="tooltip">Choose connection strategy based on network environment</span>
+            </div>
+            <div class="setting-item">
+                <label for="reconnect-attempts">
+                    <i class="fas fa-redo"></i> Reconnection Attempts
+                </label>
+                <input type="number" id="reconnect-attempts" min="1" max="20" value="10">
+                <span class="tooltip">Maximum number of reconnection attempts</span>
+            </div>
+            <div class="setting-item">
+                <label for="bandwidth-limit">
+                    <i class="fas fa-tachometer-alt"></i> Bandwidth Limit (kbps)
+                </label>
+                <input type="number" id="bandwidth-limit" min="100" max="5000" value="2048">
+                <span class="tooltip">Set maximum bandwidth usage</span>
+            </div>
+        </div>
+
+        <!-- Performance Settings -->
+        <div class="settings-group hidden" data-category="performance">
+            <div class="setting-item">
+                <label for="background-persistence">
+                    <i class="fas fa-power-off"></i> Background Persistence
+                </label>
+                <input type="checkbox" id="background-persistence" checked>
+                <span class="tooltip">Keep connection active when app is in background</span>
+            </div>
+            <div class="setting-item">
+                <label for="network-resilience">
+                    <i class="fas fa-shield-alt"></i> Network Resilience
+                </label>
+                <input type="checkbox" id="network-resilience" checked>
+                <span class="tooltip">Enable automatic network recovery</span>
+            </div>
+            <div class="setting-item">
+                <label for="debug-mode-toggle">
+                    <i class="fas fa-bug"></i> Debug Mode
+                </label>
+                <input type="checkbox" id="debug-mode-toggle">
+                <span class="tooltip">Enable detailed logging and diagnostics</span>
+            </div>
+            <div class="setting-item">
+                <label for="power-saving">
+                    <i class="fas fa-battery-half"></i> Power Saving
+                </label>
+                <input type="checkbox" id="power-saving" checked>
+                <span class="tooltip">Optimize for lower power consumption</span>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="setting-actions">
+            <button class="btn btn-secondary" id="saveSettings">
+                <i class="fas fa-save"></i> Save Settings
+            </button>
+            <button class="btn btn-secondary" id="restoreDefaults">
+                <i class="fas fa-undo"></i> Restore Defaults
+            </button>
+        </div>
+    </div>
+</div>
 
             <div class="section" id="about-section">
                 <div class="card">
