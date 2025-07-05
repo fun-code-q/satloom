@@ -15,7 +15,8 @@ const appState = {
     currentMode: 'audio-call',
     userId: generateUserId(),
     chatRef: null,
-    sidebarVisible: false
+    sidebarVisible: false,
+    diagnosticsEnabled: false
 };
 
 // ========== DOM ELEMENT REFERENCES ========== //
@@ -34,17 +35,43 @@ const domRefs = {
         'video-call': document.getElementById('video-call-section'),
         'settings': document.getElementById('settings-section'),
         'about': document.getElementById('about-section')
-    }
+    },
+    audioDiagnostics: document.getElementById('audioDiagnostics'),
+    audioDiagnosticsContent: document.getElementById('audioDiagnosticsContent'),
+    videoDiagnostics: document.getElementById('videoDiagnostics'),
+    videoDiagnosticsContent: document.getElementById('videoDiagnosticsContent'),
+    connectionStrategy: document.getElementById('connection-strategy')
 };
 
 // ========== WEBRTC CONFIG ========== //
-const pcConfig = {
-    iceServers: [
+function getRTCConfiguration() {
+    const strategy = domRefs.connectionStrategy.value;
+    
+    const iceServers = [
+        // Google's STUN servers
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' }
-    ]
-};
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
+        
+        // Add TURN servers from config
+        ...turnConfig.servers
+    ];
+    
+    let config = { iceServers };
+    
+    // Apply strategy
+    if (strategy === 'relay') {
+        config.iceTransportPolicy = 'relay';
+    } else if (strategy === 'direct') {
+        config.iceTransportPolicy = 'all';
+        config.iceServers = config.iceServers.filter(server => 
+            server.urls.includes('stun:'));
+    }
+    
+    return config;
+}
 
 // ========== SECTION ACTIVATION ========== //
 function activateSection(sectionId) {
@@ -75,6 +102,7 @@ function initApp() {
     loadSettings();
     autoJoinRoom();
     updateSidebarToggleIcon();
+    initDiagnostics();
 }
 
 function setupEventListeners() {
@@ -95,6 +123,7 @@ function setupEventListeners() {
     document.getElementById('endAudioCall').addEventListener('click', () => hangup('audio'));
     document.getElementById('audioAudioToggle').addEventListener('click', () => toggleAudio('audio'));
     document.getElementById('copyAudioLink').addEventListener('click', () => copyLink('audio'));
+    document.getElementById('toggleAudioDiagnostics').addEventListener('click', () => toggleDiagnostics('audio'));
 
     // Video call controls
     document.getElementById('generateVideoRoom').addEventListener('click', () => generateRoom('video'));
@@ -103,10 +132,13 @@ function setupEventListeners() {
     document.getElementById('videoVideoToggle').addEventListener('click', toggleVideo);
     document.getElementById('videoAudioToggle').addEventListener('click', () => toggleAudio('video'));
     document.getElementById('copyVideoLink').addEventListener('click', () => copyLink('video'));
+    document.getElementById('toggleVideoDiagnostics').addEventListener('click', () => toggleDiagnostics('video'));
 
     // Settings
     document.getElementById('notifications-toggle').addEventListener('change', saveSettings);
     document.getElementById('notification-sound-toggle').addEventListener('change', saveSettings);
+    document.getElementById('debug-mode-toggle').addEventListener('change', toggleDebugMode);
+    domRefs.connectionStrategy.addEventListener('change', saveSettings);
 }
 
 function loadSettings() {
@@ -119,6 +151,14 @@ function loadSettings() {
         localStorage.getItem('notifications') !== 'false';
     document.getElementById('notification-sound-toggle').checked = 
         localStorage.getItem('notificationSound') !== 'false';
+    document.getElementById('debug-mode-toggle').checked = 
+        localStorage.getItem('debugMode') === 'true';
+        
+    appState.diagnosticsEnabled = localStorage.getItem('debugMode') === 'true';
+    
+    // Connection strategy
+    const savedStrategy = localStorage.getItem('connectionStrategy') || 'balanced';
+    domRefs.connectionStrategy.value = savedStrategy;
     
     // Load sidebar state
     appState.sidebarVisible = localStorage.getItem('sidebarVisible') === 'true';
@@ -263,6 +303,7 @@ async function initMedia(mode) {
 // ========== WEBRTC CONNECTION MANAGEMENT ========== //
 function createPeerConnection() {
     try {
+        const pcConfig = getRTCConfiguration();
         appState.peerConnection = new RTCPeerConnection(pcConfig);
         
         // Add local stream tracks
@@ -276,6 +317,8 @@ function createPeerConnection() {
         appState.peerConnection.ontrack = handleRemoteStream;
         appState.peerConnection.onicecandidate = handleICECandidate;
         appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
+        appState.peerConnection.onicegatheringstatechange = handleICEGatheringStateChange;
+        appState.peerConnection.onsignalingstatechange = handleSignalingStateChange;
         
         return true;
     } catch (err) {
@@ -288,6 +331,7 @@ function createPeerConnection() {
 
 function handleRemoteStream(event) {
     console.log('Remote stream received');
+    logDiagnostic('Remote stream received', 'success');
     const remoteVideo = document.getElementById('video-remote-video');
     remoteVideo.srcObject = event.streams[0];
     appState.remoteStream = event.streams[0];
@@ -298,6 +342,13 @@ function handleRemoteStream(event) {
 
 function handleICECandidate(event) {
     if (event.candidate) {
+        const candidate = event.candidate.candidate;
+        const type = candidate.includes('typ relay') ? 'TURN (Relay)' : 
+                     candidate.includes('typ srflx') ? 'STUN (Reflexive)' : 
+                     'Host (Direct)';
+        
+        logDiagnostic(`ICE candidate gathered: ${type}`, 'info');
+        
         sendMessage({
             type: 'candidate',
             candidate: event.candidate.candidate,
@@ -308,9 +359,22 @@ function handleICECandidate(event) {
 }
 
 function handleICEConnectionStateChange() {
-    if (appState.peerConnection.iceConnectionState === 'disconnected') {
+    const state = appState.peerConnection.iceConnectionState;
+    logDiagnostic(`ICE connection state changed: ${state}`, 'info');
+    
+    if (state === 'connected') {
+        updateStatus(`Call connected (${appState.roomId})`, true);
+    } else if (state === 'disconnected' || state === 'failed') {
         hangup(appState.currentMode);
     }
+}
+
+function handleICEGatheringStateChange() {
+    logDiagnostic(`ICE gathering state: ${appState.peerConnection.iceGatheringState}`, 'info');
+}
+
+function handleSignalingStateChange() {
+    logDiagnostic(`Signaling state: ${appState.peerConnection.signalingState}`, 'info');
 }
 
 // ========== SIGNALING ========== //
@@ -463,6 +527,9 @@ function hangup(mode) {
     
     appState.isStarted = false;
     appState.roomId = null;
+    
+    // Clear diagnostics
+    clearDiagnostics(mode);
 }
 
 function toggleVideo() {
@@ -504,4 +571,66 @@ function saveSettings() {
         document.getElementById('notifications-toggle').checked);
     localStorage.setItem('notificationSound', 
         document.getElementById('notification-sound-toggle').checked);
+    localStorage.setItem('connectionStrategy', 
+        domRefs.connectionStrategy.value);
+}
+
+function toggleDebugMode() {
+    appState.diagnosticsEnabled = document.getElementById('debug-mode-toggle').checked;
+    localStorage.setItem('debugMode', appState.diagnosticsEnabled);
+}
+
+// ========== DIAGNOSTICS ========== //
+function initDiagnostics() {
+    // Load debug mode setting
+    appState.diagnosticsEnabled = localStorage.getItem('debugMode') === 'true';
+}
+
+function logDiagnostic(message, type = 'info') {
+    if (!appState.diagnosticsEnabled) return;
+    
+    const mode = appState.currentMode;
+    const diagnosticsContent = mode === 'audio' ? 
+        domRefs.audioDiagnosticsContent : domRefs.videoDiagnosticsContent;
+        
+    const diagnosticsContainer = mode === 'audio' ? 
+        domRefs.audioDiagnostics : domRefs.videoDiagnostics;
+        
+    const diagnosticEntry = document.createElement('div');
+    diagnosticEntry.className = `diagnostic-entry diagnostic-${type}`;
+    
+    const timestamp = new Date().toLocaleTimeString();
+    diagnosticEntry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+    
+    diagnosticsContent.appendChild(diagnosticEntry);
+    diagnosticsContent.scrollTop = diagnosticsContent.scrollHeight;
+    
+    // Show diagnostics container if hidden
+    if (diagnosticsContainer.style.display === 'none') {
+        diagnosticsContainer.style.display = 'block';
+    }
+}
+
+function clearDiagnostics(mode) {
+    const diagnosticsContent = mode === 'audio' ? 
+        domRefs.audioDiagnosticsContent : domRefs.videoDiagnosticsContent;
+        
+    diagnosticsContent.innerHTML = '';
+}
+
+function toggleDiagnostics(mode) {
+    const diagnosticsContainer = mode === 'audio' ? 
+        domRefs.audioDiagnostics : domRefs.videoDiagnostics;
+        
+    const toggleButton = mode === 'audio' ? 
+        document.getElementById('toggleAudioDiagnostics') : 
+        document.getElementById('toggleVideoDiagnostics');
+        
+    if (diagnosticsContainer.style.display === 'none') {
+        diagnosticsContainer.style.display = 'block';
+        toggleButton.innerHTML = '<i class="fas fa-times"></i> Hide';
+    } else {
+        diagnosticsContainer.style.display = 'none';
+        toggleButton.innerHTML = '<i class="fas fa-eye"></i> Show';
+    }
 }
