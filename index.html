@@ -51,6 +51,7 @@
             align-items: center;
             padding: 20px;
             transition: all 0.3s ease;
+            overflow-x: hidden;
         }
 
         .app-container {
@@ -92,10 +93,17 @@
             transform: translateX(0);
         }
 
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
         .logo {
             display: flex;
             align-items: center;
-            margin-bottom: 30px;
             white-space: nowrap;
             overflow: hidden;
         }
@@ -121,6 +129,23 @@
             background-clip: text;
             -webkit-text-fill-color: transparent;
             white-space: nowrap;
+        }
+
+        .sidebar-close {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
         }
 
         .nav-menu {
@@ -705,17 +730,6 @@
             margin-bottom: 10px;
         }
         
-        .device-status {
-            padding: 8px 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            font-size: 14px;
-            margin-top: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
         .connection-persistence-indicator {
             position: fixed;
             top: 60px;
@@ -796,14 +810,14 @@
                 height: 45px;
                 font-size: 14px;
             }
+            
+            .logo-container {
+                padding-right: 15px;
+            }
         }
     </style>
 </head>
 <body class="dark-mode">
-  <!--   <div class="connection-persistence-indicator" id="connectionPersistence">
-        <i class="fas fa-shield-alt"></i> Connection preserved in background
-    </div> -->
-    
     <div class="sidebar-toggle" id="sidebarToggle">
         <i class="fas fa-bars"></i>
     </div>
@@ -829,7 +843,7 @@
 
     <div class="app-container">
         <div class="sidebar">
-           <div class="logo-container">
+            <div class="logo-container">
                 <div class="logo">
                     <div class="logo-icon">
                         <i class="fas fa-satellite-dish"></i>
@@ -927,117 +941,46 @@
                         </div>
                         <div class="diagnostics-content" id="audioDiagnosticsContent"></div>
                     </div>
-                    <!--<div class="device-status" id="deviceStatus">
-                        <i class="fas fa-mobile-alt"></i> <span id="deviceType">Detecting device...</span>
-                    </div>-->
                 </div>
             </div>
 
-            <div class="section" id="video-call-section">
+            <div class="section" id="settings-section">
                 <div class="card">
-                    <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <i class="fas fa-video"></i> Video Call
+                    <div class="section-title">
+                        <i class="fas fa-cog"></i> Settings
+                    </div>
+                    <div class="settings-list">
+                        <div class="setting-item">
+                            <label><strong>Notifications:</strong></label>
+                            <input type="checkbox" id="notifications-toggle" checked>
                         </div>
-                        <div class="call-timer" id="videoCallTimer">00:00</div>
-                    </div>
-                    <div class="input-group">
-                        <input type="text" id="video-room-id" class="input-styled" placeholder="Enter Room ID">
-                    </div>
-                    <div class="call-controls">
-                        <button class="btn" id="generateVideoRoom">
-                            <i class="fas fa-network-wired"></i> Generate Room
-                        </button>
-                        <button class="btn btn-secondary" id="joinVideoRoom">
-                            <i class="fas fa-sign-in-alt"></i> Join Room
-                        </button>
-                    </div>
-                    <div id="videoRoomLinkContainer" class="share-link-container" style="display: none;">
-                        <div class="share-link" id="videoRoomLink"></div>
-                        <button class="copy-btn" id="copyVideoLink">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                    </div>
-                    <div id="videoRemoteVideoContainer">
-                        <video id="video-remote-video" autoplay playsinline></video>
-                        <video id="video-local-video" autoplay playsinline muted></video>
-                        <div class="spinner" id="videoSpinner"></div>
-                    </div>
-                    <div class="call-controls" id="videoControls" style="display: none;">
-                        <button class="control-btn mute" id="videoVideoToggle">
-                            <i class="fas fa-video"></i>
-                        </button>
-                        <button class="control-btn mute" id="videoAudioToggle">
-                            <i class="fas fa-microphone"></i>
-                        </button>
-                        <button class="control-btn reconnect" id="reconnectVideo">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
-                        <button class="control-btn end" id="endVideoCall">
-                            <i class="fas fa-phone-slash"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="reconnect-overlay" id="videoReconnectOverlay">
-                        <div class="reconnect-spinner"></div>
-                        <div class="reconnect-text">Reconnecting...</div>
-                        <button class="btn" id="forceReconnectVideo">
-                            <i class="fas fa-bolt"></i> Force Reconnect
-                        </button>
-                    </div>
-                    
-                    <div class="diagnostics-container" id="videoDiagnostics">
-                        <div class="diagnostics-header">
-                            <h3><i class="fas fa-wrench"></i> Connection Diagnostics</h3>
-                            <button class="toggle-diagnostics" id="toggleVideoDiagnostics">
-                                <i class="fas fa-times"></i> Hide
-                            </button>
+                        <div class="setting-item">
+                            <label><strong>Background Persistence:</strong></label>
+                            <input type="checkbox" id="background-persistence" checked>
                         </div>
-                        <div class="diagnostics-content" id="videoDiagnosticsContent"></div>
+                        <div class="setting-item">
+                            <label><strong>Network Resilience:</strong></label>
+                            <input type="checkbox" id="network-resilience" checked>
+                        </div>
+                        <div class="setting-item">
+                            <label><strong>Connection Strategy:</strong></label>
+                            <select id="connection-strategy">
+                                <option value="balanced">Balanced (Recommended)</option>
+                                <option value="relay">Force Relay (VPN/Firewall)</option>
+                                <option value="direct">Direct Connection Only</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label><strong>Reconnection Attempts:</strong></label>
+                            <input type="number" id="reconnect-attempts" min="1" max="20" value="10">
+                        </div>
+                        <div class="setting-item">
+                            <label><strong>Mobile Optimization:</strong></label>
+                            <input type="checkbox" id="mobile-optimization" checked>
+                        </div>
                     </div>
-                   <!-- <div class="device-status" id="videoDeviceStatus">
-                        <i class="fas fa-mobile-alt"></i> <span id="videoDeviceType">Detecting device...</span>
-                    </div>-->
                 </div>
             </div>
-
-          <div class="section" id="settings-section">
-    <div class="card">
-        <div class="section-title">
-            <i class="fas fa-cog"></i> Settings
-        </div>
-        <div class="settings-list">
-            <div class="setting-item">
-                <label><strong>Notifications:</strong></label>
-                <input type="checkbox" id="notifications-toggle" checked>
-            </div>
-            <div class="setting-item">
-                <label><strong>Background Persistence:</strong></label>
-                <input type="checkbox" id="background-persistence" checked>
-            </div>
-            <div class="setting-item">
-                <label><strong>Network Resilience:</strong></label>
-                <input type="checkbox" id="network-resilience" checked>
-            </div>
-            <div class="setting-item">
-                <label><strong>Connection Strategy:</strong></label>
-                <select id="connection-strategy">
-                    <option value="balanced">Balanced (Recommended)</option>
-                    <option value="relay">Force Relay (VPN/Firewall)</option>
-                    <option value="direct">Direct Connection Only</option>
-                </select>
-            </div>
-            <div class="setting-item">
-                <label><strong>Reconnection Attempts:</strong></label>
-                <input type="number" id="reconnect-attempts" min="1" max="20" value="10">
-            </div>
-            <div class="setting-item">
-                <label><strong>Mobile Optimization:</strong></label>
-                <input type="checkbox" id="mobile-optimization" checked>
-            </div>
-        </div>
-    </div>
-</div>
 
             <div class="section" id="about-section">
                 <div class="card">
@@ -1104,6 +1047,7 @@
         // ========== DOM ELEMENT REFERENCES ========== //
         const domRefs = {
             sidebarToggle: document.getElementById('sidebarToggle'),
+            sidebarClose: document.getElementById('sidebarClose'),
             themeToggle: document.getElementById('themeToggle'),
             notification: document.getElementById('globalNotification'),
             notificationTitle: document.getElementById('notificationTitle'),
@@ -1114,24 +1058,16 @@
             videoCallTimer: document.getElementById('videoCallTimer'),
             sections: {
                 'audio-call': document.getElementById('audio-call-section'),
-                'video-call': document.getElementById('video-call-section'),
                 'settings': document.getElementById('settings-section'),
                 'about': document.getElementById('about-section')
             },
             audioDiagnostics: document.getElementById('audioDiagnostics'),
             audioDiagnosticsContent: document.getElementById('audioDiagnosticsContent'),
-            videoDiagnostics: document.getElementById('videoDiagnostics'),
-            videoDiagnosticsContent: document.getElementById('videoDiagnosticsContent'),
             connectionStrategy: document.getElementById('connection-strategy'),
             networkStatus: document.getElementById('networkStatus'),
             networkIcon: document.getElementById('networkIcon'),
             networkText: document.getElementById('networkText'),
             audioReconnectOverlay: document.getElementById('audioReconnectOverlay'),
-            videoReconnectOverlay: document.getElementById('videoReconnectOverlay'),
-            deviceStatus: document.getElementById('deviceStatus'),
-            deviceType: document.getElementById('deviceType'),
-            videoDeviceStatus: document.getElementById('videoDeviceStatus'),
-            videoDeviceType: document.getElementById('videoDeviceType'),
             connectionPersistence: document.getElementById('connectionPersistence')
         };
 
@@ -1209,7 +1145,6 @@
             updateSidebarToggleIcon();
             initDiagnostics();
             startNetworkMonitoring();
-            detectDeviceType();
             applyMobileOptimization();
             
             // Add event handlers for resilience
@@ -1220,19 +1155,6 @@
             
             // Start background connection keeper
             startBackgroundConnectionKeeper();
-        }
-
-        function detectDeviceType() {
-            const deviceType = appState.isMobile ? 'Mobile Device' : 'Desktop/Laptop';
-            domRefs.deviceType.textContent = deviceType;
-            domRefs.videoDeviceType.textContent = deviceType;
-            
-            if (appState.isMobile) {
-                document.body.classList.add('mobile-optimized');
-                logDiagnostic(`Running on mobile: ${navigator.userAgent}`, 'info');
-            } else {
-                logDiagnostic(`Running on desktop: ${navigator.userAgent}`, 'info');
-            }
         }
         
         function applyMobileOptimization() {
@@ -1252,6 +1174,7 @@
             
             // Sidebar toggle
             domRefs.sidebarToggle.addEventListener('click', toggleSidebar);
+            domRefs.sidebarClose.addEventListener('click', toggleSidebar);
 
             // Audio call controls
             document.getElementById('generateAudioRoom').addEventListener('click', () => generateRoom('audio'));
@@ -1262,17 +1185,6 @@
             document.getElementById('toggleAudioDiagnostics').addEventListener('click', () => toggleDiagnostics('audio'));
             document.getElementById('reconnectAudio').addEventListener('click', () => restartICE('audio'));
             document.getElementById('forceReconnectAudio').addEventListener('click', () => forceReconnect('audio'));
-
-            // Video call controls
-            document.getElementById('generateVideoRoom').addEventListener('click', () => generateRoom('video'));
-            document.getElementById('joinVideoRoom').addEventListener('click', () => joinRoom('video'));
-            document.getElementById('endVideoCall').addEventListener('click', () => hangup('video'));
-            document.getElementById('videoVideoToggle').addEventListener('click', toggleVideo);
-            document.getElementById('videoAudioToggle').addEventListener('click', () => toggleAudio('video'));
-            document.getElementById('copyVideoLink').addEventListener('click', () => copyLink('video'));
-            document.getElementById('toggleVideoDiagnostics').addEventListener('click', () => toggleDiagnostics('video'));
-            document.getElementById('reconnectVideo').addEventListener('click', () => restartICE('video'));
-            document.getElementById('forceReconnectVideo').addEventListener('click', () => forceReconnect('video'));
 
             // Settings
             document.getElementById('notifications-toggle').addEventListener('change', saveSettings);
@@ -1414,56 +1326,33 @@
                 const minutes = Math.floor(time / 60000);
                 const seconds = Math.floor((time % 60000) / 1000);
                 const timerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                domRefs.videoCallTimer.textContent = timerText;
                 domRefs.audioCallTimer.textContent = timerText;
             }, 1000);
         }
 
         function stopTimer() {
             clearInterval(appState.timer);
-            domRefs.videoCallTimer.textContent = '00:00';
             domRefs.audioCallTimer.textContent = '00:00';
         }
 
         // ========== MEDIA MANAGEMENT ========== //
         async function initMedia(mode) {
             try {
-                const constraints = mode === 'video' ? 
-                    { 
-                        video: { 
-                            width: { min: 640, ideal: 1280 },
-                            height: { min: 480, ideal: 720 },
-                            frameRate: { ideal: 15, max: 30 },
-                            facingMode: appState.isMobile ? { ideal: "environment" } : "user"
-                        }, 
-                        audio: { 
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            autoGainControl: true
-                        } 
-                    } : { 
-                        audio: { 
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            autoGainControl: true
-                        } 
-                    };
+                const constraints = { 
+                    audio: { 
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    } 
+                };
                 
                 appState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
-                
-                if (mode === 'video') {
-                    document.getElementById('video-local-video').srcObject = appState.localStream;
-                    document.getElementById('videoControls').style.display = 'flex';
-                } else {
-                    document.getElementById('audioControls').style.display = 'flex';
-                }
-                
+                document.getElementById('audioControls').style.display = 'flex';
                 return true;
             } catch (err) {
                 console.error('Media access error:', err);
                 showNotification('Media Error', 
-                    `Could not access ${mode === 'video' ? 'camera/microphone' : 'microphone'}. 
-                    Please check permissions.`, 'error');
+                    `Could not access microphone. Please check permissions.`, 'error');
                 return false;
             }
         }
@@ -1503,22 +1392,11 @@
             console.log('Remote stream received');
             logDiagnostic('Remote stream received', 'success');
             appState.remoteStream = event.streams[0];
-            
-            if (appState.currentMode === 'video-call') {
-                const remoteVideo = document.getElementById('video-remote-video');
-                remoteVideo.srcObject = event.streams[0];
-                document.getElementById('videoSpinner').style.display = 'none';
-            } else if (appState.currentMode === 'audio-call') {
-                const remoteAudio = document.getElementById('audio-remote-audio');
-                remoteAudio.srcObject = event.streams[0];
-            }
+            const remoteAudio = document.getElementById('audio-remote-audio');
+            remoteAudio.srcObject = event.streams[0];
             
             // Hide reconnect overlay if visible
-            if (appState.currentMode === 'audio-call') {
-                domRefs.audioReconnectOverlay.style.display = 'none';
-            } else if (appState.currentMode === 'video-call') {
-                domRefs.videoReconnectOverlay.style.display = 'none';
-            }
+            domRefs.audioReconnectOverlay.style.display = 'none';
             
             // Reset reconnection attempts on successful stream
             appState.reconnectAttempts = 0;
@@ -1632,7 +1510,7 @@
                         break;
                     case 'bye':
                         if (appState.isStarted) {
-                            hangup(appState.currentMode);
+                            hangup('audio');
                         }
                         break;
                     case 'keepalive':
@@ -1653,7 +1531,7 @@
             sendMessage(answer);
             appState.isStarted = true;
             startTimer();
-            updateStatus(`In ${appState.currentMode} call (${appState.roomId})`, true);
+            updateStatus(`In audio call (${appState.roomId})`, true);
             
             // Acquire wake lock to prevent screen off
             acquireWakeLock();
@@ -1763,10 +1641,6 @@
                 appState.isInitiator = false;
                 initSignaling();
                 
-                if (mode === 'video') {
-                    document.getElementById('videoSpinner').style.display = 'block';
-                }
-                
                 updateStatus(`Joining ${mode} call...`, false);
                 showNotification('Joining Room', `Connecting to room: ${appState.roomId}`);
                 
@@ -1792,14 +1666,7 @@
             
             document.getElementById(`${mode}Controls`).style.display = 'none';
             document.getElementById(`${mode}RoomLinkContainer`).style.display = 'none';
-            
-            if (mode === 'video') {
-                document.getElementById('video-remote-video').srcObject = null;
-                document.getElementById('video-local-video').srcObject = null;
-                document.getElementById('videoSpinner').style.display = 'none';
-            } else if (mode === 'audio') {
-                document.getElementById('audio-remote-audio').srcObject = null;
-            }
+            document.getElementById('audio-remote-audio').srcObject = null;
             
             stopTimer();
             updateStatus('Call ended', false);
@@ -1818,19 +1685,6 @@
             
             // Clear diagnostics
             clearDiagnostics(mode);
-        }
-
-        function toggleVideo() {
-            if (appState.localStream) {
-                const videoTrack = appState.localStream.getVideoTracks()[0];
-                if (videoTrack) {
-                    videoTrack.enabled = !videoTrack.enabled;
-                    const button = document.getElementById('videoVideoToggle');
-                    button.innerHTML = videoTrack.enabled ? 
-                        '<i class="fas fa-video"></i>' : 
-                        '<i class="fas fa-video-slash"></i>';
-                }
-            }
         }
 
         function toggleAudio(mode) {
@@ -1863,11 +1717,7 @@
             
             try {
                 // Show reconnect overlay
-                if (mode === 'audio') {
-                    domRefs.audioReconnectOverlay.style.display = 'flex';
-                } else {
-                    domRefs.videoReconnectOverlay.style.display = 'flex';
-                }
+                domRefs.audioReconnectOverlay.style.display = 'flex';
                 
                 // Create a new offer with ICE restart
                 const offer = await appState.peerConnection.createOffer({iceRestart: true});
@@ -1892,11 +1742,7 @@
                 showNotification('Reconnect Failed', 'Could not restart connection', 'error');
                 
                 // Hide reconnect overlay
-                if (mode === 'audio') {
-                    domRefs.audioReconnectOverlay.style.display = 'none';
-                } else {
-                    domRefs.videoReconnectOverlay.style.display = 'none';
-                }
+                domRefs.audioReconnectOverlay.style.display = 'none';
             }
         }
         
@@ -2036,12 +1882,8 @@
         function logDiagnostic(message, type = 'info') {
             if (!appState.diagnosticsEnabled) return;
             
-            const mode = appState.currentMode;
-            const diagnosticsContent = mode === 'audio-call' ? 
-                domRefs.audioDiagnosticsContent : domRefs.videoDiagnosticsContent;
-                
-            const diagnosticsContainer = mode === 'audio-call' ? 
-                domRefs.audioDiagnostics : domRefs.videoDiagnostics;
+            const diagnosticsContent = domRefs.audioDiagnosticsContent;
+            const diagnosticsContainer = domRefs.audioDiagnostics;
                 
             const diagnosticEntry = document.createElement('div');
             diagnosticEntry.className = `diagnostic-entry diagnostic-${type}`;
@@ -2059,19 +1901,12 @@
         }
         
         function clearDiagnostics(mode) {
-            const diagnosticsContent = mode === 'audio' ? 
-                domRefs.audioDiagnosticsContent : domRefs.videoDiagnosticsContent;
-                
-            diagnosticsContent.innerHTML = '';
+            domRefs.audioDiagnosticsContent.innerHTML = '';
         }
         
         function toggleDiagnostics(mode) {
-            const diagnosticsContainer = mode === 'audio' ? 
-                domRefs.audioDiagnostics : domRefs.videoDiagnostics;
-                
-            const toggleButton = mode === 'audio' ? 
-                document.getElementById('toggleAudioDiagnostics') : 
-                document.getElementById('toggleVideoDiagnostics');
+            const diagnosticsContainer = domRefs.audioDiagnostics;
+            const toggleButton = document.getElementById('toggleAudioDiagnostics');
                 
             if (diagnosticsContainer.style.display === 'none') {
                 diagnosticsContainer.style.display = 'block';
@@ -2111,7 +1946,7 @@
         
         function handleBeforeUnload(e) {
             if (appState.isStarted) {
-                hangup(appState.currentMode);
+                hangup('audio');
             }
         }
         
