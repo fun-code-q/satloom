@@ -456,22 +456,15 @@
             box-shadow: 0 4px 10px rgba(58, 123, 213, 0.3);
         }
 
-        /* URL display */
-        .url-display {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 12px;
-            margin: 15px 0;
-            font-size: 14px;
-            word-break: break-all;
-            text-align: center;
-            display: none;
-            border: 1px dashed rgba(58, 123, 213, 0.3);
+        /* Connection status indicators */
+        .status-connected {
+            color: #00ff9d !important;
         }
-        
-        .light-mode .url-display {
-            background: rgba(0, 0, 0, 0.05);
-            border: 1px dashed rgba(30, 144, 255, 0.3);
+        .status-warning {
+            color: #ffcc00 !important;
+        }
+        .status-error {
+            color: #ff5252 !important;
         }
     </style>
 </head>
@@ -529,10 +522,6 @@
                 </button>
             </div>
             
-            <div class="url-display" id="urlDisplay">
-                <span id="roomUrlText">Room URL: </span>
-            </div>
-            
             <div class="call-controls" id="audioControls" style="display: none;">
                 <button class="control-btn mute" id="audioAudioToggle">
                     <i class="fas fa-microphone"></i>
@@ -545,7 +534,7 @@
     </div>
 
     <div class="footer">
-        <p>v3.3.0 | Powered by <a href="#">SatLoom Developers</a></p>
+        <p>v3.2.0 | Powered by <a href="#">SatLoom Developers</a></p>
     </div>
     
     <!-- Hidden audio element for remote stream -->
@@ -628,6 +617,7 @@
             setupEventListeners();
             autoJoinRoom();
             updateThemeIcon();
+            setupVisibilityHandlers();
             
             // Load saved theme preference
             const savedTheme = localStorage.getItem('theme');
@@ -635,6 +625,74 @@
                 document.body.classList.add('light-mode');
             }
             updateThemeIcon();
+        }
+
+        function setupVisibilityHandlers() {
+            // Handle visibility changes
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            
+            // Handle page focus
+            window.addEventListener('focus', handlePageFocus);
+            window.addEventListener('blur', handlePageBlur);
+        }
+
+        function handleVisibilityChange() {
+            appState.isPageVisible = document.visibilityState === 'visible';
+            updateStatus(appState.isPageVisible ? 'Page is visible' : 'Page is in background', false);
+        }
+
+        function handlePageFocus() {
+            appState.isPageVisible = true;
+            updateStatus('Page is focused', false);
+            
+            // If we're in a call, resume media
+            if (appState.isStarted) {
+                resumeMediaAfterBackground();
+            }
+        }
+
+        function handlePageBlur() {
+            appState.isPageVisible = false;
+            updateStatus('Page lost focus', false);
+        }
+
+        function resumeMediaAfterBackground() {
+            // Resume remote audio
+            if (appState.remoteAudioElement && appState.remoteAudioElement.srcObject) {
+                appState.remoteAudioElement.play().catch(e => {
+                    console.error('Failed to resume audio:', e);
+                    document.getElementById('audioActivationPanel').style.display = 'block';
+                });
+            }
+            
+            // Check if local stream is still active
+            if (appState.localStream) {
+                const tracks = appState.localStream.getTracks();
+                const audioTrack = tracks.find(t => t.kind === 'audio');
+                
+                if (audioTrack && audioTrack.readyState === 'ended') {
+                    showNotification('Media Restored', 'Reacquired microphone after background', 'info');
+                    initMedia().then(() => {
+                        if (appState.peerConnection) {
+                            replaceTracks();
+                        }
+                    });
+                }
+            }
+        }
+
+        function replaceTracks() {
+            if (!appState.peerConnection || !appState.localStream) return;
+            
+            const senders = appState.peerConnection.getSenders();
+            const audioSender = senders.find(s => s.track && s.track.kind === 'audio');
+            
+            if (audioSender && appState.localStream.getAudioTracks().length > 0) {
+                audioSender.replaceTrack(appState.localStream.getAudioTracks()[0])
+                    .catch(err => {
+                        console.error('Failed to replace audio track:', err);
+                    });
+            }
         }
 
         function setupEventListeners() {
@@ -663,6 +721,17 @@
             titleElem.textContent = title;
             messageElem.textContent = message;
             
+            // Set notification color based on type
+            if (type === 'error') {
+                notification.style.borderLeft = '4px solid #ff5252';
+            } else if (type === 'success') {
+                notification.style.borderLeft = '4px solid #4CAF50';
+            } else if (type === 'warning') {
+                notification.style.borderLeft = '4px solid #ffcc00';
+            } else {
+                notification.style.borderLeft = '4px solid #00d2ff';
+            }
+            
             notification.style.display = 'flex';
             
             setTimeout(() => {
@@ -672,13 +741,21 @@
 
         function updateStatus(text, isConnected = false) {
             const statusElem = document.getElementById('statusText');
-            const statusContainer = document.getElementById('connectionStatus');
+            const statusIcon = document.querySelector('#connectionStatus i');
             
             statusElem.textContent = text;
+            
             if (isConnected) {
-                statusContainer.classList.add('status-connected');
+                statusIcon.classList.add('status-connected');
+                statusIcon.classList.remove('status-warning', 'status-error');
+            } else if (text.includes('warning') || text.includes('background')) {
+                statusIcon.classList.add('status-warning');
+                statusIcon.classList.remove('status-connected', 'status-error');
+            } else if (text.includes('error') || text.includes('failed')) {
+                statusIcon.classList.add('status-error');
+                statusIcon.classList.remove('status-connected', 'status-warning');
             } else {
-                statusContainer.classList.remove('status-connected');
+                statusIcon.classList.remove('status-connected', 'status-warning', 'status-error');
             }
         }
 
@@ -815,7 +892,10 @@
             appState.signalingRef.on('child_added', snapshot => {
                 const message = JSON.parse(snapshot.val());
                 
-                if (!appState.peerConnection) createPeerConnection();
+                if (!appState.peerConnection) {
+                    // If we don't have a peer connection, create one
+                    if (!createPeerConnection()) return;
+                }
                 
                 switch (message.type) {
                     case 'offer':
@@ -845,6 +925,11 @@
         }
 
         async function handleOffer(offer) {
+            // Check if page is visible - if not, warn user
+            if (!appState.isPageVisible) {
+                showNotification('Warning', 'Page is in background. Connection might be unstable.', 'warning');
+            }
+            
             await appState.peerConnection.setRemoteDescription(
                 new RTCSessionDescription(offer));
             
@@ -864,42 +949,11 @@
             dbRef.push(JSON.stringify(message));
         }
         
-        async function createOffer() {
-            try {
-                const offer = await appState.peerConnection.createOffer();
-                await appState.peerConnection.setLocalDescription(offer);
-                sendMessage({
-                    type: 'offer',
-                    sdp: offer.sdp
-                });
-            } catch (err) {
-                console.error('Failed to create offer:', err);
-            }
-        }
-
-        function updateUrlDisplay() {
-            if (!appState.roomId) return;
-            
-            const urlDisplay = document.getElementById('urlDisplay');
-            const roomUrlText = document.getElementById('roomUrlText');
-            
-            const basePath = window.location.href.split('?')[0];
-            const fullLink = `${basePath}?room=${appState.roomId}`;
-            
-            roomUrlText.textContent = `Room URL: ${fullLink}`;
-            urlDisplay.style.display = 'block';
-        }
-
         async function generateAudioRoom() {
             appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
             
-            // Update browser URL to include room ID
-            const newUrl = window.location.origin + window.location.pathname + `?room=${appState.roomId}`;
-            window.history.pushState({}, document.title, newUrl);
-            
-            // Show UI elements
+            // Show copy button
             document.getElementById('copyRoomLink').style.display = 'flex';
-            updateUrlDisplay();
             
             showNotification('Room Created', `Room ID: ${appState.roomId}`, 'success');
             
@@ -1011,7 +1065,6 @@
             document.getElementById('copyRoomLink').style.display = 'none';
             document.getElementById('generateAudioRoom').style.display = 'flex';
             document.getElementById('audioActivationPanel').style.display = 'none';
-            document.getElementById('urlDisplay').style.display = 'none';
             stopTimer();
             updateStatus('Call ended', false);
             showNotification('Call Ended', 'Your call has been disconnected');
@@ -1025,9 +1078,6 @@
             if (appState.roomId) {
                 sendMessage({ type: 'bye' });
             }
-            
-            // Reset URL to clean state
-            window.history.pushState({}, document.title, window.location.pathname);
             
             // Reset state
             appState.isStarted = false;
@@ -1053,9 +1103,6 @@
         
         async function joinAudioRoom(roomId) {
             appState.roomId = roomId;
-            
-            // Show URL display
-            updateUrlDisplay();
             
             try {
                 // Initialize media
