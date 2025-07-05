@@ -78,7 +78,6 @@
             background: linear-gradient(135deg, #3a7bd5, #00d2ff);
         }
 
-        /* Consistent logo text gradient in both themes */
         .logo-text {
             font-size: 32px;
             font-weight: 700;
@@ -497,7 +496,6 @@
 
         // ========== WEBRTC CONFIG ========== //
         function getRTCConfiguration() {
-            // ICE servers configuration
             const iceServers = [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
@@ -550,7 +548,6 @@
             autoJoinRoom();
             updateThemeIcon();
             
-            // Load saved theme preference
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme === 'light') {
                 document.body.classList.add('light-mode');
@@ -559,7 +556,6 @@
         }
 
         function setupEventListeners() {
-            // Audio call controls
             document.getElementById('generateAudioRoom').addEventListener('click', generateAudioRoom);
             document.getElementById('copyRoomLink').addEventListener('click', copyRoomLink);
             document.getElementById('audioAudioToggle').addEventListener('click', toggleAudio);
@@ -640,14 +636,12 @@
                 const pcConfig = getRTCConfiguration();
                 appState.peerConnection = new RTCPeerConnection(pcConfig);
                 
-                // Add local stream tracks
                 if (appState.localStream) {
                     appState.localStream.getTracks().forEach(track => {
                         appState.peerConnection.addTrack(track, appState.localStream);
                     });
                 }
                 
-                // Set up event handlers
                 appState.peerConnection.ontrack = handleRemoteStream;
                 appState.peerConnection.onicecandidate = handleICECandidate;
                 appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
@@ -661,15 +655,21 @@
         }
 
         function handleRemoteStream(event) {
-    appState.remoteStream = event.streams[0];
-    const remoteAudio = new Audio();
-    remoteAudio.srcObject = event.streams[0];
-    remoteAudio.autoplay = true; // Ensures audio plays without user interaction
-    remoteAudio.playsInline = true; // Helps on mobile browsers
-    document.getElementById('audioVisualizer').appendChild(remoteAudio);
-    appState.reconnectAttempts = 0;
-    showNotification('Connected', 'Call established successfully', 'success');
-}
+            appState.remoteStream = event.streams[0];
+            const audioTracks = appState.remoteStream.getAudioTracks();
+            if (audioTracks.length > 0) {
+                const remoteAudio = new Audio();
+                remoteAudio.srcObject = appState.remoteStream;
+                remoteAudio.play().catch(err => {
+                    console.error('Failed to play remote audio:', err);
+                    showNotification('Audio Error', 'Failed to play remote audio', 'error');
+                });
+            } else {
+                showNotification('No Audio', 'Remote stream has no audio tracks', 'warning');
+            }
+            appState.reconnectAttempts = 0;
+            showNotification('Connected', 'Call established successfully', 'success');
+        }
 
         function handleICECandidate(event) {
             if (event.candidate) {
@@ -686,6 +686,11 @@
             const state = appState.peerConnection.iceConnectionState;
             
             if (state === 'connected' || state === 'completed') {
+                if (!appState.isStarted) {
+                    appState.isStarted = true;
+                    startTimer();
+                    document.getElementById('audioControls').style.display = 'flex';
+                }
                 updateStatus(`Call connected (${appState.roomId})`, true);
                 appState.reconnectAttempts = 0;
             } else if (state === 'disconnected' || state === 'failed') {
@@ -746,10 +751,6 @@
             await appState.peerConnection.setLocalDescription(answer);
             
             sendMessage(answer);
-            appState.isStarted = true;
-            startTimer();
-            updateStatus(`In audio call (${appState.roomId})`, true);
-            document.getElementById('audioControls').style.display = 'flex';
         }
 
         function sendMessage(message) {
@@ -757,47 +758,26 @@
             const dbRef = database.ref(`rooms/${appState.roomId}/messages`);
             dbRef.push(JSON.stringify(message));
         }
-        
-        async function createOffer() {
-            try {
-                const offer = await appState.peerConnection.createOffer();
-                await appState.peerConnection.setLocalDescription(offer);
-                sendMessage({
-                    type: 'offer',
-                    sdp: offer.sdp
-                });
-            } catch (err) {
-                console.error('Failed to create offer:', err);
-            }
-        }
 
         async function generateAudioRoom() {
             appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
             
-            // Show copy button
             document.getElementById('copyRoomLink').style.display = 'flex';
             
             showNotification('Room Created', `Room ID: ${appState.roomId}`, 'success');
             
             try {
-                // Initialize media
                 const mediaInitialized = await initMedia();
                 if (!mediaInitialized) return;
                 
-                // Create peer connection
                 if (!createPeerConnection()) return;
                 
-                // Create offer
                 appState.isInitiator = true;
                 initSignaling();
                 const offer = await appState.peerConnection.createOffer();
                 await appState.peerConnection.setLocalDescription(offer);
                 sendMessage({ type: 'offer', sdp: offer.sdp });
                 
-                appState.isStarted = true;
-                startTimer();
-                updateStatus(`In call (${appState.roomId})`, true);
-                document.getElementById('audioControls').style.display = 'flex';
                 document.getElementById('generateAudioRoom').style.display = 'none';
                 
                 showNotification('Call Started', 'You are now the host', 'success');
@@ -820,7 +800,6 @@
             navigator.clipboard.writeText(fullLink).then(() => {
                 showNotification('Copied', 'Room link copied to clipboard', 'success');
                 
-                // Visual feedback
                 const copyBtn = document.getElementById('copyRoomLink');
                 copyBtn.innerHTML = '<i class="fas fa-check"></i>';
                 copyBtn.style.background = 'linear-gradient(135deg, #4CAF50, #2E7D32)';
@@ -856,7 +835,6 @@
         async function restartICE() {
             if (!appState.peerConnection || !appState.isStarted) return;
             
-            // Rate limit ICE restarts
             const now = Date.now();
             if (now - appState.lastIceRestart < 5000) return;
             appState.lastIceRestart = now;
@@ -897,7 +875,6 @@
             appState.roomId = null;
             appState.reconnectAttempts = 0;
             
-            // Reset mute button
             const muteBtn = document.getElementById('audioAudioToggle');
             muteBtn.innerHTML = '<i class="fas fa-microphone"></i>';
             muteBtn.style.background = 'linear-gradient(135deg, #3a7bd5, #00bfff)';
@@ -917,11 +894,9 @@
             appState.roomId = roomId;
             
             try {
-                // Initialize media
                 const mediaInitialized = await initMedia();
                 if (!mediaInitialized) return;
                 
-                // Create peer connection
                 if (!createPeerConnection()) return;
                 
                 appState.isInitiator = false;
