@@ -524,7 +524,7 @@
     </div>
 
     <div class="footer">
-        <p>v3.1.0 | Powered by <a href="#">SatLoom Developers</a></p>
+        <p>v3.1.1 | Powered by <a href="#">SatLoom Developers</a></p>
     </div>
     
     <!-- Hidden audio element for remote stream -->
@@ -719,7 +719,15 @@
         }
 
         function handleRemoteStream(event) {
-            appState.remoteStream = event.streams[0];
+            // FIXED: Properly handle remote stream
+            if (event.streams && event.streams.length > 0) {
+                appState.remoteStream = event.streams[0];
+            } else {
+                if (!appState.remoteStream) {
+                    appState.remoteStream = new MediaStream();
+                }
+                appState.remoteStream.addTrack(event.track);
+            }
             
             // Use the hidden audio element for remote audio
             if (appState.remoteAudioElement) {
@@ -981,6 +989,7 @@
             appState.isStarted = false;
             appState.roomId = null;
             appState.reconnectAttempts = 0;
+            appState.remoteStream = null;
             
             // Reset mute button
             const muteBtn = document.getElementById('audioAudioToggle');
