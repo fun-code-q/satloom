@@ -534,7 +534,7 @@
     </div>
 
     <div class="footer">
-        <p>v3.2.0 | Powered by <a href="#">SatLoom Developers</a></p>
+        <p>v3.3.0 | Powered by <a href="#">SatLoom Developers</a></p>
     </div>
     
     <!-- Hidden audio element for remote stream -->
@@ -606,7 +606,9 @@
             signalingRef: null,
             isMuted: false,
             remoteAudioElement: null,
-            isPageVisible: true
+            isPageVisible: true,
+            connectionRetryCount: 0,
+            maxConnectionRetries: 5
         };
 
         // Initialize app
@@ -639,21 +641,41 @@
         function handleVisibilityChange() {
             appState.isPageVisible = document.visibilityState === 'visible';
             updateStatus(appState.isPageVisible ? 'Page is visible' : 'Page is in background', false);
+            
+            if (appState.isPageVisible && appState.isStarted) {
+                // Page became visible - try to resume connection
+                resumeConnectionAfterBackground();
+            }
         }
 
         function handlePageFocus() {
             appState.isPageVisible = true;
             updateStatus('Page is focused', false);
             
-            // If we're in a call, resume media
             if (appState.isStarted) {
-                resumeMediaAfterBackground();
+                // Page gained focus - try to resume connection
+                resumeConnectionAfterBackground();
             }
         }
 
         function handlePageBlur() {
             appState.isPageVisible = false;
             updateStatus('Page lost focus', false);
+        }
+
+        function resumeConnectionAfterBackground() {
+            // 1. Resume media streams
+            resumeMediaAfterBackground();
+            
+            // 2. Check connection status
+            if (appState.peerConnection) {
+                const state = appState.peerConnection.iceConnectionState;
+                
+                if (state !== 'connected' && state !== 'completed') {
+                    // Connection is not active - try to recover
+                    attemptConnectionRecovery();
+                }
+            }
         }
 
         function resumeMediaAfterBackground() {
@@ -692,6 +714,68 @@
                     .catch(err => {
                         console.error('Failed to replace audio track:', err);
                     });
+            }
+        }
+
+        function attemptConnectionRecovery() {
+            if (appState.connectionRetryCount >= appState.maxConnectionRetries) {
+                showNotification('Connection Failed', 'Could not re-establish connection', 'error');
+                return;
+            }
+            
+            appState.connectionRetryCount++;
+            
+            if (appState.peerConnection) {
+                const state = appState.peerConnection.iceConnectionState;
+                
+                if (state === 'disconnected' || state === 'failed') {
+                    // Try to restart ICE
+                    restartICE();
+                } else if (state === 'new' || state === 'checking') {
+                    // Connection is still trying - wait a bit longer
+                    setTimeout(() => {
+                        attemptConnectionRecovery();
+                    }, 1000 * appState.connectionRetryCount);
+                }
+            } else if (appState.roomId) {
+                // Recreate the peer connection
+                showNotification('Reconnecting', 'Re-establishing connection...', 'info');
+                setupPeerConnection();
+            }
+        }
+
+        function setupPeerConnection() {
+            try {
+                // Close existing connection if any
+                if (appState.peerConnection) {
+                    appState.peerConnection.close();
+                }
+                
+                const pcConfig = getRTCConfiguration();
+                appState.peerConnection = new RTCPeerConnection(pcConfig);
+                
+                // Add local stream tracks if available
+                if (appState.localStream) {
+                    appState.localStream.getTracks().forEach(track => {
+                        appState.peerConnection.addTrack(track, appState.localStream);
+                    });
+                }
+                
+                // Set up event handlers
+                appState.peerConnection.ontrack = handleRemoteStream;
+                appState.peerConnection.onicecandidate = handleICECandidate;
+                appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
+                
+                // If we're the initiator, recreate the offer
+                if (appState.isInitiator && appState.roomId) {
+                    createOffer();
+                }
+                
+                return true;
+            } catch (err) {
+                showNotification('Connection Error', 
+                    `Failed to recreate connection: ${err.message}`, 'error');
+                return false;
             }
         }
 
@@ -792,31 +876,6 @@
             }
         }
 
-        function createPeerConnection() {
-            try {
-                const pcConfig = getRTCConfiguration();
-                appState.peerConnection = new RTCPeerConnection(pcConfig);
-                
-                // Add local stream tracks
-                if (appState.localStream) {
-                    appState.localStream.getTracks().forEach(track => {
-                        appState.peerConnection.addTrack(track, appState.localStream);
-                    });
-                }
-                
-                // Set up event handlers
-                appState.peerConnection.ontrack = handleRemoteStream;
-                appState.peerConnection.onicecandidate = handleICECandidate;
-                appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
-                
-                return true;
-            } catch (err) {
-                showNotification('Connection Error', 
-                    `Failed to create connection: ${err.message}`, 'error');
-                return false;
-            }
-        }
-
         function handleRemoteStream(event) {
             // Properly handle remote stream
             if (event.streams && event.streams.length > 0) {
@@ -840,6 +899,7 @@
             }
             
             appState.reconnectAttempts = 0;
+            appState.connectionRetryCount = 0;
             showNotification('Connected', 'Call established successfully', 'success');
         }
 
@@ -871,6 +931,7 @@
             if (state === 'connected' || state === 'completed') {
                 updateStatus(`Call connected (${appState.roomId})`, true);
                 appState.reconnectAttempts = 0;
+                appState.connectionRetryCount = 0;
             } else if (state === 'disconnected' || state === 'failed') {
                 if (appState.reconnectAttempts < appState.maxReconnectAttempts) {
                     appState.reconnectAttempts++;
@@ -894,7 +955,7 @@
                 
                 if (!appState.peerConnection) {
                     // If we don't have a peer connection, create one
-                    if (!createPeerConnection()) return;
+                    setupPeerConnection();
                 }
                 
                 switch (message.type) {
@@ -918,6 +979,11 @@
                     case 'bye':
                         if (appState.isStarted) {
                             endAudioCall();
+                        }
+                        break;
+                    case 'reconnect':
+                        if (appState.isStarted && !appState.isInitiator) {
+                            handleReconnectRequest();
                         }
                         break;
                 }
@@ -949,6 +1015,19 @@
             dbRef.push(JSON.stringify(message));
         }
         
+        async function createOffer() {
+            try {
+                const offer = await appState.peerConnection.createOffer();
+                await appState.peerConnection.setLocalDescription(offer);
+                sendMessage({
+                    type: 'offer',
+                    sdp: offer.sdp
+                });
+            } catch (err) {
+                console.error('Failed to create offer:', err);
+            }
+        }
+
         async function generateAudioRoom() {
             appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
             
@@ -963,7 +1042,7 @@
                 if (!mediaInitialized) return;
                 
                 // Create peer connection
-                if (!createPeerConnection()) return;
+                if (!setupPeerConnection()) return;
                 
                 // Create offer
                 appState.isInitiator = true;
@@ -1083,6 +1162,7 @@
             appState.isStarted = false;
             appState.roomId = null;
             appState.reconnectAttempts = 0;
+            appState.connectionRetryCount = 0;
             appState.remoteStream = null;
             
             // Reset mute button
@@ -1110,7 +1190,7 @@
                 if (!mediaInitialized) return;
                 
                 // Create peer connection
-                if (!createPeerConnection()) return;
+                if (!setupPeerConnection()) return;
                 
                 appState.isInitiator = false;
                 initSignaling();
