@@ -1198,12 +1198,14 @@
                 const pcConfig = getRTCConfiguration();
                 appState.peerConnection = new RTCPeerConnection(pcConfig);
                 
+                // Add local stream tracks
                 if (appState.localStream) {
                     appState.localStream.getTracks().forEach(track => {
                         appState.peerConnection.addTrack(track, appState.localStream);
                     });
                 }
                 
+                // Set up event handlers
                 appState.peerConnection.ontrack = handleRemoteStream;
                 appState.peerConnection.onicecandidate = handleICECandidate;
                 appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
@@ -1222,15 +1224,39 @@
         }
 
         function handleRemoteStream(event) {
+            console.log('Remote stream received');
+            logDiagnostic('Remote stream received', 'success');
             appState.remoteStream = event.streams[0];
-            const remoteAudio = document.getElementById('audio-remote-audio');
-            remoteAudio.srcObject = event.streams[0];
-            domRefs.audioReconnectOverlay.style.display = 'none';
+            
+            if (appState.currentMode === 'video-call') {
+                const remoteVideo = document.getElementById('video-remote-video');
+                remoteVideo.srcObject = event.streams[0];
+                document.getElementById('videoSpinner').style.display = 'none';
+            } else if (appState.currentMode === 'audio-call') {
+                const remoteAudio = document.getElementById('audio-remote-audio');
+                remoteAudio.srcObject = event.streams[0];
+            }
+            
+            // Hide reconnect overlay if visible
+            if (appState.currentMode === 'audio-call') {
+                domRefs.audioReconnectOverlay.style.display = 'none';
+            } else if (appState.currentMode === 'video-call') {
+                domRefs.videoReconnectOverlay.style.display = 'none';
+            }
+            
+            // Reset reconnection attempts on successful stream
             appState.reconnectAttempts = 0;
         }
 
         function handleICECandidate(event) {
             if (event.candidate) {
+                const candidate = event.candidate.candidate;
+                const type = candidate.includes('typ relay') ? 'TURN (Relay)' : 
+                             candidate.includes('typ srflx') ? 'STUN (Reflexive)' : 
+                             'Host (Direct)';
+                
+                logDiagnostic(`ICE candidate gathered: ${type}`, 'info');
+                
                 sendMessage({
                     type: 'candidate',
                     candidate: event.candidate.candidate,
@@ -1242,14 +1268,19 @@
 
         function handleICEConnectionStateChange() {
             const state = appState.peerConnection.iceConnectionState;
+            logDiagnostic(`ICE connection state changed: ${state}`, 'info');
             
             if (state === 'connected' || state === 'completed') {
                 updateStatus(`Call connected (${appState.roomId})`, true);
                 appState.reconnectAttempts = 0;
                 showNotification('Connection Established', 'Devices are now connected', 'success');
             } else if (state === 'disconnected' || state === 'failed') {
+                // Attempt to reconnect automatically
                 if (appState.reconnectAttempts < appState.maxReconnectAttempts) {
+                    logDiagnostic(`Connection lost, attempting to reconnect (${appState.reconnectAttempts + 1}/${appState.maxReconnectAttempts})`, 'warning');
                     appState.reconnectAttempts++;
+                    
+                    // Use exponential backoff for reconnection attempts
                     const delay = Math.min(1000 * Math.pow(2, appState.reconnectAttempts), 30000);
                     setTimeout(() => restartICE(appState.currentMode), delay);
                 } else {
@@ -1260,14 +1291,32 @@
         
         function handleConnectionStateChange() {
             const state = appState.peerConnection.connectionState;
+            logDiagnostic(`Connection state changed: ${state}`, 'info');
             
             if (state === 'connected') {
+                // Update network status
                 updateNetworkStatus('good');
                 appState.reconnectAttempts = 0;
             } else if (state === 'disconnected' || state === 'failed') {
                 updateNetworkStatus('poor');
             }
         }
+
+        function handleICEGatheringStateChange() {
+            logDiagnostic(`ICE gathering state: ${appState.peerConnection.iceGatheringState}`, 'info');
+        }
+        
+        function handleSignalingStateChange() {
+            logDiagnostic(`Signaling state: ${appState.peerConnection.signalingState}`, 'info');
+        }
+        
+        function handleNegotiationNeeded() {
+            logDiagnostic('Negotiation needed event triggered', 'info');
+            if (appState.isInitiator && appState.isStarted) {
+                createOffer();
+            }
+        }
+
 
         // ========== SIGNALING ========== //
         function initSignaling() {
