@@ -1290,210 +1290,149 @@
             }
         }
 
-        // ========== WEBRTC CONNECTION MANAGEMENT ========== //
-        function createPeerConnection() {
-            try {
-                const pcConfig = getRTCConfiguration();
-                appState.peerConnection = new RTCPeerConnection(pcConfig);
-                
-                // Add local stream tracks
-                if (appState.localStream) {
-                    appState.localStream.getTracks().forEach(track => {
-                        appState.peerConnection.addTrack(track, appState.localStream);
-                    });
-                }
-                
-                // Set up event handlers
-                appState.peerConnection.ontrack = handleRemoteStream;
-                appState.peerConnection.onicecandidate = handleICECandidate;
-                appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
-                appState.peerConnection.onicegatheringstatechange = handleICEGatheringStateChange;
-                appState.peerConnection.onsignalingstatechange = handleSignalingStateChange;
-                appState.peerConnection.onconnectionstatechange = handleConnectionStateChange;
-                appState.peerConnection.onnegotiationneeded = handleNegotiationNeeded;
-                
-                return true;
-            } catch (err) {
-                console.error('Peer connection error:', err);
-                showNotification('Connection Error', 
-                    `Failed to create peer connection: ${err.message}`, 'error');
-                return false;
-            }
-        }
-
-        function handleRemoteStream(event) {
-            logDiagnostic('Remote stream received', 'success');
-            appState.remoteStream = event.streams[0];
-            
-            const remoteAudio = document.getElementById('audio-remote-audio');
-            remoteAudio.srcObject = event.streams[0];
-            
-            // Hide reconnect overlay
-            domRefs.audioReconnectOverlay.style.display = 'none';
-            
-            // Reset reconnection attempts on successful stream
-            appState.reconnectAttempts = 0;
-        }
-
-        function handleICECandidate(event) {
-            if (event.candidate) {
-                const candidate = event.candidate.candidate;
-                const type = candidate.includes('typ relay') ? 'TURN (Relay)' : 
-                             candidate.includes('typ srflx') ? 'STUN (Reflexive)' : 
-                             'Host (Direct)';
-                
-                logDiagnostic(`ICE candidate gathered: ${type}`, 'info');
-                
-                sendMessage({
-                    type: 'candidate',
-                    candidate: event.candidate.candidate,
-                    sdpMid: event.candidate.sdpMid,
-                    sdpMLineIndex: event.candidate.sdpMLineIndex
-                });
-            }
-        }
-
-        function handleICEConnectionStateChange() {
-            const state = appState.peerConnection.iceConnectionState;
-            logDiagnostic(`ICE connection state changed: ${state}`, 'info');
-            
-            if (state === 'connected' || state === 'completed') {
-                updateStatus(`Call connected (${appState.roomId})`, true);
-                appState.reconnectAttempts = 0;
-                showNotification('Connection Established', 'Devices are now connected', 'success');
-            } else if (state === 'disconnected' || state === 'failed') {
-                // Attempt to reconnect automatically
-                if (appState.reconnectAttempts < appState.maxReconnectAttempts) {
-                    logDiagnostic(`Connection lost, attempting to reconnect (${appState.reconnectAttempts + 1}/${appState.maxReconnectAttempts})`, 'warning');
-                    appState.reconnectAttempts++;
-                    
-                    // Use exponential backoff for reconnection attempts
-                    const delay = Math.min(1000 * Math.pow(2, appState.reconnectAttempts), 30000);
-                    setTimeout(() => restartICE('audio'), delay);
-                } else {
-                    showNotification('Connection Failed', 'Maximum reconnection attempts reached', 'error');
-                }
-            }
-        }
-        
-        function handleConnectionStateChange() {
-            const state = appState.peerConnection.connectionState;
-            logDiagnostic(`Connection state changed: ${state}`, 'info');
-            
-            if (state === 'connected') {
-                // Update network status
-                updateNetworkStatus('good');
-                appState.reconnectAttempts = 0;
-            } else if (state === 'disconnected' || state === 'failed') {
-                updateNetworkStatus('poor');
-            }
-        }
-
-        function handleICEGatheringStateChange() {
-            logDiagnostic(`ICE gathering state: ${appState.peerConnection.iceGatheringState}`, 'info');
-        }
-        
-        function handleSignalingStateChange() {
-            logDiagnostic(`Signaling state: ${appState.peerConnection.signalingState}`, 'info');
-        }
-        
-        function handleNegotiationNeeded() {
-            logDiagnostic('Negotiation needed event triggered', 'info');
-            if (appState.isInitiator && appState.isStarted) {
-                createOffer();
-            }
-        }
-
-        // ========== SIGNALING ========== //
-        function initSignaling() {
-            if (appState.signalingRef) {
-                appState.signalingRef.off('child_added');
-            }
-            
-            appState.signalingRef = database.ref(`rooms/${appState.roomId}/messages`);
-            
-            appState.signalingRef.on('child_added', snapshot => {
-                const message = JSON.parse(snapshot.val());
-                
-                if (!appState.peerConnection) createPeerConnection();
-                
-                switch (message.type) {
-                    case 'offer':
-                        if (!appState.isInitiator && !appState.isStarted) {
-                            handleOffer(message);
-                        } else if (!appState.isInitiator && appState.isStarted) {
-                            handleRenegotiationOffer(message);
-                        }
-                        break;
-                    case 'answer':
-                        if (appState.isStarted) {
-                            appState.peerConnection.setRemoteDescription(
-                                new RTCSessionDescription(message));
-                        }
-                        break;
-                    case 'candidate':
-                        if (appState.isStarted) {
-                            if (appState.peerConnection.remoteDescription) {
-                                appState.peerConnection.addIceCandidate(
-                                    new RTCIceCandidate(message));
-                            }
-                        }
-                        break;
-                    case 'bye':
-                        if (appState.isStarted) {
-                            hangup('audio');
-                        }
-                        break;
-                    case 'keepalive':
-                        break;
-                }
-            });
-        }
-
+       // ========== FIXED WEBRTC CONNECTION MANAGEMENT ========== //
         async function handleOffer(offer) {
-            await appState.peerConnection.setRemoteDescription(
-                new RTCSessionDescription(offer));
-            
-            const answer = await appState.peerConnection.createAnswer();
-            await appState.peerConnection.setLocalDescription(answer);
-            
-            sendMessage(answer);
-            appState.isStarted = true;
-            startTimer();
-            updateStatus(`In audio call (${appState.roomId})`, true);
-            acquireWakeLock();
-        }
-        
-        async function handleRenegotiationOffer(offer) {
             try {
+                // FIX: Properly handle the remote description
                 await appState.peerConnection.setRemoteDescription(
                     new RTCSessionDescription(offer));
                 
+                // Create answer only after setting remote description
                 const answer = await appState.peerConnection.createAnswer();
+                
+                // FIX: Set local description BEFORE sending the answer
                 await appState.peerConnection.setLocalDescription(answer);
+                
+                // Send the answer to the initiator
                 sendMessage(answer);
+                
+                appState.isStarted = true;
+                startTimer();
+                updateStatus(`In audio call (${appState.roomId})`, true);
+                acquireWakeLock();
             } catch (err) {
-                console.error('Renegotiation error:', err);
+                console.error('Error handling offer:', err);
+                showNotification('Connection Error', 
+                    `Failed to handle offer: ${err.message}`, 'error');
             }
         }
 
-        function sendMessage(message) {
-            if (!appState.roomId) return;
+        async function joinRoom(mode) {
+            appState.roomId = document.getElementById(`${mode}-room-id`).value.trim();
+            if (!appState.roomId) {
+                showNotification('Error', 'Please enter a room ID', 'error');
+                return;
+            }
             
-            const dbRef = database.ref(`rooms/${appState.roomId}/messages`);
-            dbRef.push(JSON.stringify(message));
+            try {
+                const mediaInitialized = await initMedia(mode);
+                if (!mediaInitialized) return;
+                
+                // FIX: Create peer connection BEFORE setting up signaling
+                if (!createPeerConnection()) return;
+                
+                appState.isInitiator = false;
+                initSignaling();
+                
+                updateStatus(`Joining ${mode} call...`, false);
+                showNotification('Joining Room', `Connecting to room: ${appState.roomId}`);
+                
+                await preconnectSignaling();
+                
+                // FIX: Listen for offer after joining
+                logDiagnostic('Waiting for offer from initiator...', 'info');
+            } catch (err) {
+                console.error('Error joining room:', err);
+                showNotification('Connection Error', 'Failed to join room', 'error');
+            }
         }
-        
+
+        // ========== ADDED: PROPER SIGNALING FOR ANSWER ========== //
+        function handleAnswer(answer) {
+            if (!appState.peerConnection || !appState.isStarted) return;
+            
+            try {
+                // Set the remote description with the received answer
+                appState.peerConnection.setRemoteDescription(
+                    new RTCSessionDescription(answer));
+                
+                logDiagnostic('Answer received and set as remote description', 'success');
+            } catch (err) {
+                console.error('Error handling answer:', err);
+                showNotification('Connection Error', 
+                    `Failed to handle answer: ${err.message}`, 'error');
+            }
+        }
+
+        // ========== UPDATED SIGNALING HANDLER ========== //
+        appState.signalingRef.on('child_added', snapshot => {
+            const message = JSON.parse(snapshot.val());
+            
+            if (!appState.peerConnection) {
+                logDiagnostic('Received message but peer connection not initialized', 'warning');
+                return;
+            }
+            
+            switch (message.type) {
+                case 'offer':
+                    // FIX: Only handle offer if we're the joiner
+                    if (!appState.isInitiator && !appState.isStarted) {
+                        handleOffer(message);
+                    }
+                    break;
+                case 'answer':
+                    // FIX: Added answer handling for the initiator
+                    if (appState.isInitiator && appState.isStarted) {
+                        handleAnswer(message);
+                    }
+                    break;
+                case 'candidate':
+                    if (appState.isStarted && appState.peerConnection.remoteDescription) {
+                        try {
+                            appState.peerConnection.addIceCandidate(
+                                new RTCIceCandidate({
+                                    candidate: message.candidate,
+                                    sdpMid: message.sdpMid,
+                                    sdpMLineIndex: message.sdpMLineIndex
+                                }));
+                        } catch (err) {
+                            logDiagnostic(`Error adding ICE candidate: ${err.message}`, 'error');
+                        }
+                    }
+                    break;
+                case 'bye':
+                    if (appState.isStarted) {
+                        hangup('audio');
+                    }
+                    break;
+                case 'keepalive':
+                    break;
+            }
+        });
+
+        // ========== ADDED: IMPROVED OFFER CREATION ========== //
         async function createOffer() {
             try {
-                const offer = await appState.peerConnection.createOffer();
+                const offerOptions = {
+                    offerToReceiveAudio: 1,
+                    offerToReceiveVideo: 0
+                };
+                
+                const offer = await appState.peerConnection.createOffer(offerOptions);
+                
+                // Set local description BEFORE sending the offer
                 await appState.peerConnection.setLocalDescription(offer);
+                
                 sendMessage({
                     type: 'offer',
                     sdp: offer.sdp
                 });
+                
+                logDiagnostic('Offer created and sent', 'success');
             } catch (err) {
                 console.error('Failed to create offer:', err);
+                showNotification('Connection Error', 
+                    `Failed to create offer: ${err.message}`, 'error');
             }
         }
 
