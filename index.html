@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - For Login Free Calling</title>
+    <title>SatLoom - Fixed Mobile to Laptop Connection</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -666,13 +666,39 @@
             top: 0;
             left: 0;
             right: 0;
-            background: linear-gradient(90deg, #ff9800, #f44336);
+            background: linear-gradient(90deg, #4CAF50, #3a7bd5);
             color: white;
             text-align: center;
             padding: 10px;
             font-weight: bold;
             z-index: 1000;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .mobile-optimized .input-group {
+            flex-direction: column;
+        }
+        
+        .mobile-optimized .call-controls {
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .mobile-optimized .btn {
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 10px;
+        }
+        
+        .device-status {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 14px;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         @keyframes gradient {
@@ -708,7 +734,6 @@
     </style>
 </head>
 <body class="dark-mode">
-    
     <div class="sidebar-toggle" id="sidebarToggle">
         <i class="fas fa-bars"></i>
     </div>
@@ -832,6 +857,9 @@
                         </div>
                         <div class="diagnostics-content" id="audioDiagnosticsContent"></div>
                     </div>
+                    <div class="device-status" id="deviceStatus">
+                        <i class="fas fa-mobile-alt"></i> <span id="deviceType">Detecting device...</span>
+                    </div>
                 </div>
             </div>
 
@@ -897,6 +925,9 @@
                         </div>
                         <div class="diagnostics-content" id="videoDiagnosticsContent"></div>
                     </div>
+                    <div class="device-status" id="videoDeviceStatus">
+                        <i class="fas fa-mobile-alt"></i> <span id="videoDeviceType">Detecting device...</span>
+                    </div>
                 </div>
             </div>
 
@@ -935,8 +966,8 @@
                             <input type="checkbox" id="network-monitor" checked>
                         </div>
                         <div class="setting-item">
-                            <label>Auto Reconnect:</label>
-                            <input type="checkbox" id="auto-reconnect" checked>
+                            <label>Mobile Optimization:</label>
+                            <input type="checkbox" id="mobile-optimization" checked>
                         </div>
                     </div>
                 </div>
@@ -948,9 +979,10 @@
                         <i class="fas fa-info-circle"></i> About
                     </div>
                     <div class="about-content">
-                        <p>An Open-source communication platform.</p>
-                        <p><strong>Version:</strong> 2.1.0</p>
+                        <p>A free, open-source communication platform using WebRTC technology.</p>
+                        <p><strong>Version:</strong> 2.2 (Mobile Fixed)</p>
                         <p><strong>Developed by:</strong> SatLoom Developers</p>
+                        <p><strong>Features:</strong> VPN support, network transition handling, automatic reconnection</p>
                     </div>
                 </div>
             </div>
@@ -996,7 +1028,8 @@
             reconnectAttempts: 0,
             maxReconnectAttempts: 3,
             reconnectionTimer: null,
-            wakeLock: null
+            wakeLock: null,
+            isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
         };
 
         // ========== DOM ELEMENT REFERENCES ========== //
@@ -1025,18 +1058,23 @@
             networkIcon: document.getElementById('networkIcon'),
             networkText: document.getElementById('networkText'),
             audioReconnectOverlay: document.getElementById('audioReconnectOverlay'),
-            videoReconnectOverlay: document.getElementById('videoReconnectOverlay')
+            videoReconnectOverlay: document.getElementById('videoReconnectOverlay'),
+            deviceStatus: document.getElementById('deviceStatus'),
+            deviceType: document.getElementById('deviceType'),
+            videoDeviceStatus: document.getElementById('videoDeviceStatus'),
+            videoDeviceType: document.getElementById('videoDeviceType')
         };
 
         // ========== WEBRTC CONFIG ========== //
         function getRTCConfiguration() {
             const strategy = domRefs.connectionStrategy.value;
             
-            // Optimized ICE servers for faster connections
+            // Optimized ICE servers for mobile-to-desktop connections
             const iceServers = [
                 // Fast Google STUN servers
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
                 
                 // High-performance TURN servers
                 {
@@ -1048,6 +1086,16 @@
                     urls: 'turn:global.turn.twilio.com:3478?transport=tcp',
                     username: 'satloom',
                     credential: 'satloom123'
+                },
+                {
+                    urls: 'turn:numb.viagenie.ca:3478',
+                    username: 'webrtc@live.com',
+                    credential: 'muazkh'
+                },
+                {
+                    urls: 'turn:turn.bistri.com:80',
+                    username: 'homeo',
+                    credential: 'homeo'
                 }
             ];
             
@@ -1096,9 +1144,31 @@
             updateSidebarToggleIcon();
             initDiagnostics();
             startNetworkMonitoring();
+            detectDeviceType();
+            applyMobileOptimization();
             
             // Add visibility change handler to prevent disconnections
             document.addEventListener('visibilitychange', handleVisibilityChange);
+        }
+
+        function detectDeviceType() {
+            const deviceType = appState.isMobile ? 'Mobile Device' : 'Desktop/Laptop';
+            domRefs.deviceType.textContent = deviceType;
+            domRefs.videoDeviceType.textContent = deviceType;
+            
+            if (appState.isMobile) {
+                document.body.classList.add('mobile-optimized');
+                logDiagnostic(`Running on mobile: ${navigator.userAgent}`, 'info');
+            } else {
+                logDiagnostic(`Running on desktop: ${navigator.userAgent}`, 'info');
+            }
+        }
+        
+        function applyMobileOptimization() {
+            if (appState.isMobile && document.getElementById('mobile-optimization').checked) {
+                // Use more relaxed constraints for mobile
+                logDiagnostic('Applying mobile optimization settings', 'info');
+            }
         }
 
         function setupEventListeners() {
@@ -1141,7 +1211,7 @@
             domRefs.connectionStrategy.addEventListener('change', saveSettings);
             document.getElementById('reconnect-attempts').addEventListener('change', saveSettings);
             document.getElementById('network-monitor').addEventListener('change', saveSettings);
-            document.getElementById('auto-reconnect').addEventListener('change', saveSettings);
+            document.getElementById('mobile-optimization').addEventListener('change', saveSettings);
         }
 
         function loadSettings() {
@@ -1156,8 +1226,8 @@
                 localStorage.getItem('notificationSound') !== 'false';
             document.getElementById('debug-mode-toggle').checked = 
                 localStorage.getItem('debugMode') === 'true';
-            document.getElementById('auto-reconnect').checked = 
-                localStorage.getItem('autoReconnect') !== 'false';
+            document.getElementById('mobile-optimization').checked = 
+                localStorage.getItem('mobileOptimization') !== 'false';
                 
             appState.diagnosticsEnabled = localStorage.getItem('debugMode') === 'true';
             
@@ -1291,20 +1361,30 @@
         // ========== MEDIA MANAGEMENT ========== //
         async function initMedia(mode) {
             try {
-                const constraints = mode === 'video' ? 
-                    { 
-                        video: { width: 640, height: 480, frameRate: 15 },
-                        audio: { 
-                            echoCancellation: true,
-                            noiseSuppression: true 
-                        } 
-                    } : { 
-                        audio: { 
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            autoGainControl: true 
-                        } 
-                    };
+                // Mobile-specific constraints
+                const mobileConstraints = {
+                    video: {
+                        facingMode: appState.isMobile ? { ideal: "environment" } : "user",
+                        width: { min: 640, ideal: 1280, max: 1920 },
+                        height: { min: 480, ideal: 720, max: 1080 },
+                        frameRate: { ideal: 15, max: 30 }
+                    },
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                };
+                
+                const audioConstraints = {
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                };
+                
+                const constraints = mode === 'video' ? mobileConstraints : audioConstraints;
                 
                 appState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
                 
@@ -1402,6 +1482,7 @@
             if (state === 'connected') {
                 updateStatus(`Call connected (${appState.roomId})`, true);
                 appState.reconnectAttempts = 0;
+                showNotification('Connection Established', 'Devices are now connected', 'success');
             } else if (state === 'disconnected' || state === 'failed') {
                 // Attempt to reconnect automatically
                 if (appState.reconnectAttempts < appState.maxReconnectAttempts) {
@@ -1538,7 +1619,10 @@
                 appState.isInitiator = true;
                 initSignaling();
                 
-                const offer = await appState.peerConnection.createOffer();
+                const offer = await appState.peerConnection.createOffer({
+                    offerToReceiveAudio: true,
+                    offerToReceiveVideo: mode === 'video'
+                });
                 await appState.peerConnection.setLocalDescription(offer);
                 
                 sendMessage({
@@ -1557,6 +1641,7 @@
                 console.error('Error creating room:', err);
                 showNotification('Connection Error', 'Failed to start call', 'error');
                 updateStatus('Call failed', false);
+                logDiagnostic(`Room creation error: ${err.message}`, 'error');
             }
         }
 
@@ -1590,6 +1675,7 @@
             } catch (err) {
                 console.error('Error joining room:', err);
                 showNotification('Connection Error', 'Failed to join room', 'error');
+                logDiagnostic(`Room join error: ${err.message}`, 'error');
             }
         }
 
@@ -1814,8 +1900,10 @@
                 document.getElementById('reconnect-attempts').value);
             localStorage.setItem('networkMonitor', 
                 document.getElementById('network-monitor').checked);
-            localStorage.setItem('autoReconnect', 
-                document.getElementById('auto-reconnect').checked);
+            localStorage.setItem('mobileOptimization', 
+                document.getElementById('mobile-optimization').checked);
+            
+            applyMobileOptimization();
         }
         
         function toggleDebugMode() {
