@@ -78,7 +78,6 @@
             background: linear-gradient(135deg, #3a7bd5, #00d2ff);
         }
 
-        /* Consistent logo text gradient in both themes */
         .logo-text {
             font-size: 32px;
             font-weight: 700;
@@ -456,6 +455,31 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 10px rgba(58, 123, 213, 0.3);
         }
+
+        /* Connection status indicators */
+        .status-connected {
+            color: #00ff9d !important;
+        }
+        .status-warning {
+            color: #ffcc00 !important;
+        }
+        .status-error {
+            color: #ff5252 !important;
+        }
+        
+        /* Retry button */
+        .retry-btn {
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 <body>
@@ -468,6 +492,7 @@
         <div class="notification-content">
             <div class="notification-title" id="notificationTitle">Notification</div>
             <div id="notificationMessage"></div>
+            <button class="retry-btn" id="retryConnection" style="display: none;">Retry Connection</button>
         </div>
     </div>
     
@@ -524,7 +549,7 @@
     </div>
 
     <div class="footer">
-        <p>v3.1.1 | Powered by <a href="#">SatLoom Developers</a></p>
+        <p>v4.0.0 | Powered by <a href="#">SatLoom Developers</a></p>
     </div>
     
     <!-- Hidden audio element for remote stream -->
@@ -591,11 +616,12 @@
             startTime: null,
             userId: generateUserId(),
             reconnectAttempts: 0,
-            maxReconnectAttempts: 10,
+            maxReconnectAttempts: 5,
             lastIceRestart: 0,
             signalingRef: null,
             isMuted: false,
-            remoteAudioElement: null
+            remoteAudioElement: null,
+            isPageVisible: true
         };
 
         // Initialize app
@@ -606,6 +632,7 @@
             setupEventListeners();
             autoJoinRoom();
             updateThemeIcon();
+            setupVisibilityHandlers();
             
             // Load saved theme preference
             const savedTheme = localStorage.getItem('theme');
@@ -613,6 +640,41 @@
                 document.body.classList.add('light-mode');
             }
             updateThemeIcon();
+        }
+
+        function setupVisibilityHandlers() {
+            // Handle visibility changes
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+        }
+
+        function handleVisibilityChange() {
+            appState.isPageVisible = document.visibilityState === 'visible';
+            updateStatus(appState.isPageVisible ? 'Page is visible' : 'Page is in background', false);
+            
+            if (appState.isPageVisible && appState.isStarted) {
+                // Page became visible - try to resume connection
+                resumeConnectionAfterBackground();
+            }
+        }
+
+        function resumeConnectionAfterBackground() {
+            // Resume remote audio
+            if (appState.remoteAudioElement && appState.remoteAudioElement.srcObject) {
+                appState.remoteAudioElement.play().catch(e => {
+                    console.error('Failed to resume audio:', e);
+                    document.getElementById('audioActivationPanel').style.display = 'block';
+                });
+            }
+            
+            // If we have a peer connection, check its state
+            if (appState.peerConnection) {
+                const state = appState.peerConnection.iceConnectionState;
+                
+                if (state !== 'connected' && state !== 'completed') {
+                    // Connection is not active - try to restart ICE
+                    restartICE();
+                }
+            }
         }
 
         function setupEventListeners() {
@@ -623,6 +685,7 @@
             document.getElementById('endAudioCall').addEventListener('click', endAudioCall);
             document.getElementById('themeToggle').addEventListener('click', toggleTheme);
             document.getElementById('activateAudioBtn').addEventListener('click', activateAudio);
+            document.getElementById('retryConnection').addEventListener('click', retryConnection);
         }
 
         function generateUserId() {
@@ -633,13 +696,28 @@
             return localStorage.getItem('userId');
         }
 
-        function showNotification(title, message, type = 'info') {
+        function showNotification(title, message, type = 'info', showRetry = false) {
             const notification = document.getElementById('globalNotification');
             const titleElem = document.getElementById('notificationTitle');
             const messageElem = document.getElementById('notificationMessage');
+            const retryBtn = document.getElementById('retryConnection');
             
             titleElem.textContent = title;
             messageElem.textContent = message;
+            
+            // Set notification color based on type
+            if (type === 'error') {
+                notification.style.borderLeft = '4px solid #ff5252';
+            } else if (type === 'success') {
+                notification.style.borderLeft = '4px solid #4CAF50';
+            } else if (type === 'warning') {
+                notification.style.borderLeft = '4px solid #ffcc00';
+            } else {
+                notification.style.borderLeft = '4px solid #00d2ff';
+            }
+            
+            // Show/hide retry button
+            retryBtn.style.display = showRetry ? 'block' : 'none';
             
             notification.style.display = 'flex';
             
@@ -650,13 +728,21 @@
 
         function updateStatus(text, isConnected = false) {
             const statusElem = document.getElementById('statusText');
-            const statusContainer = document.getElementById('connectionStatus');
+            const statusIcon = document.querySelector('#connectionStatus i');
             
             statusElem.textContent = text;
+            
             if (isConnected) {
-                statusContainer.classList.add('status-connected');
+                statusIcon.classList.add('status-connected');
+                statusIcon.classList.remove('status-warning', 'status-error');
+            } else if (text.includes('warning') || text.includes('background')) {
+                statusIcon.classList.add('status-warning');
+                statusIcon.classList.remove('status-connected', 'status-error');
+            } else if (text.includes('error') || text.includes('failed')) {
+                statusIcon.classList.add('status-error');
+                statusIcon.classList.remove('status-connected', 'status-warning');
             } else {
-                statusContainer.classList.remove('status-connected');
+                statusIcon.classList.remove('status-connected', 'status-warning', 'status-error');
             }
         }
 
@@ -713,13 +799,13 @@
                 return true;
             } catch (err) {
                 showNotification('Connection Error', 
-                    `Failed to create connection: ${err.message}`, 'error');
+                    `Failed to create connection: ${err.message}`, 'error', true);
                 return false;
             }
         }
 
         function handleRemoteStream(event) {
-            // FIXED: Properly handle remote stream
+            // Properly handle remote stream
             if (event.streams && event.streams.length > 0) {
                 appState.remoteStream = event.streams[0];
             } else {
@@ -778,7 +864,7 @@
                     const delay = Math.min(1000 * Math.pow(2, appState.reconnectAttempts), 30000);
                     setTimeout(() => restartICE(), delay);
                 } else {
-                    showNotification('Connection Failed', 'Reconnection attempts exhausted', 'error');
+                    showNotification('Connection Failed', 'Reconnection attempts exhausted', 'error', true);
                 }
             }
         }
@@ -823,17 +909,21 @@
         }
 
         async function handleOffer(offer) {
-            await appState.peerConnection.setRemoteDescription(
-                new RTCSessionDescription(offer));
-            
-            const answer = await appState.peerConnection.createAnswer();
-            await appState.peerConnection.setLocalDescription(answer);
-            
-            sendMessage(answer);
-            appState.isStarted = true;
-            startTimer();
-            updateStatus(`In audio call (${appState.roomId})`, true);
-            document.getElementById('audioControls').style.display = 'flex';
+            try {
+                await appState.peerConnection.setRemoteDescription(
+                    new RTCSessionDescription(offer));
+                
+                const answer = await appState.peerConnection.createAnswer();
+                await appState.peerConnection.setLocalDescription(answer);
+                
+                sendMessage(answer);
+                appState.isStarted = true;
+                startTimer();
+                updateStatus(`In audio call (${appState.roomId})`, true);
+                document.getElementById('audioControls').style.display = 'flex';
+            } catch (err) {
+                showNotification('Connection Error', 'Failed to handle offer', 'error', true);
+            }
         }
 
         function sendMessage(message) {
@@ -842,19 +932,6 @@
             dbRef.push(JSON.stringify(message));
         }
         
-        async function createOffer() {
-            try {
-                const offer = await appState.peerConnection.createOffer();
-                await appState.peerConnection.setLocalDescription(offer);
-                sendMessage({
-                    type: 'offer',
-                    sdp: offer.sdp
-                });
-            } catch (err) {
-                console.error('Failed to create offer:', err);
-            }
-        }
-
         async function generateAudioRoom() {
             appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
             
@@ -886,7 +963,7 @@
                 
                 showNotification('Call Started', 'You are now the host', 'success');
             } catch (err) {
-                showNotification('Connection Error', 'Failed to start call', 'error');
+                showNotification('Connection Error', 'Failed to start call', 'error', true);
                 updateStatus('Call failed', false);
             }
         }
@@ -951,7 +1028,7 @@
                 sendMessage(offer);
                 showNotification('Reconnecting', 'Attempting to re-establish connection');
             } catch (err) {
-                showNotification('Reconnect Failed', 'Could not restart connection', 'error');
+                showNotification('Reconnect Failed', 'Could not restart connection', 'error', true);
             }
         }
 
@@ -1023,7 +1100,7 @@
                 updateStatus(`Joining room ${roomId}...`, false);
                 showNotification('Joining', `Connecting to room: ${roomId}`);
             } catch (err) {
-                showNotification('Connection Error', 'Failed to join room', 'error');
+                showNotification('Connection Error', 'Failed to join room', 'error', true);
             }
         }
 
@@ -1040,6 +1117,20 @@
                 themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
             } else {
                 themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+            }
+        }
+        
+        function retryConnection() {
+            if (appState.roomId) {
+                if (appState.isInitiator) {
+                    // Retry as initiator
+                    generateAudioRoom();
+                } else {
+                    // Retry as joiner
+                    joinAudioRoom(appState.roomId);
+                }
+            } else {
+                showNotification('Error', 'No room to reconnect to', 'error');
             }
         }
     </script>
