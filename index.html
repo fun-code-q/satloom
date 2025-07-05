@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Screen Wake Lock Demo</title>
+    <title>SatLoom - Audio Calling</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -409,77 +409,159 @@
             }
         }
         
-        .wake-lock-status {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-top: 15px;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
-            gap: 8px;
-        }
-        
-        .light-mode .wake-lock-status {
-            background: rgba(0, 0, 0, 0.05);
-        }
-        
-        .wake-lock-status.active {
-            color: #4CAF50;
-        }
-        
-        .wake-lock-status.inactive {
-            color: #ff5252;
-        }
-        
-        .info-section {
-            background: rgba(255, 255, 255, 0.1);
+        /* Audio activation panel */
+        .audio-activation-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(7, 25, 43, 0.95);
             border-radius: 12px;
-            padding: 15px;
-            margin-top: 20px;
-            text-align: left;
+            padding: 15px 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(58, 123, 213, 0.3);
+            display: none;
+            z-index: 1000;
         }
         
-        .info-section h3 {
-            margin-bottom: 10px;
+        .light-mode .audio-activation-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(30, 144, 255, 0.3);
+        }
+        
+        .audio-activation-panel p {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .audio-activation-panel button {
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .light-mode .audio-activation-panel button {
+            background: linear-gradient(135deg, #1e90ff, #00bfff);
+        }
+        
+        .audio-activation-panel button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(58, 123, 213, 0.3);
+        }
+
+        /* Connection status indicators */
+        .status-connected {
+            color: #00ff9d !important;
+        }
+        .status-warning {
+            color: #ffcc00 !important;
+        }
+        .status-error {
+            color: #ff5252 !important;
+        }
+        
+        /* Retry button */
+        .retry-btn {
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        /* Connection guard */
+        .connection-guard {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        
+        .connection-guard-content {
+            max-width: 400px;
+            background: rgba(7, 25, 43, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .connection-guard h2 {
+            margin-bottom: 20px;
             color: #00d2ff;
+        }
+        
+        .connection-guard p {
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        
+        .connection-guard-btn {
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            min-width: 180px;
+        }
+        
+        /* Wake lock status indicator */
+        .wake-lock-indicator {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 8px 15px;
             display: flex;
             align-items: center;
             gap: 8px;
+            font-size: 14px;
+            z-index: 10;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            display: none;
         }
         
-        .light-mode .info-section h3 {
-            color: #1e90ff;
-        }
-        
-        .info-section p {
-            margin-bottom: 8px;
-            line-height: 1.5;
-        }
-        
-        .feature-list {
-            padding-left: 20px;
-            margin-top: 10px;
-        }
-        
-        .feature-list li {
-            margin-bottom: 8px;
-        }
-        
-        .compatibility-warning {
-            background: rgba(255, 152, 0, 0.2);
-            border-radius: 8px;
-            padding: 10px;
-            margin-top: 15px;
-            border-left: 4px solid #ff9800;
-        }
-        
-        .light-mode .compatibility-warning {
-            background: rgba(255, 152, 0, 0.1);
+        .light-mode .wake-lock-indicator {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            color: #333;
         }
     </style>
 </head>
 <body>
+    <div class="wake-lock-indicator" id="wakeLockIndicator">
+        <i class="fas fa-lightbulb"></i>
+        <span>Screen light is ON</span>
+    </div>
+    
     <div class="theme-toggle" id="themeToggle">
         <i class="fas fa-moon"></i>
     </div>
@@ -489,6 +571,20 @@
         <div class="notification-content">
             <div class="notification-title" id="notificationTitle">Notification</div>
             <div id="notificationMessage"></div>
+            <button class="retry-btn" id="retryConnection" style="display: none;">Retry Connection</button>
+        </div>
+    </div>
+    
+    <div class="audio-activation-panel" id="audioActivationPanel">
+        <p>Audio playback is blocked. Click to enable:</p>
+        <button id="activateAudioBtn">Enable Audio</button>
+    </div>
+    
+    <div class="connection-guard" id="connectionGuard">
+        <div class="connection-guard-content">
+            <h2>Connection Paused</h2>
+            <p>Your connection is temporarily paused while the browser is minimized. Please return to the browser to continue your call.</p>
+            <button class="connection-guard-btn" id="resumeConnection">Resume Connection</button>
         </div>
     </div>
 
@@ -496,15 +592,15 @@
         <div class="card">
             <div class="logo">
                 <div class="logo-icon">
-                    <i class="fas fa-microphone"></i>
+                    <i class="fas fa-satellite-dish"></i>
                 </div>
-                <div class="logo-text">ScreenLock Demo</div>
+                <div class="logo-text">SatLoom</div>
             </div>
             
             <div class="status-container">
                 <div class="status-indicator" id="connectionStatus">
                     <i class="fas fa-signal"></i>
-                    <span id="statusText">Ready to start call</span>
+                    <span id="statusText">Ready to connect</span>
                 </div>
                 <div class="call-timer" id="audioCallTimer">00:00</div>
             </div>
@@ -519,49 +615,113 @@
                 </div>
             </div>
             
-            <div class="wake-lock-status inactive" id="wakeLockStatus">
-                <i class="fas fa-power-off"></i>
-                <span>Screen Lock: Inactive</span>
+            <div class="action-container">
+                <button class="btn" id="generateAudioRoom">
+                    <i class="fas fa-network-wired"></i> Generate Room
+                </button>
+                <button class="control-btn copy" id="copyRoomLink" style="display: none;">
+                    <i class="fas fa-copy"></i>
+                </button>
             </div>
             
-            <div class="action-container">
-                <button class="btn" id="startCall">
-                    <i class="fas fa-phone"></i> Start Audio Call
+            <div class="call-controls" id="audioControls" style="display: none;">
+                <button class="control-btn mute" id="audioAudioToggle">
+                    <i class="fas fa-microphone"></i>
                 </button>
-                <button class="control-btn end" id="endCall">
+                <button class="control-btn end" id="endAudioCall">
                     <i class="fas fa-phone-slash"></i>
                 </button>
             </div>
-            
         </div>
     </div>
 
     <div class="footer">
-        <p>Screen Wake Lock Demo | Works on Chrome, Edge, and Firefox for Android</p>
+        <p>v4.1.0 | Powered by <a href="#">SatLoom Developers</a></p>
     </div>
+    
+    <!-- Hidden audio element for remote stream -->
+    <audio id="remoteAudio" autoplay playsinline style="display: none;"></audio>
 
+    <!-- Firebase for signaling -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
     <script>
+        // ========== FIREBASE CONFIG ========== //
+        const firebaseConfig = {
+            apiKey: "AIzaSyDeksN3qPZCmNuoASlEqG38XVmag6ecTh8",
+            authDomain: "satloom-rtc.firebaseapp.com",
+            databaseURL: "https://satloom-rtc-default-rtdb.firebaseio.com",
+            projectId: "satloom-rtc",
+            storageBucket: "satloom-rtc.appspot.com",
+            messagingSenderId: "273627860564",
+            appId: "1:273627860564:web:c326b1bb6ffcb32fb0e7c1"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // ========== WEBRTC CONFIG ========== //
+        function getRTCConfiguration() {
+            // ICE servers configuration
+            const iceServers = [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' },
+                {
+                    urls: 'turn:global.turn.twilio.com:3478?transport=udp',
+                    username: 'satloom',
+                    credential: 'satloom123'
+                },
+                {
+                    urls: 'turn:global.turn.twilio.com:3478?transport=tcp',
+                    username: 'satloom',
+                    credential: 'satloom123'
+                },
+                {
+                    urls: 'turn:numb.viagenie.ca:3478',
+                    username: 'webrtc@live.com',
+                    credential: 'muazkh'
+                }
+            ];
+            
+            return { iceServers };
+        }
+
         // State management
         const appState = {
-            wakeLock: null,
+            localStream: null,
+            remoteStream: null,
+            peerConnection: null,
+            roomId: null,
+            isInitiator: false,
+            isStarted: false,
             timer: null,
             startTime: null,
-            isCallActive: false
+            userId: generateUserId(),
+            reconnectAttempts: 0,
+            maxReconnectAttempts: 3,
+            lastIceRestart: 0,
+            signalingRef: null,
+            isMuted: false,
+            remoteAudioElement: null,
+            isPageVisible: true,
+            connectionPaused: false,
+            wakeLock: null // For screen wake lock
         };
-        
-        // DOM elements
-        const wakeLockStatus = document.getElementById('wakeLockStatus');
-        const startCallBtn = document.getElementById('startCall');
-        const endCallBtn = document.getElementById('endCall');
-        const callTimer = document.getElementById('audioCallTimer');
-        const statusText = document.getElementById('statusText');
-        
+
         // Initialize app
         document.addEventListener('DOMContentLoaded', initApp);
-        
+
         function initApp() {
+            appState.remoteAudioElement = document.getElementById('remoteAudio');
             setupEventListeners();
+            autoJoinRoom();
             updateThemeIcon();
+            setupVisibilityHandlers();
             
             // Load saved theme preference
             const savedTheme = localStorage.getItem('theme');
@@ -570,142 +730,150 @@
             }
             updateThemeIcon();
         }
-        
-        function setupEventListeners() {
-            // Call controls
-            startCallBtn.addEventListener('click', startCall);
-            endCallBtn.addEventListener('click', endCall);
-            
-            // Theme toggle
-            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+        function setupVisibilityHandlers() {
+            // Handle visibility changes
+            document.addEventListener('visibilitychange', handleVisibilityChange);
         }
-        
-        async function startCall() {
-            if (appState.isCallActive) return;
+
+        function handleVisibilityChange() {
+            const wasVisible = appState.isPageVisible;
+            appState.isPageVisible = document.visibilityState === 'visible';
             
-            // Update UI
-            appState.isCallActive = true;
-            startCallBtn.disabled = true;
-            statusText.textContent = "Call in progress...";
+            if (wasVisible && !appState.isPageVisible) {
+                // Page became hidden
+                pauseConnection();
+            } else if (!wasVisible && appState.isPageVisible) {
+                // Page became visible
+                resumeConnection();
+            }
             
-            // Start timer
-            startTimer();
-            
-            // Request wake lock
-            await requestWakeLock();
-            
-            // Simulate call activity
-            simulateCallActivity();
-            
-            showNotification("Call Started", "Screen lock activated to keep your screen on");
+            updateStatus(appState.isPageVisible ? 'Page is visible' : 'Page is in background', false);
         }
-        
-        function endCall() {
-            if (!appState.isCallActive) return;
-            
-            // Update UI
-            appState.isCallActive = false;
-            startCallBtn.disabled = false;
-            statusText.textContent = "Ready to start call";
-            
-            // Stop timer
-            stopTimer();
-            
-            // Release wake lock
-            releaseWakeLock();
-            
-            // Stop simulated call activity
-            stopSimulatedCallActivity();
-            
-            showNotification("Call Ended", "Screen lock deactivated");
+
+        function pauseConnection() {
+            if (appState.isStarted) {
+                appState.connectionPaused = true;
+                document.getElementById('connectionGuard').style.display = 'flex';
+                showNotification('Connection Paused', 'Return to browser to resume call', 'warning');
+            }
         }
-        
-        async function requestWakeLock() {
-            try {
-                // Check if wake lock is supported
-                if ('wakeLock' in navigator) {
-                    // Request screen wake lock
+
+        function resumeConnection() {
+            if (appState.connectionPaused) {
+                appState.connectionPaused = false;
+                document.getElementById('connectionGuard').style.display = 'none';
+                
+                // Resume remote audio
+                if (appState.remoteAudioElement && appState.remoteAudioElement.srcObject) {
+                    appState.remoteAudioElement.play().catch(e => {
+                        console.error('Failed to resume audio:', e);
+                        document.getElementById('audioActivationPanel').style.display = 'block';
+                    });
+                }
+                
+                // If connection is in a bad state, restart ICE
+                if (appState.peerConnection) {
+                    const state = appState.peerConnection.iceConnectionState;
+                    if (state === 'disconnected' || state === 'failed') {
+                        restartICE();
+                    }
+                }
+                
+                // Reacquire wake lock if we are in a call
+                if (appState.isStarted) {
+                    acquireWakeLock();
+                }
+                
+                showNotification('Connection Resumed', 'Call has been restored', 'success');
+            }
+        }
+
+        // ========== SCREEN WAKE LOCK FUNCTIONS ========== //
+        async function acquireWakeLock() {
+            // Check if Wake Lock API is supported
+            if ('wakeLock' in navigator) {
+                try {
+                    // Request a screen wake lock
                     appState.wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Screen Wake Lock is active');
                     
-                    // Update UI
-                    wakeLockStatus.innerHTML = '<i class="fas fa-lock"></i> Screen Lock: Active';
-                    wakeLockStatus.classList.remove('inactive');
-                    wakeLockStatus.classList.add('active');
+                    // Show indicator
+                    document.getElementById('wakeLockIndicator').style.display = 'flex';
                     
-                    // Listen for release (when screen lock is released by the system)
+                    // Listen for release event (when lock is released by system)
                     appState.wakeLock.addEventListener('release', () => {
-                        wakeLockStatus.innerHTML = '<i class="fas fa-power-off"></i> Screen Lock: Released by system';
-                        wakeLockStatus.classList.remove('active');
-                        wakeLockStatus.classList.add('inactive');
+                        console.log('Screen Wake Lock was released by the system');
+                        document.getElementById('wakeLockIndicator').style.display = 'none';
                     });
                     
-                    return true;
-                } else {
-                    // Fallback for browsers without wake lock support
-                    wakeLockStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Screen Lock: Not supported';
-                    showNotification("Warning", "Screen Wake Lock not supported in this browser");
-                    return false;
+                } catch (err) {
+                    console.error(`Error acquiring wake lock: ${err.message}`);
+                    showNotification('Screen Lock Error', 'Could not keep screen on. Your device might turn off the screen during the call.', 'warning');
                 }
-            } catch (err) {
-                console.error(`Wake Lock error: ${err.message}`);
-                wakeLockStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Screen Lock: Failed';
-                wakeLockStatus.classList.add('inactive');
-                showNotification("Error", "Could not activate screen lock");
-                return false;
+            } else {
+                console.warn('Screen Wake Lock API not supported in this browser');
+                showNotification('Screen Lock Not Supported', 'Your browser does not support keeping the screen on during calls.', 'warning');
             }
         }
-        
+
         function releaseWakeLock() {
-            if (appState.wakeLock !== null) {
-                appState.wakeLock.release();
-                appState.wakeLock = null;
+            if (appState.wakeLock) {
+                // Release the wake lock
+                appState.wakeLock.release()
+                    .then(() => {
+                        console.log('Screen Wake Lock released');
+                        appState.wakeLock = null;
+                        document.getElementById('wakeLockIndicator').style.display = 'none';
+                    })
+                    .catch(err => {
+                        console.error('Error releasing wake lock:', err);
+                    });
             }
-            
-            // Update UI
-            wakeLockStatus.innerHTML = '<i class="fas fa-power-off"></i> Screen Lock: Inactive';
-            wakeLockStatus.classList.remove('active');
-            wakeLockStatus.classList.add('inactive');
         }
-        
-        function startTimer() {
-            appState.startTime = Date.now();
-            appState.timer = setInterval(() => {
-                const time = Date.now() - appState.startTime;
-                const minutes = Math.floor(time / 60000);
-                const seconds = Math.floor((time % 60000) / 1000);
-                callTimer.textContent = 
-                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            }, 1000);
+
+        function setupEventListeners() {
+            // Audio call controls
+            document.getElementById('generateAudioRoom').addEventListener('click', generateAudioRoom);
+            document.getElementById('copyRoomLink').addEventListener('click', copyRoomLink);
+            document.getElementById('audioAudioToggle').addEventListener('click', toggleAudio);
+            document.getElementById('endAudioCall').addEventListener('click', endAudioCall);
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+            document.getElementById('activateAudioBtn').addEventListener('click', activateAudio);
+            document.getElementById('retryConnection').addEventListener('click', retryConnection);
+            document.getElementById('resumeConnection').addEventListener('click', resumeConnection);
         }
-        
-        function stopTimer() {
-            clearInterval(appState.timer);
-            callTimer.textContent = '00:00';
+
+        function generateUserId() {
+            if (!localStorage.getItem('userId')) {
+                const userId = 'user-' + Math.random().toString(36).substr(2, 8);
+                localStorage.setItem('userId', userId);
+            }
+            return localStorage.getItem('userId');
         }
-        
-        function simulateCallActivity() {
-            // Simulate audio visualization bars animation
-            const bars = document.querySelectorAll('.audio-bar');
-            bars.forEach(bar => {
-                bar.style.animationPlayState = 'running';
-            });
-        }
-        
-        function stopSimulatedCallActivity() {
-            // Stop audio visualization bars animation
-            const bars = document.querySelectorAll('.audio-bar');
-            bars.forEach(bar => {
-                bar.style.animationPlayState = 'paused';
-            });
-        }
-        
-        function showNotification(title, message) {
+
+        function showNotification(title, message, type = 'info', showRetry = false) {
             const notification = document.getElementById('globalNotification');
             const titleElem = document.getElementById('notificationTitle');
             const messageElem = document.getElementById('notificationMessage');
+            const retryBtn = document.getElementById('retryConnection');
             
             titleElem.textContent = title;
             messageElem.textContent = message;
+            
+            // Set notification color based on type
+            if (type === 'error') {
+                notification.style.borderLeft = '4px solid #ff5252';
+            } else if (type === 'success') {
+                notification.style.borderLeft = '4px solid #4CAF50';
+            } else if (type === 'warning') {
+                notification.style.borderLeft = '4px solid #ffcc00';
+            } else {
+                notification.style.borderLeft = '4px solid #00d2ff';
+            }
+            
+            // Show/hide retry button
+            retryBtn.style.display = showRetry ? 'block' : 'none';
             
             notification.style.display = 'flex';
             
@@ -713,7 +881,400 @@
                 notification.style.display = 'none';
             }, 3000);
         }
+
+        function updateStatus(text, isConnected = false) {
+            const statusElem = document.getElementById('statusText');
+            const statusIcon = document.querySelector('#connectionStatus i');
+            
+            statusElem.textContent = text;
+            
+            if (isConnected) {
+                statusIcon.classList.add('status-connected');
+                statusIcon.classList.remove('status-warning', 'status-error');
+            } else if (text.includes('warning') || text.includes('background')) {
+                statusIcon.classList.add('status-warning');
+                statusIcon.classList.remove('status-connected', 'status-error');
+            } else if (text.includes('error') || text.includes('failed')) {
+                statusIcon.classList.add('status-error');
+                statusIcon.classList.remove('status-connected', 'status-warning');
+            } else {
+                statusIcon.classList.remove('status-connected', 'status-warning', 'status-error');
+            }
+        }
+
+        function startTimer() {
+            appState.startTime = Date.now();
+            appState.timer = setInterval(() => {
+                const time = Date.now() - appState.startTime;
+                const minutes = Math.floor(time / 60000);
+                const seconds = Math.floor((time % 60000) / 1000);
+                document.getElementById('audioCallTimer').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(appState.timer);
+            document.getElementById('audioCallTimer').textContent = '00:00';
+        }
+
+        async function initMedia() {
+            try {
+                appState.localStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: { 
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    } 
+                });
+                return true;
+            } catch (err) {
+                showNotification('Microphone Error', 
+                    'Could not access microphone. Please check permissions.', 'error');
+                return false;
+            }
+        }
+
+        function createPeerConnection() {
+            try {
+                const pcConfig = getRTCConfiguration();
+                appState.peerConnection = new RTCPeerConnection(pcConfig);
+                
+                // Add local stream tracks
+                if (appState.localStream) {
+                    appState.localStream.getTracks().forEach(track => {
+                        appState.peerConnection.addTrack(track, appState.localStream);
+                    });
+                }
+                
+                // Set up event handlers
+                appState.peerConnection.ontrack = handleRemoteStream;
+                appState.peerConnection.onicecandidate = handleICECandidate;
+                appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
+                
+                return true;
+            } catch (err) {
+                showNotification('Connection Error', 
+                    `Failed to create connection: ${err.message}`, 'error', true);
+                return false;
+            }
+        }
+
+        function handleRemoteStream(event) {
+            // Properly handle remote stream
+            if (event.streams && event.streams.length > 0) {
+                appState.remoteStream = event.streams[0];
+            } else {
+                if (!appState.remoteStream) {
+                    appState.remoteStream = new MediaStream();
+                }
+                appState.remoteStream.addTrack(event.track);
+            }
+            
+            // Use the hidden audio element for remote audio
+            if (appState.remoteAudioElement) {
+                appState.remoteAudioElement.srcObject = appState.remoteStream;
+                
+                // Handle autoplay restrictions
+                appState.remoteAudioElement.play().catch(e => {
+                    console.error('Autoplay blocked:', e);
+                    document.getElementById('audioActivationPanel').style.display = 'block';
+                });
+            }
+            
+            appState.reconnectAttempts = 0;
+            showNotification('Connected', 'Call established successfully', 'success');
+        }
+
+        function activateAudio() {
+            if (appState.remoteAudioElement && appState.remoteAudioElement.srcObject) {
+                appState.remoteAudioElement.play().then(() => {
+                    document.getElementById('audioActivationPanel').style.display = 'none';
+                }).catch(e => {
+                    console.error('Still cannot play audio:', e);
+                    showNotification('Audio Error', 'Failed to enable audio. Try clicking the page first.', 'error');
+                });
+            }
+        }
+
+        function handleICECandidate(event) {
+            if (event.candidate && !appState.connectionPaused) {
+                sendMessage({
+                    type: 'candidate',
+                    candidate: event.candidate.candidate,
+                    sdpMid: event.candidate.sdpMid,
+                    sdpMLineIndex: event.candidate.sdpMLineIndex
+                });
+            }
+        }
+
+        function handleICEConnectionStateChange() {
+            if (appState.connectionPaused) return;
+            
+            const state = appState.peerConnection.iceConnectionState;
+            
+            if (state === 'connected' || state === 'completed') {
+                updateStatus(`Call connected (${appState.roomId})`, true);
+                appState.reconnectAttempts = 0;
+            } else if (state === 'disconnected' || state === 'failed') {
+                if (appState.reconnectAttempts < appState.maxReconnectAttempts) {
+                    appState.reconnectAttempts++;
+                    const delay = Math.min(1000 * Math.pow(2, appState.reconnectAttempts), 30000);
+                    setTimeout(() => restartICE(), delay);
+                } else {
+                    showNotification('Connection Failed', 'Reconnection attempts exhausted', 'error', true);
+                }
+            }
+        }
+
+        function initSignaling() {
+            if (appState.signalingRef) {
+                appState.signalingRef.off('child_added');
+            }
+            
+            appState.signalingRef = database.ref(`rooms/${appState.roomId}/messages`);
+            
+            appState.signalingRef.on('child_added', snapshot => {
+                if (appState.connectionPaused) return;
+                
+                const message = JSON.parse(snapshot.val());
+                
+                if (!appState.peerConnection) createPeerConnection();
+                
+                switch (message.type) {
+                    case 'offer':
+                        if (!appState.isInitiator && !appState.isStarted) {
+                            handleOffer(message);
+                        }
+                        break;
+                    case 'answer':
+                        if (appState.isStarted) {
+                            appState.peerConnection.setRemoteDescription(
+                                new RTCSessionDescription(message));
+                        }
+                        break;
+                    case 'candidate':
+                        if (appState.isStarted && appState.peerConnection.remoteDescription) {
+                            appState.peerConnection.addIceCandidate(
+                                new RTCIceCandidate(message));
+                        }
+                        break;
+                    case 'bye':
+                        if (appState.isStarted) {
+                            endAudioCall();
+                        }
+                        break;
+                }
+            });
+        }
+
+        async function handleOffer(offer) {
+            try {
+                await appState.peerConnection.setRemoteDescription(
+                    new RTCSessionDescription(offer));
+                
+                const answer = await appState.peerConnection.createAnswer();
+                await appState.peerConnection.setLocalDescription(answer);
+                
+                sendMessage(answer);
+                appState.isStarted = true;
+                startTimer();
+                updateStatus(`In audio call (${appState.roomId})`, true);
+                document.getElementById('audioControls').style.display = 'flex';
+                
+                // Acquire wake lock when call starts
+                acquireWakeLock();
+            } catch (err) {
+                showNotification('Connection Error', 'Failed to handle offer', 'error', true);
+            }
+        }
+
+        function sendMessage(message) {
+            if (!appState.roomId || appState.connectionPaused) return;
+            const dbRef = database.ref(`rooms/${appState.roomId}/messages`);
+            dbRef.push(JSON.stringify(message));
+        }
         
+        async function generateAudioRoom() {
+            appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+            
+            // Show copy button
+            document.getElementById('copyRoomLink').style.display = 'flex';
+            
+            showNotification('Room Created', `Room ID: ${appState.roomId}`, 'success');
+            
+            try {
+                // Initialize media
+                const mediaInitialized = await initMedia();
+                if (!mediaInitialized) return;
+                
+                // Create peer connection
+                if (!createPeerConnection()) return;
+                
+                // Create offer
+                appState.isInitiator = true;
+                initSignaling();
+                const offer = await appState.peerConnection.createOffer();
+                await appState.peerConnection.setLocalDescription(offer);
+                sendMessage({ type: 'offer', sdp: offer.sdp });
+                
+                appState.isStarted = true;
+                startTimer();
+                updateStatus(`In call (${appState.roomId})`, true);
+                document.getElementById('audioControls').style.display = 'flex';
+                document.getElementById('generateAudioRoom').style.display = 'none';
+                
+                // Acquire wake lock when call starts
+                acquireWakeLock();
+                
+                showNotification('Call Started', 'You are now the host', 'success');
+            } catch (err) {
+                showNotification('Connection Error', 'Failed to start call', 'error', true);
+                updateStatus('Call failed', false);
+            }
+        }
+
+        function copyRoomLink() {
+            const roomId = appState.roomId;
+            if (!roomId) {
+                showNotification('Error', 'No room ID to copy', 'error');
+                return;
+            }
+            
+            const basePath = window.location.href.split('?')[0];
+            const fullLink = `${basePath}?room=${roomId}`;
+            
+            navigator.clipboard.writeText(fullLink).then(() => {
+                showNotification('Copied', 'Room link copied to clipboard', 'success');
+                
+                // Visual feedback
+                const copyBtn = document.getElementById('copyRoomLink');
+                copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+                copyBtn.style.background = 'linear-gradient(135deg, #4CAF50, #2E7D32)';
+                
+                setTimeout(() => {
+                    copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+                    copyBtn.style.background = 'linear-gradient(135deg, #00d2ff, #3a7bd5)';
+                }, 2000);
+            });
+        }
+        
+        function toggleAudio() {
+            if (appState.localStream) {
+                const audioTrack = appState.localStream.getAudioTracks()[0];
+                if (audioTrack) {
+                    audioTrack.enabled = !audioTrack.enabled;
+                    appState.isMuted = !audioTrack.enabled;
+                    
+                    const button = document.getElementById('audioAudioToggle');
+                    if (appState.isMuted) {
+                        button.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+                        button.style.background = 'linear-gradient(135deg, #ff9800, #ff5722)';
+                        showNotification('Microphone Muted', 'Your microphone is now muted');
+                    } else {
+                        button.innerHTML = '<i class="fas fa-microphone"></i>';
+                        button.style.background = 'linear-gradient(135deg, #3a7bd5, #00bfff)';
+                        showNotification('Microphone Active', 'Your microphone is now active');
+                    }
+                }
+            }
+        }
+        
+        async function restartICE() {
+            if (!appState.peerConnection || !appState.isStarted || appState.connectionPaused) return;
+            
+            // Rate limit ICE restarts
+            const now = Date.now();
+            if (now - appState.lastIceRestart < 5000) return;
+            appState.lastIceRestart = now;
+            
+            try {
+                const offer = await appState.peerConnection.createOffer({iceRestart: true});
+                await appState.peerConnection.setLocalDescription(offer);
+                sendMessage(offer);
+                showNotification('Reconnecting', 'Attempting to re-establish connection');
+            } catch (err) {
+                showNotification('Reconnect Failed', 'Could not restart connection', 'error', true);
+            }
+        }
+
+        function endAudioCall() {
+            if (appState.peerConnection) {
+                appState.peerConnection.close();
+                appState.peerConnection = null;
+            }
+            
+            if (appState.localStream) {
+                appState.localStream.getTracks().forEach(track => track.stop());
+                appState.localStream = null;
+            }
+            
+            // Reset UI elements
+            document.getElementById('audioControls').style.display = 'none';
+            document.getElementById('copyRoomLink').style.display = 'none';
+            document.getElementById('generateAudioRoom').style.display = 'flex';
+            document.getElementById('audioActivationPanel').style.display = 'none';
+            document.getElementById('connectionGuard').style.display = 'none';
+            stopTimer();
+            updateStatus('Call ended', false);
+            showNotification('Call Ended', 'Your call has been disconnected');
+            
+            // Clean up remote audio
+            if (appState.remoteAudioElement) {
+                appState.remoteAudioElement.srcObject = null;
+            }
+            
+            // Release wake lock when call ends
+            releaseWakeLock();
+            
+            // Send bye message if in room
+            if (appState.roomId) {
+                sendMessage({ type: 'bye' });
+            }
+            
+            // Reset state
+            appState.isStarted = false;
+            appState.roomId = null;
+            appState.reconnectAttempts = 0;
+            appState.remoteStream = null;
+            appState.connectionPaused = false;
+            
+            // Reset mute button
+            const muteBtn = document.getElementById('audioAudioToggle');
+            muteBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+            muteBtn.style.background = 'linear-gradient(135deg, #3a7bd5, #00bfff)';
+            appState.isMuted = false;
+        }
+
+        function autoJoinRoom() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomParam = urlParams.get('room');
+            
+            if (roomParam) {
+                joinAudioRoom(roomParam);
+            }
+        }
+        
+        async function joinAudioRoom(roomId) {
+            appState.roomId = roomId;
+            
+            try {
+                // Initialize media
+                const mediaInitialized = await initMedia();
+                if (!mediaInitialized) return;
+                
+                // Create peer connection
+                if (!createPeerConnection()) return;
+                
+                appState.isInitiator = false;
+                initSignaling();
+                updateStatus(`Joining room ${roomId}...`, false);
+                showNotification('Joining', `Connecting to room: ${roomId}`);
+            } catch (err) {
+                showNotification('Connection Error', 'Failed to join room', 'error', true);
+            }
+        }
+
         function toggleTheme() {
             const body = document.body;
             body.classList.toggle('light-mode');
@@ -727,6 +1288,20 @@
                 themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
             } else {
                 themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+            }
+        }
+        
+        function retryConnection() {
+            if (appState.roomId) {
+                if (appState.isInitiator) {
+                    // Retry as initiator
+                    generateAudioRoom();
+                } else {
+                    // Retry as joiner
+                    joinAudioRoom(appState.roomId);
+                }
+            } else {
+                showNotification('Error', 'No room to reconnect to', 'error');
             }
         }
     </script>
