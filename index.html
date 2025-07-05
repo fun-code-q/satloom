@@ -13,9 +13,7 @@
             --dark-bg: #0a1929;
             --card-bg: rgba(7, 25, 43, 0.8);
             --text-primary: #ffffff;
-            --text-secondary: #b8c5d9;
             --success-color: #4CAF50;
-            --warning-color: #ff9800;
             --error-color: #f44336;
         }
 
@@ -36,7 +34,6 @@
             justify-content: center;
             align-items: center;
             padding: 20px;
-            transition: all 0.3s ease;
         }
 
         .app-container {
@@ -51,7 +48,6 @@
             padding: 30px;
             backdrop-filter: blur(10px);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-            animation: fadeIn 0.5s ease;
             text-align: center;
         }
 
@@ -88,19 +84,19 @@
             font-weight: 600;
             margin-bottom: 20px;
             color: var(--accent-color);
-            text-align: center;
         }
 
         .input-group {
             display: flex;
             margin-bottom: 20px;
             gap: 10px;
+            position: relative;
         }
 
         .input-styled {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 15px;
+            padding: 15px 50px 15px 20px;
             color: var(--text-primary);
             border-radius: 12px;
             width: 100%;
@@ -112,6 +108,31 @@
         .input-styled:focus {
             border-color: var(--accent-color);
             background: rgba(255, 255, 255, 0.15);
+        }
+
+        .copy-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .btn {
@@ -182,39 +203,6 @@
             font-weight: 600;
         }
 
-        .share-link-container {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 15px;
-            margin-top: 20px;
-            position: relative;
-        }
-
-        .share-link {
-            font-size: 16px;
-            color: var(--text-secondary);
-            word-break: break-all;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-
-        .copy-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: var(--text-primary);
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
         .audio-visualizer {
             height: 80px;
             display: flex;
@@ -282,39 +270,6 @@
             color: var(--error-color);
         }
 
-        .reconnect-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            z-index: 100;
-            border-radius: 16px;
-            display: none;
-        }
-        
-        .reconnect-spinner {
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            border-left-color: var(--accent-color);
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-        
-        .reconnect-text {
-            font-size: 20px;
-            margin-bottom: 25px;
-            text-align: center;
-        }
-
         @keyframes gradient {
             0% {background-position: 0% 50%}
             50% {background-position: 100% 50%}
@@ -330,10 +285,6 @@
         @keyframes fadeIn {
             from {opacity: 0; transform: translateY(10px)}
             to {opacity: 1; transform: translateY(0)}
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
         }
 
         @keyframes equalizer {
@@ -359,6 +310,13 @@
                 width: 55px;
                 height: 55px;
             }
+            
+            .copy-btn {
+                position: absolute;
+                right: 10px;
+                top: 50%;
+                transform: translateY(-50%);
+            }
         }
     </style>
 </head>
@@ -381,15 +339,18 @@
             </div>
             
             <div class="status-indicator" id="connectionStatus">
-                <i class="fas fa-signal"></i> <span id="statusText">Ready to Call</span>
+                <i class="fas fa-signal"></i> <span id="statusText">Ready to connect</span>
             </div>
             
-           <!-- <div class="section-title">
-                <i class="fas fa-phone"></i> Audio Call
-            </div>-->
+            <div class="section-title">
+                <i class="fas fa-phone"></i> Free Audio Calling
+            </div>
             
             <div class="input-group">
                 <input type="text" id="audio-room-id" class="input-styled" placeholder="Enter Room ID">
+                <button class="copy-btn" id="copyAudioLink" style="display: none;">
+                    <i class="fas fa-copy"></i>
+                </button>
             </div>
             
             <div>
@@ -398,13 +359,6 @@
                 </button>
                 <button class="btn" id="joinAudioRoom">
                     <i class="fas fa-sign-in-alt"></i> Join Room
-                </button>
-            </div>
-            
-            <div id="audioRoomLinkContainer" class="share-link-container" style="display: none;">
-                <div class="share-link" id="audioRoomLink"></div>
-                <button class="copy-btn" id="copyAudioLink">
-                    <i class="fas fa-copy"></i>
                 </button>
             </div>
             
@@ -429,14 +383,6 @@
                 </button>
                 <button class="control-btn end" id="endAudioCall">
                     <i class="fas fa-phone-slash"></i>
-                </button>
-            </div>
-            
-            <div class="reconnect-overlay" id="audioReconnectOverlay">
-                <div class="reconnect-spinner"></div>
-                <div class="reconnect-text">Reconnecting...</div>
-                <button class="btn" id="forceReconnectAudio">
-                    <i class="fas fa-bolt"></i> Force Reconnect
                 </button>
             </div>
             
@@ -488,7 +434,8 @@
             notificationMessage: document.getElementById('notificationMessage'),
             connectionStatus: document.getElementById('connectionStatus'),
             statusText: document.getElementById('statusText'),
-            audioCallTimer: document.getElementById('audioCallTimer')
+            audioCallTimer: document.getElementById('audioCallTimer'),
+            copyBtn: document.getElementById('copyAudioLink')
         };
 
         // Initialize app
@@ -505,9 +452,8 @@
             document.getElementById('joinAudioRoom').addEventListener('click', joinAudioRoom);
             document.getElementById('endAudioCall').addEventListener('click', endAudioCall);
             document.getElementById('audioAudioToggle').addEventListener('click', toggleAudio);
-            document.getElementById('copyAudioLink').addEventListener('click', copyAudioLink);
+            document.getElementById('copyAudioLink').addEventListener('click', copyRoomLink);
             document.getElementById('reconnectAudio').addEventListener('click', restartICE);
-            document.getElementById('forceReconnectAudio').addEventListener('click', forceReconnect);
         }
 
         function generateUserId() {
@@ -614,7 +560,6 @@
             appState.remoteStream = event.streams[0];
             const remoteAudio = document.getElementById('audio-remote-audio');
             remoteAudio.srcObject = event.streams[0];
-            domRefs.audioReconnectOverlay.style.display = 'none';
             appState.reconnectAttempts = 0;
         }
 
@@ -722,11 +667,8 @@
             appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
             document.getElementById('audio-room-id').value = appState.roomId;
             
-            // Generate room link
-            const basePath = window.location.href.split('?')[0];
-            const roomLink = `${basePath}?room=${appState.roomId}&mode=audio`;
-            document.getElementById('audioRoomLink').textContent = roomLink;
-            document.getElementById('audioRoomLinkContainer').style.display = 'block';
+            // Show copy button
+            domRefs.copyBtn.style.display = 'flex';
             
             showNotification('Room Created', `Room ID: ${appState.roomId}`, 'success');
             
@@ -791,7 +733,6 @@
             }
             
             document.getElementById('audioControls').style.display = 'none';
-            document.getElementById('audioRoomLinkContainer').style.display = 'none';
             stopTimer();
             updateStatus('Call ended', false);
             showNotification('Call Ended', 'Your call has been disconnected');
@@ -803,6 +744,9 @@
             appState.isStarted = false;
             appState.roomId = null;
             appState.reconnectAttempts = 0;
+            
+            // Hide copy button
+            domRefs.copyBtn.style.display = 'none';
         }
 
         function toggleAudio() {
@@ -818,6 +762,21 @@
             }
         }
         
+        function copyRoomLink() {
+            const roomId = document.getElementById('audio-room-id').value;
+            if (!roomId) {
+                showNotification('Error', 'No room ID to copy', 'error');
+                return;
+            }
+            
+            const basePath = window.location.href.split('?')[0];
+            const fullLink = `${basePath}?room=${roomId}`;
+            
+            navigator.clipboard.writeText(fullLink).then(() => {
+                showNotification('Copied', 'Room link copied to clipboard', 'success');
+            });
+        }
+        
         async function restartICE() {
             if (!appState.peerConnection || !appState.isStarted) return;
             
@@ -827,31 +786,13 @@
             appState.lastIceRestart = now;
             
             try {
-                domRefs.audioReconnectOverlay.style.display = 'flex';
                 const offer = await appState.peerConnection.createOffer({iceRestart: true});
                 await appState.peerConnection.setLocalDescription(offer);
                 sendMessage(offer);
                 showNotification('Reconnecting', 'Attempting to re-establish connection');
             } catch (err) {
-                domRefs.audioReconnectOverlay.style.display = 'none';
                 showNotification('Reconnect Failed', 'Could not restart connection', 'error');
             }
-        }
-        
-        function forceReconnect() {
-            if (appState.peerConnection) {
-                appState.peerConnection.close();
-                appState.peerConnection = null;
-            }
-            appState.reconnectAttempts = 0;
-            joinAudioRoom();
-        }
-
-        function copyAudioLink() {
-            const link = document.getElementById('audioRoomLink').textContent;
-            navigator.clipboard.writeText(link).then(() => {
-                showNotification('Copied', 'Room link copied to clipboard', 'success');
-            });
         }
 
         function autoJoinRoom() {
