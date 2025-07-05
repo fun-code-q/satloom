@@ -829,11 +829,16 @@
 
     <div class="app-container">
         <div class="sidebar">
-            <div class="logo">
-                <div class="logo-icon">
-                    <i class="fas fa-satellite-dish"></i>
+           <div class="logo-container">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-satellite-dish"></i>
+                    </div>
+                    <div class="logo-text">SatLoom</div>
                 </div>
-                <div class="logo-text">SatLoom</div>
+                <div class="sidebar-close" id="sidebarClose">
+                    <i class="fas fa-times"></i>
+                </div>
             </div>
             <div class="status-indicator" id="connectionStatus">
                 <i class="fas fa-signal"></i> <span id="statusText">Ready to connect</span>
@@ -844,11 +849,6 @@
                         <i class="fas fa-phone"></i> Audio Call
                     </a>
                 </li>
-                <!--<li class="nav-item">
-                    <a class="nav-link" data-section="video-call">
-                        <i class="fas fa-video"></i> Video Call
-                    </a>
-                </li>-->
                 <li class="nav-item">
                     <a class="nav-link" data-section="settings">
                         <i class="fas fa-cog"></i> Settings
