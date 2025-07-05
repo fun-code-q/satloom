@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - For Login Free Calling</title>
+    <title>SatLoom - Ultra-Resilient WebRTC Calling</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -51,7 +51,6 @@
             align-items: center;
             padding: 20px;
             transition: all 0.3s ease;
-            overflow-x: hidden;
         }
 
         .app-container {
@@ -93,17 +92,10 @@
             transform: translateX(0);
         }
 
-        .logo-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            position: relative;
-        }
-
         .logo {
             display: flex;
             align-items: center;
+            margin-bottom: 30px;
             white-space: nowrap;
             overflow: hidden;
         }
@@ -131,30 +123,13 @@
             white-space: nowrap;
         }
 
-        .sidebar-close {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .sidebar-close:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: scale(1.1);
-        }
-
         .nav-menu {
             list-style: none;
-            margin-top: 10px;
+            margin-top: 20px;
         }
 
         .nav-item {
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             border-radius: 8px;
             transition: all 0.3s ease;
         }
@@ -167,14 +142,13 @@
         .nav-link {
             display: flex;
             align-items: center;
-            padding: 10px 12px;
+            padding: 12px 15px;
             color: var(--text-secondary);
             text-decoration: none;
             border-radius: 8px;
             transition: all 0.3s ease;
             cursor: pointer;
             white-space: nowrap;
-            font-size: 15px;
         }
 
         .nav-link:hover, .nav-link.active {
@@ -186,7 +160,6 @@
             margin-right: 10px;
             width: 20px;
             text-align: center;
-            font-size: 16px;
         }
 
         .main-content {
@@ -302,6 +275,44 @@
             background: linear-gradient(135deg, #ff9800, #ff5722);
         }
 
+        /* VIDEO CALL CONTAINER IMPROVEMENTS */
+        #videoRemoteVideoContainer {
+            position: relative;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            height: 0;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            margin: 15px 0;
+        }
+        
+        #video-remote-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+            transform: rotateY(180deg); /* Mirror effect for front camera */
+        }
+        
+        #video-local-video {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            width: 25%;
+            max-width: 160px;
+            height: auto;
+            max-height: 120px;
+            border-radius: 8px;
+            border: 2px solid var(--accent-color);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            background: #000;
+            transform: rotateY(180deg); /* Mirror effect for front camera */
+            z-index: 10;
+        }
+
         .notification {
             position: fixed;
             top: 20px;
@@ -374,7 +385,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            color: var(--text-secondary);
         }
 
         .about-content h2 {
@@ -397,6 +407,51 @@
 
         .about-content a:hover {
             text-decoration: underline;
+        }
+        
+        .chat-container {
+            height: 250px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .chat-message {
+            padding: 10px;
+            border-radius: 12px;
+            max-width: 80%;
+            position: relative;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .user-message {
+            background: var(--user-message-bg);
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .remote-message {
+            background: var(--remote-message-bg);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .message-sender {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--accent-color);
+        }
+        
+        .message-time {
+            font-size: 10px;
+            text-align: right;
+            margin-top: 4px;
+            opacity: 0.7;
         }
         
         .theme-toggle {
@@ -434,7 +489,7 @@
             background: rgba(255, 255, 255, 0.1);
             border-radius: 8px;
             font-size: 14px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
         }
@@ -464,6 +519,73 @@
         
         .status-disconnected {
             color: var(--error-color);
+        }
+
+        .chat-empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+            text-align: center;
+            padding: 20px;
+        }
+
+        .chat-empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: var(--accent-color);
+        }
+        
+        .diagnostics-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .diagnostics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .diagnostics-content {
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .diagnostic-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.1);
+        }
+        
+        .diagnostic-success {
+            color: var(--success-color);
+        }
+        
+        .diagnostic-warning {
+            color: var(--warning-color);
+        }
+        
+        .diagnostic-error {
+            color: var(--error-color);
+        }
+        
+        .toggle-diagnostics {
+            background: none;
+            border: none;
+            color: var(--accent-color);
+            cursor: pointer;
+            font-size: 14px;
         }
         
         .network-status {
@@ -553,6 +675,46 @@
         .audio-bar:nth-child(4) { animation-delay: 0.6s; height: 35px; }
         .audio-bar:nth-child(5) { animation-delay: 0.8s; height: 15px; }
         
+        .fix-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(90deg, #4CAF50, #3a7bd5);
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .mobile-optimized .input-group {
+            flex-direction: column;
+        }
+        
+        .mobile-optimized .call-controls {
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .mobile-optimized .btn {
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 10px;
+        }
+        
+        .device-status {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 14px;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
         .connection-persistence-indicator {
             position: fixed;
             top: 60px;
@@ -565,67 +727,6 @@
             font-size: 14px;
             z-index: 1000;
             display: none;
-        }
-
-        .diagnostics-container {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-            display: none;
-        }
-        
-        .diagnostics-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        .diagnostics-content {
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: monospace;
-            font-size: 13px;
-            line-height: 1.5;
-        }
-        
-        .diagnostic-entry {
-            margin-bottom: 5px;
-            padding: 5px;
-            border-radius: 4px;
-            background: rgba(0, 0, 0, 0.1);
-        }
-        
-        .diagnostic-success {
-            color: var(--success-color);
-        }
-        
-        .diagnostic-warning {
-            color: var(--warning-color);
-        }
-        
-        .diagnostic-error {
-            color: var(--error-color);
-        }
-        
-        .toggle-diagnostics {
-            background: none;
-            border: none;
-            color: var(--accent-color);
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        .device-status {
-            padding: 8px 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            font-size: 14px;
-            margin-top: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
         @keyframes gradient {
@@ -661,10 +762,6 @@
         
         /* Responsive adjustments */
         @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-            
             .app-container {
                 grid-template-columns: 1fr;
                 padding: 10px;
@@ -678,85 +775,33 @@
                 position: fixed;
                 top: 0;
                 left: 0;
-                height: auto;
-                max-height: 80vh;
+                height: 100vh;
                 z-index: 1000;
                 box-shadow: 5px 0 15px rgba(0,0,0,0.3);
-                padding: 15px;
-                overflow-y: auto;
             }
             
-            .logo-container {
-                margin-bottom: 15px;
+            #video-local-video {
+                width: 30%;
+                max-width: 120px;
+                max-height: 90px;
             }
             
-            .logo-icon {
-                width: 35px;
-                height: 35px;
+            .call-controls {
+                gap: 10px;
+            }
+            
+            .control-btn {
+                width: 45px;
+                height: 45px;
                 font-size: 14px;
-            }
-            
-            .logo-text {
-                font-size: 20px;
-            }
-            
-            .nav-menu {
-                margin-top: 5px;
-            }
-            
-            .nav-link {
-                padding: 8px 10px;
-                font-size: 14px;
-            }
-            
-            .nav-link i {
-                font-size: 14px;
-                margin-right: 8px;
-            }
-            
-            .status-indicator {
-                padding: 6px 10px;
-                font-size: 13px;
-                margin-bottom: 15px;
-            }
-            
-            .sidebar-close {
-                width: 28px;
-                height: 28px;
-                font-size: 14px;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .sidebar {
-                max-height: 70vh;
-                padding: 12px;
-            }
-            
-            .logo-icon {
-                width: 30px;
-                height: 30px;
-            }
-            
-            .logo-text {
-                font-size: 18px;
-            }
-            
-            .nav-link {
-                padding: 7px 8px;
-                font-size: 13px;
-            }
-            
-            .status-indicator {
-                font-size: 12px;
             }
         }
     </style>
 </head>
 <body class="dark-mode">
-   <!-- <div class="connection-persistence-indicator" id="connectionPersistence">
+    <div class="connection-persistence-indicator" id="connectionPersistence">
         <i class="fas fa-shield-alt"></i> Connection preserved in background
-    </div>-->
+    </div>
     
     <div class="sidebar-toggle" id="sidebarToggle">
         <i class="fas fa-bars"></i>
@@ -783,16 +828,11 @@
 
     <div class="app-container">
         <div class="sidebar">
-            <div class="logo-container">
-                <div class="logo">
-                    <div class="logo-icon">
-                        <i class="fas fa-satellite-dish"></i>
-                    </div>
-                    <div class="logo-text">SatLoom</div>
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-satellite-dish"></i>
                 </div>
-                <div class="sidebar-close" id="sidebarClose">
-                    <i class="fas fa-times"></i>
-                </div>
+                <div class="logo-text">SatLoom</div>
             </div>
             <div class="status-indicator" id="connectionStatus">
                 <i class="fas fa-signal"></i> <span id="statusText">Ready to connect</span>
@@ -801,6 +841,11 @@
                 <li class="nav-item active">
                     <a class="nav-link active" data-section="audio-call">
                         <i class="fas fa-phone"></i> Audio Call
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-section="video-call">
+                        <i class="fas fa-video"></i> Video Call
                     </a>
                 </li>
                 <li class="nav-item">
@@ -881,9 +926,77 @@
                         </div>
                         <div class="diagnostics-content" id="audioDiagnosticsContent"></div>
                     </div>
-                  <!--  <div class="device-status" id="deviceStatus">
+                    <div class="device-status" id="deviceStatus">
                         <i class="fas fa-mobile-alt"></i> <span id="deviceType">Detecting device...</span>
-                    </div>-->
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="video-call-section">
+                <div class="card">
+                    <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <i class="fas fa-video"></i> Video Call
+                        </div>
+                        <div class="call-timer" id="videoCallTimer">00:00</div>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="video-room-id" class="input-styled" placeholder="Enter Room ID">
+                    </div>
+                    <div class="call-controls">
+                        <button class="btn" id="generateVideoRoom">
+                            <i class="fas fa-network-wired"></i> Generate Room
+                        </button>
+                        <button class="btn btn-secondary" id="joinVideoRoom">
+                            <i class="fas fa-sign-in-alt"></i> Join Room
+                        </button>
+                    </div>
+                    <div id="videoRoomLinkContainer" class="share-link-container" style="display: none;">
+                        <div class="share-link" id="videoRoomLink"></div>
+                        <button class="copy-btn" id="copyVideoLink">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    <div id="videoRemoteVideoContainer">
+                        <video id="video-remote-video" autoplay playsinline></video>
+                        <video id="video-local-video" autoplay playsinline muted></video>
+                        <div class="spinner" id="videoSpinner"></div>
+                    </div>
+                    <div class="call-controls" id="videoControls" style="display: none;">
+                        <button class="control-btn mute" id="videoVideoToggle">
+                            <i class="fas fa-video"></i>
+                        </button>
+                        <button class="control-btn mute" id="videoAudioToggle">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                        <button class="control-btn reconnect" id="reconnectVideo">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button class="control-btn end" id="endVideoCall">
+                            <i class="fas fa-phone-slash"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="reconnect-overlay" id="videoReconnectOverlay">
+                        <div class="reconnect-spinner"></div>
+                        <div class="reconnect-text">Reconnecting...</div>
+                        <button class="btn" id="forceReconnectVideo">
+                            <i class="fas fa-bolt"></i> Force Reconnect
+                        </button>
+                    </div>
+                    
+                    <div class="diagnostics-container" id="videoDiagnostics">
+                        <div class="diagnostics-header">
+                            <h3><i class="fas fa-wrench"></i> Connection Diagnostics</h3>
+                            <button class="toggle-diagnostics" id="toggleVideoDiagnostics">
+                                <i class="fas fa-times"></i> Hide
+                            </button>
+                        </div>
+                        <div class="diagnostics-content" id="videoDiagnosticsContent"></div>
+                    </div>
+                    <div class="device-status" id="videoDeviceStatus">
+                        <i class="fas fa-mobile-alt"></i> <span id="videoDeviceType">Detecting device...</span>
+                    </div>
                 </div>
             </div>
 
@@ -921,10 +1034,6 @@
                             <label><strong>Mobile Optimization:</strong></label>
                             <input type="checkbox" id="mobile-optimization" checked>
                         </div>
-                        <div class="setting-item">
-                            <label><strong>Diagnostics Mode:</strong></label>
-                            <input type="checkbox" id="diagnostics-toggle">
-                        </div>
                     </div>
                 </div>
             </div>
@@ -934,11 +1043,9 @@
                     <div class="section-title">
                         <i class="fas fa-info-circle"></i> About
                     </div>
-                    <div class="about-content">
                         <p>An Open-source communication platform.</p>
-                        <p><strong>Version:</strong> 3.1.0</p>
+                        <p><strong>Version:</strong> 3.0.1</p>
                         <p><strong>Designed By:</strong> SatLoom Developers</p>
-                        <p><strong>Features:</strong> Network resilience and Fast reconnection</p>
                     </div>
                 </div>
             </div>
@@ -995,7 +1102,6 @@
         // ========== DOM ELEMENT REFERENCES ========== //
         const domRefs = {
             sidebarToggle: document.getElementById('sidebarToggle'),
-            sidebarClose: document.getElementById('sidebarClose'),
             themeToggle: document.getElementById('themeToggle'),
             notification: document.getElementById('globalNotification'),
             notificationTitle: document.getElementById('notificationTitle'),
@@ -1003,33 +1109,42 @@
             connectionStatus: document.getElementById('connectionStatus'),
             statusText: document.getElementById('statusText'),
             audioCallTimer: document.getElementById('audioCallTimer'),
+            videoCallTimer: document.getElementById('videoCallTimer'),
             sections: {
                 'audio-call': document.getElementById('audio-call-section'),
+                'video-call': document.getElementById('video-call-section'),
                 'settings': document.getElementById('settings-section'),
                 'about': document.getElementById('about-section')
             },
             audioDiagnostics: document.getElementById('audioDiagnostics'),
             audioDiagnosticsContent: document.getElementById('audioDiagnosticsContent'),
+            videoDiagnostics: document.getElementById('videoDiagnostics'),
+            videoDiagnosticsContent: document.getElementById('videoDiagnosticsContent'),
             connectionStrategy: document.getElementById('connection-strategy'),
             networkStatus: document.getElementById('networkStatus'),
             networkIcon: document.getElementById('networkIcon'),
             networkText: document.getElementById('networkText'),
             audioReconnectOverlay: document.getElementById('audioReconnectOverlay'),
-            connectionPersistence: document.getElementById('connectionPersistence'),
+            videoReconnectOverlay: document.getElementById('videoReconnectOverlay'),
             deviceStatus: document.getElementById('deviceStatus'),
-            deviceType: document.getElementById('deviceType')
+            deviceType: document.getElementById('deviceType'),
+            videoDeviceStatus: document.getElementById('videoDeviceStatus'),
+            videoDeviceType: document.getElementById('videoDeviceType'),
+            connectionPersistence: document.getElementById('connectionPersistence')
         };
 
         // ========== WEBRTC CONFIG ========== //
         function getRTCConfiguration() {
             const strategy = domRefs.connectionStrategy.value;
             
+            // Updated ICE servers configuration with ExpressTurn STUN
             const iceServers = [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
                 { urls: 'stun:stun2.l.google.com:19302' },
                 { urls: 'stun:stun3.l.google.com:19302' },
                 { urls: 'stun:stun4.l.google.com:19302' },
+                
                 {
                     urls: 'turn:global.turn.twilio.com:3478?transport=udp',
                     username: 'satloom',
@@ -1049,6 +1164,7 @@
             
             let config = { iceServers };
             
+            // Apply strategy
             if (strategy === 'relay') {
                 config.iceTransportPolicy = 'relay';
             } else if (strategy === 'direct') {
@@ -1062,6 +1178,7 @@
 
         // ========== SECTION ACTIVATION ========== //
         function activateSection(sectionId) {
+            // Update navigation state
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.classList.remove('active');
                 if (link.getAttribute('data-section') === sectionId) {
@@ -1069,6 +1186,7 @@
                 }
             });
             
+            // Update UI sections
             document.querySelectorAll('.section').forEach(section => {
                 section.classList.remove('active');
                 if (section.id === `${sectionId}-section`) {
@@ -1087,21 +1205,32 @@
             loadSettings();
             autoJoinRoom();
             updateSidebarToggleIcon();
+            initDiagnostics();
             startNetworkMonitoring();
             detectDeviceType();
             applyMobileOptimization();
             
+            // Add event handlers for resilience
             document.addEventListener('visibilitychange', handleVisibilityChange);
             window.addEventListener('online', handleNetworkOnline);
             window.addEventListener('offline', handleNetworkOffline);
             window.addEventListener('beforeunload', handleBeforeUnload);
             
+            // Start background connection keeper
             startBackgroundConnectionKeeper();
         }
-        
+
         function detectDeviceType() {
             const deviceType = appState.isMobile ? 'Mobile Device' : 'Desktop/Laptop';
             domRefs.deviceType.textContent = deviceType;
+            domRefs.videoDeviceType.textContent = deviceType;
+            
+            if (appState.isMobile) {
+                document.body.classList.add('mobile-optimized');
+                logDiagnostic(`Running on mobile: ${navigator.userAgent}`, 'info');
+            } else {
+                logDiagnostic(`Running on desktop: ${navigator.userAgent}`, 'info');
+            }
         }
         
         function applyMobileOptimization() {
@@ -1111,30 +1240,45 @@
         }
 
         function setupEventListeners() {
+            // Navigation
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.addEventListener('click', handleNavigation);
             });
 
+            // Theme toggle
             domRefs.themeToggle.addEventListener('click', toggleTheme);
+            
+            // Sidebar toggle
             domRefs.sidebarToggle.addEventListener('click', toggleSidebar);
-            domRefs.sidebarClose.addEventListener('click', toggleSidebar);
 
+            // Audio call controls
             document.getElementById('generateAudioRoom').addEventListener('click', () => generateRoom('audio'));
             document.getElementById('joinAudioRoom').addEventListener('click', () => joinRoom('audio'));
             document.getElementById('endAudioCall').addEventListener('click', () => hangup('audio'));
             document.getElementById('audioAudioToggle').addEventListener('click', () => toggleAudio('audio'));
             document.getElementById('copyAudioLink').addEventListener('click', () => copyLink('audio'));
+            document.getElementById('toggleAudioDiagnostics').addEventListener('click', () => toggleDiagnostics('audio'));
             document.getElementById('reconnectAudio').addEventListener('click', () => restartICE('audio'));
             document.getElementById('forceReconnectAudio').addEventListener('click', () => forceReconnect('audio'));
-            document.getElementById('toggleAudioDiagnostics').addEventListener('click', () => toggleDiagnostics('audio'));
 
+            // Video call controls
+            document.getElementById('generateVideoRoom').addEventListener('click', () => generateRoom('video'));
+            document.getElementById('joinVideoRoom').addEventListener('click', () => joinRoom('video'));
+            document.getElementById('endVideoCall').addEventListener('click', () => hangup('video'));
+            document.getElementById('videoVideoToggle').addEventListener('click', toggleVideo);
+            document.getElementById('videoAudioToggle').addEventListener('click', () => toggleAudio('video'));
+            document.getElementById('copyVideoLink').addEventListener('click', () => copyLink('video'));
+            document.getElementById('toggleVideoDiagnostics').addEventListener('click', () => toggleDiagnostics('video'));
+            document.getElementById('reconnectVideo').addEventListener('click', () => restartICE('video'));
+            document.getElementById('forceReconnectVideo').addEventListener('click', () => forceReconnect('video'));
+
+            // Settings
             document.getElementById('notifications-toggle').addEventListener('change', saveSettings);
             document.getElementById('background-persistence').addEventListener('change', saveSettings);
             document.getElementById('network-resilience').addEventListener('change', saveSettings);
             domRefs.connectionStrategy.addEventListener('change', saveSettings);
             document.getElementById('reconnect-attempts').addEventListener('change', saveSettings);
             document.getElementById('mobile-optimization').addEventListener('change', saveSettings);
-            document.getElementById('diagnostics-toggle').addEventListener('change', saveSettings);
         }
 
         function loadSettings() {
@@ -1151,19 +1295,20 @@
                 localStorage.getItem('networkResilience') !== 'false';
             document.getElementById('mobile-optimization').checked = 
                 localStorage.getItem('mobileOptimization') !== 'false';
-            document.getElementById('diagnostics-toggle').checked = 
-                localStorage.getItem('diagnosticsEnabled') === 'true';
                 
+            appState.diagnosticsEnabled = localStorage.getItem('debugMode') === 'true';
             appState.backgroundPersistence = document.getElementById('background-persistence').checked;
             appState.networkResilience = document.getElementById('network-resilience').checked;
-            appState.diagnosticsEnabled = document.getElementById('diagnostics-toggle').checked;
             
+            // Connection strategy
             const savedStrategy = localStorage.getItem('connectionStrategy') || 'balanced';
             domRefs.connectionStrategy.value = savedStrategy;
             
+            // Reconnection attempts
             appState.maxReconnectAttempts = parseInt(localStorage.getItem('reconnectAttempts') || 10);
             document.getElementById('reconnect-attempts').value = appState.maxReconnectAttempts;
             
+            // Load sidebar state
             appState.sidebarVisible = localStorage.getItem('sidebarVisible') === 'true';
             updateSidebarState();
         }
@@ -1174,13 +1319,20 @@
             const modeParam = urlParams.get('mode');
             
             if (roomParam && modeParam) {
-                activateSection('audio-call');
+                // Activate the correct section based on mode
+                if (modeParam === 'video') {
+                    activateSection('video-call');
+                } else {
+                    activateSection('audio-call');
+                }
+                
                 document.getElementById(`${modeParam}-room-id`).value = roomParam;
                 setTimeout(() => joinRoom(modeParam), 1000);
             }
         }
 
         function generateUserId() {
+            // Generate a random user ID for chat
             if (!localStorage.getItem('userId')) {
                 const userId = 'user-' + Math.random().toString(36).substr(2, 8);
                 localStorage.setItem('userId', userId);
@@ -1234,6 +1386,7 @@
             domRefs.notificationTitle.textContent = title;
             domRefs.notificationMessage.textContent = message;
             
+            // Set notification color based on type
             domRefs.notification.style.backgroundColor = 
                 type === 'error' ? 'rgba(244, 67, 54, 0.8)' :
                 type === 'success' ? 'rgba(76, 175, 80, 0.8)' :
@@ -1259,180 +1412,284 @@
                 const minutes = Math.floor(time / 60000);
                 const seconds = Math.floor((time % 60000) / 1000);
                 const timerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                domRefs.videoCallTimer.textContent = timerText;
                 domRefs.audioCallTimer.textContent = timerText;
             }, 1000);
         }
 
         function stopTimer() {
             clearInterval(appState.timer);
+            domRefs.videoCallTimer.textContent = '00:00';
             domRefs.audioCallTimer.textContent = '00:00';
         }
 
         // ========== MEDIA MANAGEMENT ========== //
         async function initMedia(mode) {
             try {
-                const constraints = { 
-                    audio: { 
-                        echoCancellation: true,
-                        noiseSuppression: true,
-                        autoGainControl: true
-                    } 
-                };
+                const constraints = mode === 'video' ? 
+                    { 
+                        video: { 
+                            width: { min: 640, ideal: 1280 },
+                            height: { min: 480, ideal: 720 },
+                            frameRate: { ideal: 15, max: 30 },
+                            facingMode: appState.isMobile ? { ideal: "environment" } : "user"
+                        }, 
+                        audio: { 
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        } 
+                    } : { 
+                        audio: { 
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        } 
+                    };
                 
                 appState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
-                document.getElementById('audioControls').style.display = 'flex';
+                
+                if (mode === 'video') {
+                    document.getElementById('video-local-video').srcObject = appState.localStream;
+                    document.getElementById('videoControls').style.display = 'flex';
+                } else {
+                    document.getElementById('audioControls').style.display = 'flex';
+                }
+                
                 return true;
             } catch (err) {
                 console.error('Media access error:', err);
                 showNotification('Media Error', 
-                    `Could not access microphone. Please check permissions.`, 'error');
+                    `Could not access ${mode === 'video' ? 'camera/microphone' : 'microphone'}. 
+                    Please check permissions.`, 'error');
                 return false;
             }
         }
 
-       // ========== FIXED WEBRTC CONNECTION MANAGEMENT ========== //
-        async function handleOffer(offer) {
+        // ========== WEBRTC CONNECTION MANAGEMENT ========== //
+        function createPeerConnection() {
             try {
-                // FIX: Properly handle the remote description
+                const pcConfig = getRTCConfiguration();
+                appState.peerConnection = new RTCPeerConnection(pcConfig);
+                
+                // Add local stream tracks
+                if (appState.localStream) {
+                    appState.localStream.getTracks().forEach(track => {
+                        appState.peerConnection.addTrack(track, appState.localStream);
+                    });
+                }
+                
+                // Set up event handlers
+                appState.peerConnection.ontrack = handleRemoteStream;
+                appState.peerConnection.onicecandidate = handleICECandidate;
+                appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
+                appState.peerConnection.onicegatheringstatechange = handleICEGatheringStateChange;
+                appState.peerConnection.onsignalingstatechange = handleSignalingStateChange;
+                appState.peerConnection.onconnectionstatechange = handleConnectionStateChange;
+                appState.peerConnection.onnegotiationneeded = handleNegotiationNeeded;
+                
+                return true;
+            } catch (err) {
+                console.error('Peer connection error:', err);
+                showNotification('Connection Error', 
+                    `Failed to create peer connection: ${err.message}`, 'error');
+                return false;
+            }
+        }
+
+        function handleRemoteStream(event) {
+            console.log('Remote stream received');
+            logDiagnostic('Remote stream received', 'success');
+            appState.remoteStream = event.streams[0];
+            
+            if (appState.currentMode === 'video-call') {
+                const remoteVideo = document.getElementById('video-remote-video');
+                remoteVideo.srcObject = event.streams[0];
+                document.getElementById('videoSpinner').style.display = 'none';
+            } else if (appState.currentMode === 'audio-call') {
+                const remoteAudio = document.getElementById('audio-remote-audio');
+                remoteAudio.srcObject = event.streams[0];
+            }
+            
+            // Hide reconnect overlay if visible
+            if (appState.currentMode === 'audio-call') {
+                domRefs.audioReconnectOverlay.style.display = 'none';
+            } else if (appState.currentMode === 'video-call') {
+                domRefs.videoReconnectOverlay.style.display = 'none';
+            }
+            
+            // Reset reconnection attempts on successful stream
+            appState.reconnectAttempts = 0;
+        }
+
+        function handleICECandidate(event) {
+            if (event.candidate) {
+                const candidate = event.candidate.candidate;
+                const type = candidate.includes('typ relay') ? 'TURN (Relay)' : 
+                             candidate.includes('typ srflx') ? 'STUN (Reflexive)' : 
+                             'Host (Direct)';
+                
+                logDiagnostic(`ICE candidate gathered: ${type}`, 'info');
+                
+                sendMessage({
+                    type: 'candidate',
+                    candidate: event.candidate.candidate,
+                    sdpMid: event.candidate.sdpMid,
+                    sdpMLineIndex: event.candidate.sdpMLineIndex
+                });
+            }
+        }
+
+        function handleICEConnectionStateChange() {
+            const state = appState.peerConnection.iceConnectionState;
+            logDiagnostic(`ICE connection state changed: ${state}`, 'info');
+            
+            if (state === 'connected' || state === 'completed') {
+                updateStatus(`Call connected (${appState.roomId})`, true);
+                appState.reconnectAttempts = 0;
+                showNotification('Connection Established', 'Devices are now connected', 'success');
+            } else if (state === 'disconnected' || state === 'failed') {
+                // Attempt to reconnect automatically
+                if (appState.reconnectAttempts < appState.maxReconnectAttempts) {
+                    logDiagnostic(`Connection lost, attempting to reconnect (${appState.reconnectAttempts + 1}/${appState.maxReconnectAttempts})`, 'warning');
+                    appState.reconnectAttempts++;
+                    
+                    // Use exponential backoff for reconnection attempts
+                    const delay = Math.min(1000 * Math.pow(2, appState.reconnectAttempts), 30000);
+                    setTimeout(() => restartICE(appState.currentMode), delay);
+                } else {
+                    showNotification('Connection Failed', 'Maximum reconnection attempts reached', 'error');
+                }
+            }
+        }
+        
+        function handleConnectionStateChange() {
+            const state = appState.peerConnection.connectionState;
+            logDiagnostic(`Connection state changed: ${state}`, 'info');
+            
+            if (state === 'connected') {
+                // Update network status
+                updateNetworkStatus('good');
+                appState.reconnectAttempts = 0;
+            } else if (state === 'disconnected' || state === 'failed') {
+                updateNetworkStatus('poor');
+            }
+        }
+
+        function handleICEGatheringStateChange() {
+            logDiagnostic(`ICE gathering state: ${appState.peerConnection.iceGatheringState}`, 'info');
+        }
+        
+        function handleSignalingStateChange() {
+            logDiagnostic(`Signaling state: ${appState.peerConnection.signalingState}`, 'info');
+        }
+        
+        function handleNegotiationNeeded() {
+            logDiagnostic('Negotiation needed event triggered', 'info');
+            if (appState.isInitiator && appState.isStarted) {
+                createOffer();
+            }
+        }
+
+        // ========== SIGNALING ========== //
+        function initSignaling() {
+            if (appState.signalingRef) {
+                appState.signalingRef.off('child_added');
+            }
+            
+            appState.signalingRef = database.ref(`rooms/${appState.roomId}/messages`);
+            
+            appState.signalingRef.on('child_added', snapshot => {
+                const message = JSON.parse(snapshot.val());
+                
+                if (!appState.peerConnection) createPeerConnection();
+                
+                switch (message.type) {
+                    case 'offer':
+                        if (!appState.isInitiator && !appState.isStarted) {
+                            handleOffer(message);
+                        } else if (!appState.isInitiator && appState.isStarted) {
+                            // This is a renegotiation offer
+                            handleRenegotiationOffer(message);
+                        }
+                        break;
+                    case 'answer':
+                        if (appState.isStarted) {
+                            appState.peerConnection.setRemoteDescription(
+                                new RTCSessionDescription(message));
+                        }
+                        break;
+                    case 'candidate':
+                        if (appState.isStarted) {
+                            // Check if candidate is still relevant
+                            if (appState.peerConnection.remoteDescription) {
+                                appState.peerConnection.addIceCandidate(
+                                    new RTCIceCandidate(message));
+                            }
+                        }
+                        break;
+                    case 'bye':
+                        if (appState.isStarted) {
+                            hangup(appState.currentMode);
+                        }
+                        break;
+                    case 'keepalive':
+                        // Just acknowledge keepalive
+                        logDiagnostic('Received keepalive from peer', 'info');
+                        break;
+                }
+            });
+        }
+
+        async function handleOffer(offer) {
+            await appState.peerConnection.setRemoteDescription(
+                new RTCSessionDescription(offer));
+            
+            const answer = await appState.peerConnection.createAnswer();
+            await appState.peerConnection.setLocalDescription(answer);
+            
+            sendMessage(answer);
+            appState.isStarted = true;
+            startTimer();
+            updateStatus(`In ${appState.currentMode} call (${appState.roomId})`, true);
+            
+            // Acquire wake lock to prevent screen off
+            acquireWakeLock();
+        }
+        
+        async function handleRenegotiationOffer(offer) {
+            try {
                 await appState.peerConnection.setRemoteDescription(
                     new RTCSessionDescription(offer));
                 
-                // Create answer only after setting remote description
                 const answer = await appState.peerConnection.createAnswer();
-                
-                // FIX: Set local description BEFORE sending the answer
                 await appState.peerConnection.setLocalDescription(answer);
-                
-                // Send the answer to the initiator
                 sendMessage(answer);
                 
-                appState.isStarted = true;
-                startTimer();
-                updateStatus(`In audio call (${appState.roomId})`, true);
-                acquireWakeLock();
+                logDiagnostic('ICE renegotiation completed', 'success');
             } catch (err) {
-                console.error('Error handling offer:', err);
-                showNotification('Connection Error', 
-                    `Failed to handle offer: ${err.message}`, 'error');
+                console.error('Renegotiation error:', err);
+                logDiagnostic(`ICE renegotiation failed: ${err.message}`, 'error');
             }
         }
 
-        async function joinRoom(mode) {
-            appState.roomId = document.getElementById(`${mode}-room-id`).value.trim();
-            if (!appState.roomId) {
-                showNotification('Error', 'Please enter a room ID', 'error');
-                return;
-            }
+        function sendMessage(message) {
+            if (!appState.roomId) return;
             
-            try {
-                const mediaInitialized = await initMedia(mode);
-                if (!mediaInitialized) return;
-                
-                // FIX: Create peer connection BEFORE setting up signaling
-                if (!createPeerConnection()) return;
-                
-                appState.isInitiator = false;
-                initSignaling();
-                
-                updateStatus(`Joining ${mode} call...`, false);
-                showNotification('Joining Room', `Connecting to room: ${appState.roomId}`);
-                
-                await preconnectSignaling();
-                
-                // FIX: Listen for offer after joining
-                logDiagnostic('Waiting for offer from initiator...', 'info');
-            } catch (err) {
-                console.error('Error joining room:', err);
-                showNotification('Connection Error', 'Failed to join room', 'error');
-            }
+            const dbRef = database.ref(`rooms/${appState.roomId}/messages`);
+            dbRef.push(JSON.stringify(message));
         }
-
-        // ========== ADDED: PROPER SIGNALING FOR ANSWER ========== //
-        function handleAnswer(answer) {
-            if (!appState.peerConnection || !appState.isStarted) return;
-            
-            try {
-                // Set the remote description with the received answer
-                appState.peerConnection.setRemoteDescription(
-                    new RTCSessionDescription(answer));
-                
-                logDiagnostic('Answer received and set as remote description', 'success');
-            } catch (err) {
-                console.error('Error handling answer:', err);
-                showNotification('Connection Error', 
-                    `Failed to handle answer: ${err.message}`, 'error');
-            }
-        }
-
-        // ========== UPDATED SIGNALING HANDLER ========== //
-        appState.signalingRef.on('child_added', snapshot => {
-            const message = JSON.parse(snapshot.val());
-            
-            if (!appState.peerConnection) {
-                logDiagnostic('Received message but peer connection not initialized', 'warning');
-                return;
-            }
-            
-            switch (message.type) {
-                case 'offer':
-                    // FIX: Only handle offer if we're the joiner
-                    if (!appState.isInitiator && !appState.isStarted) {
-                        handleOffer(message);
-                    }
-                    break;
-                case 'answer':
-                    // FIX: Added answer handling for the initiator
-                    if (appState.isInitiator && appState.isStarted) {
-                        handleAnswer(message);
-                    }
-                    break;
-                case 'candidate':
-                    if (appState.isStarted && appState.peerConnection.remoteDescription) {
-                        try {
-                            appState.peerConnection.addIceCandidate(
-                                new RTCIceCandidate({
-                                    candidate: message.candidate,
-                                    sdpMid: message.sdpMid,
-                                    sdpMLineIndex: message.sdpMLineIndex
-                                }));
-                        } catch (err) {
-                            logDiagnostic(`Error adding ICE candidate: ${err.message}`, 'error');
-                        }
-                    }
-                    break;
-                case 'bye':
-                    if (appState.isStarted) {
-                        hangup('audio');
-                    }
-                    break;
-                case 'keepalive':
-                    break;
-            }
-        });
-
-        // ========== ADDED: IMPROVED OFFER CREATION ========== //
+        
         async function createOffer() {
             try {
-                const offerOptions = {
-                    offerToReceiveAudio: 1,
-                    offerToReceiveVideo: 0
-                };
-                
-                const offer = await appState.peerConnection.createOffer(offerOptions);
-                
-                // Set local description BEFORE sending the offer
+                const offer = await appState.peerConnection.createOffer();
                 await appState.peerConnection.setLocalDescription(offer);
-                
                 sendMessage({
                     type: 'offer',
                     sdp: offer.sdp
                 });
-                
-                logDiagnostic('Offer created and sent', 'success');
             } catch (err) {
-                console.error('Failed to create offer:', err);
-                showNotification('Connection Error', 
-                    `Failed to create offer: ${err.message}`, 'error');
+                logDiagnostic(`Failed to create offer: ${err.message}`, 'error');
             }
         }
 
@@ -1440,8 +1697,10 @@
         async function generateRoom(mode) {
             appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
             
+            // Update UI
             document.getElementById(`${mode}-room-id`).value = appState.roomId;
             
+            // Generate room link
             const basePath = window.location.href.split('?')[0];
             const roomLink = `${basePath}?room=${appState.roomId}&mode=${mode}`;
             
@@ -1451,11 +1710,14 @@
             showNotification('Room Generated', `Room ID: ${appState.roomId}. Share with others.`, 'success');
             
             try {
+                // Initialize media
                 const mediaInitialized = await initMedia(mode);
                 if (!mediaInitialized) return;
                 
+                // Create peer connection
                 if (!createPeerConnection()) return;
                 
+                // Create offer
                 appState.isInitiator = true;
                 initSignaling();
                 
@@ -1472,6 +1734,7 @@
                 updateStatus(`In ${mode} call (${appState.roomId})`, true);
                 showNotification('Call Started', `Connected to room: ${appState.roomId}`, 'success');
                 
+                // Acquire wake lock to prevent screen off
                 acquireWakeLock();
             } catch (err) {
                 console.error('Error creating room:', err);
@@ -1488,17 +1751,24 @@
             }
             
             try {
+                // Initialize media
                 const mediaInitialized = await initMedia(mode);
                 if (!mediaInitialized) return;
                 
+                // Create peer connection
                 if (!createPeerConnection()) return;
                 
                 appState.isInitiator = false;
                 initSignaling();
                 
+                if (mode === 'video') {
+                    document.getElementById('videoSpinner').style.display = 'block';
+                }
+                
                 updateStatus(`Joining ${mode} call...`, false);
                 showNotification('Joining Room', `Connecting to room: ${appState.roomId}`);
                 
+                // Pre-warm signaling connection for faster join
                 await preconnectSignaling();
             } catch (err) {
                 console.error('Error joining room:', err);
@@ -1520,7 +1790,14 @@
             
             document.getElementById(`${mode}Controls`).style.display = 'none';
             document.getElementById(`${mode}RoomLinkContainer`).style.display = 'none';
-            document.getElementById('audio-remote-audio').srcObject = null;
+            
+            if (mode === 'video') {
+                document.getElementById('video-remote-video').srcObject = null;
+                document.getElementById('video-local-video').srcObject = null;
+                document.getElementById('videoSpinner').style.display = 'none';
+            } else if (mode === 'audio') {
+                document.getElementById('audio-remote-audio').srcObject = null;
+            }
             
             stopTimer();
             updateStatus('Call ended', false);
@@ -1533,7 +1810,25 @@
             appState.isStarted = false;
             appState.roomId = null;
             appState.reconnectAttempts = 0;
+            
+            // Release wake lock
             releaseWakeLock();
+            
+            // Clear diagnostics
+            clearDiagnostics(mode);
+        }
+
+        function toggleVideo() {
+            if (appState.localStream) {
+                const videoTrack = appState.localStream.getVideoTracks()[0];
+                if (videoTrack) {
+                    videoTrack.enabled = !videoTrack.enabled;
+                    const button = document.getElementById('videoVideoToggle');
+                    button.innerHTML = videoTrack.enabled ? 
+                        '<i class="fas fa-video"></i>' : 
+                        '<i class="fas fa-video-slash"></i>';
+                }
+            }
         }
 
         function toggleAudio(mode) {
@@ -1551,53 +1846,89 @@
         
         // ========== RECONNECTION MANAGEMENT ========== //
         async function restartICE(mode) {
-            if (!appState.peerConnection || !appState.isStarted) return;
+            if (!appState.peerConnection || !appState.isStarted) {
+                logDiagnostic('Cannot restart ICE - no active connection', 'warning');
+                return;
+            }
             
+            // Rate limit ICE restarts (max once every 5 seconds)
             const now = Date.now();
-            if (now - appState.lastIceRestart < 5000) return;
+            if (now - appState.lastIceRestart < 5000) {
+                logDiagnostic('ICE restart throttled (too frequent)', 'warning');
+                return;
+            }
             appState.lastIceRestart = now;
             
             try {
-                domRefs.audioReconnectOverlay.style.display = 'flex';
+                // Show reconnect overlay
+                if (mode === 'audio') {
+                    domRefs.audioReconnectOverlay.style.display = 'flex';
+                } else {
+                    domRefs.videoReconnectOverlay.style.display = 'flex';
+                }
                 
+                // Create a new offer with ICE restart
                 const offer = await appState.peerConnection.createOffer({iceRestart: true});
                 await appState.peerConnection.setLocalDescription(offer);
                 sendMessage(offer);
                 
+                logDiagnostic('ICE restart initiated', 'info');
                 showNotification('Reconnecting', 'Attempting to re-establish connection');
                 
+                // Add timeout for faster fallback
                 setTimeout(() => {
                     if (appState.peerConnection && 
                         appState.peerConnection.iceConnectionState !== 'connected' &&
                         appState.peerConnection.iceConnectionState !== 'completed') {
+                        logDiagnostic('Fast reconnect failed, trying full reconnect', 'warning');
                         forceReconnect(mode);
                     }
                 }, 5000);
             } catch (err) {
                 console.error('Error restarting ICE:', err);
+                logDiagnostic(`ICE restart failed: ${err.message}`, 'error');
                 showNotification('Reconnect Failed', 'Could not restart connection', 'error');
-                domRefs.audioReconnectOverlay.style.display = 'none';
+                
+                // Hide reconnect overlay
+                if (mode === 'audio') {
+                    domRefs.audioReconnectOverlay.style.display = 'none';
+                } else {
+                    domRefs.videoReconnectOverlay.style.display = 'none';
+                }
             }
         }
         
         function forceReconnect(mode) {
+            logDiagnostic('Force reconnection initiated', 'info');
+            
+            // Close existing connection
             if (appState.peerConnection) {
                 appState.peerConnection.close();
                 appState.peerConnection = null;
             }
             
+            // Reset state
             appState.reconnectAttempts = 0;
+            
+            // Rejoin the room
             joinRoom(mode);
         }
 
         // ========== NETWORK MONITORING ========== //
         function startNetworkMonitoring() {
+            // Check if Network Information API is available
             if (navigator.connection) {
+                // Initial network type
                 appState.networkType = navigator.connection.type;
                 updateNetworkStatus('good');
+                
+                // Listen for network changes
                 navigator.connection.addEventListener('change', handleNetworkChange);
+            } else {
+                logDiagnostic('Network Information API not available', 'warning');
             }
             
+            // Fallback to online/offline events
             window.addEventListener('online', handleNetworkOnline);
             window.addEventListener('offline', handleNetworkOffline);
         }
@@ -1609,6 +1940,9 @@
             const newEffectiveType = navigator.connection.effectiveType;
             const downlink = navigator.connection.downlink;
             
+            logDiagnostic(`Network changed: ${appState.networkType} → ${newNetworkType} (${newEffectiveType}, ${downlink}Mbps)`, 'info');
+            
+            // Update network status
             if (newNetworkType === 'cellular' || newEffectiveType === 'slow-2g' || downlink < 1) {
                 updateNetworkStatus('poor');
             } else {
@@ -1617,20 +1951,25 @@
             
             appState.networkType = newNetworkType;
             
+            // If network quality degraded, consider restarting ICE
             if (appState.isStarted && (newNetworkType === 'cellular' || newEffectiveType === 'slow-2g')) {
-                restartICE('audio');
+                logDiagnostic('Network quality degraded, attempting ICE restart', 'warning');
+                restartICE(appState.currentMode);
             }
         }
         
         function handleNetworkOnline() {
+            logDiagnostic('Network online event', 'info');
             updateNetworkStatus('good');
             
             if (appState.isStarted && appState.networkResilience) {
-                restartICE('audio');
+                logDiagnostic('Network restored, attempting to reconnect', 'info');
+                restartICE(appState.currentMode);
             }
         }
         
         function handleNetworkOffline() {
+            logDiagnostic('Network offline event', 'warning');
             updateNetworkStatus('disconnected');
         }
         
@@ -1681,20 +2020,26 @@
                 document.getElementById('reconnect-attempts').value);
             localStorage.setItem('mobileOptimization', 
                 document.getElementById('mobile-optimization').checked);
-            localStorage.setItem('diagnosticsEnabled', 
-                document.getElementById('diagnostics-toggle').checked);
             
             appState.backgroundPersistence = document.getElementById('background-persistence').checked;
             appState.networkResilience = document.getElementById('network-resilience').checked;
-            appState.diagnosticsEnabled = document.getElementById('diagnostics-toggle').checked;
         }
 
         // ========== DIAGNOSTICS ========== //
+        function initDiagnostics() {
+            // Load debug mode setting
+            appState.diagnosticsEnabled = localStorage.getItem('debugMode') === 'true';
+        }
+        
         function logDiagnostic(message, type = 'info') {
             if (!appState.diagnosticsEnabled) return;
             
-            const diagnosticsContent = domRefs.audioDiagnosticsContent;
-            const diagnosticsContainer = domRefs.audioDiagnostics;
+            const mode = appState.currentMode;
+            const diagnosticsContent = mode === 'audio-call' ? 
+                domRefs.audioDiagnosticsContent : domRefs.videoDiagnosticsContent;
+                
+            const diagnosticsContainer = mode === 'audio-call' ? 
+                domRefs.audioDiagnostics : domRefs.videoDiagnostics;
                 
             const diagnosticEntry = document.createElement('div');
             diagnosticEntry.className = `diagnostic-entry diagnostic-${type}`;
@@ -1711,9 +2056,20 @@
             }
         }
         
+        function clearDiagnostics(mode) {
+            const diagnosticsContent = mode === 'audio' ? 
+                domRefs.audioDiagnosticsContent : domRefs.videoDiagnosticsContent;
+                
+            diagnosticsContent.innerHTML = '';
+        }
+        
         function toggleDiagnostics(mode) {
-            const diagnosticsContainer = domRefs.audioDiagnostics;
-            const toggleButton = document.getElementById('toggleAudioDiagnostics');
+            const diagnosticsContainer = mode === 'audio' ? 
+                domRefs.audioDiagnostics : domRefs.videoDiagnostics;
+                
+            const toggleButton = mode === 'audio' ? 
+                document.getElementById('toggleAudioDiagnostics') : 
+                document.getElementById('toggleVideoDiagnostics');
                 
             if (diagnosticsContainer.style.display === 'none') {
                 diagnosticsContainer.style.display = 'block';
@@ -1743,7 +2099,7 @@
                     
                     if (state !== 'connected' && state !== 'completed') {
                         logDiagnostic('Connection lost in background, reconnecting', 'warning');
-                        restartICE('audio');
+                        restartICE(appState.currentMode);
                     } else {
                         logDiagnostic('Connection maintained in background', 'success');
                     }
@@ -1753,11 +2109,12 @@
         
         function handleBeforeUnload(e) {
             if (appState.isStarted) {
-                hangup('audio');
+                hangup(appState.currentMode);
             }
         }
         
         async function preconnectSignaling() {
+            // Create dummy connection to warm up signaling
             try {
                 const dummyRef = database.ref('dummy-connection');
                 await dummyRef.set({ timestamp: Date.now() });
