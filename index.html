@@ -75,9 +75,10 @@
         }
 
         .light-mode .logo-icon {
-            background: linear-gradient(135deg, #1e90ff, #00bfff);
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
         }
 
+        /* Consistent logo text gradient in both themes */
         .logo-text {
             font-size: 32px;
             font-weight: 700;
@@ -85,11 +86,6 @@
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-        }
-
-        /* Fixed light mode heading contrast */
-        .light-mode .logo-text {
-            background: linear-gradient(to right, #0066cc, #0099ff);
         }
 
         .status-container {
@@ -552,6 +548,13 @@
         function initApp() {
             setupEventListeners();
             autoJoinRoom();
+            updateThemeIcon();
+            
+            // Load saved theme preference
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+            }
             updateThemeIcon();
         }
 
