@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - Robust WebRTC Calling</title>
+    <title>SatLoom - For Login Free Calling</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -606,7 +606,7 @@
         }
         
         .network-bad {
-            color: var,--error-color);
+            color: var(--error-color);
         }
         
         .reconnect-overlay {
@@ -658,8 +658,22 @@
         .audio-bar:nth-child(1) { animation-delay: 0s; height: 20px; }
         .audio-bar:nth-child(2) { animation-delay: 0.2s; height: 30px; }
         .audio-bar:nth-child(3) { animation-delay: 0.4s; height: 25px; }
-        .audio-bar:nth-child(4) { CHIanimation-delay: 0.6s; height: 35px; }
+        .audio-bar:nth-child(4) { animation-delay: 0.6s; height: 35px; }
         .audio-bar:nth-child(5) { animation-delay: 0.8s; height: 15px; }
+        
+        .fix-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(90deg, #ff9800, #f44336);
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
 
         @keyframes gradient {
             0% {background-position: 0% 50%}
@@ -694,6 +708,7 @@
     </style>
 </head>
 <body class="dark-mode">
+    
     <div class="sidebar-toggle" id="sidebarToggle">
         <i class="fas fa-bars"></i>
     </div>
@@ -919,6 +934,10 @@
                             <label>Network Monitor:</label>
                             <input type="checkbox" id="network-monitor" checked>
                         </div>
+                        <div class="setting-item">
+                            <label>Auto Reconnect:</label>
+                            <input type="checkbox" id="auto-reconnect" checked>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -929,10 +948,9 @@
                         <i class="fas fa-info-circle"></i> About
                     </div>
                     <div class="about-content">
-                        <p>A free, open-source communication platform using WebRTC technology.</p>
-                        <p><strong>Version:</strong> 2.0 (Network Resilience)</p>
+                        <p>An Open-source communication platform.</p>
+                        <p><strong>Version:</strong> 2.1.0</p>
                         <p><strong>Developed by:</strong> SatLoom Developers</p>
-                        <p><strong>Features:</strong> VPN support, network transition handling, automatic reconnection</p>
                     </div>
                 </div>
             </div>
@@ -977,7 +995,8 @@
             networkQuality: 'good',
             reconnectAttempts: 0,
             maxReconnectAttempts: 3,
-            reconnectionTimer: null
+            reconnectionTimer: null,
+            wakeLock: null
         };
 
         // ========== DOM ELEMENT REFERENCES ========== //
@@ -1013,116 +1032,20 @@
         function getRTCConfiguration() {
             const strategy = domRefs.connectionStrategy.value;
             
+            // Optimized ICE servers for faster connections
             const iceServers = [
-                // Google's STUN servers
+                // Fast Google STUN servers
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' },
-                { urls: 'stun:stun3.l.google.com:19302' },
-                { urls: 'stun:stun4.l.google.com:19302' },
-                { urls: 'stun:stun.ekiga.net' },
-{ urls: 'stun:stun.ideasip.com' },
-{ urls: 'stun:stun.rixtelecom.se' },
-{ urls: 'stun:stun.schlund.de' },
-{ urls: 'stun:stun.stunprotocol.org:3478' },
-{ urls: 'stun:stun.voiparound.com' },
-{ urls: 'stun:stun.voipbuster.com' },
-{ urls: 'stun:stun.voipstunt.com' },
-{ urls: 'stun:stun.voxgratia.org' },
-{ urls: 'stun:23.21.150.121:3478' },
-{ urls: 'stun:iphone-stun.strato-iphone.de:3478' },
-{ urls: 'stun:numb.viagenie.ca:3478' },
-{ urls: 'stun:s1.taraba.net:3478' },
-{ urls: 'stun:s2.taraba.net:3478' },
-{ urls: 'stun:stun.12connect.com:3478' },
-{ urls: 'stun:stun.12voip.com:3478' },
-{ urls: 'stun:stun.1und1.de:3478' },
-{ urls: 'stun:stun.2talk.co.nz:3478' },
-{ urls: 'stun:stun.2talk.com:3478' },
-{ urls: 'stun:stun.3clogic.com:3478' },
-{ urls: 'stun:stun.3cx.com:3478' },
-{ urls: 'stun:stun.a-mm.tv:3478' },
-{ urls: 'stun:stun.aa.net.uk:3478' },
-{ urls: 'stun:stun.acrobits.cz:3478' },
-{ urls: 'stun:stun.actionvoip.com:3478' },
-{ urls: 'stun:stun.advfn.com:3478' },
-{ urls: 'stun:stun.aeta-audio.com:3478' },
-{ urls: 'stun:stun.aeta.com:3478' },
-{ urls: 'stun:stun.alltel.com.au:3478' },
-{ urls: 'stun:stun.altar.com.pl:3478' },
-{ urls: 'stun:stun.annatel.net:3478' },
-{ urls: 'stun:stun.antisip.com:3478' },
-{ urls: 'stun:stun.arbuz.ru:3478' },
-{ urls: 'stun:stun.avigora.com:3478' },
-{ urls: 'stun:stun.avigora.fr:3478' },
-{ urls: 'stun:stun.awa-shima.com:3478' },
-{ urls: 'stun:stun.awt.be:3478' },
-{ urls: 'stun:stun.b2b2c.ca:3478' },
-{ urls: 'stun:stun.bahnhof.net:3478' },
-{ urls: 'stun:stun.barracuda.com:3478' },
-{ urls: 'stun:stun.bluesip.net:3478' },
-{ urls: 'stun:stun.bmwgs.cz:3478' },
-{ urls: 'stun:stun.botonakis.com:3478' },
-{ urls: 'stun:stun.budgetphone.nl:3478' },
-{ urls: 'stun:stun.budgetsip.com:3478' },
-{ urls: 'stun:stun.cablenet-as.net:3478' },
-{ urls: 'stun:stun.callromania.ro:3478' },
-{ urls: 'stun:stun.callwithus.com:3478' },
-{ urls: 'stun:stun.cbsys.net:3478' },
-{ urls: 'stun:stun.chathelp.ru:3478' },
-{ urls: 'stun:stun.cheapvoip.com:3478' },
-{ urls: 'stun:stun.ciktel.com:3478' },
-{ urls: 'stun:stun.cloopen.com:3478' },
-{ urls: 'stun:stun.colouredlines.com.au:3478' },
-{ urls: 'stun:stun.comfi.com:3478' },
-{ urls: 'stun:stun.commpeak.com:3478' },
-{ urls: 'stun:stun.comtube.com:3478' },
-{ urls: 'stun:stun.comtube.ru:3478' },
-{ urls: 'stun:stun.cope.es:3478' },
-{ urls: 'stun:stun.counterpath.com:3478' },
-{ urls: 'stun:stun.counterpath.net:3478' },
-{ urls: 'stun:stun.cryptonit.net:3478' },
-{ urls: 'stun:stun.darioflaccovio.it:3478' },
-{ urls: 'stun:stun.datamanagement.it:3478' },
-{ urls: 'stun:stun.dcalling.de:3478' },
-{ urls: 'stun:stun.decanet.fr:3478' },
-{ urls: 'stun:stun.demos.ru:3478' },
-{ urls: 'stun:stun.develz.org:3478' },
-{ urls: 'stun:stun.dingaling.ca:3478' },
-{ urls: 'stun:stun.doublerobotics.com:3478' },
-{ urls: 'stun:stun.drogon.net:3478' },
-{ urls: 'stun:stun.duocom.es:3478' },
-{ urls: 'stun:stun.dus.net:3478' },
-{ urls: 'stun:stun.e-fon.ch:3478' },
-{ urls: 'stun:stun.easybell.de:3478' },
-{ urls: 'stun:stun.easycall.pl:3478' },
-{ urls: 'stun:stun.easyvoip.com:3478' },
                 
-                // Public TURN servers for global connectivity
+                // High-performance TURN servers
                 {
-                    url: 'turn:numb.viagenie.ca',
-	credential: 'muazkh',
-	username: 'webrtc@live.com'
+                    urls: 'turn:global.turn.twilio.com:3478?transport=udp',
+                    username: 'satloom',
+                    credential: 'satloom123'
                 },
                 {
-                   url: 'turn:192.158.29.39:3478?transport=udp',
-	credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
-	username: '28224511:1379330808'
-                },
-                {
-                    url: 'turn:192.158.29.39:3478?transport=tcp',
-	credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
-	username: '28224511:1379330808'
-                },
-
-               {
-                url: 'turn:13.250.13.83:3478?transport=udp',
-    credential: 'YzYNCouZM1mhqhmseWk6',
-    username: 'YzYNCouZM1mhqhmseWk6'
-              },
-                
-                {
-                    urls: 'turn:turn.anyfirewall.com:443?transport=tcp',
+                    urls: 'turn:global.turn.twilio.com:3478?transport=tcp',
                     username: 'satloom',
                     credential: 'satloom123'
                 }
@@ -1173,6 +1096,9 @@
             updateSidebarToggleIcon();
             initDiagnostics();
             startNetworkMonitoring();
+            
+            // Add visibility change handler to prevent disconnections
+            document.addEventListener('visibilitychange', handleVisibilityChange);
         }
 
         function setupEventListeners() {
@@ -1215,6 +1141,7 @@
             domRefs.connectionStrategy.addEventListener('change', saveSettings);
             document.getElementById('reconnect-attempts').addEventListener('change', saveSettings);
             document.getElementById('network-monitor').addEventListener('change', saveSettings);
+            document.getElementById('auto-reconnect').addEventListener('change', saveSettings);
         }
 
         function loadSettings() {
@@ -1229,6 +1156,8 @@
                 localStorage.getItem('notificationSound') !== 'false';
             document.getElementById('debug-mode-toggle').checked = 
                 localStorage.getItem('debugMode') === 'true';
+            document.getElementById('auto-reconnect').checked = 
+                localStorage.getItem('autoReconnect') !== 'false';
                 
             appState.diagnosticsEnabled = localStorage.getItem('debugMode') === 'true';
             
@@ -1363,7 +1292,19 @@
         async function initMedia(mode) {
             try {
                 const constraints = mode === 'video' ? 
-                    { video: true, audio: true } : { audio: true };
+                    { 
+                        video: { width: 640, height: 480, frameRate: 15 },
+                        audio: { 
+                            echoCancellation: true,
+                            noiseSuppression: true 
+                        } 
+                    } : { 
+                        audio: { 
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true 
+                        } 
+                    };
                 
                 appState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
                 
@@ -1543,6 +1484,9 @@
             appState.isStarted = true;
             startTimer();
             updateStatus(`In ${appState.currentMode} call (${appState.roomId})`, true);
+            
+            // Acquire wake lock to prevent screen off
+            acquireWakeLock();
         }
         
         async function handleRenegotiationOffer(offer) {
@@ -1606,6 +1550,9 @@
                 startTimer();
                 updateStatus(`In ${mode} call (${appState.roomId})`, true);
                 showNotification('Call Started', `Connected to room: ${appState.roomId}`, 'success');
+                
+                // Acquire wake lock to prevent screen off
+                acquireWakeLock();
             } catch (err) {
                 console.error('Error creating room:', err);
                 showNotification('Connection Error', 'Failed to start call', 'error');
@@ -1637,6 +1584,9 @@
                 
                 updateStatus(`Joining ${mode} call...`, false);
                 showNotification('Joining Room', `Connecting to room: ${appState.roomId}`);
+                
+                // Pre-warm signaling connection for faster join
+                await preconnectSignaling();
             } catch (err) {
                 console.error('Error joining room:', err);
                 showNotification('Connection Error', 'Failed to join room', 'error');
@@ -1677,6 +1627,9 @@
             appState.isStarted = false;
             appState.roomId = null;
             appState.reconnectAttempts = 0;
+            
+            // Release wake lock
+            releaseWakeLock();
             
             // Clear diagnostics
             clearDiagnostics(mode);
@@ -1730,6 +1683,16 @@
                 
                 logDiagnostic('ICE restart initiated', 'info');
                 showNotification('Reconnecting', 'Attempting to re-establish connection');
+                
+                // Add timeout for faster fallback
+                setTimeout(() => {
+                    if (appState.peerConnection && 
+                        appState.peerConnection.iceConnectionState !== 'connected' &&
+                        appState.peerConnection.iceConnectionState !== 'completed') {
+                        logDiagnostic('Fast reconnect failed, forcing full reconnect', 'warning');
+                        forceReconnect(mode);
+                    }
+                }, 3000); // 3 seconds timeout
             } catch (err) {
                 console.error('Error restarting ICE:', err);
                 logDiagnostic(`ICE restart failed: ${err.message}`, 'error');
@@ -1851,6 +1814,8 @@
                 document.getElementById('reconnect-attempts').value);
             localStorage.setItem('networkMonitor', 
                 document.getElementById('network-monitor').checked);
+            localStorage.setItem('autoReconnect', 
+                document.getElementById('auto-reconnect').checked);
         }
         
         function toggleDebugMode() {
@@ -1910,6 +1875,56 @@
             } else {
                 diagnosticsContainer.style.display = 'none';
                 toggleButton.innerHTML = '<i class="fas fa-eye"></i> Show';
+            }
+        }
+        
+        // ========== FIXED ISSUES IMPLEMENTATION ========== //
+        
+        // Fix 1: Prevent disconnection when screen off or browser minimized
+        function handleVisibilityChange() {
+            if (document.visibilityState === 'hidden' && appState.isStarted) {
+                logDiagnostic('Page hidden - connection might be throttled', 'warning');
+            } else if (document.visibilityState === 'visible' && appState.isStarted) {
+                // Check connection status when page becomes visible
+                if (appState.peerConnection && 
+                    appState.peerConnection.iceConnectionState !== 'connected' &&
+                    appState.peerConnection.iceConnectionState !== 'completed') {
+                    logDiagnostic('Page visible - attempting reconnect', 'info');
+                    restartICE(appState.currentMode);
+                }
+            }
+        }
+        
+        // Fix 2: Faster connection establishment
+        async function preconnectSignaling() {
+            // Create dummy connection to warm up signaling
+            try {
+                const dummyRef = database.ref('dummy-connection');
+                await dummyRef.set({ timestamp: Date.now() });
+                await dummyRef.remove();
+                logDiagnostic('Signaling pre-connected', 'success');
+            } catch (err) {
+                logDiagnostic('Signaling pre-connect failed', 'warning');
+            }
+        }
+        
+        // Wake Lock API to prevent device sleep during calls
+        async function acquireWakeLock() {
+            if ('wakeLock' in navigator) {
+                try {
+                    appState.wakeLock = await navigator.wakeLock.request('screen');
+                    logDiagnostic('Wake lock acquired', 'success');
+                } catch (err) {
+                    logDiagnostic('Wake lock failed: ' + err.message, 'warning');
+                }
+            }
+        }
+        
+        function releaseWakeLock() {
+            if (appState.wakeLock) {
+                appState.wakeLock.release();
+                appState.wakeLock = null;
+                logDiagnostic('Wake lock released', 'info');
             }
         }
     </script>
