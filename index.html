@@ -480,6 +480,56 @@
             margin-top: 10px;
             transition: all 0.3s ease;
         }
+        
+        /* Connection guard */
+        .connection-guard {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        
+        .connection-guard-content {
+            max-width: 400px;
+            background: rgba(7, 25, 43, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .connection-guard h2 {
+            margin-bottom: 20px;
+            color: #00d2ff;
+        }
+        
+        .connection-guard p {
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        
+        .connection-guard-btn {
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            min-width: 180px;
+        }
     </style>
 </head>
 <body>
@@ -499,6 +549,14 @@
     <div class="audio-activation-panel" id="audioActivationPanel">
         <p>Audio playback is blocked. Click to enable:</p>
         <button id="activateAudioBtn">Enable Audio</button>
+    </div>
+    
+    <div class="connection-guard" id="connectionGuard">
+        <div class="connection-guard-content">
+            <h2>Connection Paused</h2>
+            <p>Your connection is temporarily paused while the browser is minimized. Please return to the browser to continue your call.</p>
+            <button class="connection-guard-btn" id="resumeConnection">Resume Connection</button>
+        </div>
     </div>
 
     <div class="app-container">
@@ -549,7 +607,7 @@
     </div>
 
     <div class="footer">
-        <p>v4.0.0 | Powered by <a href="#">SatLoom Developers</a></p>
+        <p>v4.1.0 | Powered by <a href="#">SatLoom Developers</a></p>
     </div>
     
     <!-- Hidden audio element for remote stream -->
@@ -616,12 +674,13 @@
             startTime: null,
             userId: generateUserId(),
             reconnectAttempts: 0,
-            maxReconnectAttempts: 5,
+            maxReconnectAttempts: 3,
             lastIceRestart: 0,
             signalingRef: null,
             isMuted: false,
             remoteAudioElement: null,
-            isPageVisible: true
+            isPageVisible: true,
+            connectionPaused: false
         };
 
         // Initialize app
@@ -648,32 +707,50 @@
         }
 
         function handleVisibilityChange() {
+            const wasVisible = appState.isPageVisible;
             appState.isPageVisible = document.visibilityState === 'visible';
-            updateStatus(appState.isPageVisible ? 'Page is visible' : 'Page is in background', false);
             
-            if (appState.isPageVisible && appState.isStarted) {
-                // Page became visible - try to resume connection
-                resumeConnectionAfterBackground();
+            if (wasVisible && !appState.isPageVisible) {
+                // Page became hidden
+                pauseConnection();
+            } else if (!wasVisible && appState.isPageVisible) {
+                // Page became visible
+                resumeConnection();
+            }
+            
+            updateStatus(appState.isPageVisible ? 'Page is visible' : 'Page is in background', false);
+        }
+
+        function pauseConnection() {
+            if (appState.isStarted) {
+                appState.connectionPaused = true;
+                document.getElementById('connectionGuard').style.display = 'flex';
+                showNotification('Connection Paused', 'Return to browser to resume call', 'warning');
             }
         }
 
-        function resumeConnectionAfterBackground() {
-            // Resume remote audio
-            if (appState.remoteAudioElement && appState.remoteAudioElement.srcObject) {
-                appState.remoteAudioElement.play().catch(e => {
-                    console.error('Failed to resume audio:', e);
-                    document.getElementById('audioActivationPanel').style.display = 'block';
-                });
-            }
-            
-            // If we have a peer connection, check its state
-            if (appState.peerConnection) {
-                const state = appState.peerConnection.iceConnectionState;
+        function resumeConnection() {
+            if (appState.connectionPaused) {
+                appState.connectionPaused = false;
+                document.getElementById('connectionGuard').style.display = 'none';
                 
-                if (state !== 'connected' && state !== 'completed') {
-                    // Connection is not active - try to restart ICE
-                    restartICE();
+                // Resume remote audio
+                if (appState.remoteAudioElement && appState.remoteAudioElement.srcObject) {
+                    appState.remoteAudioElement.play().catch(e => {
+                        console.error('Failed to resume audio:', e);
+                        document.getElementById('audioActivationPanel').style.display = 'block';
+                    });
                 }
+                
+                // If connection is in a bad state, restart ICE
+                if (appState.peerConnection) {
+                    const state = appState.peerConnection.iceConnectionState;
+                    if (state === 'disconnected' || state === 'failed') {
+                        restartICE();
+                    }
+                }
+                
+                showNotification('Connection Resumed', 'Call has been restored', 'success');
             }
         }
 
@@ -686,6 +763,7 @@
             document.getElementById('themeToggle').addEventListener('click', toggleTheme);
             document.getElementById('activateAudioBtn').addEventListener('click', activateAudio);
             document.getElementById('retryConnection').addEventListener('click', retryConnection);
+            document.getElementById('resumeConnection').addEventListener('click', resumeConnection);
         }
 
         function generateUserId() {
@@ -842,7 +920,7 @@
         }
 
         function handleICECandidate(event) {
-            if (event.candidate) {
+            if (event.candidate && !appState.connectionPaused) {
                 sendMessage({
                     type: 'candidate',
                     candidate: event.candidate.candidate,
@@ -853,6 +931,8 @@
         }
 
         function handleICEConnectionStateChange() {
+            if (appState.connectionPaused) return;
+            
             const state = appState.peerConnection.iceConnectionState;
             
             if (state === 'connected' || state === 'completed') {
@@ -877,6 +957,8 @@
             appState.signalingRef = database.ref(`rooms/${appState.roomId}/messages`);
             
             appState.signalingRef.on('child_added', snapshot => {
+                if (appState.connectionPaused) return;
+                
                 const message = JSON.parse(snapshot.val());
                 
                 if (!appState.peerConnection) createPeerConnection();
@@ -927,7 +1009,7 @@
         }
 
         function sendMessage(message) {
-            if (!appState.roomId) return;
+            if (!appState.roomId || appState.connectionPaused) return;
             const dbRef = database.ref(`rooms/${appState.roomId}/messages`);
             dbRef.push(JSON.stringify(message));
         }
@@ -1015,7 +1097,7 @@
         }
         
         async function restartICE() {
-            if (!appState.peerConnection || !appState.isStarted) return;
+            if (!appState.peerConnection || !appState.isStarted || appState.connectionPaused) return;
             
             // Rate limit ICE restarts
             const now = Date.now();
@@ -1048,6 +1130,7 @@
             document.getElementById('copyRoomLink').style.display = 'none';
             document.getElementById('generateAudioRoom').style.display = 'flex';
             document.getElementById('audioActivationPanel').style.display = 'none';
+            document.getElementById('connectionGuard').style.display = 'none';
             stopTimer();
             updateStatus('Call ended', false);
             showNotification('Call Ended', 'Your call has been disconnected');
@@ -1067,6 +1150,7 @@
             appState.roomId = null;
             appState.reconnectAttempts = 0;
             appState.remoteStream = null;
+            appState.connectionPaused = false;
             
             // Reset mute button
             const muteBtn = document.getElementById('audioAudioToggle');
