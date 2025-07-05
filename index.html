@@ -20,9 +20,16 @@
             color: #fff;
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             padding: 20px;
+            transition: background 0.5s ease;
+        }
+
+        body.light-mode {
+            background: linear-gradient(135deg, #e0e0e0, #f5f5f5, #e0f7fa);
+            color: #333;
         }
 
         .app-container {
@@ -39,6 +46,13 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             text-align: center;
             border: 1px solid rgba(58, 123, 213, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .light-mode .card {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(30, 144, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
 
         .logo {
@@ -60,6 +74,10 @@
             animation: pulse 2s infinite;
         }
 
+        .light-mode .logo-icon {
+            background: linear-gradient(135deg, #1e90ff, #00bfff);
+        }
+
         .logo-text {
             font-size: 32px;
             font-weight: 700;
@@ -69,14 +87,25 @@
             -webkit-text-fill-color: transparent;
         }
 
+        .light-mode .logo-text {
+            background: linear-gradient(to right, #1e90ff, #00bfff);
+        }
+
         .status-container {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
             padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.08);
             border-radius: 15px;
             border: 1px solid rgba(58, 123, 213, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .light-mode .status-container {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(30, 144, 255, 0.2);
         }
 
         .status-indicator {
@@ -86,8 +115,16 @@
             gap: 10px;
         }
 
+        .light-mode .status-indicator {
+            color: #333;
+        }
+
         .status-indicator i {
             color: #00d2ff;
+        }
+
+        .light-mode .status-indicator i {
+            color: #1e90ff;
         }
 
         .call-timer {
@@ -97,6 +134,12 @@
             background: rgba(0, 0, 0, 0.2);
             padding: 8px 15px;
             border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .light-mode .call-timer {
+            color: #1e90ff;
+            background: rgba(0, 0, 0, 0.05);
         }
 
         .action-container {
@@ -123,9 +166,18 @@
             box-shadow: 0 4px 15px rgba(58, 123, 213, 0.3);
         }
 
+        .light-mode .btn {
+            background: linear-gradient(135deg, #1e90ff, #00bfff);
+            box-shadow: 0 4px 15px rgba(30, 144, 255, 0.3);
+        }
+
         .btn:hover {
             transform: translateY(-3px);
             box-shadow: 0 6px 20px rgba(58, 123, 213, 0.4);
+        }
+
+        .light-mode .btn:hover {
+            box-shadow: 0 6px 20px rgba(30, 144, 255, 0.4);
         }
 
         .btn i {
@@ -152,6 +204,10 @@
             background: linear-gradient(to top, #00d2ff, #3a7bd5);
             border-radius: 7px;
             animation: equalizer 1.2s infinite ease-in-out;
+        }
+        
+        .light-mode .audio-bar {
+            background: linear-gradient(to top, #00bfff, #1e90ff);
         }
         
         .audio-bar:nth-child(1) { animation-delay: 0s; height: 40px; }
@@ -186,8 +242,16 @@
             background: linear-gradient(135deg, #3a7bd5, #00bfff);
         }
 
+        .light-mode .control-btn.mute {
+            background: linear-gradient(135deg, #1e90ff, #00bfff);
+        }
+
         .control-btn.copy {
             background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+        }
+
+        .light-mode .control-btn.copy {
+            background: linear-gradient(135deg, #00bfff, #1e90ff);
         }
 
         .control-btn.end {
@@ -213,6 +277,12 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(58, 123, 213, 0.3);
             display: none;
+            transition: all 0.3s ease;
+        }
+
+        .light-mode .notification {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(30, 144, 255, 0.3);
         }
 
         .notification-content {
@@ -223,6 +293,76 @@
             font-weight: 600;
             margin-bottom: 5px;
             color: #00d2ff;
+        }
+
+        .light-mode .notification-title {
+            color: #1e90ff;
+        }
+
+        .notification-message {
+            color: #b8c5d9;
+        }
+
+        .light-mode .notification-message {
+            color: #666;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .light-mode .theme-toggle {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .theme-toggle i {
+            font-size: 20px;
+            color: #fff;
+        }
+
+        .light-mode .theme-toggle i {
+            color: #333;
+        }
+
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #b8c5d9;
+            font-size: 14px;
+            padding: 10px;
+            transition: color 0.3s ease;
+        }
+
+        .light-mode .footer {
+            color: #666;
+        }
+
+        .footer a {
+            color: #00d2ff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .light-mode .footer a {
+            color: #1e90ff;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
         }
 
         @keyframes gradient {
@@ -275,8 +415,12 @@
     </style>
 </head>
 <body>
+    <div class="theme-toggle" id="themeToggle">
+        <i class="fas fa-moon"></i>
+    </div>
+
     <div class="notification" id="globalNotification">
-        <i class="fas fa-info-circle" style="color: #00d2ff; font-size: 24px;"></i>
+        <i class="fas fa-info-circle"></i>
         <div class="notification-content">
             <div class="notification-title" id="notificationTitle">Notification</div>
             <div id="notificationMessage"></div>
@@ -330,43 +474,128 @@
         </div>
     </div>
 
+    <div class="footer">
+        <p>v3.1.0 | Powered by <a href="#">SatLoom Developers</a></p>
+    </div>
+
+    <!-- Firebase for signaling -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
     <script>
+        // ========== FIREBASE CONFIG ========== //
+        const firebaseConfig = {
+            apiKey: "AIzaSyDeksN3qPZCmNuoASlEqG38XVmag6ecTh8",
+            authDomain: "satloom-rtc.firebaseapp.com",
+            databaseURL: "https://satloom-rtc-default-rtdb.firebaseio.com",
+            projectId: "satloom-rtc",
+            storageBucket: "satloom-rtc.appspot.com",
+            messagingSenderId: "273627860564",
+            appId: "1:273627860564:web:c326b1bb6ffcb32fb0e7c1"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // ========== WEBRTC CONFIG ========== //
+        function getRTCConfiguration() {
+            // ICE servers configuration
+            const iceServers = [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' },
+                {
+                    urls: 'turn:global.turn.twilio.com:3478?transport=udp',
+                    username: 'satloom',
+                    credential: 'satloom123'
+                },
+                {
+                    urls: 'turn:global.turn.twilio.com:3478?transport=tcp',
+                    username: 'satloom',
+                    credential: 'satloom123'
+                },
+                {
+                    urls: 'turn:numb.viagenie.ca:3478',
+                    username: 'webrtc@live.com',
+                    credential: 'muazkh'
+                }
+            ];
+            
+            return { iceServers };
+        }
+
         // State management
         const appState = {
-            isActive: false,
+            localStream: null,
+            remoteStream: null,
+            peerConnection: null,
+            roomId: null,
+            isInitiator: false,
+            isStarted: false,
             timer: null,
             startTime: null,
-            roomId: null
+            userId: generateUserId(),
+            reconnectAttempts: 0,
+            maxReconnectAttempts: 10,
+            lastIceRestart: 0,
+            signalingRef: null,
+            isMuted: false
         };
 
         // Initialize app
-        document.addEventListener('DOMContentLoaded', function() {
-            // Setup event listeners
-            document.getElementById('generateAudioRoom').addEventListener('click', generateRoom);
-            document.getElementById('copyRoomLink').addEventListener('click', copyRoomLink);
-            document.getElementById('audioAudioToggle').addEventListener('click', toggleMute);
-            document.getElementById('endAudioCall').addEventListener('click', endCall);
-        });
+        document.addEventListener('DOMContentLoaded', initApp);
 
-        function generateRoom() {
-            appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+        function initApp() {
+            setupEventListeners();
+            autoJoinRoom();
+            updateThemeIcon();
+        }
+
+        function setupEventListeners() {
+            // Audio call controls
+            document.getElementById('generateAudioRoom').addEventListener('click', generateAudioRoom);
+            document.getElementById('copyRoomLink').addEventListener('click', copyRoomLink);
+            document.getElementById('audioAudioToggle').addEventListener('click', toggleAudio);
+            document.getElementById('endAudioCall').addEventListener('click', endAudioCall);
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+        }
+
+        function generateUserId() {
+            if (!localStorage.getItem('userId')) {
+                const userId = 'user-' + Math.random().toString(36).substr(2, 8);
+                localStorage.setItem('userId', userId);
+            }
+            return localStorage.getItem('userId');
+        }
+
+        function showNotification(title, message, type = 'info') {
+            const notification = document.getElementById('globalNotification');
+            const titleElem = document.getElementById('notificationTitle');
+            const messageElem = document.getElementById('notificationMessage');
             
-            // Update UI
-            document.getElementById('statusText').textContent = `Connected to Room: ${appState.roomId}`;
-            document.getElementById('connectionStatus').classList.add('active');
+            titleElem.textContent = title;
+            messageElem.textContent = message;
             
-            // Show controls
-            document.getElementById('copyRoomLink').style.display = 'flex';
-            document.getElementById('audioControls').style.display = 'flex';
+            notification.style.display = 'flex';
             
-            // Hide generate button
-            document.getElementById('generateAudioRoom').style.display = 'none';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        function updateStatus(text, isConnected = false) {
+            const statusElem = document.getElementById('statusText');
+            const statusContainer = document.getElementById('connectionStatus');
             
-            // Start timer
-            startTimer();
-            
-            // Show notification
-            showNotification('Room Created', `Room ID: ${appState.roomId}`, 'success');
+            statusElem.textContent = text;
+            if (isConnected) {
+                statusContainer.classList.add('status-connected');
+            } else {
+                statusContainer.classList.remove('status-connected');
+            }
         }
 
         function startTimer() {
@@ -380,12 +609,210 @@
             }, 1000);
         }
 
-        function copyRoomLink() {
-            const roomLink = `${window.location.href.split('?')[0]}?room=${appState.roomId}`;
+        function stopTimer() {
+            clearInterval(appState.timer);
+            document.getElementById('audioCallTimer').textContent = '00:00';
+        }
+
+        async function initMedia() {
+            try {
+                appState.localStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: { 
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    } 
+                });
+                return true;
+            } catch (err) {
+                showNotification('Microphone Error', 
+                    'Could not access microphone. Please check permissions.', 'error');
+                return false;
+            }
+        }
+
+        function createPeerConnection() {
+            try {
+                const pcConfig = getRTCConfiguration();
+                appState.peerConnection = new RTCPeerConnection(pcConfig);
+                
+                // Add local stream tracks
+                if (appState.localStream) {
+                    appState.localStream.getTracks().forEach(track => {
+                        appState.peerConnection.addTrack(track, appState.localStream);
+                    });
+                }
+                
+                // Set up event handlers
+                appState.peerConnection.ontrack = handleRemoteStream;
+                appState.peerConnection.onicecandidate = handleICECandidate;
+                appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
+                
+                return true;
+            } catch (err) {
+                showNotification('Connection Error', 
+                    `Failed to create connection: ${err.message}`, 'error');
+                return false;
+            }
+        }
+
+        function handleRemoteStream(event) {
+            appState.remoteStream = event.streams[0];
+            const remoteAudio = new Audio();
+            remoteAudio.srcObject = event.streams[0];
+            remoteAudio.play();
+            appState.reconnectAttempts = 0;
+            showNotification('Connected', 'Call established successfully', 'success');
+        }
+
+        function handleICECandidate(event) {
+            if (event.candidate) {
+                sendMessage({
+                    type: 'candidate',
+                    candidate: event.candidate.candidate,
+                    sdpMid: event.candidate.sdpMid,
+                    sdpMLineIndex: event.candidate.sdpMLineIndex
+                });
+            }
+        }
+
+        function handleICEConnectionStateChange() {
+            const state = appState.peerConnection.iceConnectionState;
             
-            // Copy to clipboard
-            navigator.clipboard.writeText(roomLink).then(() => {
-                showNotification('Link Copied', 'Room link copied to clipboard', 'success');
+            if (state === 'connected' || state === 'completed') {
+                updateStatus(`Call connected (${appState.roomId})`, true);
+                appState.reconnectAttempts = 0;
+            } else if (state === 'disconnected' || state === 'failed') {
+                if (appState.reconnectAttempts < appState.maxReconnectAttempts) {
+                    appState.reconnectAttempts++;
+                    const delay = Math.min(1000 * Math.pow(2, appState.reconnectAttempts), 30000);
+                    setTimeout(() => restartICE(), delay);
+                } else {
+                    showNotification('Connection Failed', 'Reconnection attempts exhausted', 'error');
+                }
+            }
+        }
+
+        function initSignaling() {
+            if (appState.signalingRef) {
+                appState.signalingRef.off('child_added');
+            }
+            
+            appState.signalingRef = database.ref(`rooms/${appState.roomId}/messages`);
+            
+            appState.signalingRef.on('child_added', snapshot => {
+                const message = JSON.parse(snapshot.val());
+                
+                if (!appState.peerConnection) createPeerConnection();
+                
+                switch (message.type) {
+                    case 'offer':
+                        if (!appState.isInitiator && !appState.isStarted) {
+                            handleOffer(message);
+                        }
+                        break;
+                    case 'answer':
+                        if (appState.isStarted) {
+                            appState.peerConnection.setRemoteDescription(
+                                new RTCSessionDescription(message));
+                        }
+                        break;
+                    case 'candidate':
+                        if (appState.isStarted && appState.peerConnection.remoteDescription) {
+                            appState.peerConnection.addIceCandidate(
+                                new RTCIceCandidate(message));
+                        }
+                        break;
+                    case 'bye':
+                        if (appState.isStarted) {
+                            endAudioCall();
+                        }
+                        break;
+                }
+            });
+        }
+
+        async function handleOffer(offer) {
+            await appState.peerConnection.setRemoteDescription(
+                new RTCSessionDescription(offer));
+            
+            const answer = await appState.peerConnection.createAnswer();
+            await appState.peerConnection.setLocalDescription(answer);
+            
+            sendMessage(answer);
+            appState.isStarted = true;
+            startTimer();
+            updateStatus(`In audio call (${appState.roomId})`, true);
+            document.getElementById('audioControls').style.display = 'flex';
+        }
+
+        function sendMessage(message) {
+            if (!appState.roomId) return;
+            const dbRef = database.ref(`rooms/${appState.roomId}/messages`);
+            dbRef.push(JSON.stringify(message));
+        }
+        
+        async function createOffer() {
+            try {
+                const offer = await appState.peerConnection.createOffer();
+                await appState.peerConnection.setLocalDescription(offer);
+                sendMessage({
+                    type: 'offer',
+                    sdp: offer.sdp
+                });
+            } catch (err) {
+                console.error('Failed to create offer:', err);
+            }
+        }
+
+        async function generateAudioRoom() {
+            appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+            
+            // Show copy button
+            document.getElementById('copyRoomLink').style.display = 'flex';
+            
+            showNotification('Room Created', `Room ID: ${appState.roomId}`, 'success');
+            
+            try {
+                // Initialize media
+                const mediaInitialized = await initMedia();
+                if (!mediaInitialized) return;
+                
+                // Create peer connection
+                if (!createPeerConnection()) return;
+                
+                // Create offer
+                appState.isInitiator = true;
+                initSignaling();
+                const offer = await appState.peerConnection.createOffer();
+                await appState.peerConnection.setLocalDescription(offer);
+                sendMessage({ type: 'offer', sdp: offer.sdp });
+                
+                appState.isStarted = true;
+                startTimer();
+                updateStatus(`In call (${appState.roomId})`, true);
+                document.getElementById('audioControls').style.display = 'flex';
+                document.getElementById('generateAudioRoom').style.display = 'none';
+                
+                showNotification('Call Started', 'You are now the host', 'success');
+            } catch (err) {
+                showNotification('Connection Error', 'Failed to start call', 'error');
+                updateStatus('Call failed', false);
+            }
+        }
+
+        function copyRoomLink() {
+            const roomId = appState.roomId;
+            if (!roomId) {
+                showNotification('Error', 'No room ID to copy', 'error');
+                return;
+            }
+            
+            const basePath = window.location.href.split('?')[0];
+            const fullLink = `${basePath}?room=${roomId}`;
+            
+            navigator.clipboard.writeText(fullLink).then(() => {
+                showNotification('Copied', 'Room link copied to clipboard', 'success');
                 
                 // Visual feedback
                 const copyBtn = document.getElementById('copyRoomLink');
@@ -398,70 +825,122 @@
                 }, 2000);
             });
         }
-
-        function toggleMute() {
-            const muteBtn = document.getElementById('audioAudioToggle');
-            const isMuted = muteBtn.classList.toggle('muted');
+        
+        function toggleAudio() {
+            if (appState.localStream) {
+                const audioTrack = appState.localStream.getAudioTracks()[0];
+                if (audioTrack) {
+                    audioTrack.enabled = !audioTrack.enabled;
+                    appState.isMuted = !audioTrack.enabled;
+                    
+                    const button = document.getElementById('audioAudioToggle');
+                    if (appState.isMuted) {
+                        button.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+                        button.style.background = 'linear-gradient(135deg, #ff9800, #ff5722)';
+                        showNotification('Microphone Muted', 'Your microphone is now muted');
+                    } else {
+                        button.innerHTML = '<i class="fas fa-microphone"></i>';
+                        button.style.background = 'linear-gradient(135deg, #3a7bd5, #00bfff)';
+                        showNotification('Microphone Active', 'Your microphone is now active');
+                    }
+                }
+            }
+        }
+        
+        async function restartICE() {
+            if (!appState.peerConnection || !appState.isStarted) return;
             
-            if (isMuted) {
-                muteBtn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
-                muteBtn.style.background = 'linear-gradient(135deg, #ff9800, #ff5722)';
-                showNotification('Microphone Muted', 'Your microphone is now muted');
-            } else {
-                muteBtn.innerHTML = '<i class="fas fa-microphone"></i>';
-                muteBtn.style.background = 'linear-gradient(135deg, #3a7bd5, #00bfff)';
-                showNotification('Microphone Active', 'Your microphone is now active');
+            // Rate limit ICE restarts
+            const now = Date.now();
+            if (now - appState.lastIceRestart < 5000) return;
+            appState.lastIceRestart = now;
+            
+            try {
+                const offer = await appState.peerConnection.createOffer({iceRestart: true});
+                await appState.peerConnection.setLocalDescription(offer);
+                sendMessage(offer);
+                showNotification('Reconnecting', 'Attempting to re-establish connection');
+            } catch (err) {
+                showNotification('Reconnect Failed', 'Could not restart connection', 'error');
             }
         }
 
-        function endCall() {
-            // Stop timer
-            clearInterval(appState.timer);
-            document.getElementById('audioCallTimer').textContent = '00:00';
+        function endAudioCall() {
+            if (appState.peerConnection) {
+                appState.peerConnection.close();
+                appState.peerConnection = null;
+            }
             
-            // Reset UI
-            document.getElementById('statusText').textContent = 'Ready to connect';
-            document.getElementById('connectionStatus').classList.remove('active');
+            if (appState.localStream) {
+                appState.localStream.getTracks().forEach(track => track.stop());
+                appState.localStream = null;
+            }
             
-            // Hide controls
-            document.getElementById('copyRoomLink').style.display = 'none';
             document.getElementById('audioControls').style.display = 'none';
-            
-            // Show generate button
+            document.getElementById('copyRoomLink').style.display = 'none';
             document.getElementById('generateAudioRoom').style.display = 'flex';
+            stopTimer();
+            updateStatus('Call ended', false);
+            showNotification('Call Ended', 'Your call has been disconnected');
+            
+            if (appState.roomId) {
+                sendMessage({ type: 'bye' });
+            }
+            
+            appState.isStarted = false;
+            appState.roomId = null;
+            appState.reconnectAttempts = 0;
             
             // Reset mute button
             const muteBtn = document.getElementById('audioAudioToggle');
             muteBtn.innerHTML = '<i class="fas fa-microphone"></i>';
             muteBtn.style.background = 'linear-gradient(135deg, #3a7bd5, #00bfff)';
-            muteBtn.classList.remove('muted');
-            
-            // Show notification
-            showNotification('Call Ended', 'Your audio call has been disconnected');
+            appState.isMuted = false;
         }
 
-        function showNotification(title, message, type = 'info') {
-            const notification = document.getElementById('globalNotification');
-            const titleElem = document.getElementById('notificationTitle');
-            const messageElem = document.getElementById('notificationMessage');
+        function autoJoinRoom() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomParam = urlParams.get('room');
             
-            titleElem.textContent = title;
-            messageElem.textContent = message;
-            
-            // Set notification color based on type
-            if (type === 'success') {
-                titleElem.style.color = '#4CAF50';
-            } else if (type === 'error') {
-                titleElem.style.color = '#f44336';
-            } else {
-                titleElem.style.color = '#00d2ff';
+            if (roomParam) {
+                joinAudioRoom(roomParam);
             }
+        }
+        
+        async function joinAudioRoom(roomId) {
+            appState.roomId = roomId;
             
-            notification.style.display = 'flex';
-            
-            setTimeout(() => {
-                notification.style.display = 'none';
-            }, 3000);
+            try {
+                // Initialize media
+                const mediaInitialized = await initMedia();
+                if (!mediaInitialized) return;
+                
+                // Create peer connection
+                if (!createPeerConnection()) return;
+                
+                appState.isInitiator = false;
+                initSignaling();
+                updateStatus(`Joining room ${roomId}...`, false);
+                showNotification('Joining', `Connecting to room: ${roomId}`);
+            } catch (err) {
+                showNotification('Connection Error', 'Failed to join room', 'error');
+            }
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            body.classList.toggle('light-mode');
+            localStorage.setItem('theme', body.classList.contains('light-mode') ? 'light' : 'dark');
+            updateThemeIcon();
+        }
+        
+        function updateThemeIcon() {
+            const themeToggle = document.getElementById('themeToggle');
+            if (document.body.classList.contains('light-mode')) {
+                themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+            } else {
+                themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+            }
         }
     </script>
 </body>
