@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - Robust WebRTC Calling</title>
+    <title>SatLoom - Global WebRTC Calling</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -247,7 +247,6 @@
             justify-content: center;
             margin-top: 20px;
             gap: 15px;
-            flex-wrap: wrap;
         }
 
         .control-btn {
@@ -269,10 +268,6 @@
 
         .control-btn.end {
             background: linear-gradient(135deg, #e53935, #f44336);
-        }
-
-        .control-btn.reconnect {
-            background: linear-gradient(135deg, #ff9800, #ff5722);
         }
 
         #videoRemoteVideoContainer {
@@ -574,74 +569,6 @@
             cursor: pointer;
             font-size: 14px;
         }
-        
-        /* Network status */
-        .network-status {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: var(--card-bg);
-            border-radius: 8px;
-            padding: 10px 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            z-index: 100;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-        
-        .network-icon {
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .network-good {
-            color: var(--success-color);
-        }
-        
-        .network-warning {
-            color: var(--warning-color);
-        }
-        
-        .network-bad {
-            color: var(--error-color);
-        }
-        
-        .reconnect-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            z-index: 100;
-            border-radius: 12px;
-            display: none;
-        }
-        
-        .reconnect-spinner {
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            border-left-color: var(--accent-color);
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-        
-        .reconnect-text {
-            font-size: 18px;
-            margin-bottom: 20px;
-        }
 
         /* Animations */
         @keyframes gradient {
@@ -683,13 +610,6 @@
     
     <div class="theme-toggle" id="themeToggle">
         <i class="fas fa-moon"></i>
-    </div>
-    
-    <div class="network-status" id="networkStatus">
-        <div class="network-icon" id="networkIcon">
-            <i class="fas fa-wifi"></i>
-        </div>
-        <div id="networkText">Network: Good</div>
     </div>
 
     <div class="notification" id="globalNotification">
@@ -772,22 +692,12 @@
                         <button class="control-btn mute" id="audioAudioToggle">
                             <i class="fas fa-microphone"></i>
                         </button>
-                        <button class="control-btn reconnect" id="reconnectAudio">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
                         <button class="control-btn end" id="endAudioCall">
                             <i class="fas fa-phone-slash"></i>
                         </button>
                     </div>
                     
-                    <div class="reconnect-overlay" id="audioReconnectOverlay">
-                        <div class="reconnect-spinner"></div>
-                        <div class="reconnect-text">Reconnecting...</div>
-                        <button class="btn" id="forceReconnectAudio">
-                            <i class="fas fa-bolt"></i> Force Reconnect
-                        </button>
-                    </div>
-                    
+                    <!-- Connection diagnostics -->
                     <div class="diagnostics-container" id="audioDiagnostics">
                         <div class="diagnostics-header">
                             <h3><i class="fas fa-wrench"></i> Connection Diagnostics</h3>
@@ -837,22 +747,12 @@
                         <button class="control-btn mute" id="videoAudioToggle">
                             <i class="fas fa-microphone"></i>
                         </button>
-                        <button class="control-btn reconnect" id="reconnectVideo">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
                         <button class="control-btn end" id="endVideoCall">
                             <i class="fas fa-phone-slash"></i>
                         </button>
                     </div>
                     
-                    <div class="reconnect-overlay" id="videoReconnectOverlay">
-                        <div class="reconnect-spinner"></div>
-                        <div class="reconnect-text">Reconnecting...</div>
-                        <button class="btn" id="forceReconnectVideo">
-                            <i class="fas fa-bolt"></i> Force Reconnect
-                        </button>
-                    </div>
-                    
+                    <!-- Connection diagnostics -->
                     <div class="diagnostics-container" id="videoDiagnostics">
                         <div class="diagnostics-header">
                             <h3><i class="fas fa-wrench"></i> Connection Diagnostics</h3>
@@ -887,17 +787,9 @@
                             <label>Connection Strategy:</label>
                             <select id="connection-strategy">
                                 <option value="balanced">Balanced (Recommended)</option>
-                                <option value="relay">Force Relay (VPN/Firewall)</option>
+                                <option value="relay">Force Relay (Firewall bypass)</option>
                                 <option value="direct">Direct Connection Only</option>
                             </select>
-                        </div>
-                        <div class="setting-item">
-                            <label>Reconnection Attempts:</label>
-                            <input type="number" id="reconnect-attempts" min="1" max="10" value="3">
-                        </div>
-                        <div class="setting-item">
-                            <label>Network Monitor:</label>
-                            <input type="checkbox" id="network-monitor" checked>
                         </div>
                     </div>
                 </div>
@@ -910,9 +802,9 @@
                     </div>
                     <div class="about-content">
                         <p>A free, open-source communication platform using WebRTC technology.</p>
-                        <p><strong>Version:</strong> 2.0 (Network Resilience)</p>
+                        <p><strong>Version:</strong> 1.4.0 (Global Connectivity Fix)</p>
                         <p><strong>Developed by:</strong> SatLoom Developers</p>
-                        <p><strong>Features:</strong> VPN support, network transition handling, automatic reconnection</p>
+                        <p><strong>International Support:</strong> Enhanced with TURN servers for global connectivity</p>
                     </div>
                 </div>
             </div>
@@ -953,12 +845,7 @@
             userId: generateUserId(),
             chatRef: null,
             sidebarVisible: false,
-            diagnosticsEnabled: false,
-            networkType: 'unknown',
-            networkQuality: 'good',
-            reconnectAttempts: 0,
-            maxReconnectAttempts: 3,
-            reconnectionTimer: null
+            diagnosticsEnabled: false
         };
 
         // ========== DOM ELEMENT REFERENCES ========== //
@@ -982,12 +869,7 @@
             audioDiagnosticsContent: document.getElementById('audioDiagnosticsContent'),
             videoDiagnostics: document.getElementById('videoDiagnostics'),
             videoDiagnosticsContent: document.getElementById('videoDiagnosticsContent'),
-            connectionStrategy: document.getElementById('connection-strategy'),
-            networkStatus: document.getElementById('networkStatus'),
-            networkIcon: document.getElementById('networkIcon'),
-            networkText: document.getElementById('networkText'),
-            audioReconnectOverlay: document.getElementById('audioReconnectOverlay'),
-            videoReconnectOverlay: document.getElementById('videoReconnectOverlay')
+            connectionStrategy: document.getElementById('connection-strategy')
         };
 
         // ========== WEBRTC CONFIG ========== //
@@ -1070,7 +952,6 @@
             autoJoinRoom();
             updateSidebarToggleIcon();
             initDiagnostics();
-            startNetworkMonitoring();
         }
 
         function setupEventListeners() {
@@ -1092,8 +973,6 @@
             document.getElementById('audioAudioToggle').addEventListener('click', () => toggleAudio('audio'));
             document.getElementById('copyAudioLink').addEventListener('click', () => copyLink('audio'));
             document.getElementById('toggleAudioDiagnostics').addEventListener('click', () => toggleDiagnostics('audio'));
-            document.getElementById('reconnectAudio').addEventListener('click', () => restartICE('audio'));
-            document.getElementById('forceReconnectAudio').addEventListener('click', () => forceReconnect('audio'));
 
             // Video call controls
             document.getElementById('generateVideoRoom').addEventListener('click', () => generateRoom('video'));
@@ -1103,16 +982,12 @@
             document.getElementById('videoAudioToggle').addEventListener('click', () => toggleAudio('video'));
             document.getElementById('copyVideoLink').addEventListener('click', () => copyLink('video'));
             document.getElementById('toggleVideoDiagnostics').addEventListener('click', () => toggleDiagnostics('video'));
-            document.getElementById('reconnectVideo').addEventListener('click', () => restartICE('video'));
-            document.getElementById('forceReconnectVideo').addEventListener('click', () => forceReconnect('video'));
 
             // Settings
             document.getElementById('notifications-toggle').addEventListener('change', saveSettings);
             document.getElementById('notification-sound-toggle').addEventListener('change', saveSettings);
             document.getElementById('debug-mode-toggle').addEventListener('change', toggleDebugMode);
             domRefs.connectionStrategy.addEventListener('change', saveSettings);
-            document.getElementById('reconnect-attempts').addEventListener('change', saveSettings);
-            document.getElementById('network-monitor').addEventListener('change', saveSettings);
         }
 
         function loadSettings() {
@@ -1133,14 +1008,6 @@
             // Connection strategy
             const savedStrategy = localStorage.getItem('connectionStrategy') || 'balanced';
             domRefs.connectionStrategy.value = savedStrategy;
-            
-            // Reconnection attempts
-            appState.maxReconnectAttempts = parseInt(localStorage.getItem('reconnectAttempts') || 3);
-            document.getElementById('reconnect-attempts').value = appState.maxReconnectAttempts;
-            
-            // Network monitor
-            document.getElementById('network-monitor').checked = 
-                localStorage.getItem('networkMonitor') !== 'false';
             
             // Load sidebar state
             appState.sidebarVisible = localStorage.getItem('sidebarVisible') === 'true';
@@ -1301,7 +1168,6 @@
                 appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
                 appState.peerConnection.onicegatheringstatechange = handleICEGatheringStateChange;
                 appState.peerConnection.onsignalingstatechange = handleSignalingStateChange;
-                appState.peerConnection.onconnectionstatechange = handleConnectionStateChange;
                 
                 return true;
             } catch (err) {
@@ -1321,13 +1187,6 @@
             
             // Hide spinner when video starts playing
             document.getElementById('videoSpinner').style.display = 'none';
-            
-            // Hide reconnect overlay if visible
-            if (appState.currentMode === 'audio') {
-                domRefs.audioReconnectOverlay.style.display = 'none';
-            } else {
-                domRefs.videoReconnectOverlay.style.display = 'none';
-            }
         }
 
         function handleICECandidate(event) {
@@ -1354,31 +1213,11 @@
             
             if (state === 'connected') {
                 updateStatus(`Call connected (${appState.roomId})`, true);
-                appState.reconnectAttempts = 0;
             } else if (state === 'disconnected' || state === 'failed') {
-                // Attempt to reconnect automatically
-                if (appState.reconnectAttempts < appState.maxReconnectAttempts) {
-                    logDiagnostic(`Connection lost, attempting to reconnect (${appState.reconnectAttempts + 1}/${appState.maxReconnectAttempts})`, 'warning');
-                    appState.reconnectAttempts++;
-                    setTimeout(() => restartICE(appState.currentMode), 2000);
-                } else {
-                    hangup(appState.currentMode);
-                }
+                hangup(appState.currentMode);
             }
         }
         
-        function handleConnectionStateChange() {
-            const state = appState.peerConnection.connectionState;
-            logDiagnostic(`Connection state changed: ${state}`, 'info');
-            
-            if (state === 'connected') {
-                // Update network status
-                updateNetworkStatus('good');
-            } else if (state === 'disconnected' || state === 'failed') {
-                updateNetworkStatus('poor');
-            }
-        }
-
         function handleICEGatheringStateChange() {
             logDiagnostic(`ICE gathering state: ${appState.peerConnection.iceGatheringState}`, 'info');
         }
@@ -1400,9 +1239,6 @@
                     case 'offer':
                         if (!appState.isInitiator && !appState.isStarted) {
                             handleOffer(message);
-                        } else if (!appState.isInitiator && appState.isStarted) {
-                            // This is a renegotiation offer
-                            handleRenegotiationOffer(message);
                         }
                         break;
                     case 'answer':
@@ -1437,22 +1273,6 @@
             appState.isStarted = true;
             startTimer();
             updateStatus(`In ${appState.currentMode} call (${appState.roomId})`, true);
-        }
-        
-        async function handleRenegotiationOffer(offer) {
-            try {
-                await appState.peerConnection.setRemoteDescription(
-                    new RTCSessionDescription(offer));
-                
-                const answer = await appState.peerConnection.createAnswer();
-                await appState.peerConnection.setLocalDescription(answer);
-                sendMessage(answer);
-                
-                logDiagnostic('ICE renegotiation completed', 'success');
-            } catch (err) {
-                console.error('Renegotiation error:', err);
-                logDiagnostic(`ICE renegotiation failed: ${err.message}`, 'error');
-            }
         }
 
         function sendMessage(message) {
@@ -1556,7 +1376,6 @@
             
             appState.isStarted = false;
             appState.roomId = null;
-            appState.reconnectAttempts = 0;
             
             // Clear diagnostics
             clearDiagnostics(mode);
@@ -1587,130 +1406,6 @@
                 }
             }
         }
-        
-        // ========== RECONNECTION MANAGEMENT ========== //
-        async function restartICE(mode) {
-            if (!appState.peerConnection || !appState.isStarted) {
-                logDiagnostic('Cannot restart ICE - no active connection', 'warning');
-                return;
-            }
-            
-            try {
-                // Show reconnect overlay
-                if (mode === 'audio') {
-                    domRefs.audioReconnectOverlay.style.display = 'flex';
-                } else {
-                    domRefs.videoReconnectOverlay.style.display = 'flex';
-                }
-                
-                // Create a new offer with ICE restart
-                const offer = await appState.peerConnection.createOffer({iceRestart: true});
-                await appState.peerConnection.setLocalDescription(offer);
-                sendMessage(offer);
-                
-                logDiagnostic('ICE restart initiated', 'info');
-                showNotification('Reconnecting', 'Attempting to re-establish connection');
-            } catch (err) {
-                console.error('Error restarting ICE:', err);
-                logDiagnostic(`ICE restart failed: ${err.message}`, 'error');
-                showNotification('Reconnect Failed', 'Could not restart connection', 'error');
-                
-                // Hide reconnect overlay
-                if (mode === 'audio') {
-                    domRefs.audioReconnectOverlay.style.display = 'none';
-                } else {
-                    domRefs.videoReconnectOverlay.style.display = 'none';
-                }
-            }
-        }
-        
-        function forceReconnect(mode) {
-            logDiagnostic('Force reconnection initiated', 'info');
-            
-            // Close existing connection
-            if (appState.peerConnection) {
-                appState.peerConnection.close();
-                appState.peerConnection = null;
-            }
-            
-            // Reset state
-            appState.reconnectAttempts = 0;
-            
-            // Rejoin the room
-            joinRoom(mode);
-        }
-
-        // ========== NETWORK MONITORING ========== //
-        function startNetworkMonitoring() {
-            // Check if Network Information API is available
-            if (navigator.connection) {
-                // Initial network type
-                appState.networkType = navigator.connection.type;
-                updateNetworkStatus('good');
-                
-                // Listen for network changes
-                navigator.connection.addEventListener('change', handleNetworkChange);
-            } else {
-                logDiagnostic('Network Information API not available', 'warning');
-            }
-            
-            // Fallback to online/offline events
-            window.addEventListener('online', () => updateNetworkStatus('good'));
-            window.addEventListener('offline', () => updateNetworkStatus('disconnected'));
-        }
-        
-        function handleNetworkChange() {
-            if (!navigator.connection) return;
-            
-            const newNetworkType = navigator.connection.type;
-            const newEffectiveType = navigator.connection.effectiveType;
-            const downlink = navigator.connection.downlink;
-            
-            logDiagnostic(`Network changed: ${appState.networkType} → ${newNetworkType} (${newEffectiveType}, ${downlink}Mbps)`, 'info');
-            
-            // Update network status
-            if (newNetworkType === 'cellular' || newEffectiveType === 'slow-2g' || downlink < 1) {
-                updateNetworkStatus('poor');
-            } else {
-                updateNetworkStatus('good');
-            }
-            
-            appState.networkType = newNetworkType;
-            
-            // If network quality degraded, consider restarting ICE
-            if (appState.isStarted && (newNetworkType === 'cellular' || newEffectiveType === 'slow-2g')) {
-                logDiagnostic('Network quality degraded, attempting ICE restart', 'warning');
-                restartICE(appState.currentMode);
-            }
-        }
-        
-        function updateNetworkStatus(status) {
-            appState.networkQuality = status;
-            
-            if (!document.getElementById('network-monitor').checked) return;
-            
-            let iconClass = 'fa-wifi';
-            let statusClass = 'network-good';
-            let statusText = 'Network: Good';
-            
-            switch(status) {
-                case 'poor':
-                    iconClass = 'fa-wifi';
-                    statusClass = 'network-warning';
-                    statusText = 'Network: Poor';
-                    break;
-                case 'disconnected':
-                    iconClass = 'fa-plug';
-                    statusClass = 'network-bad';
-                    statusText = 'Network: Disconnected';
-                    break;
-            }
-            
-            domRefs.networkIcon.innerHTML = `<i class="fas ${iconClass}"></i>`;
-            domRefs.networkIcon.className = `network-icon ${statusClass}`;
-            domRefs.networkText.textContent = statusText;
-            domRefs.networkStatus.style.display = 'flex';
-        }
 
         // ========== UTILITY FUNCTIONS ========== //
         function copyLink(mode) {
@@ -1727,17 +1422,13 @@
                 document.getElementById('notification-sound-toggle').checked);
             localStorage.setItem('connectionStrategy', 
                 domRefs.connectionStrategy.value);
-            localStorage.setItem('reconnectAttempts', 
-                document.getElementById('reconnect-attempts').value);
-            localStorage.setItem('networkMonitor', 
-                document.getElementById('network-monitor').checked);
         }
         
         function toggleDebugMode() {
             appState.diagnosticsEnabled = document.getElementById('debug-mode-toggle').checked;
             localStorage.setItem('debugMode', appState.diagnosticsEnabled);
         }
-
+        
         // ========== DIAGNOSTICS ========== //
         function initDiagnostics() {
             // Load debug mode setting
