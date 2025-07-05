@@ -1139,18 +1139,12 @@
             
             // Updated ICE servers configuration with ExpressTurn STUN
             const iceServers = [
-                { urls: 'stun:stun.expressturn.com:3478' },  // Added ExpressTurn STUN
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
                 { urls: 'stun:stun2.l.google.com:19302' },
                 { urls: 'stun:stun3.l.google.com:19302' },
                 { urls: 'stun:stun4.l.google.com:19302' },
                 
-                {
-                    urls: 'turn:relay1.expressturn.com:3480',
-                    username: 'efPVTROUWWJ55A39IT',
-                    credential: 'yP21Uvqy20rU7Zgj'
-                },
                 {
                     urls: 'turn:global.turn.twilio.com:3478?transport=udp',
                     username: 'satloom',
