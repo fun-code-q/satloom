@@ -697,6 +697,11 @@
         .light-mode .ice-status-label {
             color: #666;
         }
+        
+        /* Auto join button */
+        .auto-join-btn {
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
@@ -795,6 +800,12 @@
                 </button>
             </div>
             
+            <div id="autoJoinContainer" style="display: none; margin-top: 15px;">
+                <button class="btn auto-join-btn" id="autoJoinBtn">
+                    <i class="fas fa-sign-in-alt"></i> Join Room Automatically
+                </button>
+            </div>
+            
             <div class="call-controls" id="audioControls" style="display: none;">
                 <button class="control-btn mute" id="audioAudioToggle">
                     <i class="fas fa-microphone"></i>
@@ -821,7 +832,7 @@
     </div>
 
     <div class="footer">
-        <p>v6.0.2 | Powerd by SatLoom | <a href="#" id="showIceBtn">Show ICE Status</a></p>
+        <p>v6.1.0 | Powered by SatLoom | <a href="#" id="showIceBtn">Show ICE Status</a></p>
     </div>
     
     <!-- Hidden audio element for remote stream -->
@@ -1271,6 +1282,7 @@
             document.getElementById('joinRoomBtn').addEventListener('click', showJoinRoomPrompt);
             document.getElementById('restartIceBtn').addEventListener('click', restartICE);
             document.getElementById('showIceBtn').addEventListener('click', toggleIceStatusPanel);
+            document.getElementById('autoJoinBtn').addEventListener('click', autoJoinRoomViaLink);
         }
 
         function showNotification(title, message, type = 'info', showRetry = false) {
@@ -1576,6 +1588,7 @@
                 updateStatus(`In audio call (${appState.roomId})`, true);
                 document.getElementById('audioControls').style.display = 'flex';
                 document.getElementById('joinRoomBtn').style.display = 'none';
+                document.getElementById('autoJoinContainer').style.display = 'none';
                 
                 // Keep screen awake
                 keepScreenAwake();
@@ -1632,6 +1645,7 @@
                 updateStatus(`In call (${appState.roomId})`, true);
                 document.getElementById('audioControls').style.display = 'flex';
                 document.getElementById('generateAudioRoom').style.display = 'none';
+                document.getElementById('autoJoinContainer').style.display = 'none';
                 
                 // Keep screen awake
                 keepScreenAwake();
@@ -1747,6 +1761,7 @@
             document.getElementById('joinRoomBtn').style.display = 'flex';
             document.getElementById('audioActivationPanel').style.display = 'none';
             document.getElementById('connectionGuard').style.display = 'none';
+            document.getElementById('autoJoinContainer').style.display = 'none';
             stopTimer();
             updateStatus('Call ended', false);
             showNotification('Call Ended', 'Your call has been disconnected');
@@ -1789,9 +1804,20 @@
             const roomParam = urlParams.get('room');
             
             if (roomParam) {
-                joinAudioRoom(roomParam);
+                // Show auto-join button
+                document.getElementById('autoJoinContainer').style.display = 'block';
+                document.getElementById('joinRoomBtn').style.display = 'none';
             } else {
                 document.getElementById('joinRoomBtn').style.display = 'flex';
+            }
+        }
+        
+        async function autoJoinRoomViaLink() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomParam = urlParams.get('room');
+            
+            if (roomParam && roomParam.trim() !== "") {
+                joinAudioRoom(roomParam.trim());
             }
         }
         
@@ -1817,6 +1843,7 @@
                 updateStatus(`Joining room ${roomId}...`, false);
                 showNotification('Joining', `Connecting to room: ${roomId}`);
                 document.getElementById('joinRoomBtn').style.display = 'none';
+                document.getElementById('autoJoinContainer').style.display = 'none';
             } catch (err) {
                 showNotification('Connection Error', 'Failed to join room: ' + err.message, 'error', true);
             }
