@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - Mobile-Friendly Audio Calling</title>
+    <title>SatLoom - Audio Calling with Visualizer</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -200,7 +200,6 @@
             background: linear-gradient(to top, #00d2ff, #3a7bd5);
             border-radius: 7px;
             min-height: 10px;
-            transition: height 0.1s ease-out;
         }
         
         .light-mode .audio-bar {
@@ -396,14 +395,6 @@
             .logo-icon {
                 width: 50px;
                 height: 50px;
-            }
-            
-            .audio-vis-bars {
-                gap: 6px;
-            }
-            
-            .audio-bar {
-                width: 12px;
             }
         }
         
@@ -695,15 +686,6 @@
         .light-mode .ice-status-label {
             color: #666;
         }
-        
-        /* Mobile specific styles */
-        .mobile-optimized .audio-visualizer {
-            height: 100px;
-        }
-        
-        .mobile-optimized .audio-bar {
-            width: 10px;
-        }
     </style>
 </head>
 <body>
@@ -828,11 +810,15 @@
     </div>
 
     <div class="footer">
-        <p>v7.0.1 | Powered by SatLoom | <a href="#" id="showIceBtn">Show ICE Status</a></p>
+        <p>v7.0.0 | Powered by SatLoom | <a href="#" id="showIceBtn">Show ICE Status</a></p>
     </div>
     
     <!-- Hidden audio element for remote stream -->
     <audio id="remoteAudio" autoplay playsinline style="display: none;"></audio>
+    
+    <!-- Hidden elements for screen wake techniques -->
+    <video id="wakeLockVideo" loop muted playsinline style="display: none;"></video>
+    <canvas id="wakeLockCanvas" width="1" height="1" style="display: none;"></canvas>
     
     <!-- Debug panel -->
     <div class="debug-panel" id="debugPanel">
@@ -865,6 +851,7 @@
 
         // ========== WEBRTC CONFIG ========== //
         function getRTCConfiguration() {
+            // Enhanced ICE servers configuration
             const iceServers = [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
@@ -937,11 +924,6 @@
             appState.remoteAudioElement = document.getElementById('remoteAudio');
             appState.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             
-            // Add mobile class for specific styling
-            if (appState.isMobile) {
-                document.body.classList.add('mobile-optimized');
-            }
-            
             setupEventListeners();
             autoJoinRoom();
             updateThemeIcon();
@@ -954,11 +936,14 @@
             }
             updateThemeIcon();
             
+            // Initialize screen wake techniques
+            initScreenWakeTechniques();
+            
             // Setup network monitoring
             setupNetworkMonitoring();
             
-            // Initialize screen wake techniques
-            initScreenWakeTechniques();
+            // Request microphone permission and set up visualizer
+            requestMicrophoneForVisualizer();
         }
         
         function generateUserId() {
@@ -1101,22 +1086,12 @@
         
         function initScreenWakeTechniques() {
             // Create a tiny, silent video to keep screen awake
-            const video = document.createElement('video');
-            video.id = 'wakeLockVideo';
-            video.loop = true;
-            video.muted = true;
-            video.playsInline = true;
-            video.style.display = 'none';
-            document.body.appendChild(video);
+            const video = document.getElementById('wakeLockVideo');
+            video.width = 1;
+            video.height = 1;
             
             // Create a canvas to draw a blank frame
-            const canvas = document.createElement('canvas');
-            canvas.id = 'wakeLockCanvas';
-            canvas.width = 1;
-            canvas.height = 1;
-            canvas.style.display = 'none';
-            document.body.appendChild(canvas);
-            
+            const canvas = document.getElementById('wakeLockCanvas');
             const ctx = canvas.getContext('2d');
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, 1, 1);
@@ -1262,55 +1237,51 @@
         }
 
         // ========== AUDIO VISUALIZER ========== //
+        async function requestMicrophoneForVisualizer() {
+            try {
+                const constraints = { audio: true };
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                setupAudioVisualizer(stream);
+                showNotification('Microphone Active', 'Audio visualizer is now active', 'success');
+                keepScreenAwake();
+            } catch (err) {
+                console.error('Microphone access error:', err);
+                showNotification('Microphone Required', 
+                    'Please allow microphone access for visualizer and screen wake', 'error');
+            }
+        }
+        
         function setupAudioVisualizer(stream) {
-            if (!stream) {
-                console.error('No stream provided for visualizer');
-                return;
+            // Create audio context and analyser
+            appState.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            appState.analyser = appState.audioContext.createAnalyser();
+            
+            // Connect microphone to analyser
+            appState.audioSource = appState.audioContext.createMediaStreamSource(stream);
+            appState.audioSource.connect(appState.analyser);
+            
+            // Configure analyser
+            appState.analyser.fftSize = 256;
+            const bufferLength = appState.analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            
+            // Start animation loop
+            function updateVisualizer() {
+                appState.analyser.getByteFrequencyData(dataArray);
+                
+                // Update bar heights
+                const bars = document.querySelectorAll('.audio-bar');
+                for (let i = 0; i < bars.length; i++) {
+                    // Scale the data for visual effect
+                    const value = dataArray[i * Math.floor(bufferLength / bars.length)];
+                    const height = Math.max(10, value / 256 * 100);
+                    bars[i].style.height = `${height}px`;
+                }
+                
+                requestAnimationFrame(updateVisualizer);
             }
             
-            try {
-                // Create audio context and analyser
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (!AudioContext) {
-                    console.error('Web Audio API not supported');
-                    return;
-                }
-                
-                appState.audioContext = new AudioContext();
-                appState.analyser = appState.audioContext.createAnalyser();
-                
-                // Connect microphone to analyser
-                appState.audioSource = appState.audioContext.createMediaStreamSource(stream);
-                appState.audioSource.connect(appState.analyser);
-                
-                // Configure analyser
-                appState.analyser.fftSize = 256;
-                const bufferLength = appState.analyser.frequencyBinCount;
-                const dataArray = new Uint8Array(bufferLength);
-                
-                // Start animation loop
-                function updateVisualizer() {
-                    if (!appState.analyser) return;
-                    
-                    appState.analyser.getByteFrequencyData(dataArray);
-                    
-                    // Update bar heights
-                    const bars = document.querySelectorAll('.audio-bar');
-                    for (let i = 0; i < bars.length; i++) {
-                        // Scale the data for visual effect
-                        const value = dataArray[i * Math.floor(bufferLength / bars.length)];
-                        const height = Math.max(10, value / 256 * 100);
-                        bars[i].style.height = `${height}px`;
-                    }
-                    
-                    requestAnimationFrame(updateVisualizer);
-                }
-                
-                updateVisualizer();
-            } catch (err) {
-                console.error('Error setting up visualizer:', err);
-                // Visualizer will not work, but the app should still function
-            }
+            updateVisualizer();
         }
 
         function setupEventListeners() {
@@ -1410,12 +1381,7 @@
                         } 
                     };
                 
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                appState.localStream = stream;
-                
-                // Set up visualizer with the same stream
-                setupAudioVisualizer(stream);
-                
+                appState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
                 return true;
             } catch (err) {
                 console.error('Media initialization error:', err);
@@ -1842,21 +1808,6 @@
             if (appState.signalingRef) {
                 appState.signalingRef.off('child_added');
                 appState.signalingRef = null;
-            }
-            
-            // Clean up audio context
-            if (appState.audioContext) {
-                if (appState.audioContext.state !== 'closed') {
-                    appState.audioContext.close();
-                }
-                appState.audioContext = null;
-                appState.analyser = null;
-                appState.audioSource = null;
-                
-                // Reset visualizer bars
-                document.querySelectorAll('.audio-bar').forEach(bar => {
-                    bar.style.height = '10px';
-                });
             }
         }
 
