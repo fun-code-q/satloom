@@ -654,13 +654,80 @@
             z-index: 1001;
             color: white;
         }
+        
+        /* ICE Status Panel */
+        .ice-status-panel {
+            position: fixed;
+            top: 70px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 10px 15px;
+            z-index: 10;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 300px;
+            font-size: 12px;
+            display: none;
+        }
+        
+        .ice-status-panel h4 {
+            margin-bottom: 5px;
+            color: #00d2ff;
+        }
+        
+        .ice-status-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+        
+        .ice-status-label {
+            color: #b8c5d9;
+        }
+        
+        .ice-status-value {
+            font-weight: bold;
+        }
+        
+        .light-mode .ice-status-panel {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .light-mode .ice-status-label {
+            color: #666;
+        }
     </style>
 </head>
 <body>
     <div class="network-status" id="networkStatus">
-    <i class="fas fa-wifi wifi"></i>
-    <span id="networkStatusText">WiFi Connected</span>
-    <i class="fas fa-lightbulb"></i>
+        <i class="fas fa-wifi wifi"></i>
+        <span id="networkStatusText">WiFi Connected</span>
+        <i class="fas fa-lightbulb"></i>
+    </div>
+    
+    <div class="ice-status-panel" id="iceStatusPanel">
+        <h4>ICE Connection Status</h4>
+        <div class="ice-status-item">
+            <span class="ice-status-label">ICE State:</span>
+            <span class="ice-status-value" id="iceState">-</span>
+        </div>
+        <div class="ice-status-item">
+            <span class="ice-status-label">Signaling State:</span>
+            <span class="ice-status-value" id="signalingState">-</span>
+        </div>
+        <div class="ice-status-item">
+            <span class="ice-status-label">Connection State:</span>
+            <span class="ice-status-value" id="connectionState">-</span>
+        </div>
+        <div class="ice-status-item">
+            <span class="ice-status-label">ICE Gathering State:</span>
+            <span class="ice-status-value" id="iceGatheringState">-</span>
+        </div>
+        <div class="ice-status-item">
+            <span class="ice-status-label">Candidates:</span>
+            <span class="ice-status-value" id="candidateCount">0</span>
+        </div>
     </div>
     
     <div class="theme-toggle" id="themeToggle">
@@ -723,11 +790,17 @@
                 <button class="control-btn copy" id="copyRoomLink" style="display: none;">
                     <i class="fas fa-copy"></i>
                 </button>
+                <button class="btn" id="joinRoomBtn" style="display: none;">
+                    <i class="fas fa-sign-in-alt"></i> Join Room
+                </button>
             </div>
             
             <div class="call-controls" id="audioControls" style="display: none;">
                 <button class="control-btn mute" id="audioAudioToggle">
                     <i class="fas fa-microphone"></i>
+                </button>
+                <button class="control-btn" id="restartIceBtn">
+                    <i class="fas fa-sync-alt"></i>
                 </button>
                 <button class="control-btn end" id="endAudioCall">
                     <i class="fas fa-phone-slash"></i>
@@ -748,7 +821,7 @@
     </div>
 
     <div class="footer">
-        <p>v5.3.0 | Fixed Network Switching Issues | <a href="#">SatLoom Developers</a></p>
+        <p>v6.0.0 | Fixed Network Issues | <a href="#" id="showIceBtn">Show ICE Status</a></p>
     </div>
     
     <!-- Hidden audio element for remote stream -->
@@ -857,7 +930,8 @@
             networkType: 'unknown',
             isOnline: true,
             prevNetworkType: 'unknown',
-            debugMode: false
+            debugMode: false,
+            candidateCount: 0
         };
 
         // Initialize app
@@ -1154,7 +1228,7 @@
                 ctx.fillRect(0, 0, 1, 1);
                 frame++;
                 debugLog('Canvas wake method active');
-            }, 20000); // Update every 20 seconds
+            }, 5000); // Update every 5 seconds
             
             document.getElementById('screenAwakeIndicator').style.display = 'flex';
         }
@@ -1190,6 +1264,9 @@
             document.getElementById('retryConnection').addEventListener('click', retryConnection);
             document.getElementById('resumeConnection').addEventListener('click', resumeConnection);
             document.getElementById('debugToggle').addEventListener('click', toggleDebug);
+            document.getElementById('joinRoomBtn').addEventListener('click', showJoinRoomPrompt);
+            document.getElementById('restartIceBtn').addEventListener('click', restartICE);
+            document.getElementById('showIceBtn').addEventListener('click', toggleIceStatusPanel);
         }
 
         function generateUserId() {
@@ -1307,6 +1384,11 @@
                 appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
                 appState.peerConnection.onconnectionstatechange = handleConnectionStateChange;
                 appState.peerConnection.onsignalingstatechange = handleSignalingStateChange;
+                appState.peerConnection.onicegatheringstatechange = handleIceGatheringStateChange;
+                
+                // Reset candidate count
+                appState.candidateCount = 0;
+                updateIceStatus();
                 
                 return true;
             } catch (err) {
@@ -1359,6 +1441,12 @@
         function handleICECandidate(event) {
             if (event.candidate && !appState.connectionPaused && appState.peerConnection) {
                 debugLog('Sending ICE candidate');
+                appState.candidateCount++;
+                updateIceStatus();
+                
+                const candidateType = event.candidate.candidate.split(' ')[7];
+                debugLog(`Local ICE candidate (type: ${candidateType})`);
+                
                 sendMessage({
                     type: 'candidate',
                     candidate: event.candidate.candidate,
@@ -1373,6 +1461,7 @@
             
             const state = appState.peerConnection.iceConnectionState;
             debugLog(`ICE connection state changed to: ${state}`);
+            updateIceStatus();
             
             if (state === 'connected' || state === 'completed') {
                 updateStatus(`Call connected (${appState.roomId})`, true);
@@ -1394,12 +1483,31 @@
             if (!appState.peerConnection) return;
             const state = appState.peerConnection.connectionState;
             debugLog(`Connection state changed to: ${state}`);
+            updateIceStatus();
         }
         
         function handleSignalingStateChange() {
             if (!appState.peerConnection) return;
             const state = appState.peerConnection.signalingState;
             debugLog(`Signaling state changed to: ${state}`);
+            updateIceStatus();
+        }
+        
+        function handleIceGatheringStateChange() {
+            if (!appState.peerConnection) return;
+            const state = appState.peerConnection.iceGatheringState;
+            debugLog(`ICE gathering state changed to: ${state}`);
+            updateIceStatus();
+        }
+        
+        function updateIceStatus() {
+            if (!appState.peerConnection) return;
+            
+            document.getElementById('iceState').textContent = appState.peerConnection.iceConnectionState;
+            document.getElementById('signalingState').textContent = appState.peerConnection.signalingState;
+            document.getElementById('connectionState').textContent = appState.peerConnection.connectionState;
+            document.getElementById('iceGatheringState').textContent = appState.peerConnection.iceGatheringState;
+            document.getElementById('candidateCount').textContent = appState.candidateCount;
         }
 
         function initSignaling() {
@@ -1469,6 +1577,7 @@
                 startTimer();
                 updateStatus(`In audio call (${appState.roomId})`, true);
                 document.getElementById('audioControls').style.display = 'flex';
+                document.getElementById('joinRoomBtn').style.display = 'none';
                 
                 // Keep screen awake
                 keepScreenAwake();
@@ -1500,6 +1609,7 @@
                 
                 // Show copy button
                 document.getElementById('copyRoomLink').style.display = 'flex';
+                document.getElementById('joinRoomBtn').style.display = 'none';
                 
                 showNotification('Room Created', `Room ID: ${appState.roomId}`, 'success');
                 
@@ -1559,6 +1669,13 @@
                     copyBtn.style.background = 'linear-gradient(135deg, #00d2ff, #3a7bd5)';
                 }, 2000);
             });
+        }
+        
+        function showJoinRoomPrompt() {
+            const roomId = prompt("Enter the Room ID you want to join:");
+            if (roomId && roomId.trim() !== "") {
+                joinAudioRoom(roomId.trim());
+            }
         }
         
         function toggleAudio() {
@@ -1629,6 +1746,7 @@
             document.getElementById('audioControls').style.display = 'none';
             document.getElementById('copyRoomLink').style.display = 'none';
             document.getElementById('generateAudioRoom').style.display = 'flex';
+            document.getElementById('joinRoomBtn').style.display = 'flex';
             document.getElementById('audioActivationPanel').style.display = 'none';
             document.getElementById('connectionGuard').style.display = 'none';
             stopTimer();
@@ -1668,6 +1786,8 @@
             
             if (roomParam) {
                 joinAudioRoom(roomParam);
+            } else {
+                document.getElementById('joinRoomBtn').style.display = 'flex';
             }
         }
         
@@ -1692,6 +1812,7 @@
                 initSignaling();
                 updateStatus(`Joining room ${roomId}...`, false);
                 showNotification('Joining', `Connecting to room: ${roomId}`);
+                document.getElementById('joinRoomBtn').style.display = 'none';
             } catch (err) {
                 showNotification('Connection Error', 'Failed to join room: ' + err.message, 'error', true);
             }
@@ -1742,6 +1863,11 @@
             
             // Auto-scroll to bottom
             debugLog.scrollTop = debugLog.scrollHeight;
+        }
+        
+        function toggleIceStatusPanel() {
+            const panel = document.getElementById('iceStatusPanel');
+            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
         }
     </script>
 </body>
