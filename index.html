@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - Audio Calling (Mobile Fixed)</title>
+    <title>SatLoom - Fixed Audio Calling</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -571,37 +571,40 @@
             background: rgba(0, 0, 0, 0.05);
         }
         
-        /* Mobile-specific UI */
-        .mobile-join-panel {
+        /* Debug panel */
+        .debug-panel {
             background: rgba(0, 0, 0, 0.2);
-            border-radius: 15px;
+            border-radius: 10px;
             padding: 15px;
             margin-top: 20px;
-            display: none;
+            text-align: left;
+            font-size: 14px;
+            max-height: 150px;
+            overflow-y: auto;
         }
         
-        .mobile-join-panel input {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border-radius: 10px;
-            border: none;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 16px;
-        }
-        
-        .mobile-join-panel button {
-            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 10px;
-            cursor: pointer;
+        .debug-title {
             font-weight: 600;
-            width: 100%;
-            font-size: 16px;
-            margin-top: 10px;
+            margin-bottom: 10px;
+            color: #00d2ff;
+        }
+        
+        .debug-messages {
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .debug-error {
+            color: #ff5252;
+        }
+        
+        .debug-warning {
+            color: #ffcc00;
+        }
+        
+        .debug-success {
+            color: #4CAF50;
         }
     </style>
 </head>
@@ -677,12 +680,6 @@
                 </button>
             </div>
             
-            <div class="mobile-join-panel" id="mobileJoinPanel">
-                <p>Join an existing room:</p>
-                <input type="text" id="roomIdInput" placeholder="Enter Room ID">
-                <button id="joinRoomBtn">Join Room</button>
-            </div>
-            
             <div class="call-controls" id="audioControls" style="display: none;">
                 <button class="control-btn mute" id="audioAudioToggle">
                     <i class="fas fa-microphone"></i>
@@ -691,11 +688,18 @@
                     <i class="fas fa-phone-slash"></i>
                 </button>
             </div>
+            
+            <div class="debug-panel">
+                <div class="debug-title">Connection Debug:</div>
+                <div class="debug-messages" id="debugMessages">
+                    <!-- Debug messages will appear here -->
+                </div>
+            </div>
         </div>
     </div>
 
     <div class="footer">
-        <p>v4.2.0 | Mobile Optimized | <a href="#">SatLoom Developers</a></p>
+        <p>v4.3.0 | Fixed Offer Issue | <a href="#">SatLoom Developers</a></p>
     </div>
     
     <!-- Hidden audio element for remote stream -->
@@ -727,7 +731,7 @@
 
         // ========== WEBRTC CONFIG ========== //
         function getRTCConfiguration() {
-            // Enhanced ICE servers configuration
+            // ICE servers configuration
             const iceServers = [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
@@ -748,16 +752,6 @@
                     urls: 'turn:numb.viagenie.ca:3478',
                     username: 'webrtc@live.com',
                     credential: 'muazkh'
-                },
-                {
-                    urls: 'turns:turn.bistri.com:80?transport=tcp',
-                    credential: 'homeo',
-                    username: 'homeo'
-                },
-                {
-                    urls: 'turn:turn.anyfirewall.com:443?transport=tcp',
-                    credential: 'webrtc',
-                    username: 'webrtc'
                 }
             ];
             
@@ -776,7 +770,7 @@
             startTime: null,
             userId: generateUserId(),
             reconnectAttempts: 0,
-            maxReconnectAttempts: 5,
+            maxReconnectAttempts: 3,
             lastIceRestart: 0,
             signalingRef: null,
             isMuted: false,
@@ -784,8 +778,7 @@
             isPageVisible: true,
             connectionPaused: false,
             wakeLock: null,
-            wakeLockInterval: null,
-            isMobile: false
+            wakeLockInterval: null
         };
 
         // Initialize app
@@ -793,9 +786,6 @@
 
         function initApp() {
             appState.remoteAudioElement = document.getElementById('remoteAudio');
-            appState.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            
-            updateDeviceInfo();
             setupEventListeners();
             autoJoinRoom();
             updateThemeIcon();
@@ -811,28 +801,8 @@
             // Initialize screen wake techniques
             initScreenWakeTechniques();
             
-            // Show mobile join panel if on mobile
-            if (appState.isMobile) {
-                document.getElementById('mobileJoinPanel').style.display = 'block';
-            }
-        }
-        
-        function updateDeviceInfo() {
-            const deviceInfo = document.getElementById('deviceInfo');
-            const deviceType = appState.isMobile ? 'Mobile' : 'Desktop';
-            const browser = detectBrowser();
-            deviceInfo.textContent = `Device: ${deviceType} | Browser: ${browser}`;
-        }
-        
-        function detectBrowser() {
-            const ua = navigator.userAgent;
-            if (ua.indexOf("Chrome") > -1) return "Chrome";
-            if (ua.indexOf("Safari") > -1) return "Safari";
-            if (ua.indexOf("Firefox") > -1) return "Firefox";
-            if (ua.indexOf("Edge") > -1) return "Edge";
-            if (ua.indexOf("Opera") > -1 || ua.indexOf("OPR") > -1) return "Opera";
-            if (ua.indexOf("Trident") > -1) return "IE";
-            return "Unknown";
+            // Add initial debug message
+            addDebugMessage("System initialized", "success");
         }
         
         function initScreenWakeTechniques() {
@@ -877,6 +847,7 @@
                 appState.connectionPaused = true;
                 document.getElementById('connectionGuard').style.display = 'flex';
                 showNotification('Connection Paused', 'Return to browser to resume call', 'warning');
+                addDebugMessage("Connection paused due to background tab", "warning");
                 
                 // Pause screen wake techniques
                 releaseScreenWake();
@@ -908,6 +879,7 @@
                 keepScreenAwake();
                 
                 showNotification('Connection Resumed', 'Call has been restored', 'success');
+                addDebugMessage("Connection resumed", "success");
             }
         }
 
@@ -921,6 +893,7 @@
                     appState.wakeLock = wl;
                     console.log('Screen Wake Lock active');
                     document.getElementById('screenAwakeIndicator').style.display = 'flex';
+                    addDebugMessage("Screen wake lock active");
                 }).catch(err => {
                     console.error('Wake Lock failed, using alternative:', err);
                     useAlternativeWakeMethods();
@@ -937,6 +910,7 @@
                 video.play().then(() => {
                     console.log('Screen keep-awake video is playing');
                     document.getElementById('screenAwakeIndicator').style.display = 'flex';
+                    addDebugMessage("Using video playback to keep screen awake");
                 }).catch(e => {
                     console.error('Video playback failed, using canvas:', e);
                     useCanvasWakeMethod();
@@ -962,6 +936,7 @@
             }, 20000); // Update every 20 seconds
             
             document.getElementById('screenAwakeIndicator').style.display = 'flex';
+            addDebugMessage("Using canvas animation to keep screen awake");
         }
         
         function releaseScreenWake() {
@@ -982,6 +957,7 @@
             video.pause();
             
             document.getElementById('screenAwakeIndicator').style.display = 'none';
+            addDebugMessage("Screen wake techniques released");
         }
 
         function setupEventListeners() {
@@ -994,10 +970,6 @@
             document.getElementById('activateAudioBtn').addEventListener('click', activateAudio);
             document.getElementById('retryConnection').addEventListener('click', retryConnection);
             document.getElementById('resumeConnection').addEventListener('click', resumeConnection);
-            document.getElementById('joinRoomBtn').addEventListener('click', joinFromMobile);
-            document.getElementById('roomIdInput').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') joinFromMobile();
-            });
         }
 
         function generateUserId() {
@@ -1036,6 +1008,33 @@
             setTimeout(() => {
                 notification.style.display = 'none';
             }, 3000);
+            
+            // Add debug message
+            addDebugMessage(`${title}: ${message}`, type);
+        }
+
+        function addDebugMessage(message, type = "info") {
+            const debugMessages = document.getElementById('debugMessages');
+            const messageElement = document.createElement('div');
+            
+            // Add timestamp
+            const now = new Date();
+            const timestamp = `[${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}]`;
+            
+            messageElement.innerHTML = `${timestamp} ${message}`;
+            
+            if (type === "error") {
+                messageElement.classList.add('debug-error');
+            } else if (type === "warning") {
+                messageElement.classList.add('debug-warning');
+            } else if (type === "success") {
+                messageElement.classList.add('debug-success');
+            }
+            
+            debugMessages.appendChild(messageElement);
+            
+            // Auto-scroll to bottom
+            debugMessages.scrollTop = debugMessages.scrollHeight;
         }
 
         function updateStatus(text, isConnected = false) {
@@ -1056,6 +1055,8 @@
             } else {
                 statusIcon.classList.remove('status-connected', 'status-warning', 'status-error');
             }
+            
+            addDebugMessage(`Status updated: ${text}`);
         }
 
         function startTimer() {
@@ -1076,22 +1077,18 @@
 
         async function initMedia() {
             try {
-                // Mobile browsers often require simpler constraints
-                const constraints = appState.isMobile 
-                    ? { audio: true } 
-                    : { 
-                        audio: { 
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            autoGainControl: true
-                        } 
-                    };
-                
-                appState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
-                console.log('Obtained media stream with tracks:', appState.localStream.getTracks().length);
+                addDebugMessage("Requesting microphone access...");
+                appState.localStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: { 
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    } 
+                });
+                addDebugMessage("Microphone access granted", "success");
                 return true;
             } catch (err) {
-                console.error('Media initialization error:', err);
+                addDebugMessage(`Microphone access error: ${err.message}`, "error");
                 showNotification('Microphone Error', 
                     `Could not access microphone: ${err.message}`, 'error');
                 return false;
@@ -1102,42 +1099,44 @@
             try {
                 const pcConfig = getRTCConfiguration();
                 appState.peerConnection = new RTCPeerConnection(pcConfig);
+                addDebugMessage("Peer connection created");
                 
                 // Add local stream tracks
                 if (appState.localStream) {
                     appState.localStream.getTracks().forEach(track => {
                         appState.peerConnection.addTrack(track, appState.localStream);
                     });
+                    addDebugMessage("Added local tracks to peer connection");
                 }
                 
                 // Set up event handlers
                 appState.peerConnection.ontrack = handleRemoteStream;
                 appState.peerConnection.onicecandidate = handleICECandidate;
                 appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
-                appState.peerConnection.onnegotiationneeded = handleNegotiationNeeded;
+                appState.peerConnection.onicegatheringstatechange = handleIceGatheringStateChange;
                 appState.peerConnection.onsignalingstatechange = handleSignalingStateChange;
                 
                 return true;
             } catch (err) {
+                addDebugMessage(`Failed to create peer connection: ${err.message}`, "error");
                 showNotification('Connection Error', 
                     `Failed to create connection: ${err.message}`, 'error', true);
                 return false;
             }
         }
         
-        function handleSignalingStateChange() {
-            console.log('Signaling state changed to:', appState.peerConnection.signalingState);
+        function handleIceGatheringStateChange() {
+            const state = appState.peerConnection.iceGatheringState;
+            addDebugMessage(`ICE gathering state: ${state}`);
         }
         
-        function handleNegotiationNeeded() {
-            console.log('Negotiation needed');
-            if (appState.isInitiator) {
-                createOffer();
-            }
+        function handleSignalingStateChange() {
+            const state = appState.peerConnection.signalingState;
+            addDebugMessage(`Signaling state: ${state}`);
         }
 
         function handleRemoteStream(event) {
-            console.log('Received remote stream event:', event);
+            addDebugMessage("Received remote stream");
             
             // Properly handle remote stream
             if (event.streams && event.streams.length > 0) {
@@ -1157,7 +1156,7 @@
                 appState.remoteAudioElement.play().catch(e => {
                     console.error('Autoplay blocked:', e);
                     document.getElementById('audioActivationPanel').style.display = 'block';
-                    showNotification('Audio Blocked', 'Click to enable audio playback', 'warning');
+                    addDebugMessage("Autoplay blocked - showing activation panel", "warning");
                 });
             }
             
@@ -1169,9 +1168,11 @@
             if (appState.remoteAudioElement && appState.remoteAudioElement.srcObject) {
                 appState.remoteAudioElement.play().then(() => {
                     document.getElementById('audioActivationPanel').style.display = 'none';
+                    addDebugMessage("Audio playback activated", "success");
                     showNotification('Audio Enabled', 'Sound is now active', 'success');
                 }).catch(e => {
                     console.error('Still cannot play audio:', e);
+                    addDebugMessage(`Audio activation failed: ${e.message}`, "error");
                     showNotification('Audio Error', 'Failed to enable audio. Try clicking the page first.', 'error');
                 });
             }
@@ -1179,15 +1180,13 @@
 
         function handleICECandidate(event) {
             if (event.candidate && !appState.connectionPaused) {
-                console.log('Sending ICE candidate:', event.candidate);
+                addDebugMessage(`Sending ICE candidate: ${event.candidate.candidate}`);
                 sendMessage({
                     type: 'candidate',
                     candidate: event.candidate.candidate,
                     sdpMid: event.candidate.sdpMid,
                     sdpMLineIndex: event.candidate.sdpMLineIndex
                 });
-            } else if (!event.candidate) {
-                console.log('All ICE candidates sent');
             }
         }
 
@@ -1195,7 +1194,7 @@
             if (appState.connectionPaused) return;
             
             const state = appState.peerConnection.iceConnectionState;
-            console.log('ICE connection state changed to:', state);
+            addDebugMessage(`ICE connection state changed to: ${state}`);
             
             if (state === 'connected' || state === 'completed') {
                 updateStatus(`Call connected (${appState.roomId})`, true);
@@ -1224,10 +1223,10 @@
                 if (appState.connectionPaused) return;
                 
                 const message = JSON.parse(snapshot.val());
-                console.log('Received signaling message:', message.type);
+                addDebugMessage(`Received signaling message: ${message.type}`);
                 
                 if (!appState.peerConnection) {
-                    console.log('Creating peer connection for incoming message');
+                    addDebugMessage("Creating new peer connection for incoming message");
                     createPeerConnection();
                 }
                 
@@ -1241,7 +1240,7 @@
                         if (appState.isStarted) {
                             appState.peerConnection.setRemoteDescription(
                                 new RTCSessionDescription(message)).catch(e => {
-                                    console.error('Error setting remote description:', e);
+                                    addDebugMessage(`Error setting remote description: ${e.message}`, "error");
                                 });
                         }
                         break;
@@ -1249,7 +1248,7 @@
                         if (appState.isStarted && appState.peerConnection.remoteDescription) {
                             appState.peerConnection.addIceCandidate(
                                 new RTCIceCandidate(message)).catch(e => {
-                                    console.error('Error adding ICE candidate:', e);
+                                    addDebugMessage(`Error adding ICE candidate: ${e.message}`, "error");
                                 });
                         }
                         break;
@@ -1264,7 +1263,7 @@
 
         async function handleOffer(offer) {
             try {
-                console.log('Handling offer');
+                addDebugMessage("Handling offer");
                 await appState.peerConnection.setRemoteDescription(
                     new RTCSessionDescription(offer));
                 
@@ -1279,8 +1278,10 @@
                 
                 // Keep screen awake
                 keepScreenAwake();
+                
+                addDebugMessage("Answer created and sent", "success");
             } catch (err) {
-                console.error('Error handling offer:', err);
+                addDebugMessage(`Error handling offer: ${err.message}`, "error");
                 showNotification('Connection Error', 'Failed to handle offer: ' + err.message, 'error', true);
             }
         }
@@ -1289,26 +1290,16 @@
             if (!appState.roomId || appState.connectionPaused) return;
             const dbRef = database.ref(`rooms/${appState.roomId}/messages`);
             dbRef.push(JSON.stringify(message));
-            console.log('Sent signaling message:', message.type);
-        }
-        
-        async function createOffer() {
-            try {
-                const offer = await appState.peerConnection.createOffer();
-                await appState.peerConnection.setLocalDescription(offer);
-                sendMessage({ type: 'offer', sdp: offer.sdp });
-            } catch (err) {
-                console.error('Error creating offer:', err);
-                showNotification('Connection Error', 'Failed to create offer', 'error', true);
-            }
+            addDebugMessage(`Sent signaling message: ${message.type}`);
         }
         
         async function generateAudioRoom() {
-            console.log("Generate room button clicked");
+            addDebugMessage("Generating new audio room...");
             
             try {
                 // Generate a new room ID
                 appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+                addDebugMessage(`Created room: ${appState.roomId}`);
                 
                 // Show copy button
                 document.getElementById('copyRoomLink').style.display = 'flex';
@@ -1322,11 +1313,14 @@
                 // Create peer connection
                 if (!createPeerConnection()) return;
                 
-                // Set as initiator
+                // Create offer
                 appState.isInitiator = true;
                 initSignaling();
                 
-                // Create offer
+                // Wait for ICE gathering to be complete
+                await waitForIceGatheringComplete();
+                
+                // Create offer after media and connection are ready
                 const offer = await appState.peerConnection.createOffer();
                 await appState.peerConnection.setLocalDescription(offer);
                 sendMessage({ type: 'offer', sdp: offer.sdp });
@@ -1341,11 +1335,28 @@
                 keepScreenAwake();
                 
                 showNotification('Call Started', 'You are now the host', 'success');
+                addDebugMessage("Call started successfully", "success");
             } catch (err) {
-                console.error('Error generating room:', err);
+                addDebugMessage(`Error generating room: ${err.message}`, "error");
                 showNotification('Connection Error', 'Failed to start call: ' + err.message, 'error', true);
                 updateStatus('Call failed', false);
             }
+        }
+        
+        function waitForIceGatheringComplete() {
+            return new Promise((resolve) => {
+                if (appState.peerConnection.iceGatheringState === 'complete') {
+                    resolve();
+                } else {
+                    const checkState = () => {
+                        if (appState.peerConnection.iceGatheringState === 'complete') {
+                            appState.peerConnection.removeEventListener('icegatheringstatechange', checkState);
+                            resolve();
+                        }
+                    };
+                    appState.peerConnection.addEventListener('icegatheringstatechange', checkState);
+                }
+            });
         }
 
         function copyRoomLink() {
@@ -1385,10 +1396,12 @@
                         button.innerHTML = '<i class="fas fa-microphone-slash"></i>';
                         button.style.background = 'linear-gradient(135deg, #ff9800, #ff5722)';
                         showNotification('Microphone Muted', 'Your microphone is now muted');
+                        addDebugMessage("Microphone muted");
                     } else {
                         button.innerHTML = '<i class="fas fa-microphone"></i>';
                         button.style.background = 'linear-gradient(135deg, #3a7bd5, #00bfff)';
                         showNotification('Microphone Active', 'Your microphone is now active');
+                        addDebugMessage("Microphone activated");
                     }
                 }
             }
@@ -1403,17 +1416,19 @@
             appState.lastIceRestart = now;
             
             try {
+                addDebugMessage("Restarting ICE connection...");
                 const offer = await appState.peerConnection.createOffer({iceRestart: true});
                 await appState.peerConnection.setLocalDescription(offer);
                 sendMessage(offer);
                 showNotification('Reconnecting', 'Attempting to re-establish connection');
             } catch (err) {
+                addDebugMessage(`ICE restart failed: ${err.message}`, "error");
                 showNotification('Reconnect Failed', 'Could not restart connection', 'error', true);
             }
         }
 
         function endAudioCall() {
-            console.log('Ending audio call');
+            addDebugMessage("Ending audio call");
             
             if (appState.peerConnection) {
                 appState.peerConnection.close();
@@ -1471,17 +1486,9 @@
             }
         }
         
-        function joinFromMobile() {
-            const roomId = document.getElementById('roomIdInput').value.trim().toUpperCase();
-            if (roomId) {
-                joinAudioRoom(roomId);
-            } else {
-                showNotification('Error', 'Please enter a room ID', 'error');
-            }
-        }
-        
         async function joinAudioRoom(roomId) {
             appState.roomId = roomId;
+            addDebugMessage(`Joining room: ${roomId}`);
             
             try {
                 // Initialize media
@@ -1496,6 +1503,7 @@
                 updateStatus(`Joining room ${roomId}...`, false);
                 showNotification('Joining', `Connecting to room: ${roomId}`);
             } catch (err) {
+                addDebugMessage(`Join room error: ${err.message}`, "error");
                 showNotification('Connection Error', 'Failed to join room: ' + err.message, 'error', true);
             }
         }
@@ -1505,6 +1513,7 @@
             body.classList.toggle('light-mode');
             localStorage.setItem('theme', body.classList.contains('light-mode') ? 'light' : 'dark');
             updateThemeIcon();
+            addDebugMessage("Theme toggled");
         }
         
         function updateThemeIcon() {
