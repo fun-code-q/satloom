@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - Audio Calling</title>
+    <title>SatLoom - Audio Calling (Mobile Fixed)</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -554,6 +554,55 @@
             border: 1px solid rgba(0, 0, 0, 0.1);
             color: #333;
         }
+        
+        /* Device info */
+        .device-info {
+            font-size: 14px;
+            margin-top: 15px;
+            color: #b8c5d9;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+        
+        .light-mode .device-info {
+            color: #666;
+            background: rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Mobile-specific UI */
+        .mobile-join-panel {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .mobile-join-panel input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 10px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+        }
+        
+        .mobile-join-panel button {
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+            font-size: 16px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -597,6 +646,10 @@
                 <div class="logo-text">SatLoom</div>
             </div>
             
+            <div class="device-info" id="deviceInfo">
+                Device: Desktop | Browser: Chrome
+            </div>
+            
             <div class="status-container">
                 <div class="status-indicator" id="connectionStatus">
                     <i class="fas fa-signal"></i>
@@ -624,6 +677,12 @@
                 </button>
             </div>
             
+            <div class="mobile-join-panel" id="mobileJoinPanel">
+                <p>Join an existing room:</p>
+                <input type="text" id="roomIdInput" placeholder="Enter Room ID">
+                <button id="joinRoomBtn">Join Room</button>
+            </div>
+            
             <div class="call-controls" id="audioControls" style="display: none;">
                 <button class="control-btn mute" id="audioAudioToggle">
                     <i class="fas fa-microphone"></i>
@@ -636,7 +695,7 @@
     </div>
 
     <div class="footer">
-        <p>v4.1.0 | Powered by <a href="#">SatLoom Developers</a></p>
+        <p>v4.2.0 | Mobile Optimized | <a href="#">SatLoom Developers</a></p>
     </div>
     
     <!-- Hidden audio element for remote stream -->
@@ -668,7 +727,7 @@
 
         // ========== WEBRTC CONFIG ========== //
         function getRTCConfiguration() {
-            // ICE servers configuration
+            // Enhanced ICE servers configuration
             const iceServers = [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
@@ -689,6 +748,16 @@
                     urls: 'turn:numb.viagenie.ca:3478',
                     username: 'webrtc@live.com',
                     credential: 'muazkh'
+                },
+                {
+                    urls: 'turns:turn.bistri.com:80?transport=tcp',
+                    credential: 'homeo',
+                    username: 'homeo'
+                },
+                {
+                    urls: 'turn:turn.anyfirewall.com:443?transport=tcp',
+                    credential: 'webrtc',
+                    username: 'webrtc'
                 }
             ];
             
@@ -707,7 +776,7 @@
             startTime: null,
             userId: generateUserId(),
             reconnectAttempts: 0,
-            maxReconnectAttempts: 3,
+            maxReconnectAttempts: 5,
             lastIceRestart: 0,
             signalingRef: null,
             isMuted: false,
@@ -715,7 +784,8 @@
             isPageVisible: true,
             connectionPaused: false,
             wakeLock: null,
-            wakeLockInterval: null
+            wakeLockInterval: null,
+            isMobile: false
         };
 
         // Initialize app
@@ -723,6 +793,9 @@
 
         function initApp() {
             appState.remoteAudioElement = document.getElementById('remoteAudio');
+            appState.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            updateDeviceInfo();
             setupEventListeners();
             autoJoinRoom();
             updateThemeIcon();
@@ -737,6 +810,29 @@
             
             // Initialize screen wake techniques
             initScreenWakeTechniques();
+            
+            // Show mobile join panel if on mobile
+            if (appState.isMobile) {
+                document.getElementById('mobileJoinPanel').style.display = 'block';
+            }
+        }
+        
+        function updateDeviceInfo() {
+            const deviceInfo = document.getElementById('deviceInfo');
+            const deviceType = appState.isMobile ? 'Mobile' : 'Desktop';
+            const browser = detectBrowser();
+            deviceInfo.textContent = `Device: ${deviceType} | Browser: ${browser}`;
+        }
+        
+        function detectBrowser() {
+            const ua = navigator.userAgent;
+            if (ua.indexOf("Chrome") > -1) return "Chrome";
+            if (ua.indexOf("Safari") > -1) return "Safari";
+            if (ua.indexOf("Firefox") > -1) return "Firefox";
+            if (ua.indexOf("Edge") > -1) return "Edge";
+            if (ua.indexOf("Opera") > -1 || ua.indexOf("OPR") > -1) return "Opera";
+            if (ua.indexOf("Trident") > -1) return "IE";
+            return "Unknown";
         }
         
         function initScreenWakeTechniques() {
@@ -898,6 +994,10 @@
             document.getElementById('activateAudioBtn').addEventListener('click', activateAudio);
             document.getElementById('retryConnection').addEventListener('click', retryConnection);
             document.getElementById('resumeConnection').addEventListener('click', resumeConnection);
+            document.getElementById('joinRoomBtn').addEventListener('click', joinFromMobile);
+            document.getElementById('roomIdInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') joinFromMobile();
+            });
         }
 
         function generateUserId() {
@@ -976,17 +1076,24 @@
 
         async function initMedia() {
             try {
-                appState.localStream = await navigator.mediaDevices.getUserMedia({ 
-                    audio: { 
-                        echoCancellation: true,
-                        noiseSuppression: true,
-                        autoGainControl: true
-                    } 
-                });
+                // Mobile browsers often require simpler constraints
+                const constraints = appState.isMobile 
+                    ? { audio: true } 
+                    : { 
+                        audio: { 
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        } 
+                    };
+                
+                appState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                console.log('Obtained media stream with tracks:', appState.localStream.getTracks().length);
                 return true;
             } catch (err) {
+                console.error('Media initialization error:', err);
                 showNotification('Microphone Error', 
-                    'Could not access microphone. Please check permissions.', 'error');
+                    `Could not access microphone: ${err.message}`, 'error');
                 return false;
             }
         }
@@ -1007,6 +1114,8 @@
                 appState.peerConnection.ontrack = handleRemoteStream;
                 appState.peerConnection.onicecandidate = handleICECandidate;
                 appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
+                appState.peerConnection.onnegotiationneeded = handleNegotiationNeeded;
+                appState.peerConnection.onsignalingstatechange = handleSignalingStateChange;
                 
                 return true;
             } catch (err) {
@@ -1015,8 +1124,21 @@
                 return false;
             }
         }
+        
+        function handleSignalingStateChange() {
+            console.log('Signaling state changed to:', appState.peerConnection.signalingState);
+        }
+        
+        function handleNegotiationNeeded() {
+            console.log('Negotiation needed');
+            if (appState.isInitiator) {
+                createOffer();
+            }
+        }
 
         function handleRemoteStream(event) {
+            console.log('Received remote stream event:', event);
+            
             // Properly handle remote stream
             if (event.streams && event.streams.length > 0) {
                 appState.remoteStream = event.streams[0];
@@ -1035,6 +1157,7 @@
                 appState.remoteAudioElement.play().catch(e => {
                     console.error('Autoplay blocked:', e);
                     document.getElementById('audioActivationPanel').style.display = 'block';
+                    showNotification('Audio Blocked', 'Click to enable audio playback', 'warning');
                 });
             }
             
@@ -1046,6 +1169,7 @@
             if (appState.remoteAudioElement && appState.remoteAudioElement.srcObject) {
                 appState.remoteAudioElement.play().then(() => {
                     document.getElementById('audioActivationPanel').style.display = 'none';
+                    showNotification('Audio Enabled', 'Sound is now active', 'success');
                 }).catch(e => {
                     console.error('Still cannot play audio:', e);
                     showNotification('Audio Error', 'Failed to enable audio. Try clicking the page first.', 'error');
@@ -1055,12 +1179,15 @@
 
         function handleICECandidate(event) {
             if (event.candidate && !appState.connectionPaused) {
+                console.log('Sending ICE candidate:', event.candidate);
                 sendMessage({
                     type: 'candidate',
                     candidate: event.candidate.candidate,
                     sdpMid: event.candidate.sdpMid,
                     sdpMLineIndex: event.candidate.sdpMLineIndex
                 });
+            } else if (!event.candidate) {
+                console.log('All ICE candidates sent');
             }
         }
 
@@ -1068,14 +1195,17 @@
             if (appState.connectionPaused) return;
             
             const state = appState.peerConnection.iceConnectionState;
+            console.log('ICE connection state changed to:', state);
             
             if (state === 'connected' || state === 'completed') {
                 updateStatus(`Call connected (${appState.roomId})`, true);
                 appState.reconnectAttempts = 0;
             } else if (state === 'disconnected' || state === 'failed') {
+                updateStatus(`Connection ${state}`, false);
                 if (appState.reconnectAttempts < appState.maxReconnectAttempts) {
                     appState.reconnectAttempts++;
                     const delay = Math.min(1000 * Math.pow(2, appState.reconnectAttempts), 30000);
+                    showNotification('Reconnecting', `Attempt ${appState.reconnectAttempts}/${appState.maxReconnectAttempts}`, 'warning');
                     setTimeout(() => restartICE(), delay);
                 } else {
                     showNotification('Connection Failed', 'Reconnection attempts exhausted', 'error', true);
@@ -1094,8 +1224,12 @@
                 if (appState.connectionPaused) return;
                 
                 const message = JSON.parse(snapshot.val());
+                console.log('Received signaling message:', message.type);
                 
-                if (!appState.peerConnection) createPeerConnection();
+                if (!appState.peerConnection) {
+                    console.log('Creating peer connection for incoming message');
+                    createPeerConnection();
+                }
                 
                 switch (message.type) {
                     case 'offer':
@@ -1106,13 +1240,17 @@
                     case 'answer':
                         if (appState.isStarted) {
                             appState.peerConnection.setRemoteDescription(
-                                new RTCSessionDescription(message));
+                                new RTCSessionDescription(message)).catch(e => {
+                                    console.error('Error setting remote description:', e);
+                                });
                         }
                         break;
                     case 'candidate':
                         if (appState.isStarted && appState.peerConnection.remoteDescription) {
                             appState.peerConnection.addIceCandidate(
-                                new RTCIceCandidate(message));
+                                new RTCIceCandidate(message)).catch(e => {
+                                    console.error('Error adding ICE candidate:', e);
+                                });
                         }
                         break;
                     case 'bye':
@@ -1126,6 +1264,7 @@
 
         async function handleOffer(offer) {
             try {
+                console.log('Handling offer');
                 await appState.peerConnection.setRemoteDescription(
                     new RTCSessionDescription(offer));
                 
@@ -1141,7 +1280,8 @@
                 // Keep screen awake
                 keepScreenAwake();
             } catch (err) {
-                showNotification('Connection Error', 'Failed to handle offer', 'error', true);
+                console.error('Error handling offer:', err);
+                showNotification('Connection Error', 'Failed to handle offer: ' + err.message, 'error', true);
             }
         }
 
@@ -1149,6 +1289,18 @@
             if (!appState.roomId || appState.connectionPaused) return;
             const dbRef = database.ref(`rooms/${appState.roomId}/messages`);
             dbRef.push(JSON.stringify(message));
+            console.log('Sent signaling message:', message.type);
+        }
+        
+        async function createOffer() {
+            try {
+                const offer = await appState.peerConnection.createOffer();
+                await appState.peerConnection.setLocalDescription(offer);
+                sendMessage({ type: 'offer', sdp: offer.sdp });
+            } catch (err) {
+                console.error('Error creating offer:', err);
+                showNotification('Connection Error', 'Failed to create offer', 'error', true);
+            }
         }
         
         async function generateAudioRoom() {
@@ -1170,9 +1322,11 @@
                 // Create peer connection
                 if (!createPeerConnection()) return;
                 
-                // Create offer
+                // Set as initiator
                 appState.isInitiator = true;
                 initSignaling();
+                
+                // Create offer
                 const offer = await appState.peerConnection.createOffer();
                 await appState.peerConnection.setLocalDescription(offer);
                 sendMessage({ type: 'offer', sdp: offer.sdp });
@@ -1259,6 +1413,8 @@
         }
 
         function endAudioCall() {
+            console.log('Ending audio call');
+            
             if (appState.peerConnection) {
                 appState.peerConnection.close();
                 appState.peerConnection = null;
@@ -1315,6 +1471,15 @@
             }
         }
         
+        function joinFromMobile() {
+            const roomId = document.getElementById('roomIdInput').value.trim().toUpperCase();
+            if (roomId) {
+                joinAudioRoom(roomId);
+            } else {
+                showNotification('Error', 'Please enter a room ID', 'error');
+            }
+        }
+        
         async function joinAudioRoom(roomId) {
             appState.roomId = roomId;
             
@@ -1331,7 +1496,7 @@
                 updateStatus(`Joining room ${roomId}...`, false);
                 showNotification('Joining', `Connecting to room: ${roomId}`);
             } catch (err) {
-                showNotification('Connection Error', 'Failed to join room', 'error', true);
+                showNotification('Connection Error', 'Failed to join room: ' + err.message, 'error', true);
             }
         }
 
