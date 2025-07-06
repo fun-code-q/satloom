@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - Fixed Audio Calling</title>
+    <title>SatLoom - Enhanced Audio Calling</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -143,6 +144,7 @@
             justify-content: center;
             gap: 15px;
             margin-bottom: 30px;
+            flex-wrap: wrap;
         }
 
         .btn {
@@ -697,6 +699,80 @@
         .light-mode .ice-status-label {
             color: #666;
         }
+        
+        /* Room ID display */
+        .room-id-display {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 15px;
+            margin: 15px 0;
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            display: none;
+        }
+        
+        .light-mode .room-id-display {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        
+        /* QR code container */
+        .qr-container {
+            margin: 20px auto;
+            padding: 10px;
+            background: white;
+            border-radius: 10px;
+            display: none;
+            max-width: 180px;
+        }
+        
+        /* WiFi troubleshooting tips */
+        .wifi-tips {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: left;
+            display: none;
+        }
+        
+        .wifi-tips h3 {
+            margin-bottom: 10px;
+            color: #00d2ff;
+        }
+        
+        .wifi-tips ul {
+            padding-left: 20px;
+        }
+        
+        .wifi-tips li {
+            margin-bottom: 8px;
+        }
+        
+        /* Reconnection status */
+        .reconnection-status {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            display: none;
+            z-index: 1000;
+        }
+        
+        .reconnecting-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #ffcc00;
+            margin-right: 8px;
+            animation: pulse 1.5s infinite;
+        }
     </style>
 </head>
 <body>
@@ -755,6 +831,10 @@
             <button class="connection-guard-btn" id="resumeConnection">Resume Connection</button>
         </div>
     </div>
+    
+    <div class="reconnection-status" id="reconnectionStatus">
+        <span class="reconnecting-indicator"></span> Reconnecting...
+    </div>
 
     <div class="app-container">
         <div class="card">
@@ -783,6 +863,10 @@
                 </div>
             </div>
             
+            <div class="room-id-display" id="roomIdDisplay"></div>
+            
+            <div class="qr-container" id="qrContainer"></div>
+            
             <div class="action-container">
                 <button class="btn" id="generateAudioRoom">
                     <i class="fas fa-network-wired"></i> Generate Room
@@ -792,6 +876,9 @@
                 </button>
                 <button class="btn" id="joinRoomBtn" style="display: none;">
                     <i class="fas fa-sign-in-alt"></i> Join Room
+                </button>
+                <button class="btn" id="showQrBtn" style="display: none;">
+                    <i class="fas fa-qrcode"></i> Share QR
                 </button>
             </div>
             
@@ -817,11 +904,22 @@
                 </ul>
                 <p>If problems persist, check your browser settings or try updating your browser.</p>
             </div>
+            
+            <div class="wifi-tips" id="wifiTips">
+                <h3><i class="fas fa-wifi"></i> WiFi Connection Tips</h3>
+                <ul>
+                    <li>Ensure your router doesn't block WebRTC ports (3478, 5349, 19302)</li>
+                    <li>Try switching to mobile data if available</li>
+                    <li>Disable VPN or proxy connections</li>
+                    <li>Restart your router if connection issues persist</li>
+                    <li>Check firewall settings for UDP restrictions</li>
+                </ul>
+            </div>
         </div>
     </div>
 
     <div class="footer">
-        <p>v6.2.0 | Powerd by SatLoom | <a href="#" id="showIceBtn">Show ICE Status</a></p>
+        <p>v6.3.0 | Powerd by SatLoom | <a href="#" id="showIceBtn">Show ICE Status</a></p>
     </div>
     
     <!-- Hidden audio element for remote stream -->
@@ -845,68 +943,396 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
     <script>
-       // ========== FIREBASE CONFIG ========== //
-      showNotification('Offline', 'Connect to continue', 'error');
-      return;
-    }
-    appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    await initMedia();
-    createPeerConnection();
-    appState.isInitiator = true;
-    initSignaling();
-    const offer = await appState.peerConnection.createOffer();
-    await appState.peerConnection.setLocalDescription(offer);
-    sendMessage({ type: 'offer', ...offer });
-    appState.isStarted = true;
-  }
+        // ========== FIREBASE CONFIG ========== //
+        const firebaseConfig = {
+            apiKey: "AIzaSyDeksN3qPZCmNuoASlEqG38XVmag6ecTh8",
+            authDomain: "satloom-rtc.firebaseapp.com",
+            databaseURL: "https://satloom-rtc-default-rtdb.firebaseio.com",
+            projectId: "satloom-rtc",
+            storageBucket: "satloom-rtc.appspot.com",
+            messagingSenderId: "273627860564",
+            appId: "1:273627860564:web:c326b1bb6ffcb32fb0e7c1"
+        };
 
-  function initMedia() {
-    return navigator.mediaDevices.getUserMedia({ audio: true });
-  }
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
 
-  function createPeerConnection() {
-    appState.peerConnection = new RTCPeerConnection(getRTCConfiguration());
-    appState.peerConnection.onicecandidate = e => {
-      if (e.candidate) sendMessage({ type: 'candidate', ...e.candidate });
-    };
-    appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
-  }
+        // ========== WEBRTC CONFIG ========== //
+        function getRTCConfiguration() {
+            // Enhanced ICE servers configuration with more reliable TURN servers
+            const iceServers = [
+                // Primary STUN servers
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' },
+                
+                // Public TURN servers optimized for WiFi networks
+                {
+                    urls: 'turn:openrelay.metered.ca:80',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:turn.bistri.com:80',
+                    credential: 'homeo',
+                    username: 'homeo'
+                },
+                {
+                    urls: 'turns:turn.bistri.com:443?transport=tcp',
+                    credential: 'homeo',
+                    username: 'homeo'
+                },
+                
+                // TURN servers for cellular networks
+                {
+                    urls: 'turn:global.turn.twilio.com:3478?transport=udp',
+                    username: 'satloom',
+                    credential: 'satloom123'
+                },
+                {
+                    urls: 'turn:global.turn.twilio.com:3478?transport=tcp',
+                    username: 'satloom',
+                    credential: 'satloom123'
+                },
+                {
+                    urls: 'turn:numb.viagenie.ca:3478',
+                    username: 'webrtc@live.com',
+                    credential: 'muazkh'
+                },
+                {
+                    urls: 'turn:turn.anyfirewall.com:443?transport=tcp',
+                    credential: 'webrtc',
+                    username: 'webrtc'
+                },
+                
+                // Additional reliable TURN servers for WiFi bypass
+                {
+                    urls: 'turn:freeturn.net:3478',
+                    username: 'free',
+                    credential: 'free'
+                },
+                {
+                    urls: 'turns:turn.herewebrtc.com:443',
+                    credential: 'satloom',
+                    username: 'satloom'
+                },
+                
+                // Additional reliable STUN servers
+                { urls: 'stun:stun.services.mozilla.com' },
+                { urls: 'stun:stun.voipstunt.com' },
+                { urls: 'stun:stun.iptel.org' },
+                { urls: 'stun:stun.ideasip.com' },
+                { urls: 'stun:stun.sipgate.net' }
+            ];
+            
+            return { 
+                iceServers,
+                iceTransportPolicy: 'all' // Use both relay and non-relay candidates
+            };
+        }
 
-  function initSignaling() {
-    appState.signalingRef = database.ref(`rooms/${appState.roomId}/messages`);
-    appState.signalingRef.on('child_added', snapshot => {
-      const msg = JSON.parse(snapshot.val());
-      if (msg.type === 'offer') {
-        appState.peerConnection.setRemoteDescription(new RTCSessionDescription(msg));
-        const answer = appState.peerConnection.createAnswer();
-        appState.peerConnection.setLocalDescription(answer);
-        sendMessage(answer);
-      } else if (msg.type === 'candidate') {
-        appState.peerConnection.addIceCandidate(new RTCIceCandidate(msg));
-      }
-    });
-  }
+        // State management
+        const appState = {
+            localStream: null,
+            remoteStream: null,
+            peerConnection: null,
+            roomId: null,
+            isInitiator: false,
+            isStarted: false,
+            timer: null,
+            startTime: null,
+            userId: null,
+            reconnectAttempts: 0,
+            maxReconnectAttempts: 7,
+            lastIceRestart: 0,
+            signalingRef: null,
+            isMuted: false,
+            remoteAudioElement: null,
+            isPageVisible: true,
+            connectionPaused: false,
+            wakeLock: null,
+            wakeLockInterval: null,
+            isMobile: false,
+            networkType: 'unknown',
+            isOnline: true,
+            prevNetworkType: 'unknown',
+            debugMode: false,
+            candidateCount: 0,
+            iceRestartMode: 'normal', // 'normal' or 'aggressive'
+            fullReconnectTimer: null
+        };
 
-  function sendMessage(message) {
-    if (!appState.roomId) return;
-    database.ref(`rooms/${appState.roomId}/messages`).push(JSON.stringify(message));
-  }
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', initApp);
 
-  function retryConnection() {
-    if (appState.roomId) {
-      if (appState.isInitiator) generateAudioRoom();
-      else joinAudioRoom(appState.roomId);
-    }
-  }
+        function initApp() {
+            // First check for WebRTC support
+            if (!isWebRTCSupported()) {
+                showCompatibilityWarning();
+                return;
+            }
+            
+            appState.userId = generateUserId();
+            appState.remoteAudioElement = document.getElementById('remoteAudio');
+            appState.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            setupEventListeners();
+            autoJoinRoom();
+            updateThemeIcon();
+            setupVisibilityHandlers();
+            
+            // Load saved theme preference
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+            }
+            updateThemeIcon();
+            
+            // Initialize screen wake techniques
+            initScreenWakeTechniques();
+            
+            // Setup network monitoring
+            setupNetworkMonitoring();
+        }
+        
+        function generateUserId() {
+            if (!localStorage.getItem('userId')) {
+                const userId = 'user-' + Math.random().toString(36).substr(2, 8);
+                localStorage.setItem('userId', userId);
+                return userId;
+            }
+            return localStorage.getItem('userId');
+        }
+        
+        function setupNetworkMonitoring() {
+            // Listen for online/offline events
+            window.addEventListener('online', handleNetworkChange);
+            window.addEventListener('offline', handleNetworkChange);
+            
+            // Check network type if possible
+            if (navigator.connection) {
+                navigator.connection.addEventListener('change', handleNetworkChange);
+                handleNetworkChange(); // Initial call
+            } else {
+                // Fallback: assume WiFi if connection type not available
+                updateNetworkStatus('wifi', true);
+            }
+        }
+        
+        function handleNetworkChange() {
+            const isOnline = navigator.onLine;
+            let networkType = 'unknown';
+            
+            if (navigator.connection) {
+                networkType = navigator.connection.effectiveType || 'unknown';
+                const type = navigator.connection.type || 'unknown';
+                
+                if (type.includes('wifi') || type.includes('ethernet')) {
+                    networkType = 'wifi';
+                } else if (type.includes('cellular') || type.includes('2g') || type.includes('3g') || type.includes('4g')) {
+                    networkType = 'cellular';
+                } else {
+                    networkType = type;
+                }
+            }
+            
+            appState.isOnline = isOnline;
+            const prevNetworkType = appState.networkType;
+            appState.networkType = networkType;
+            
+            updateNetworkStatus(networkType, isOnline);
+            debugLog(`Network changed: ${prevNetworkType} -> ${networkType}, Online: ${isOnline}`);
+            
+            // Show WiFi troubleshooting tips when on WiFi
+            document.getElementById('wifiTips').style.display = networkType === 'wifi' ? 'block' : 'none';
+            
+            // Handle network change during call
+            if (appState.isStarted && isOnline && prevNetworkType !== networkType) {
+                debugLog(`Network type changed from ${prevNetworkType} to ${networkType} during call`);
+                showNotification('Network Changed', 'Reconnecting...', 'warning');
+                restartICE();
+            }
+            
+            if (isOnline) {
+                if (appState.isStarted) {
+                    showNotification('Back Online', 'Connection restored', 'success');
+                    if (appState.peerConnection) {
+                        const state = appState.peerConnection.iceConnectionState;
+                        if (state === 'disconnected' || state === 'failed') {
+                            restartICE();
+                        }
+                    }
+                }
+            } else {
+                showNotification('Network Offline', 'Please check your internet connection', 'error');
+            }
+        }
+        
+        function updateNetworkStatus(type, isOnline) {
+            const networkStatus = document.getElementById('networkStatus');
+            const networkText = document.getElementById('networkStatusText');
+            const icon = networkStatus.querySelector('i');
+            
+            // Remove all existing classes
+            icon.className = '';
+            
+            if (!isOnline) {
+                networkText.textContent = 'Offline';
+                icon.className = 'fas fa-globe offline';
+                networkStatus.style.display = 'flex';
+                return;
+            }
+            
+            switch(type) {
+                case 'wifi':
+                    networkText.textContent = 'WiFi Connected';
+                    icon.className = 'fas fa-wifi wifi';
+                    break;
+                case 'cellular':
+                    networkText.textContent = 'Cellular Network';
+                    icon.className = 'fas fa-signal cellular';
+                    break;
+                default:
+                    networkText.textContent = 'Online';
+                    icon.className = 'fas fa-globe';
+            }
+            
+            networkStatus.style.display = 'flex';
+        }
+        
+        function isWebRTCSupported() {
+            // Check for essential WebRTC components
+            const requiredFeatures = [
+                'RTCPeerConnection',
+                'RTCSessionDescription',
+                'RTCIceCandidate'
+            ];
+            
+            for (const feature of requiredFeatures) {
+                if (!window[feature]) {
+                    console.error(`WebRTC feature missing: ${feature}`);
+                    showNotification('Browser Incompatible', 
+                        `Your browser is missing essential WebRTC feature: ${feature}. Please update your browser.`, 
+                        'error');
+                    return false;
+                }
+            }
+            
+            // Check for getUserMedia support
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                console.error('getUserMedia not supported');
+                showNotification('Browser Incompatible', 
+                    'Your browser does not support microphone access. Please update your browser.', 
+                    'error');
+                return false;
+            }
+            
+            return true;
+        }
+        
+        function showCompatibilityWarning() {
+            document.getElementById('compatibilityWarning').style.display = 'block';
+            document.getElementById('generateAudioRoom').disabled = true;
+            updateStatus('Browser not supported', false);
+        }
+        
+        function initScreenWakeTechniques() {
+            // Create a tiny, silent video to keep screen awake
+            const video = document.getElementById('wakeLockVideo');
+            video.width = 1;
+            video.height = 1;
+            
+            // Create a canvas to draw a blank frame
+            const canvas = document.getElementById('wakeLockCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, 1, 1);
+            
+            // Convert to video stream
+            const stream = canvas.captureStream(1);
+            video.srcObject = stream;
+        }
 
-  function joinAudioRoom(roomId) {
-    appState.roomId = roomId;
-    initMedia().then(() => {
-      createPeerConnection();
-      appState.isInitiator = false;
-      initSignaling();
-    });
-  }
+        function setupVisibilityHandlers() {
+            // Handle visibility changes
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+        }
+
+        function handleVisibilityChange() {
+            const wasVisible = appState.isPageVisible;
+            appState.isPageVisible = document.visibilityState === 'visible';
+            debugLog(`Visibility changed: ${wasVisible ? 'visible' : 'hidden'} -> ${appState.isPageVisible ? 'visible' : 'hidden'}`);
+            
+            if (wasVisible && !appState.isPageVisible) {
+                // Page became hidden
+                pauseConnection();
+            } else if (!wasVisible && appState.isPageVisible) {
+                // Page became visible
+                resumeConnection();
+            }
+            
+            updateStatus(appState.isPageVisible ? 'Page is visible' : 'Page is in background', false);
+        }
+
+        function pauseConnection() {
+            if (appState.isStarted && appState.peerConnection) {
+                debugLog('Pausing connection');
+                appState.connectionPaused = true;
+                document.getElementById('connectionGuard').style.display = 'flex';
+                showNotification('Connection Paused', 'Return to browser to resume call', 'warning');
+                
+                // Pause screen wake techniques
+                releaseScreenWake();
+            }
+        }
+
+        function resumeConnection() {
+            if (appState.connectionPaused && appState.peerConnection) {
+                debugLog('Resuming connection');
+                appState.connectionPaused = false;
+                document.getElementById('connectionGuard').style.display = 'none';
+                
+                // Resume remote audio
+                if (appState.remoteAudioElement && appState.remoteAudioElement.srcObject) {
+                    appState.remoteAudioElement.play().catch(e => {
+                        console.error('Failed to resume audio:', e);
+                        document.getElementById('audioActivationPanel').style.display = 'block';
+                    });
+                }
+                
+                // Restart screen wake techniques
+                keepScreenAwake();
+                
+                // Force a reconnection
+                setTimeout(() => {
+                    if (appState.peerConnection) {
+                        const state = appState.peerConnection.iceConnectionState;
+                        if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+                            debugLog(`ICE state after resume: ${state}, restarting ICE`);
+                            restartICE();
+                        } else {
+                            debugLog(`ICE state after resume: ${state}, forcing ICE restart`);
+                            restartICE();
+                        }
+                    }
+                }, 1000);
+                
+                showNotification('Connection Resumed', 'Call has been restored', 'success');
+            }
+        }
 
         // ========== SCREEN AWAKE TECHNIQUES ========== //
         function keepScreenAwake() {
@@ -989,6 +1415,7 @@
             document.getElementById('joinRoomBtn').addEventListener('click', showJoinRoomPrompt);
             document.getElementById('restartIceBtn').addEventListener('click', restartICE);
             document.getElementById('showIceBtn').addEventListener('click', toggleIceStatusPanel);
+            document.getElementById('showQrBtn').addEventListener('click', generateQrCode);
         }
 
         function showNotification(title, message, type = 'info', showRetry = false) {
@@ -1183,8 +1610,11 @@
                 updateStatus(`Call connected (${appState.roomId})`, true);
                 appState.reconnectAttempts = 0;
                 appState.iceRestartMode = 'normal'; // Reset to normal mode after success
+                document.getElementById('reconnectionStatus').style.display = 'none';
             } else if (state === 'disconnected' || state === 'failed') {
                 updateStatus(`Connection ${state}`, false);
+                document.getElementById('reconnectionStatus').style.display = 'block';
+                
                 if (appState.reconnectAttempts < appState.maxReconnectAttempts) {
                     appState.reconnectAttempts++;
                     
@@ -1198,6 +1628,14 @@
                     setTimeout(() => restartICE(), delay);
                 } else {
                     showNotification('Connection Failed', 'Reconnection attempts exhausted', 'error', true);
+                    // Automatically try full reconnection after 3 seconds
+                    setTimeout(() => {
+                        if (appState.peerConnection && 
+                            (appState.peerConnection.iceConnectionState === 'disconnected' || 
+                             appState.peerConnection.iceConnectionState === 'failed')) {
+                            retryConnection();
+                        }
+                    }, 3000);
                 }
             }
         }
@@ -1330,8 +1768,13 @@
                 // Generate a new room ID
                 appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
                 
+                // Show room ID
+                document.getElementById('roomIdDisplay').textContent = `Room ID: ${appState.roomId}`;
+                document.getElementById('roomIdDisplay').style.display = 'block';
+                
                 // Show copy button
                 document.getElementById('copyRoomLink').style.display = 'flex';
+                document.getElementById('showQrBtn').style.display = 'flex';
                 document.getElementById('joinRoomBtn').style.display = 'none';
                 
                 showNotification('Room Created', `Room ID: ${appState.roomId}`, 'success');
@@ -1367,6 +1810,26 @@
                 showNotification('Connection Error', 'Failed to start call: ' + err.message, 'error', true);
                 updateStatus('Call failed', false);
             }
+        }
+        
+        function generateQrCode() {
+            const qrContainer = document.getElementById('qrContainer');
+            qrContainer.innerHTML = '';
+            qrContainer.style.display = 'block';
+            
+            const basePath = window.location.href.split('?')[0];
+            const fullLink = `${basePath}?room=${appState.roomId}`;
+            
+            new QRCode(qrContainer, {
+                text: fullLink,
+                width: 160,
+                height: 160,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+            
+            showNotification('QR Code Generated', 'Scan to join the room', 'success');
         }
 
         function copyRoomLink() {
@@ -1480,10 +1943,14 @@
             // Reset UI elements
             document.getElementById('audioControls').style.display = 'none';
             document.getElementById('copyRoomLink').style.display = 'none';
+            document.getElementById('showQrBtn').style.display = 'none';
+            document.getElementById('qrContainer').style.display = 'none';
+            document.getElementById('roomIdDisplay').style.display = 'none';
             document.getElementById('generateAudioRoom').style.display = 'flex';
             document.getElementById('joinRoomBtn').style.display = 'flex';
             document.getElementById('audioActivationPanel').style.display = 'none';
             document.getElementById('connectionGuard').style.display = 'none';
+            document.getElementById('reconnectionStatus').style.display = 'none';
             stopTimer();
             updateStatus('Call ended', false);
             showNotification('Call Ended', 'Your call has been disconnected');
