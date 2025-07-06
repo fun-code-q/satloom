@@ -646,6 +646,10 @@
     <video id="wakeLockVideo" loop muted playsinline style="display: none;"></video>
     <canvas id="wakeLockCanvas" width="1" height="1" style="display: none;"></canvas>
     
+    <!-- Firebase for signaling -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
     <script>
         // ========== FIREBASE CONFIG ========== //
         const firebaseConfig = {
@@ -1148,14 +1152,17 @@
         }
         
         async function generateAudioRoom() {
-            appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-            
-            // Show copy button
-            document.getElementById('copyRoomLink').style.display = 'flex';
-            
-            showNotification('Room Created', `Room ID: ${appState.roomId}`, 'success');
+            console.log("Generate room button clicked");
             
             try {
+                // Generate a new room ID
+                appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+                
+                // Show copy button
+                document.getElementById('copyRoomLink').style.display = 'flex';
+                
+                showNotification('Room Created', `Room ID: ${appState.roomId}`, 'success');
+                
                 // Initialize media
                 const mediaInitialized = await initMedia();
                 if (!mediaInitialized) return;
@@ -1181,7 +1188,8 @@
                 
                 showNotification('Call Started', 'You are now the host', 'success');
             } catch (err) {
-                showNotification('Connection Error', 'Failed to start call', 'error', true);
+                console.error('Error generating room:', err);
+                showNotification('Connection Error', 'Failed to start call: ' + err.message, 'error', true);
                 updateStatus('Call failed', false);
             }
         }
