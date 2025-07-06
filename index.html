@@ -531,8 +531,8 @@
             min-width: 180px;
         }
         
-        /* Wake lock status indicator */
-        .wake-lock-indicator {
+        /* Screen awake indicator */
+        .screen-awake-indicator {
             position: absolute;
             top: 20px;
             left: 20px;
@@ -549,7 +549,7 @@
             display: none;
         }
         
-        .light-mode .wake-lock-indicator {
+        .light-mode .screen-awake-indicator {
             background: rgba(0, 0, 0, 0.05);
             border: 1px solid rgba(0, 0, 0, 0.1);
             color: #333;
@@ -557,9 +557,9 @@
     </style>
 </head>
 <body>
-    <div class="wake-lock-indicator" id="wakeLockIndicator">
+    <div class="screen-awake-indicator" id="screenAwakeIndicator">
         <i class="fas fa-lightbulb"></i>
-        <span>Screen light is ON</span>
+        <span>Screen kept awake</span>
     </div>
     
     <div class="theme-toggle" id="themeToggle">
@@ -641,6 +641,9 @@
     
     <!-- Hidden audio element for remote stream -->
     <audio id="remoteAudio" autoplay playsinline style="display: none;"></audio>
+    
+    <!-- Hidden video element to keep screen awake -->
+    <video id="screenWakeVideo" loop muted playsinline style="display: none;"></video>
 
     <!-- Firebase for signaling -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -710,7 +713,7 @@
             remoteAudioElement: null,
             isPageVisible: true,
             connectionPaused: false,
-            wakeLock: null // For screen wake lock
+            keepScreenAwakeVideo: null
         };
 
         // Initialize app
@@ -718,6 +721,7 @@
 
         function initApp() {
             appState.remoteAudioElement = document.getElementById('remoteAudio');
+            appState.keepScreenAwakeVideo = document.getElementById('screenWakeVideo');
             setupEventListeners();
             autoJoinRoom();
             updateThemeIcon();
@@ -729,6 +733,28 @@
                 document.body.classList.add('light-mode');
             }
             updateThemeIcon();
+            
+            // Initialize the screen wake video
+            initScreenWakeVideo();
+        }
+        
+        function initScreenWakeVideo() {
+            // Create a tiny, silent video to keep screen awake
+            const video = appState.keepScreenAwakeVideo;
+            video.width = 1;
+            video.height = 1;
+            
+            // Create a canvas to draw a blank frame
+            const canvas = document.createElement('canvas');
+            canvas.width = 2;
+            canvas.height = 2;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, 2, 2);
+            
+            // Convert to video stream
+            const stream = canvas.captureStream(1);
+            video.srcObject = stream;
         }
 
         function setupVisibilityHandlers() {
@@ -756,6 +782,10 @@
                 appState.connectionPaused = true;
                 document.getElementById('connectionGuard').style.display = 'flex';
                 showNotification('Connection Paused', 'Return to browser to resume call', 'warning');
+                
+                // Pause the screen wake video
+                appState.keepScreenAwakeVideo.pause();
+                document.getElementById('screenAwakeIndicator').style.display = 'none';
             }
         }
 
@@ -780,56 +810,37 @@
                     }
                 }
                 
-                // Reacquire wake lock if we are in a call
-                if (appState.isStarted) {
-                    acquireWakeLock();
-                }
+                // Restart screen wake video
+                keepScreenAwake();
                 
                 showNotification('Connection Resumed', 'Call has been restored', 'success');
             }
         }
 
-        // ========== SCREEN WAKE LOCK FUNCTIONS ========== //
-        async function acquireWakeLock() {
-            // Check if Wake Lock API is supported
-            if ('wakeLock' in navigator) {
-                try {
-                    // Request a screen wake lock
-                    appState.wakeLock = await navigator.wakeLock.request('screen');
-                    console.log('Screen Wake Lock is active');
-                    
-                    // Show indicator
-                    document.getElementById('wakeLockIndicator').style.display = 'flex';
-                    
-                    // Listen for release event (when lock is released by system)
-                    appState.wakeLock.addEventListener('release', () => {
-                        console.log('Screen Wake Lock was released by the system');
-                        document.getElementById('wakeLockIndicator').style.display = 'none';
-                    });
-                    
-                } catch (err) {
-                    console.error(`Error acquiring wake lock: ${err.message}`);
+        // ========== SCREEN AWAKE TECHNIQUE ========== //
+        function keepScreenAwake() {
+            if (!appState.isStarted) return;
+            
+            const video = appState.keepScreenAwakeVideo;
+            
+            try {
+                video.play().then(() => {
+                    console.log('Screen keep-awake video is playing');
+                    document.getElementById('screenAwakeIndicator').style.display = 'flex';
+                }).catch(e => {
+                    console.error('Error playing screen wake video:', e);
                     showNotification('Screen Lock Error', 'Could not keep screen on. Your device might turn off the screen during the call.', 'warning');
-                }
-            } else {
-                console.warn('Screen Wake Lock API not supported in this browser');
-                showNotification('Screen Lock Not Supported', 'Your browser does not support keeping the screen on during calls.', 'warning');
+                });
+            } catch (err) {
+                console.error('Error with screen wake video:', err);
+                showNotification('Screen Lock Error', 'Could not keep screen on. Your device might turn off the screen during the call.', 'warning');
             }
         }
 
-        function releaseWakeLock() {
-            if (appState.wakeLock) {
-                // Release the wake lock
-                appState.wakeLock.release()
-                    .then(() => {
-                        console.log('Screen Wake Lock released');
-                        appState.wakeLock = null;
-                        document.getElementById('wakeLockIndicator').style.display = 'none';
-                    })
-                    .catch(err => {
-                        console.error('Error releasing wake lock:', err);
-                    });
-            }
+        function releaseScreenAwake() {
+            const video = appState.keepScreenAwakeVideo;
+            video.pause();
+            document.getElementById('screenAwakeIndicator').style.display = 'none';
         }
 
         function setupEventListeners() {
@@ -1082,8 +1093,8 @@
                 updateStatus(`In audio call (${appState.roomId})`, true);
                 document.getElementById('audioControls').style.display = 'flex';
                 
-                // Acquire wake lock when call starts
-                acquireWakeLock();
+                // Keep screen awake
+                keepScreenAwake();
             } catch (err) {
                 showNotification('Connection Error', 'Failed to handle offer', 'error', true);
             }
@@ -1124,8 +1135,8 @@
                 document.getElementById('audioControls').style.display = 'flex';
                 document.getElementById('generateAudioRoom').style.display = 'none';
                 
-                // Acquire wake lock when call starts
-                acquireWakeLock();
+                // Keep screen awake
+                keepScreenAwake();
                 
                 showNotification('Call Started', 'You are now the host', 'success');
             } catch (err) {
@@ -1224,8 +1235,8 @@
                 appState.remoteAudioElement.srcObject = null;
             }
             
-            // Release wake lock when call ends
-            releaseWakeLock();
+            // Release screen awake video
+            releaseScreenAwake();
             
             // Send bye message if in room
             if (appState.roomId) {
