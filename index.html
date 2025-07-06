@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - Enhanced Audio Calling</title>
+    <title>SatLoom - Audio Calling (Fixed)</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -555,89 +555,30 @@
             color: #333;
         }
         
-        /* Device info */
-        .device-info {
-            font-size: 14px;
-            margin-top: 15px;
-            color: #b8c5d9;
-            padding: 10px;
+        /* Compatibility warning */
+        .compatibility-warning {
+            background: rgba(255, 87, 87, 0.2);
             border-radius: 10px;
-            background: rgba(0, 0, 0, 0.1);
-            text-align: left;
-        }
-        
-        .light-mode .device-info {
-            color: #666;
-            background: rgba(0, 0, 0, 0.05);
-        }
-        
-        /* Connection type indicator */
-        .connection-type {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 8px 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            z-index: 10;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.3s ease;
-        }
-        
-        .light-mode .connection-type {
-            background: rgba(0, 0, 0, 0.05);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            color: #333;
-        }
-        
-        /* Status dots */
-        .status-dot {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 5px;
-        }
-        
-        .dot-connected {
-            background-color: #00ff9d;
-        }
-        
-        .dot-warning {
-            background-color: #ffcc00;
-        }
-        
-        .dot-error {
-            background-color: #ff5252;
-        }
-        
-        /* Network info */
-        .network-info {
-            position: absolute;
-            top: 70px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 8px 15px;
-            font-size: 14px;
-            z-index: 10;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            margin-top: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 87, 87, 0.5);
             display: none;
         }
         
-        .light-mode .network-info {
-            background: rgba(0, 0, 0, 0.05);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            color: #333;
+        .compatibility-warning h3 {
+            color: #ff5252;
+            margin-bottom: 10px;
         }
         
-        .network-info ul {
+        .compatibility-warning ul {
+            text-align: left;
+            margin: 10px 0;
             padding-left: 20px;
-            margin-top: 5px;
+        }
+        
+        .compatibility-warning li {
+            margin-bottom: 5px;
         }
     </style>
 </head>
@@ -645,20 +586,6 @@
     <div class="screen-awake-indicator" id="screenAwakeIndicator">
         <i class="fas fa-lightbulb"></i>
         <span>Screen kept awake</span>
-    </div>
-    
-    <div class="connection-type" id="connectionType">
-        <i class="fas fa-network-wired"></i>
-        <span id="connectionTypeText">Network: Unknown</span>
-    </div>
-    
-    <div class="network-info" id="networkInfo">
-        <strong>Network Details:</strong>
-        <ul>
-            <li id="networkType">Type: Unknown</li>
-            <li id="iceState">ICE State: New</li>
-            <li id="iceCandidates">Candidates: 0</li>
-        </ul>
     </div>
     
     <div class="theme-toggle" id="themeToggle">
@@ -696,13 +623,9 @@
                 <div class="logo-text">SatLoom</div>
             </div>
             
-            <div class="device-info" id="deviceInfo">
-                Device: Desktop | Browser: Chrome | Audio: Enabled
-            </div>
-            
             <div class="status-container">
                 <div class="status-indicator" id="connectionStatus">
-                    <span class="status-dot" id="statusDot"></span>
+                    <i class="fas fa-signal"></i>
                     <span id="statusText">Ready to connect</span>
                 </div>
                 <div class="call-timer" id="audioCallTimer">00:00</div>
@@ -735,11 +658,22 @@
                     <i class="fas fa-phone-slash"></i>
                 </button>
             </div>
+            
+            <div class="compatibility-warning" id="compatibilityWarning">
+                <h3><i class="fas fa-exclamation-triangle"></i> Compatibility Issue</h3>
+                <p>Your browser may have limited support for WebRTC features. For best results, use:</p>
+                <ul>
+                    <li>Google Chrome (latest version)</li>
+                    <li>Mozilla Firefox (latest version)</li>
+                    <li>Microsoft Edge (latest version)</li>
+                </ul>
+                <p>If problems persist, check your browser settings or try updating your browser.</p>
+            </div>
         </div>
     </div>
 
     <div class="footer">
-        <p>v5.0.0 | Enhanced Connectivity | <a href="#">SatLoom Developers</a></p>
+        <p>v5.1.0 | Fixed Peer Connection | <a href="#">SatLoom Developers</a></p>
     </div>
     
     <!-- Hidden audio element for remote stream -->
@@ -771,7 +705,7 @@
 
         // ========== WEBRTC CONFIG ========== //
         function getRTCConfiguration() {
-            // Enhanced ICE servers configuration with more TURN servers
+            // Enhanced ICE servers configuration
             const iceServers = [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
@@ -802,16 +736,6 @@
                     urls: 'turn:turn.anyfirewall.com:443?transport=tcp',
                     credential: 'webrtc',
                     username: 'webrtc'
-                },
-                {
-                    urls: 'turn:turn.sipgate.net:3478',
-                    username: 'free',
-                    credential: 'free'
-                },
-                {
-                    urls: 'turn:turn.xten.com:3478',
-                    username: 'webrtc',
-                    credential: 'webrtc'
                 }
             ];
             
@@ -839,23 +763,26 @@
             connectionPaused: false,
             wakeLock: null,
             wakeLockInterval: null,
-            isMobile: false,
-            iceCandidates: 0
+            isMobile: false
         };
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', initApp);
 
         function initApp() {
+            // First check for WebRTC support
+            if (!isWebRTCSupported()) {
+                showCompatibilityWarning();
+                return;
+            }
+            
             appState.remoteAudioElement = document.getElementById('remoteAudio');
             appState.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             
-            updateDeviceInfo();
             setupEventListeners();
             autoJoinRoom();
             updateThemeIcon();
             setupVisibilityHandlers();
-            detectNetworkType();
             
             // Load saved theme preference
             const savedTheme = localStorage.getItem('theme');
@@ -868,48 +795,40 @@
             initScreenWakeTechniques();
         }
         
-        function detectNetworkType() {
-            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-            if (connection) {
-                const type = connection.type || connection.effectiveType;
-                document.getElementById('connectionTypeText').textContent = `Network: ${type}`;
-                document.getElementById('networkType').textContent = `Type: ${type}`;
-                
-                // Show network info panel
-                document.getElementById('networkInfo').style.display = 'block';
-                
-                // Update on network change
-                connection.addEventListener('change', () => {
-                    const newType = connection.type || connection.effectiveType;
-                    document.getElementById('connectionTypeText').textContent = `Network: ${newType}`;
-                    document.getElementById('networkType').textContent = `Type: ${newType}`;
-                    showNotification('Network Changed', `Connection type changed to ${newType}`, 'warning');
-                    
-                    // Restart ICE if in call
-                    if (appState.isStarted) {
-                        restartICE();
-                    }
-                });
+        function isWebRTCSupported() {
+            // Check for essential WebRTC components
+            const requiredFeatures = [
+                'RTCPeerConnection',
+                'RTCSessionDescription',
+                'RTCIceCandidate'
+            ];
+            
+            for (const feature of requiredFeatures) {
+                if (!window[feature]) {
+                    console.error(`WebRTC feature missing: ${feature}`);
+                    showNotification('Browser Incompatible', 
+                        `Your browser is missing essential WebRTC feature: ${feature}. Please update your browser.`, 
+                        'error');
+                    return false;
+                }
             }
+            
+            // Check for getUserMedia support
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                console.error('getUserMedia not supported');
+                showNotification('Browser Incompatible', 
+                    'Your browser does not support microphone access. Please update your browser.', 
+                    'error');
+                return false;
+            }
+            
+            return true;
         }
         
-        function updateDeviceInfo() {
-            const deviceInfo = document.getElementById('deviceInfo');
-            const deviceType = appState.isMobile ? 'Mobile' : 'Desktop';
-            const browser = detectBrowser();
-            const audioStatus = appState.localStream ? 'Enabled' : 'Disabled';
-            deviceInfo.textContent = `Device: ${deviceType} | Browser: ${browser} | Audio: ${audioStatus}`;
-        }
-        
-        function detectBrowser() {
-            const ua = navigator.userAgent;
-            if (ua.indexOf("Chrome") > -1) return "Chrome";
-            if (ua.indexOf("Safari") > -1) return "Safari";
-            if (ua.indexOf("Firefox") > -1) return "Firefox";
-            if (ua.indexOf("Edge") > -1) return "Edge";
-            if (ua.indexOf("Opera") > -1 || ua.indexOf("OPR") > -1) return "Opera";
-            if (ua.indexOf("Trident") > -1) return "IE";
-            return "Unknown";
+        function showCompatibilityWarning() {
+            document.getElementById('compatibilityWarning').style.display = 'block';
+            document.getElementById('generateAudioRoom').disabled = true;
+            updateStatus('Browser not supported', false);
         }
         
         function initScreenWakeTechniques() {
@@ -950,7 +869,7 @@
         }
 
         function pauseConnection() {
-            if (appState.isStarted) {
+            if (appState.isStarted && appState.peerConnection) {
                 appState.connectionPaused = true;
                 document.getElementById('connectionGuard').style.display = 'flex';
                 showNotification('Connection Paused', 'Return to browser to resume call', 'warning');
@@ -961,7 +880,7 @@
         }
 
         function resumeConnection() {
-            if (appState.connectionPaused) {
+            if (appState.connectionPaused && appState.peerConnection) {
                 appState.connectionPaused = false;
                 document.getElementById('connectionGuard').style.display = 'none';
                 
@@ -1071,15 +990,6 @@
             document.getElementById('activateAudioBtn').addEventListener('click', activateAudio);
             document.getElementById('retryConnection').addEventListener('click', retryConnection);
             document.getElementById('resumeConnection').addEventListener('click', resumeConnection);
-            
-            // Connection type info hover
-            document.getElementById('connectionType').addEventListener('mouseenter', () => {
-                document.getElementById('networkInfo').style.display = 'block';
-            });
-            
-            document.getElementById('connectionType').addEventListener('mouseleave', () => {
-                document.getElementById('networkInfo').style.display = 'none';
-            });
         }
 
         function generateUserId() {
@@ -1122,21 +1032,21 @@
 
         function updateStatus(text, isConnected = false) {
             const statusElem = document.getElementById('statusText');
-            const statusDot = document.getElementById('statusDot');
+            const statusIcon = document.querySelector('#connectionStatus i');
             
             statusElem.textContent = text;
             
             if (isConnected) {
-                statusDot.className = 'status-dot dot-connected';
-                statusDot.classList.remove('dot-warning', 'dot-error');
+                statusIcon.classList.add('status-connected');
+                statusIcon.classList.remove('status-warning', 'status-error');
             } else if (text.includes('warning') || text.includes('background')) {
-                statusDot.className = 'status-dot dot-warning';
-                statusDot.classList.remove('dot-connected', 'dot-error');
+                statusIcon.classList.add('status-warning');
+                statusIcon.classList.remove('status-connected', 'status-error');
             } else if (text.includes('error') || text.includes('failed')) {
-                statusDot.className = 'status-dot dot-error';
-                statusDot.classList.remove('dot-connected', 'dot-warning');
+                statusIcon.classList.add('status-error');
+                statusIcon.classList.remove('status-connected', 'status-warning');
             } else {
-                statusDot.className = 'status-dot';
+                statusIcon.classList.remove('status-connected', 'status-warning', 'status-error');
             }
         }
 
@@ -1158,13 +1068,21 @@
 
         async function initMedia() {
             try {
-                // Use simplified constraints for all devices
-                const constraints = { audio: true };
+                // Mobile browsers often require simpler constraints
+                const constraints = appState.isMobile 
+                    ? { audio: true } 
+                    : { 
+                        audio: { 
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        } 
+                    };
                 
                 appState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
-                updateDeviceInfo();
                 return true;
             } catch (err) {
+                console.error('Media initialization error:', err);
                 showNotification('Microphone Error', 
                     `Could not access microphone: ${err.message}`, 'error');
                 return false;
@@ -1175,10 +1093,6 @@
             try {
                 const pcConfig = getRTCConfiguration();
                 appState.peerConnection = new RTCPeerConnection(pcConfig);
-                
-                // Reset candidate count
-                appState.iceCandidates = 0;
-                document.getElementById('iceCandidates').textContent = `Candidates: ${appState.iceCandidates}`;
                 
                 // Add local stream tracks
                 if (appState.localStream) {
@@ -1191,19 +1105,14 @@
                 appState.peerConnection.ontrack = handleRemoteStream;
                 appState.peerConnection.onicecandidate = handleICECandidate;
                 appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
-                appState.peerConnection.onicegatheringstatechange = handleICEGatheringStateChange;
                 
                 return true;
             } catch (err) {
+                console.error('Peer connection creation error:', err);
                 showNotification('Connection Error', 
                     `Failed to create connection: ${err.message}`, 'error', true);
                 return false;
             }
-        }
-        
-        function handleICEGatheringStateChange() {
-            const state = appState.peerConnection.iceGatheringState;
-            document.getElementById('iceState').textContent = `ICE State: ${state}`;
         }
 
         function handleRemoteStream(event) {
@@ -1246,11 +1155,7 @@
         }
 
         function handleICECandidate(event) {
-            if (event.candidate && !appState.connectionPaused) {
-                // Count candidate
-                appState.iceCandidates++;
-                document.getElementById('iceCandidates').textContent = `Candidates: ${appState.iceCandidates}`;
-                
+            if (event.candidate && !appState.connectionPaused && appState.peerConnection) {
                 sendMessage({
                     type: 'candidate',
                     candidate: event.candidate.candidate,
@@ -1261,7 +1166,7 @@
         }
 
         function handleICEConnectionStateChange() {
-            if (appState.connectionPaused) return;
+            if (appState.connectionPaused || !appState.peerConnection) return;
             
             const state = appState.peerConnection.iceConnectionState;
             
@@ -1289,11 +1194,13 @@
             appState.signalingRef = database.ref(`rooms/${appState.roomId}/messages`);
             
             appState.signalingRef.on('child_added', snapshot => {
-                if (appState.connectionPaused) return;
+                if (appState.connectionPaused || !appState.peerConnection) return;
                 
                 const message = JSON.parse(snapshot.val());
                 
-                if (!appState.peerConnection) createPeerConnection();
+                if (!appState.peerConnection) {
+                    if (!createPeerConnection()) return;
+                }
                 
                 switch (message.type) {
                     case 'offer':
@@ -1324,6 +1231,10 @@
 
         async function handleOffer(offer) {
             try {
+                if (!appState.peerConnection) {
+                    if (!createPeerConnection()) return;
+                }
+                
                 await appState.peerConnection.setRemoteDescription(
                     new RTCSessionDescription(offer));
                 
@@ -1339,6 +1250,7 @@
                 // Keep screen awake
                 keepScreenAwake();
             } catch (err) {
+                console.error('Error handling offer:', err);
                 showNotification('Connection Error', 'Failed to handle offer: ' + err.message, 'error', true);
             }
         }
@@ -1368,12 +1280,12 @@
                 // Create peer connection
                 if (!createPeerConnection()) return;
                 
-                // Create offer
+                // Set as initiator
                 appState.isInitiator = true;
                 initSignaling();
-                const offer = await appState.peerConnection.createOffer({
-                    offerToReceiveAudio: 1
-                });
+                
+                // Create offer
+                const offer = await appState.peerConnection.createOffer();
                 await appState.peerConnection.setLocalDescription(offer);
                 sendMessage({ type: 'offer', sdp: offer.sdp });
                 
@@ -1459,6 +1371,8 @@
         }
 
         function endAudioCall() {
+            console.log('Ending audio call');
+            
             if (appState.peerConnection) {
                 appState.peerConnection.close();
                 appState.peerConnection = null;
@@ -1504,9 +1418,6 @@
             muteBtn.innerHTML = '<i class="fas fa-microphone"></i>';
             muteBtn.style.background = 'linear-gradient(135deg, #3a7bd5, #00bfff)';
             appState.isMuted = false;
-            
-            // Update device info
-            updateDeviceInfo();
         }
 
         function autoJoinRoom() {
