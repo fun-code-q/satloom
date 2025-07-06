@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - Audio Calling (Fixed)</title>
+    <title>SatLoom - Fixed Audio Calling</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -615,6 +615,45 @@
         .network-status i.offline {
             color: #ff5252;
         }
+        
+        /* Debug panel */
+        .debug-panel {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+            font-family: monospace;
+            font-size: 12px;
+            max-width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .debug-panel h3 {
+            margin-bottom: 8px;
+            color: #00d2ff;
+        }
+        
+        .debug-toggle {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1001;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -713,7 +752,7 @@
     </div>
 
     <div class="footer">
-        <p>v5.2.0 | Fixed Cellular Support | <a href="#">SatLoom Developers</a></p>
+        <p>v5.3.0 | Fixed Network Switching Issues | <a href="#">SatLoom Developers</a></p>
     </div>
     
     <!-- Hidden audio element for remote stream -->
@@ -722,6 +761,15 @@
     <!-- Hidden elements for screen wake techniques -->
     <video id="wakeLockVideo" loop muted playsinline style="display: none;"></video>
     <canvas id="wakeLockCanvas" width="1" height="1" style="display: none;"></canvas>
+    
+    <!-- Debug panel -->
+    <div class="debug-panel" id="debugPanel">
+        <h3>Connection Debug</h3>
+        <div id="debugLog"></div>
+    </div>
+    <div class="debug-toggle" id="debugToggle">
+        <i class="fas fa-bug"></i>
+    </div>
     
     <!-- Firebase for signaling -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -811,7 +859,9 @@
             wakeLockInterval: null,
             isMobile: false,
             networkType: 'unknown',
-            isOnline: true
+            isOnline: true,
+            prevNetworkType: 'unknown',
+            debugMode: false
         };
 
         // Initialize app
@@ -879,9 +929,18 @@
             }
             
             appState.isOnline = isOnline;
+            const prevNetworkType = appState.networkType;
             appState.networkType = networkType;
             
             updateNetworkStatus(networkType, isOnline);
+            debugLog(`Network changed: ${prevNetworkType} -> ${networkType}, Online: ${isOnline}`);
+            
+            // Handle network change during call
+            if (appState.isStarted && isOnline && prevNetworkType !== networkType) {
+                debugLog(`Network type changed from ${prevNetworkType} to ${networkType} during call`);
+                showNotification('Network Changed', 'Reconnecting...', 'warning');
+                restartICE();
+            }
             
             if (isOnline) {
                 if (appState.isStarted) {
@@ -991,6 +1050,7 @@
         function handleVisibilityChange() {
             const wasVisible = appState.isPageVisible;
             appState.isPageVisible = document.visibilityState === 'visible';
+            debugLog(`Visibility changed: ${wasVisible ? 'visible' : 'hidden'} -> ${appState.isPageVisible ? 'visible' : 'hidden'}`);
             
             if (wasVisible && !appState.isPageVisible) {
                 // Page became hidden
@@ -1005,6 +1065,7 @@
 
         function pauseConnection() {
             if (appState.isStarted && appState.peerConnection) {
+                debugLog('Pausing connection');
                 appState.connectionPaused = true;
                 document.getElementById('connectionGuard').style.display = 'flex';
                 showNotification('Connection Paused', 'Return to browser to resume call', 'warning');
@@ -1016,6 +1077,7 @@
 
         function resumeConnection() {
             if (appState.connectionPaused && appState.peerConnection) {
+                debugLog('Resuming connection');
                 appState.connectionPaused = false;
                 document.getElementById('connectionGuard').style.display = 'none';
                 
@@ -1027,16 +1089,22 @@
                     });
                 }
                 
-                // If connection is in a bad state, restart ICE
-                if (appState.peerConnection) {
-                    const state = appState.peerConnection.iceConnectionState;
-                    if (state === 'disconnected' || state === 'failed') {
-                        restartICE();
-                    }
-                }
-                
                 // Restart screen wake techniques
                 keepScreenAwake();
+                
+                // Force a reconnection
+                setTimeout(() => {
+                    if (appState.peerConnection) {
+                        const state = appState.peerConnection.iceConnectionState;
+                        if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+                            debugLog(`ICE state after resume: ${state}, restarting ICE`);
+                            restartICE();
+                        } else {
+                            debugLog(`ICE state after resume: ${state}, forcing ICE restart`);
+                            restartICE();
+                        }
+                    }
+                }, 1000);
                 
                 showNotification('Connection Resumed', 'Call has been restored', 'success');
             }
@@ -1050,7 +1118,7 @@
             if ('wakeLock' in navigator) {
                 navigator.wakeLock.request('screen').then(wl => {
                     appState.wakeLock = wl;
-                    console.log('Screen Wake Lock active');
+                    debugLog('Screen Wake Lock active');
                     document.getElementById('screenAwakeIndicator').style.display = 'flex';
                 }).catch(err => {
                     console.error('Wake Lock failed, using alternative:', err);
@@ -1066,7 +1134,7 @@
             try {
                 const video = document.getElementById('wakeLockVideo');
                 video.play().then(() => {
-                    console.log('Screen keep-awake video is playing');
+                    debugLog('Screen keep-awake video is playing');
                     document.getElementById('screenAwakeIndicator').style.display = 'flex';
                 }).catch(e => {
                     console.error('Video playback failed, using canvas:', e);
@@ -1089,7 +1157,7 @@
                 ctx.fillStyle = frame % 2 === 0 ? 'white' : 'black';
                 ctx.fillRect(0, 0, 1, 1);
                 frame++;
-                console.log('Canvas wake method active');
+                debugLog('Canvas wake method active');
             }, 20000); // Update every 20 seconds
             
             document.getElementById('screenAwakeIndicator').style.display = 'flex';
@@ -1125,6 +1193,7 @@
             document.getElementById('activateAudioBtn').addEventListener('click', activateAudio);
             document.getElementById('retryConnection').addEventListener('click', retryConnection);
             document.getElementById('resumeConnection').addEventListener('click', resumeConnection);
+            document.getElementById('debugToggle').addEventListener('click', toggleDebug);
         }
 
         function generateUserId() {
@@ -1240,6 +1309,8 @@
                 appState.peerConnection.ontrack = handleRemoteStream;
                 appState.peerConnection.onicecandidate = handleICECandidate;
                 appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
+                appState.peerConnection.onconnectionstatechange = handleConnectionStateChange;
+                appState.peerConnection.onsignalingstatechange = handleSignalingStateChange;
                 
                 return true;
             } catch (err) {
@@ -1291,6 +1362,7 @@
 
         function handleICECandidate(event) {
             if (event.candidate && !appState.connectionPaused && appState.peerConnection) {
+                debugLog('Sending ICE candidate');
                 sendMessage({
                     type: 'candidate',
                     candidate: event.candidate.candidate,
@@ -1299,11 +1371,12 @@
                 });
             }
         }
-
+        
         function handleICEConnectionStateChange() {
             if (appState.connectionPaused || !appState.peerConnection) return;
             
             const state = appState.peerConnection.iceConnectionState;
+            debugLog(`ICE connection state changed to: ${state}`);
             
             if (state === 'connected' || state === 'completed') {
                 updateStatus(`Call connected (${appState.roomId})`, true);
@@ -1320,6 +1393,18 @@
                 }
             }
         }
+        
+        function handleConnectionStateChange() {
+            if (!appState.peerConnection) return;
+            const state = appState.peerConnection.connectionState;
+            debugLog(`Connection state changed to: ${state}`);
+        }
+        
+        function handleSignalingStateChange() {
+            if (!appState.peerConnection) return;
+            const state = appState.peerConnection.signalingState;
+            debugLog(`Signaling state changed to: ${state}`);
+        }
 
         function initSignaling() {
             if (appState.signalingRef) {
@@ -1332,6 +1417,7 @@
                 if (appState.connectionPaused || !appState.peerConnection) return;
                 
                 const message = JSON.parse(snapshot.val());
+                debugLog(`Received message: ${message.type}`);
                 
                 if (!appState.peerConnection) {
                     if (!createPeerConnection()) return;
@@ -1358,6 +1444,12 @@
                     case 'bye':
                         if (appState.isStarted) {
                             endAudioCall();
+                        }
+                        break;
+                    case 'renegotiate':
+                        if (appState.isInitiator && appState.isStarted) {
+                            debugLog('Received renegotiate request');
+                            restartICE();
                         }
                         break;
                 }
@@ -1392,12 +1484,13 @@
 
         function sendMessage(message) {
             if (!appState.roomId || appState.connectionPaused) return;
+            debugLog(`Sending message: ${message.type}`);
             const dbRef = database.ref(`rooms/${appState.roomId}/messages`);
             dbRef.push(JSON.stringify(message));
         }
         
         async function generateAudioRoom() {
-            console.log("Generate room button clicked");
+            debugLog("Generate room button clicked");
             
             // Check network status before proceeding
             if (!appState.isOnline) {
@@ -1498,21 +1591,33 @@
             
             // Rate limit ICE restarts
             const now = Date.now();
-            if (now - appState.lastIceRestart < 5000) return;
+            if (now - appState.lastIceRestart < 5000) {
+                debugLog('ICE restart rate limited');
+                return;
+            }
             appState.lastIceRestart = now;
             
             try {
-                const offer = await appState.peerConnection.createOffer({iceRestart: true});
-                await appState.peerConnection.setLocalDescription(offer);
-                sendMessage(offer);
-                showNotification('Reconnecting', 'Attempting to re-establish connection');
+                debugLog('Restarting ICE connection');
+                showNotification('Reconnecting', 'Re-establishing connection', 'warning');
+                
+                // Only initiator can create a new offer
+                if (appState.isInitiator) {
+                    const offer = await appState.peerConnection.createOffer({iceRestart: true});
+                    await appState.peerConnection.setLocalDescription(offer);
+                    sendMessage(offer);
+                } else {
+                    // Answerer sends renegotiate request
+                    sendMessage({ type: 'renegotiate' });
+                }
             } catch (err) {
+                console.error('ICE restart error:', err);
                 showNotification('Reconnect Failed', 'Could not restart connection', 'error', true);
             }
         }
 
         function endAudioCall() {
-            console.log('Ending audio call');
+            debugLog('Ending audio call');
             
             if (appState.peerConnection) {
                 appState.peerConnection.close();
@@ -1624,6 +1729,23 @@
             } else {
                 showNotification('Error', 'No room to reconnect to', 'error');
             }
+        }
+        
+        function toggleDebug() {
+            appState.debugMode = !appState.debugMode;
+            document.getElementById('debugPanel').style.display = appState.debugMode ? 'block' : 'none';
+        }
+        
+        function debugLog(message) {
+            if (!appState.debugMode) return;
+            
+            const debugLog = document.getElementById('debugLog');
+            const logEntry = document.createElement('div');
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            debugLog.appendChild(logEntry);
+            
+            // Auto-scroll to bottom
+            debugLog.scrollTop = debugLog.scrollHeight;
         }
     </script>
 </body>
