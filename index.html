@@ -821,7 +821,7 @@
     </div>
 
     <div class="footer">
-        <p>v6.0.1 | Powerd by SatLoom | <a href="#" id="showIceBtn">Show ICE Status</a></p>
+        <p>v6.0.2 | Powerd by SatLoom | <a href="#" id="showIceBtn">Show ICE Status</a></p>
     </div>
     
     <!-- Hidden audio element for remote stream -->
@@ -915,7 +915,7 @@
             isStarted: false,
             timer: null,
             startTime: null,
-            userId: generateUserId(),
+            userId: null,
             reconnectAttempts: 0,
             maxReconnectAttempts: 5,
             lastIceRestart: 0,
@@ -944,6 +944,7 @@
                 return;
             }
             
+            appState.userId = generateUserId();
             appState.remoteAudioElement = document.getElementById('remoteAudio');
             appState.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             
@@ -964,6 +965,15 @@
             
             // Setup network monitoring
             setupNetworkMonitoring();
+        }
+        
+        function generateUserId() {
+            if (!localStorage.getItem('userId')) {
+                const userId = 'user-' + Math.random().toString(36).substr(2, 8);
+                localStorage.setItem('userId', userId);
+                return userId;
+            }
+            return localStorage.getItem('userId');
         }
         
         function setupNetworkMonitoring() {
@@ -1189,7 +1199,6 @@
                 navigator.wakeLock.request('screen').then(wl => {
                     appState.wakeLock = wl;
                     debugLog('Screen Wake Lock active');
-                    document.getElementById('screenAwakeIndicator').style.display = 'flex';
                 }).catch(err => {
                     console.error('Wake Lock failed, using alternative:', err);
                     useAlternativeWakeMethods();
@@ -1205,7 +1214,6 @@
                 const video = document.getElementById('wakeLockVideo');
                 video.play().then(() => {
                     debugLog('Screen keep-awake video is playing');
-                    document.getElementById('screenAwakeIndicator').style.display = 'flex';
                 }).catch(e => {
                     console.error('Video playback failed, using canvas:', e);
                     useCanvasWakeMethod();
@@ -1229,8 +1237,6 @@
                 frame++;
                 debugLog('Canvas wake method active');
             }, 5000); // Update every 5 seconds
-            
-            document.getElementById('screenAwakeIndicator').style.display = 'flex';
         }
         
         function releaseScreenWake() {
@@ -1249,8 +1255,6 @@
             // Pause video
             const video = document.getElementById('wakeLockVideo');
             video.pause();
-            
-            document.getElementById('screenAwakeIndicator').style.display = 'none';
         }
 
         function setupEventListeners() {
@@ -1267,14 +1271,6 @@
             document.getElementById('joinRoomBtn').addEventListener('click', showJoinRoomPrompt);
             document.getElementById('restartIceBtn').addEventListener('click', restartICE);
             document.getElementById('showIceBtn').addEventListener('click', toggleIceStatusPanel);
-        }
-
-        function generateUserId() {
-            if (!localStorage.getItem('userId')) {
-                const userId = 'user-' + Math.random().toString(36).substr(2, 8);
-                localStorage.setItem('userId', userId);
-            }
-            return localStorage.getItem('userId');
         }
 
         function showNotification(title, message, type = 'info', showRetry = false) {
@@ -1339,7 +1335,9 @@
         }
 
         function stopTimer() {
-            clearInterval(appState.timer);
+            if (appState.timer) {
+                clearInterval(appState.timer);
+            }
             document.getElementById('audioCallTimer').textContent = '00:00';
         }
 
@@ -1778,6 +1776,12 @@
             muteBtn.innerHTML = '<i class="fas fa-microphone"></i>';
             muteBtn.style.background = 'linear-gradient(135deg, #3a7bd5, #00bfff)';
             appState.isMuted = false;
+            
+            // Clean up signaling
+            if (appState.signalingRef) {
+                appState.signalingRef.off('child_added');
+                appState.signalingRef = null;
+            }
         }
 
         function autoJoinRoom() {
