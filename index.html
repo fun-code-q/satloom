@@ -6,65 +6,697 @@
     <title>SatLoom - Fixed Audio Calling</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
-        body { margin: 0; font-family: 'Arial', sans-serif; background: #1a1a1a; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .light-mode { background: #f0f0f0; color: #333; }
-        .app-container { display: flex; justify-content: center; align-items: center; padding: 20px; }
-        .card { background: #2c2c2c; border-radius: 15px; padding: 20px; width: 100%; max-width: 400px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); transition: background 0.3s; }
-        .light-mode .card { background: #fff; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
-        .logo { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
-        .logo-icon { font-size: 2em; margin-right: 10px; color: #00d2ff; }
-        .logo-text { font-size: 1.5em; font-weight: bold; }
-        .status-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .status-indicator { display: flex; align-items: center; }
-        .status-indicator i { margin-right: 5px; transition: color 0.3s; }
-        .status-connected { color: #4CAF50; }
-        .status-warning { color: #ffcc00; }
-        .status-error { color: #ff5252; }
-        .call-timer { font-size: 0.9em; color: #888; }
-        .audio-visualizer { height: 50px; display: flex; justify-content: center; align-items: flex-end; margin-bottom: 20px; }
-        .audio-vis-bars { display: flex; gap: 5px; }
-        .audio-bar { width: 10px; height: 5px; background: #00d2ff; transition: height 0.1s ease; }
-        .action-container { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 20px; }
-        .btn, .control-btn { padding: 10px 20px; border: none; border-radius: 25px; font-size: 1em; cursor: pointer; transition: background 0.3s, transform 0.2s; display: flex; align-items: center; }
-        .btn { background: linear-gradient(135deg, #00d2ff, #3a7bd5); color: #fff; }
-        .btn:hover { transform: scale(1.05); }
-        .control-btn { background: linear-gradient(135deg, #3a7bd5, #00bfff); color: #fff; }
-        .control-btn.mute.active { background: linear-gradient(135deg, #ff9800, #ff5722); }
-        .control-btn.end { background: linear-gradient(135deg, #ff5252, #d32f2f); }
-        .control-btn i { margin-right: 5px; }
-        .call-controls { display: flex; gap: 10px; justify-content: center; }
-        .compatibility-warning { display: none; background: #ff5252; padding: 15px; border-radius: 10px; margin-top: 20px; }
-        .footer { position: fixed; bottom: 10px; text-align: center; width: 100%; font-size: 0.8em; color: #888; }
-        .footer a { color: #00d2ff; text-decoration: none; }
-        .notification { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #2c2c2c; padding: 15px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); align-items: center; gap: 10px; z-index: 1000; }
-        .light-mode .notification { background: #fff; }
-        .notification-content { display: flex; flex-direction: column; }
-        .notification-title { font-weight: bold; }
-        .retry-btn { margin-top: 10px; background: #4CAF50; color: #fff; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
-        .audio-activation-panel { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #2c2c2c; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); text-align: center; z-index: 1000; }
-        .light-mode .audio-activation-panel { background: #fff; }
-        .audio-activation-panel button { background: #00d2ff; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
-        .connection-guard { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); justify-content: center; align-items: center; z-index: 1000; }
-        .connection-guard-content { background: #2c2c2c; padding: 20px; border-radius: 10px; text-align: center; }
-        .light-mode .connection-guard-content { background: #fff; }
-        .connection-guard-btn { background: #4CAF50; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
-        .theme-toggle { position: fixed; top: 20px; right: 20px; background: none; border: none; font-size: 1.5em; color: #fff; cursor: pointer; }
-        .light-mode .theme-toggle { color: #333; }
-        .debug-panel { display: none; position: fixed; bottom: 50px; right: 20px; background: #2c2c2c; padding: 10px; border-radius: 10px; max-height: 200px; overflow-y: auto; width: 300px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); }
-        .light-mode .debug-panel { background: #fff; }
-        .debug-toggle { position: fixed; bottom: 20px; right: 20px; background: none; border: none; font-size: 1.5em; color: #fff; cursor: pointer; }
-        .light-mode .debug-toggle { color: #333; }
-        .ice-status-panel { display: none; position: fixed; top: 20px; left: 20px; background: #2c2c2c; padding: 10px; border-radius: 10px; width: 250px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); }
-        .light-mode .ice-status-panel { background: #fff; }
-        .ice-status-item { display: flex; justify-content: space-between; margin: 5px 0; }
-        .ice-status-label { font-weight: bold; }
-        .ice-status-value { color: #00d2ff; }
-        .network-status { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #2c2c2c; padding: 10px; border-radius: 10px; align-items: center; gap: 5px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); }
-        .light-mode .network-status { background: #fff; }
-        .network-status i { font-size: 1.2em; }
-        .wifi { color: #4CAF50; }
-        .cellular { color: #ff9800; }
-        .offline { color: #ff5252; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1c2b3a, #0a1929, #203a43);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            transition: background 0.5s ease;
+        }
+
+        body.light-mode {
+            background: linear-gradient(135deg, #e0e0e0, #f5f5f5, #e0f7fa);
+            color: #333;
+        }
+
+        .app-container {
+            max-width: 500px;
+            width: 100%;
+            padding: 20px;
+        }
+
+        .card {
+            background: rgba(7, 25, 43, 0.85);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            border: 1px solid rgba(58, 123, 213, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .light-mode .card {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(30, 144, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            animation: pulse 2s infinite;
+        }
+
+        .light-mode .logo-icon {
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+        }
+
+        .logo-text {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(to right, #3a7bd5, #00d2ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            border: 1px solid rgba(58, 123, 213, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .light-mode .status-container {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(30, 144, 255, 0.2);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            font-size: 18px;
+            gap: 10px;
+        }
+
+        .light-mode .status-indicator {
+            color: #333;
+        }
+
+        .status-indicator i {
+            color: #00d2ff;
+        }
+
+        .light-mode .status-indicator i {
+            color: #1e90ff;
+        }
+
+        .call-timer {
+            font-size: 20px;
+            font-weight: 600;
+            color: #00bfff;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px 15px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .light-mode .call-timer {
+            color: #1e90ff;
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .action-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            min-width: 180px;
+            box-shadow: 0 4px 15px rgba(58, 123, 213, 0.3);
+        }
+
+        .light-mode .btn {
+            background: linear-gradient(135deg, #1e90ff, #00bfff);
+            box-shadow: 0 4px 15px rgba(30, 144, 255, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(58, 123, 213, 0.4);
+        }
+
+        .light-mode .btn:hover {
+            box-shadow: 0 6px 20px rgba(30, 144, 255, 0.4);
+        }
+
+        .btn i {
+            margin-right: 10px;
+        }
+
+        .audio-visualizer {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 25px 0;
+        }
+
+        .audio-vis-bars {
+            display: flex;
+            align-items: flex-end;
+            height: 100%;
+            gap: 8px;
+        }
+        
+        .audio-bar {
+            width: 14px;
+            background: linear-gradient(to top, #00d2ff, #3a7bd5);
+            border-radius: 7px;
+            animation: equalizer 1.2s infinite ease-in-out;
+        }
+        
+        .light-mode .audio-bar {
+            background: linear-gradient(to top, #00bfff, #1e90ff);
+        }
+        
+        .audio-bar:nth-child(1) { animation-delay: 0s; height: 40px; }
+        .audio-bar:nth-child(2) { animation-delay: 0.2s; height: 60px; }
+        .audio-bar:nth-child(3) { animation-delay: 0.4s; height: 50px; }
+        .audio-bar:nth-child(4) { animation-delay: 0.6s; height: 70px; }
+        .audio-bar:nth-child(5) { animation-delay: 0.8s; height: 30px; }
+
+        .call-controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .control-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
+            font-size: 24px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .control-btn.mute {
+            background: linear-gradient(135deg, #3a7bd5, #00bfff);
+        }
+
+        .light-mode .control-btn.mute {
+            background: linear-gradient(135deg, #1e90ff, #00bfff);
+        }
+
+        .control-btn.copy {
+            background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+        }
+
+        .light-mode .control-btn.copy {
+            background: linear-gradient(135deg, #00bfff, #1e90ff);
+        }
+
+        .control-btn.end {
+            background: linear-gradient(135deg, #e53935, #f44336);
+        }
+
+        .control-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(7, 25, 43, 0.95);
+            border-radius: 12px;
+            padding: 15px 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            max-width: 350px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(58, 123, 213, 0.3);
+            display: none;
+            transition: all 0.3s ease;
+        }
+
+        .light-mode .notification {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(30, 144, 255, 0.3);
+        }
+
+        .notification-content {
+            padding-left: 15px;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #00d2ff;
+        }
+
+        .light-mode .notification-title {
+            color: #1e90ff;
+        }
+
+        .notification-message {
+            color: #b8c5d9;
+        }
+
+        .light-mode .notification-message {
+            color: #666;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .light-mode .theme-toggle {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .theme-toggle i {
+            font-size: 20px;
+            color: #fff;
+        }
+
+        .light-mode .theme-toggle i {
+            color: #333;
+        }
+
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #b8c5d9;
+            font-size: 14px;
+            padding: 10px;
+            transition: color 0.3s ease;
+        }
+
+        .light-mode .footer {
+            color: #666;
+        }
+
+        .footer a {
+            color: #00d2ff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .light-mode .footer a {
+            color: #1e90ff;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        @keyframes gradient {
+            0% {background-position: 0% 50%}
+            50% {background-position: 100% 50%}
+            100% {background-position: 0% 50%}
+        }
+
+        @keyframes pulse {
+            0% {box-shadow: 0 0 0 0 rgba(58, 123, 213, 0.7)}
+            70% {box-shadow: 0 0 0 15px rgba(58, 123, 213, 0)}
+            100% {box-shadow: 0 0 0 0 rgba(58, 123, 213, 0)}
+        }
+
+        @keyframes equalizer {
+            0%, 100% {height: 10px;}
+            50% {height: 80px;}
+        }
+
+        @media (max-width: 600px) {
+            .card {
+                padding: 20px;
+            }
+            
+            .action-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            .control-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 20px;
+            }
+            
+            .logo-text {
+                font-size: 28px;
+            }
+            
+            .logo-icon {
+                width: 50px;
+                height: 50px;
+            }
+        }
+        
+        /* Audio activation panel */
+        .audio-activation-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(7, 25, 43, 0.95);
+            border-radius: 12px;
+            padding: 15px 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(58, 123, 213, 0.3);
+            display: none;
+            z-index: 1000;
+        }
+        
+        .light-mode .audio-activation-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(30, 144, 255, 0.3);
+        }
+        
+        .audio-activation-panel p {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .audio-activation-panel button {
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .light-mode .audio-activation-panel button {
+            background: linear-gradient(135deg, #1e90ff, #00bfff);
+        }
+        
+        .audio-activation-panel button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(58, 123, 213, 0.3);
+        }
+
+        /* Connection status indicators */
+        .status-connected {
+            color: #00ff9d !important;
+        }
+        .status-warning {
+            color: #ffcc00 !important;
+        }
+        .status-error {
+            color: #ff5252 !important;
+        }
+        
+        /* Retry button */
+        .retry-btn {
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        /* Connection guard */
+        .connection-guard {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        
+        .connection-guard-content {
+            max-width: 400px;
+            background: rgba(7, 25, 43, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .connection-guard h2 {
+            margin-bottom: 20px;
+            color: #00d2ff;
+        }
+        
+        .connection-guard p {
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        
+        .connection-guard-btn {
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            min-width: 180px;
+        }
+        
+        /* Screen awake indicator */
+        .screen-awake-indicator {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 8px 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            z-index: 10;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            display: none;
+        }
+        
+        .light-mode .screen-awake-indicator {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            color: #333;
+        }
+        
+        /* Compatibility warning */
+        .compatibility-warning {
+            background: rgba(255, 87, 87, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 87, 87, 0.5);
+            display: none;
+        }
+        
+        .compatibility-warning h3 {
+            color: #ff5252;
+            margin-bottom: 10px;
+        }
+        
+        .compatibility-warning ul {
+            text-align: left;
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .compatibility-warning li {
+            margin-bottom: 5px;
+        }
+
+        /* Network status indicator */
+        .network-status {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 8px 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            z-index: 10;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .light-mode .network-status {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            color: #333;
+        }
+        
+        .network-status i.wifi {
+            color: #00ff9d;
+        }
+        
+        .network-status i.cellular {
+            color: #ffcc00;
+        }
+        
+        .network-status i.offline {
+            color: #ff5252;
+        }
+        
+        /* Debug panel */
+        .debug-panel {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+            font-family: monospace;
+            font-size: 12px;
+            max-width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .debug-panel h3 {
+            margin-bottom: 8px;
+            color: #00d2ff;
+        }
+        
+        .debug-toggle {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1001;
+            color: white;
+        }
+        
+        /* ICE Status Panel */
+        .ice-status-panel {
+            position: fixed;
+            top: 70px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 10px 15px;
+            z-index: 10;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 300px;
+            font-size: 12px;
+            display: none;
+        }
+        
+        .ice-status-panel h4 {
+            margin-bottom: 5px;
+            color: #00d2ff;
+        }
+        
+        .ice-status-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+        
+        .ice-status-label {
+            color: #b8c5d9;
+        }
+        
+        .ice-status-value {
+            font-weight: bold;
+        }
+        
+        .light-mode .ice-status-panel {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .light-mode .ice-status-label {
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -161,9 +793,6 @@
                 <button class="btn" id="joinRoomBtn" style="display: none;">
                     <i class="fas fa-sign-in-alt"></i> Join Room
                 </button>
-                <button class="btn" id="joinLastRoomBtn" style="display: none;">
-                    <i class="fas fa-history"></i> Join Last Room
-                </button>
             </div>
             
             <div class="call-controls" id="audioControls" style="display: none;">
@@ -192,7 +821,7 @@
     </div>
 
     <div class="footer">
-        <p>v6.2.0 | Powered by SatLoom | <a href="#" id="showIceBtn">Show ICE Status</a></p>
+        <p>v6.2.0 | Powerd by SatLoom | <a href="#" id="showIceBtn">Show ICE Status</a></p>
     </div>
     
     <!-- Hidden audio element for remote stream -->
@@ -216,262 +845,74 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
     <script>
-        // Firebase Configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyDeksN3qPZCmNuoASlEqG38XVmag6ecTh8",
-            authDomain: "satloom-rtc.firebaseapp.com",
-            databaseURL: "https://satloom-rtc-default-rtdb.firebaseio.com",
-            projectId: "satloom-rtc",
-            storageBucket: "satloom-rtc.appspot.com",
-            messagingSenderId: "273627860564",
-            appId: "1:273627860564:web:c326b1bb6ffcb32fb0e7c1"
-        };
+       // ========== FIREBASE CONFIG ========== //
+      showNotification('Offline', 'Connect to continue', 'error');
+      return;
+    }
+    appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+    await initMedia();
+    createPeerConnection();
+    appState.isInitiator = true;
+    initSignaling();
+    const offer = await appState.peerConnection.createOffer();
+    await appState.peerConnection.setLocalDescription(offer);
+    sendMessage({ type: 'offer', ...offer });
+    appState.isStarted = true;
+  }
 
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+  function initMedia() {
+    return navigator.mediaDevices.getUserMedia({ audio: true });
+  }
 
-        // WebRTC Configuration
-        function getRTCConfiguration() {
-            const iceServers = [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' },
-                { urls: 'stun:stun3.l.google.com:19302' },
-                { urls: 'stun:stun4.l.google.com:19302' },
-                { urls: 'stun:stun.stunprotocol.org' },
-                { urls: 'stun:stun.ekiga.net' },
-                { urls: 'stun:stun.ideasip.com' },
-                { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-                { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-                { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-                { urls: 'turn:numb.viagenie.ca:3478', username: 'webrtc@live.com', credential: 'muazkh' },
-                { urls: 'turn:turn.anyfirewall.com:443?transport=tcp', credential: 'webrtc', username: 'webrtc' },
-            ];
-            return { iceServers, iceTransportPolicy: 'all' };
-        }
+  function createPeerConnection() {
+    appState.peerConnection = new RTCPeerConnection(getRTCConfiguration());
+    appState.peerConnection.onicecandidate = e => {
+      if (e.candidate) sendMessage({ type: 'candidate', ...e.candidate });
+    };
+    appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
+  }
 
-        // State Management
-        const appState = {
-            localStream: null,
-            remoteStream: null,
-            peerConnection: null,
-            roomId: null,
-            isInitiator: false,
-            isStarted: false,
-            timer: null,
-            startTime: null,
-            userId: null,
-            reconnectAttempts: 0,
-            maxReconnectAttempts: 5,
-            lastIceRestart: 0,
-            signalingRef: null,
-            isMuted: false,
-            remoteAudioElement: null,
-            isPageVisible spending: true,
-            connectionPaused: false,
-            wakeLock: null,
-            wakeLockInterval: null,
-            isMobile: false,
-            networkType: 'unknown',
-            isOnline: true,
-            prevNetworkType: 'unknown',
-            debugMode: false,
-            candidateCount: 0,
-            iceRestartMode: 'normal',
-            lastRoomId: localStorage.getItem('lastRoomId') || null,
-        };
+  function initSignaling() {
+    appState.signalingRef = database.ref(`rooms/${appState.roomId}/messages`);
+    appState.signalingRef.on('child_added', snapshot => {
+      const msg = JSON.parse(snapshot.val());
+      if (msg.type === 'offer') {
+        appState.peerConnection.setRemoteDescription(new RTCSessionDescription(msg));
+        const answer = appState.peerConnection.createAnswer();
+        appState.peerConnection.setLocalDescription(answer);
+        sendMessage(answer);
+      } else if (msg.type === 'candidate') {
+        appState.peerConnection.addIceCandidate(new RTCIceCandidate(msg));
+      }
+    });
+  }
 
-        document.addEventListener('DOMContentLoaded', initApp);
+  function sendMessage(message) {
+    if (!appState.roomId) return;
+    database.ref(`rooms/${appState.roomId}/messages`).push(JSON.stringify(message));
+  }
 
-        function initApp() {
-            if (!isWebRTCSupported()) {
-                showCompatibilityWarning();
-                return;
-            }
-            
-            appState.userId = generateUserId();
-            appState.remoteAudioElement = document.getElementById('remoteAudio');
-            appState.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            
-            setupEventListeners();
-            autoJoinRoom();
-            updateThemeIcon();
-            setupVisibilityHandlers();
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'light') document.body.classList.add('light-mode');
-            updateThemeIcon();
-            initScreenWakeTechniques();
-            setupNetworkMonitoring();
-            if (appState.lastRoomId) document.getElementById('joinLastRoomBtn').style.display = 'block';
-        }
+  function retryConnection() {
+    if (appState.roomId) {
+      if (appState.isInitiator) generateAudioRoom();
+      else joinAudioRoom(appState.roomId);
+    }
+  }
 
-        function generateUserId() {
-            if (!localStorage.getItem('userId')) {
-                const userId = 'user-' + Math.random().toString(36).substr(2, 8);
-                localStorage.setItem('userId', userId);
-                return userId;
-            }
-            return localStorage.getItem('userId');
-        }
+  function joinAudioRoom(roomId) {
+    appState.roomId = roomId;
+    initMedia().then(() => {
+      createPeerConnection();
+      appState.isInitiator = false;
+      initSignaling();
+    });
+  }
 
-        function setupNetworkMonitoring() {
-            window.addEventListener('online', handleNetworkChange);
-            window.addEventListener('offline', handleNetworkChange);
-            if (navigator.connection) {
-                navigator.connection.addEventListener('change', handleNetworkChange);
-                handleNetworkChange();
-            } else {
-                updateNetworkStatus('wifi', true);
-            }
-        }
-
-        function handleNetworkChange() {
-            const isOnline = navigator.onLine;
-            let networkType = 'unknown';
-            if (navigator.connection) {
-                networkType = navigator.connection.effectiveType || 'unknown';
-                const type = navigator.connection.type || 'unknown';
-                if (type.includes('wifi') || type.includes('ethernet')) networkType = 'wifi';
-                else if (type.includes('cellular') || type.includes('2g') || type.includes('3g') || type.includes('4g')) networkType = 'cellular';
-                else networkType = type;
-            }
-            appState.isOnline = isOnline;
-            const prevNetworkType = appState.networkType;
-            appState.networkType = networkType;
-            updateNetworkStatus(networkType, isOnline);
-            debugLog(`Network changed: ${prevNetworkType} -> ${networkType}, Online: ${isOnline}`);
-            if (appState.isStarted && isOnline && prevNetworkType !== networkType) {
-                debugLog(`Network type changed during call, restarting ICE`);
-                showNotification('Network Changed', 'Reconnecting...', 'warning');
-                restartICE();
-            }
-            if (isOnline) {
-                if (appState.isStarted) {
-                    showNotification('Back Online', 'Connection restored', 'success');
-                    if (appState.peerConnection && (appState.peerConnection.iceConnectionState === 'disconnected' || appState.peerConnection.iceConnectionState === 'failed')) {
-                        restartICE();
-                    }
-                }
-            } else {
-                showNotification('Network Offline', 'Please check your internet connection', 'error');
-            }
-        }
-
-        function updateNetworkStatus(type, isOnline) {
-            const networkStatus = document.getElementById('networkStatus');
-            const networkText = document.getElementById('networkStatusText');
-            const icon = networkStatus.querySelector('i');
-            icon.className = '';
-            if (!isOnline) {
-                networkText.textContent = 'Offline';
-                icon.className = 'fas fa-globe offline';
-                networkStatus.style.display = 'flex';
-                return;
-            }
-            switch(type) {
-                case 'wifi':
-                    networkText.textContent = 'WiFi Connected';
-                    icon.className = 'fas fa-wifi wifi';
-                    break;
-                case 'cellular':
-                    networkText.textContent = 'Cellular Network';
-                    icon.className = 'fas fa-signal cellular';
-                    break;
-                default:
-                    networkText.textContent = 'Online';
-                    icon.className = 'fas fa-globe';
-            }
-            networkStatus.style.display = 'flex';
-        }
-
-        function isWebRTCSupported() {
-            const requiredFeatures = ['RTCPeerConnection', 'RTCSessionDescription', 'RTCIceCandidate'];
-            for (const feature of requiredFeatures) {
-                if (!window[feature]) {
-                    console.error(`WebRTC feature missing: ${feature}`);
-                    showNotification('Browser Incompatible', `Missing WebRTC feature: ${feature}.`, 'error');
-                    return false;
-                }
-            }
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                console.error('getUserMedia not supported');
-                showNotification('Browser Incompatible', 'Microphone access not supported.', 'error');
-                return false;
-            }
-            return true;
-        }
-
-        function showCompatibilityWarning() {
-            document.getElementById('compatibilityWarning').style.display = 'block';
-            document.getElementById('generateAudioRoom').disabled = true;
-            updateStatus('Browser not supported', false);
-        }
-
-        function initScreenWakeTechniques() {
-            const video = document.getElementById('wakeLockVideo');
-            video.width = 1;
-            video.height = 1;
-            const canvas = document.getElementById('wakeLockCanvas');
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, 1, 1);
-            const stream = canvas.captureStream(1);
-            video.srcObject = stream;
-        }
-
-        function setupVisibilityHandlers() {
-            document.addEventListener('visibilitychange', handleVisibilityChange);
-        }
-
-        function handleVisibilityChange() {
-            const wasVisible = appState.isPageVisible;
-            appState.isPageVisible = document.visibilityState === 'visible';
-            debugLog(`Visibility changed: ${wasVisible ? 'visible' : 'hidden'} -> ${appState.isPageVisible ? 'visible' : 'hidden'}`);
-            if (wasVisible && !appState.isPageVisible) pauseConnection();
-            else if (!wasVisible && appState.isPageVisible) resumeConnection();
-            updateStatus(appState.isPageVisible ? 'Page is visible' : 'Page is in background', false);
-        }
-
-        function pauseConnection() {
-            if (appState.isStarted && appState.peerConnection) {
-                debugLog('Pausing connection');
-                appState.connectionPaused = true;
-                document.getElementById('connectionGuard').style.display = 'flex';
-                showNotification('Connection Paused', 'Return to browser to resume call', 'warning');
-                releaseScreenWake();
-            }
-        }
-
-        function resumeConnection() {
-            if (appState.connectionPaused && appState.peerConnection) {
-                debugLog('Resuming connection');
-                appState.connectionPaused = false;
-                document.getElementById('connectionGuard').style.display = 'none';
-                if (appState.remoteAudioElement && appState.remoteAudioElement.srcObject) {
-                    appState.remoteAudioElement.play().catch(e => {
-                        console.error('Failed to resume audio:', e);
-                        document.getElementById('audioActivationPanel').style.display = 'block';
-                    });
-                }
-                keepScreenAwake();
-                setTimeout(() => {
-                    if (appState.peerConnection) {
-                        const state = appState.peerConnection.iceConnectionState;
-                        if (state === 'disconnected' || state === 'failed' || state === 'closed') {
-                            debugLog(`ICE state after resume: ${state}, restarting ICE`);
-                            restartICE();
-                        } else {
-                            debugLog(`ICE state after resume: ${state}, forcing ICE restart`);
-                            restartICE();
-                        }
-                    }
-                }, 1000);
-                showNotification('Connection Resumed', 'Call has been restored', 'success');
-            }
-        }
-
+        // ========== SCREEN AWAKE TECHNIQUES ========== //
         function keepScreenAwake() {
             if (!appState.isStarted) return;
+            
+            // Technique 1: Wake Lock API (if supported)
             if ('wakeLock' in navigator) {
                 navigator.wakeLock.request('screen').then(wl => {
                     appState.wakeLock = wl;
@@ -484,11 +925,14 @@
                 useAlternativeWakeMethods();
             }
         }
-
+        
         function useAlternativeWakeMethods() {
+            // Technique 2: Hidden video playback
             try {
                 const video = document.getElementById('wakeLockVideo');
-                video.play().then(() => debugLog('Screen keep-awake video is playing')).catch(e => {
+                video.play().then(() => {
+                    debugLog('Screen keep-awake video is playing');
+                }).catch(e => {
                     console.error('Video playback failed, using canvas:', e);
                     useCanvasWakeMethod();
                 });
@@ -497,34 +941,42 @@
                 useCanvasWakeMethod();
             }
         }
-
+        
         function useCanvasWakeMethod() {
+            // Technique 3: Canvas animation
             const canvas = document.getElementById('wakeLockCanvas');
             const ctx = canvas.getContext('2d');
             let frame = 0;
+            
             appState.wakeLockInterval = setInterval(() => {
                 ctx.clearRect(0, 0, 1, 1);
                 ctx.fillStyle = frame % 2 === 0 ? 'white' : 'black';
                 ctx.fillRect(0, 0, 1, 1);
                 frame++;
                 debugLog('Canvas wake method active');
-            }, 5000);
+            }, 5000); // Update every 5 seconds
         }
-
+        
         function releaseScreenWake() {
+            // Release Wake Lock API if used
             if (appState.wakeLock) {
                 appState.wakeLock.release();
                 appState.wakeLock = null;
             }
+            
+            // Clear alternative methods
             if (appState.wakeLockInterval) {
                 clearInterval(appState.wakeLockInterval);
                 appState.wakeLockInterval = null;
             }
+            
+            // Pause video
             const video = document.getElementById('wakeLockVideo');
             video.pause();
         }
 
         function setupEventListeners() {
+            // Audio call controls
             document.getElementById('generateAudioRoom').addEventListener('click', generateAudioRoom);
             document.getElementById('copyRoomLink').addEventListener('click', copyRoomLink);
             document.getElementById('audioAudioToggle').addEventListener('click', toggleAudio);
@@ -537,7 +989,6 @@
             document.getElementById('joinRoomBtn').addEventListener('click', showJoinRoomPrompt);
             document.getElementById('restartIceBtn').addEventListener('click', restartICE);
             document.getElementById('showIceBtn').addEventListener('click', toggleIceStatusPanel);
-            document.getElementById('joinLastRoomBtn').addEventListener('click', joinLastRoom);
         }
 
         function showNotification(title, message, type = 'info', showRetry = false) {
@@ -545,21 +996,37 @@
             const titleElem = document.getElementById('notificationTitle');
             const messageElem = document.getElementById('notificationMessage');
             const retryBtn = document.getElementById('retryConnection');
+            
             titleElem.textContent = title;
             messageElem.textContent = message;
-            if (type === 'error') notification.style.borderLeft = '4px solid #ff5252';
-            else if (type === 'success') notification.style.borderLeft = '4px solid #4CAF50';
-            else if (type === 'warning') notification.style.borderLeft = '4px solid #ffcc00';
-            else notification.style.borderLeft = '4px solid #00d2ff';
+            
+            // Set notification color based on type
+            if (type === 'error') {
+                notification.style.borderLeft = '4px solid #ff5252';
+            } else if (type === 'success') {
+                notification.style.borderLeft = '4px solid #4CAF50';
+            } else if (type === 'warning') {
+                notification.style.borderLeft = '4px solid #ffcc00';
+            } else {
+                notification.style.borderLeft = '4px solid #00d2ff';
+            }
+            
+            // Show/hide retry button
             retryBtn.style.display = showRetry ? 'block' : 'none';
+            
             notification.style.display = 'flex';
-            setTimeout(() => notification.style.display = 'none', 3000);
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
         }
 
         function updateStatus(text, isConnected = false) {
             const statusElem = document.getElementById('statusText');
             const statusIcon = document.querySelector('#connectionStatus i');
+            
             statusElem.textContent = text;
+            
             if (isConnected) {
                 statusIcon.classList.add('status-connected');
                 statusIcon.classList.remove('status-warning', 'status-error');
@@ -580,25 +1047,37 @@
                 const time = Date.now() - appState.startTime;
                 const minutes = Math.floor(time / 60000);
                 const seconds = Math.floor((time % 60000) / 1000);
-                document.getElementById('audioCallTimer').textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                document.getElementById('audioCallTimer').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
             }, 1000);
         }
 
         function stopTimer() {
-            if (appState.timer) clearInterval(appState.timer);
+            if (appState.timer) {
+                clearInterval(appState.timer);
+            }
             document.getElementById('audioCallTimer').textContent = '00:00';
         }
 
         async function initMedia() {
             try {
-                const constraints = appState.isMobile ? { audio: true } : {
-                    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
-                };
+                // Mobile browsers often require simpler constraints
+                const constraints = appState.isMobile 
+                    ? { audio: true } 
+                    : { 
+                        audio: { 
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        } 
+                    };
+                
                 appState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
                 return true;
             } catch (err) {
                 console.error('Media initialization error:', err);
-                showNotification('Microphone Error', `Could not access microphone: ${err.message}`, 'error');
+                showNotification('Microphone Error', 
+                    `Could not access microphone: ${err.message}`, 'error');
                 return false;
             }
         }
@@ -607,39 +1086,58 @@
             try {
                 const pcConfig = getRTCConfiguration();
                 appState.peerConnection = new RTCPeerConnection(pcConfig);
+                
+                // Add local stream tracks
                 if (appState.localStream) {
-                    appState.localStream.getTracks().forEach(track => appState.peerConnection.addTrack(track, appState.localStream));
+                    appState.localStream.getTracks().forEach(track => {
+                        appState.peerConnection.addTrack(track, appState.localStream);
+                    });
                 }
+                
+                // Set up event handlers
                 appState.peerConnection.ontrack = handleRemoteStream;
                 appState.peerConnection.onicecandidate = handleICECandidate;
                 appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
                 appState.peerConnection.onconnectionstatechange = handleConnectionStateChange;
                 appState.peerConnection.onsignalingstatechange = handleSignalingStateChange;
                 appState.peerConnection.onicegatheringstatechange = handleIceGatheringStateChange;
+                
+                // Reset candidate count
                 appState.candidateCount = 0;
                 updateIceStatus();
+                
                 return true;
             } catch (err) {
                 console.error('Peer connection creation error:', err);
-                showNotification('Connection Error', `Failed to create connection: ${err.message}`, 'error', true);
+                showNotification('Connection Error', 
+                    `Failed to create connection: ${err.message}`, 'error', true);
                 return false;
             }
         }
 
         function handleRemoteStream(event) {
-            if (event.streams && event.streams.length > 0) appState.remoteStream = event.streams[0];
-            else {
-                if (!appState.remoteStream) appState.remoteStream = new MediaStream();
+            // Properly handle remote stream
+            if (event.streams && event.streams.length > 0) {
+                appState.remoteStream = event.streams[0];
+            } else {
+                if (!appState.remoteStream) {
+                    appState.remoteStream = new MediaStream();
+                }
                 appState.remoteStream.addTrack(event.track);
             }
+            
+            // Use the hidden audio element for remote audio
             if (appState.remoteAudioElement) {
                 appState.remoteAudioElement.srcObject = appState.remoteStream;
+                
+                // Handle autoplay restrictions
                 appState.remoteAudioElement.play().catch(e => {
                     console.error('Autoplay blocked:', e);
                     document.getElementById('audioActivationPanel').style.display = 'block';
                     showNotification('Audio Blocked', 'Click to enable audio playback', 'warning');
                 });
             }
+            
             appState.reconnectAttempts = 0;
             showNotification('Connected', 'Call established successfully', 'success');
         }
@@ -661,8 +1159,10 @@
                 debugLog('Sending ICE candidate');
                 appState.candidateCount++;
                 updateIceStatus();
+                
                 const candidateType = event.candidate.candidate.split(' ')[7];
                 debugLog(`Local ICE candidate (type: ${candidateType})`);
+                
                 sendMessage({
                     type: 'candidate',
                     candidate: event.candidate.candidate,
@@ -671,21 +1171,28 @@
                 });
             }
         }
-
+        
         function handleICEConnectionStateChange() {
             if (appState.connectionPaused || !appState.peerConnection) return;
+            
             const state = appState.peerConnection.iceConnectionState;
             debugLog(`ICE connection state changed to: ${state}`);
             updateIceStatus();
+            
             if (state === 'connected' || state === 'completed') {
                 updateStatus(`Call connected (${appState.roomId})`, true);
                 appState.reconnectAttempts = 0;
-                appState.iceRestartMode = 'normal';
+                appState.iceRestartMode = 'normal'; // Reset to normal mode after success
             } else if (state === 'disconnected' || state === 'failed') {
                 updateStatus(`Connection ${state}`, false);
                 if (appState.reconnectAttempts < appState.maxReconnectAttempts) {
                     appState.reconnectAttempts++;
-                    if (appState.networkType === 'wifi' && appState.reconnectAttempts >= 2) appState.iceRestartMode = 'aggressive';
+                    
+                    // Switch to aggressive mode after 2 attempts on WiFi
+                    if (appState.networkType === 'wifi' && appState.reconnectAttempts >= 2) {
+                        appState.iceRestartMode = 'aggressive';
+                    }
+                    
                     const delay = Math.min(1000 * Math.pow(2, appState.reconnectAttempts), 30000);
                     showNotification('Reconnecting', `Attempt ${appState.reconnectAttempts}/${appState.maxReconnectAttempts}`, 'warning');
                     setTimeout(() => restartICE(), delay);
@@ -694,30 +1201,31 @@
                 }
             }
         }
-
+        
         function handleConnectionStateChange() {
             if (!appState.peerConnection) return;
             const state = appState.peerConnection.connectionState;
             debugLog(`Connection state changed to: ${state}`);
             updateIceStatus();
         }
-
+        
         function handleSignalingStateChange() {
             if (!appState.peerConnection) return;
             const state = appState.peerConnection.signalingState;
             debugLog(`Signaling state changed to: ${state}`);
             updateIceStatus();
         }
-
+        
         function handleIceGatheringStateChange() {
             if (!appState.peerConnection) return;
             const state = appState.peerConnection.iceGatheringState;
             debugLog(`ICE gathering state changed to: ${state}`);
             updateIceStatus();
         }
-
+        
         function updateIceStatus() {
             if (!appState.peerConnection) return;
+            
             document.getElementById('iceState').textContent = appState.peerConnection.iceConnectionState;
             document.getElementById('signalingState').textContent = appState.peerConnection.signalingState;
             document.getElementById('connectionState').textContent = appState.peerConnection.connectionState;
@@ -726,25 +1234,44 @@
         }
 
         function initSignaling() {
-            if (appState.signalingRef) appState.signalingRef.off('child_added');
+            if (appState.signalingRef) {
+                appState.signalingRef.off('child_added');
+            }
+            
             appState.signalingRef = database.ref(`rooms/${appState.roomId}/messages`);
+            
             appState.signalingRef.on('child_added', snapshot => {
                 if (appState.connectionPaused || !appState.peerConnection) return;
+                
                 const message = JSON.parse(snapshot.val());
                 debugLog(`Received message: ${message.type}`);
-                if (!appState.peerConnection) if (!createPeerConnection()) return;
+                
+                if (!appState.peerConnection) {
+                    if (!createPeerConnection()) return;
+                }
+                
                 switch (message.type) {
                     case 'offer':
-                        if (!appState.isInitiator && !appState.isStarted) handleOffer(message);
+                        if (!appState.isInitiator && !appState.isStarted) {
+                            handleOffer(message);
+                        }
                         break;
                     case 'answer':
-                        if (appState.isStarted) appState.peerConnection.setRemoteDescription(new RTCSessionDescription(message));
+                        if (appState.isStarted) {
+                            appState.peerConnection.setRemoteDescription(
+                                new RTCSessionDescription(message));
+                        }
                         break;
                     case 'candidate':
-                        if (appState.isStarted && appState.peerConnection.remoteDescription) appState.peerConnection.addIceCandidate(new RTCIceCandidate(message));
+                        if (appState.isStarted && appState.peerConnection.remoteDescription) {
+                            appState.peerConnection.addIceCandidate(
+                                new RTCIceCandidate(message));
+                        }
                         break;
                     case 'bye':
-                        if (appState.isStarted) endAudioCall();
+                        if (appState.isStarted) {
+                            endAudioCall();
+                        }
                         break;
                     case 'renegotiate':
                         if (appState.isInitiator && appState.isStarted) {
@@ -758,16 +1285,24 @@
 
         async function handleOffer(offer) {
             try {
-                if (!appState.peerConnection) if (!createPeerConnection()) return;
-                await appState.peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+                if (!appState.peerConnection) {
+                    if (!createPeerConnection()) return;
+                }
+                
+                await appState.peerConnection.setRemoteDescription(
+                    new RTCSessionDescription(offer));
+                
                 const answer = await appState.peerConnection.createAnswer();
                 await appState.peerConnection.setLocalDescription(answer);
+                
                 sendMessage(answer);
                 appState.isStarted = true;
                 startTimer();
                 updateStatus(`In audio call (${appState.roomId})`, true);
                 document.getElementById('audioControls').style.display = 'flex';
                 document.getElementById('joinRoomBtn').style.display = 'none';
+                
+                // Keep screen awake
                 keepScreenAwake();
             } catch (err) {
                 console.error('Error handling offer:', err);
@@ -781,33 +1316,51 @@
             const dbRef = database.ref(`rooms/${appState.roomId}/messages`);
             dbRef.push(JSON.stringify(message));
         }
-
+        
         async function generateAudioRoom() {
             debugLog("Generate room button clicked");
+            
+            // Check network status before proceeding
             if (!appState.isOnline) {
                 showNotification('No Internet Connection', 'Please connect to the internet to generate a room', 'error');
                 return;
             }
+            
             try {
+                // Generate a new room ID
                 appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-                localStorage.setItem('lastRoomId', appState.roomId);
+                
+                // Show copy button
                 document.getElementById('copyRoomLink').style.display = 'flex';
                 document.getElementById('joinRoomBtn').style.display = 'none';
+                
                 showNotification('Room Created', `Room ID: ${appState.roomId}`, 'success');
+                
+                // Initialize media
                 const mediaInitialized = await initMedia();
                 if (!mediaInitialized) return;
+                
+                // Create peer connection
                 if (!createPeerConnection()) return;
+                
+                // Set as initiator
                 appState.isInitiator = true;
                 initSignaling();
+                
+                // Create offer
                 const offer = await appState.peerConnection.createOffer();
                 await appState.peerConnection.setLocalDescription(offer);
                 sendMessage({ type: 'offer', sdp: offer.sdp });
+                
                 appState.isStarted = true;
                 startTimer();
                 updateStatus(`In call (${appState.roomId})`, true);
                 document.getElementById('audioControls').style.display = 'flex';
                 document.getElementById('generateAudioRoom').style.display = 'none';
+                
+                // Keep screen awake
                 keepScreenAwake();
+                
                 showNotification('Call Started', 'You are now the host', 'success');
             } catch (err) {
                 console.error('Error generating room:', err);
@@ -822,36 +1375,39 @@
                 showNotification('Error', 'No room ID to copy', 'error');
                 return;
             }
+            
             const basePath = window.location.href.split('?')[0];
             const fullLink = `${basePath}?room=${roomId}`;
+            
             navigator.clipboard.writeText(fullLink).then(() => {
                 showNotification('Copied', 'Room link copied to clipboard', 'success');
+                
+                // Visual feedback
                 const copyBtn = document.getElementById('copyRoomLink');
                 copyBtn.innerHTML = '<i class="fas fa-check"></i>';
                 copyBtn.style.background = 'linear-gradient(135deg, #4CAF50, #2E7D32)';
+                
                 setTimeout(() => {
                     copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
                     copyBtn.style.background = 'linear-gradient(135deg, #00d2ff, #3a7bd5)';
                 }, 2000);
             });
         }
-
+        
         function showJoinRoomPrompt() {
             const roomId = prompt("Enter the Room ID you want to join:");
-            if (roomId && roomId.trim() !== "") joinAudioRoom(roomId.trim());
+            if (roomId && roomId.trim() !== "") {
+                joinAudioRoom(roomId.trim());
+            }
         }
-
-        function joinLastRoom() {
-            if (appState.lastRoomId) joinAudioRoom(appState.lastRoomId);
-            else showNotification('Error', 'No last room found', 'error');
-        }
-
+        
         function toggleAudio() {
             if (appState.localStream) {
                 const audioTrack = appState.localStream.getAudioTracks()[0];
                 if (audioTrack) {
                     audioTrack.enabled = !audioTrack.enabled;
                     appState.isMuted = !audioTrack.enabled;
+                    
                     const button = document.getElementById('audioAudioToggle');
                     if (appState.isMuted) {
                         button.innerHTML = '<i class="fas fa-microphone-slash"></i>';
@@ -865,29 +1421,41 @@
                 }
             }
         }
-
+        
         async function restartICE() {
             if (!appState.peerConnection || !appState.isStarted || appState.connectionPaused) return;
+            
+            // Rate limit ICE restarts
             const now = Date.now();
             if (now - appState.lastIceRestart < 5000) {
                 debugLog('ICE restart rate limited');
                 return;
             }
             appState.lastIceRestart = now;
+            
             try {
                 debugLog('Restarting ICE connection');
                 showNotification('Reconnecting', 'Re-establishing connection', 'warning');
+                
+                // Only initiator can create a new offer
                 if (appState.isInitiator) {
-                    const options = { iceRestart: true };
+                    // Use more aggressive options for WiFi networks
+                    const options = {iceRestart: true};
+                    
                     if (appState.iceRestartMode === 'aggressive') {
                         debugLog('Using aggressive ICE restart options');
                         options.iceTransportPolicy = 'relay';
-                        options.optional = [{ googImprovedWifiBwe: true }, { googHighStartBitrate: true }];
+                        options.optional = [
+                            {googImprovedWifiBwe: true},
+                            {googHighStartBitrate: true}
+                        ];
                     }
+                    
                     const offer = await appState.peerConnection.createOffer(options);
                     await appState.peerConnection.setLocalDescription(offer);
                     sendMessage(offer);
                 } else {
+                    // Answerer sends renegotiate request
                     sendMessage({ type: 'renegotiate' });
                 }
             } catch (err) {
@@ -898,14 +1466,18 @@
 
         function endAudioCall() {
             debugLog('Ending audio call');
+            
             if (appState.peerConnection) {
                 appState.peerConnection.close();
                 appState.peerConnection = null;
             }
+            
             if (appState.localStream) {
                 appState.localStream.getTracks().forEach(track => track.stop());
                 appState.localStream = null;
             }
+            
+            // Reset UI elements
             document.getElementById('audioControls').style.display = 'none';
             document.getElementById('copyRoomLink').style.display = 'none';
             document.getElementById('generateAudioRoom').style.display = 'flex';
@@ -915,41 +1487,76 @@
             stopTimer();
             updateStatus('Call ended', false);
             showNotification('Call Ended', 'Your call has been disconnected');
-            if (appState.remoteAudioElement) appState.remoteAudioElement.srcObject = null;
+            
+            // Clean up remote audio
+            if (appState.remoteAudioElement) {
+                appState.remoteAudioElement.srcObject = null;
+            }
+            
+            // Release screen wake techniques
             releaseScreenWake();
-            if (appState.roomId) sendMessage({ type: 'bye' });
+            
+            // Send bye message if in room
+            if (appState.roomId) {
+                sendMessage({ type: 'bye' });
+            }
+            
+            // Reset state
             appState.isStarted = false;
             appState.roomId = null;
             appState.reconnectAttempts = 0;
             appState.remoteStream = null;
             appState.connectionPaused = false;
             appState.iceRestartMode = 'normal';
+            
+            // Reset mute button
             const muteBtn = document.getElementById('audioAudioToggle');
             muteBtn.innerHTML = '<i class="fas fa-microphone"></i>';
             muteBtn.style.background = 'linear-gradient(135deg, #3a7bd5, #00bfff)';
             appState.isMuted = false;
+            
+            // Clean up signaling
             if (appState.signalingRef) {
                 appState.signalingRef.off('child_added');
                 appState.signalingRef = null;
             }
         }
 
+        function autoJoinRoom() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomParam = urlParams.get('room');
+            
+            if (roomParam) {
+                joinAudioRoom(roomParam);
+            } else {
+                document.getElementById('joinRoomBtn').style.display = 'flex';
+            }
+        }
+        
         async function joinAudioRoom(roomId) {
             appState.roomId = roomId;
-            localStorage.setItem('lastRoomId', roomId);
+            
+            // Check network status before proceeding
             if (!appState.isOnline) {
                 showNotification('No Internet Connection', 'Please connect to the internet to join a room', 'error');
                 return;
             }
+            
             try {
+                // Initialize media
                 const mediaInitialized = await initMedia();
                 if (!mediaInitialized) return;
+                
+                // Create peer connection
                 if (!createPeerConnection()) return;
+                
                 appState.isInitiator = false;
                 initSignaling();
                 updateStatus(`Joining room ${roomId}...`, false);
                 showNotification('Joining', `Connecting to room: ${roomId}`);
                 document.getElementById('joinRoomBtn').style.display = 'none';
+                
+                // Add a timeout to check if connection is stuck
                 setTimeout(() => {
                     if (!appState.isStarted && appState.peerConnection) {
                         const state = appState.peerConnection.iceConnectionState;
@@ -958,17 +1565,10 @@
                             restartICE();
                         }
                     }
-                }, 10000);
+                }, 10000); // 10 seconds timeout
             } catch (err) {
                 showNotification('Connection Error', 'Failed to join room: ' + err.message, 'error', true);
             }
-        }
-
-        function autoJoinRoom() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const roomParam = urlParams.get('room');
-            if (roomParam) joinAudioRoom(roomParam);
-            else document.getElementById('joinRoomBtn').style.display = 'flex';
         }
 
         function toggleTheme() {
@@ -977,34 +1577,47 @@
             localStorage.setItem('theme', body.classList.contains('light-mode') ? 'light' : 'dark');
             updateThemeIcon();
         }
-
+        
         function updateThemeIcon() {
             const themeToggle = document.getElementById('themeToggle');
-            if (document.body.classList.contains('light-mode')) themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
-            else themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+            if (document.body.classList.contains('light-mode')) {
+                themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+            } else {
+                themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+            }
         }
-
+        
         function retryConnection() {
             if (appState.roomId) {
-                if (appState.isInitiator) generateAudioRoom();
-                else joinAudioRoom(appState.roomId);
-            } else showNotification('Error', 'No room to reconnect to', 'error');
+                if (appState.isInitiator) {
+                    // Retry as initiator
+                    generateAudioRoom();
+                } else {
+                    // Retry as joiner
+                    joinAudioRoom(appState.roomId);
+                }
+            } else {
+                showNotification('Error', 'No room to reconnect to', 'error');
+            }
         }
-
+        
         function toggleDebug() {
             appState.debugMode = !appState.debugMode;
             document.getElementById('debugPanel').style.display = appState.debugMode ? 'block' : 'none';
         }
-
+        
         function debugLog(message) {
             if (!appState.debugMode) return;
+            
             const debugLog = document.getElementById('debugLog');
             const logEntry = document.createElement('div');
             logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
             debugLog.appendChild(logEntry);
+            
+            // Auto-scroll to bottom
             debugLog.scrollTop = debugLog.scrollHeight;
         }
-
+        
         function toggleIceStatusPanel() {
             const panel = document.getElementById('iceStatusPanel');
             panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
