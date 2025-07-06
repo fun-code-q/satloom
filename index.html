@@ -580,12 +580,52 @@
         .compatibility-warning li {
             margin-bottom: 5px;
         }
+
+        /* Network status indicator */
+        .network-status {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 8px 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            z-index: 10;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .light-mode .network-status {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            color: #333;
+        }
+        
+        .network-status i.wifi {
+            color: #00ff9d;
+        }
+        
+        .network-status i.cellular {
+            color: #ffcc00;
+        }
+        
+        .network-status i.offline {
+            color: #ff5252;
+        }
     </style>
 </head>
 <body>
     <div class="screen-awake-indicator" id="screenAwakeIndicator">
         <i class="fas fa-lightbulb"></i>
         <span>Screen kept awake</span>
+    </div>
+    
+    <div class="network-status" id="networkStatus">
+        <i class="fas fa-wifi wifi"></i>
+        <span id="networkStatusText">WiFi Connected</span>
     </div>
     
     <div class="theme-toggle" id="themeToggle">
@@ -673,7 +713,7 @@
     </div>
 
     <div class="footer">
-        <p>v5.1.0 | Fixed Peer Connection | <a href="#">SatLoom Developers</a></p>
+        <p>v5.2.0 | Fixed Cellular Support | <a href="#">SatLoom Developers</a></p>
     </div>
     
     <!-- Hidden audio element for remote stream -->
@@ -705,7 +745,7 @@
 
         // ========== WEBRTC CONFIG ========== //
         function getRTCConfiguration() {
-            // Enhanced ICE servers configuration
+            // Enhanced ICE servers configuration with more reliable STUN servers
             const iceServers = [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
@@ -736,7 +776,13 @@
                     urls: 'turn:turn.anyfirewall.com:443?transport=tcp',
                     credential: 'webrtc',
                     username: 'webrtc'
-                }
+                },
+                // Additional reliable STUN servers for cellular networks
+                { urls: 'stun:stun.services.mozilla.com' },
+                { urls: 'stun:stun.voipstunt.com' },
+                { urls: 'stun:stun.iptel.org' },
+                { urls: 'stun:stun.ideasip.com' },
+                { urls: 'stun:stun.sipgate.net' }
             ];
             
             return { iceServers };
@@ -763,7 +809,9 @@
             connectionPaused: false,
             wakeLock: null,
             wakeLockInterval: null,
-            isMobile: false
+            isMobile: false,
+            networkType: 'unknown',
+            isOnline: true
         };
 
         // Initialize app
@@ -793,6 +841,93 @@
             
             // Initialize screen wake techniques
             initScreenWakeTechniques();
+            
+            // Setup network monitoring
+            setupNetworkMonitoring();
+        }
+        
+        function setupNetworkMonitoring() {
+            // Listen for online/offline events
+            window.addEventListener('online', handleNetworkChange);
+            window.addEventListener('offline', handleNetworkChange);
+            
+            // Check network type if possible
+            if (navigator.connection) {
+                navigator.connection.addEventListener('change', handleNetworkChange);
+                handleNetworkChange(); // Initial call
+            } else {
+                // Fallback: assume WiFi if connection type not available
+                updateNetworkStatus('wifi', true);
+            }
+        }
+        
+        function handleNetworkChange() {
+            const isOnline = navigator.onLine;
+            let networkType = 'unknown';
+            
+            if (navigator.connection) {
+                networkType = navigator.connection.effectiveType || 'unknown';
+                const type = navigator.connection.type || 'unknown';
+                
+                if (type.includes('wifi') || type.includes('ethernet')) {
+                    networkType = 'wifi';
+                } else if (type.includes('cellular') || type.includes('2g') || type.includes('3g') || type.includes('4g')) {
+                    networkType = 'cellular';
+                } else {
+                    networkType = type;
+                }
+            }
+            
+            appState.isOnline = isOnline;
+            appState.networkType = networkType;
+            
+            updateNetworkStatus(networkType, isOnline);
+            
+            if (isOnline) {
+                if (appState.isStarted) {
+                    showNotification('Back Online', 'Connection restored', 'success');
+                    if (appState.peerConnection) {
+                        const state = appState.peerConnection.iceConnectionState;
+                        if (state === 'disconnected' || state === 'failed') {
+                            restartICE();
+                        }
+                    }
+                }
+            } else {
+                showNotification('Network Offline', 'Please check your internet connection', 'error');
+            }
+        }
+        
+        function updateNetworkStatus(type, isOnline) {
+            const networkStatus = document.getElementById('networkStatus');
+            const networkText = document.getElementById('networkStatusText');
+            const icon = networkStatus.querySelector('i');
+            
+            // Remove all existing classes
+            icon.className = '';
+            
+            if (!isOnline) {
+                networkText.textContent = 'Offline';
+                icon.className = 'fas fa-globe offline';
+                networkStatus.style.display = 'flex';
+                return;
+            }
+            
+            switch(type) {
+                case 'wifi':
+                    networkText.textContent = 'WiFi Connected';
+                    icon.className = 'fas fa-wifi wifi';
+                    break;
+                case 'cellular':
+                    networkText.textContent = 'Cellular Network';
+                    icon.className = 'fas fa-signal cellular';
+                    break;
+                default:
+                    networkText.textContent = 'Online';
+                    icon.className = 'fas fa-globe';
+            }
+            
+            networkStatus.style.display = 'flex';
         }
         
         function isWebRTCSupported() {
@@ -1264,6 +1399,12 @@
         async function generateAudioRoom() {
             console.log("Generate room button clicked");
             
+            // Check network status before proceeding
+            if (!appState.isOnline) {
+                showNotification('No Internet Connection', 'Please connect to the internet to generate a room', 'error');
+                return;
+            }
+            
             try {
                 // Generate a new room ID
                 appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -1431,6 +1572,12 @@
         
         async function joinAudioRoom(roomId) {
             appState.roomId = roomId;
+            
+            // Check network status before proceeding
+            if (!appState.isOnline) {
+                showNotification('No Internet Connection', 'Please connect to the internet to join a room', 'error');
+                return;
+            }
             
             try {
                 // Initialize media
