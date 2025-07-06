@@ -470,21 +470,17 @@
         }
         
         .retry-btn {
-    background: linear-gradient(135deg, #3a7bd5, #00d2ff);
-    color: white;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 14px;
-    margin-top: 10px;
-    transition: all 0.3s ease;
-    }
-        .retry-btn i {
-    color: #00ff9d !important; /* Green color for the icon */
-    
-    }
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
         
         /* Connection guard */
         .connection-guard {
@@ -776,6 +772,32 @@
             margin-right: 8px;
             animation: pulse 1.5s infinite;
         }
+        
+        /* WiFi-specific UI element */
+        .wifi-connection-status {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 15px;
+            text-align: center;
+            display: none;
+        }
+        
+        .wifi-connection-status.active {
+            border: 1px solid #00d2ff;
+        }
+        
+        .wifi-connection-status.warning {
+            border: 1px solid #ffcc00;
+        }
+        
+        .wifi-connection-status.error {
+            border: 1px solid #ff5252;
+        }
+        
+        .wifi-connection-status i {
+            margin-right: 8px;
+        }
     </style>
 </head>
 <body>
@@ -918,6 +940,12 @@
                     <li>Check firewall settings for UDP restrictions</li>
                 </ul>
             </div>
+            
+            <!-- WiFi-specific status indicator -->
+            <div class="wifi-connection-status" id="wifiConnectionStatus">
+                <i class="fas fa-wifi"></i>
+                <span id="wifiStatusText">Optimizing WiFi connection</span>
+            </div>
         </div>
     </div>
 
@@ -1043,7 +1071,9 @@
             
             return { 
                 iceServers,
-                iceTransportPolicy: 'all' // Use both relay and non-relay candidates
+                iceTransportPolicy: 'all', // Use both relay and non-relay candidates
+                bundlePolicy: 'max-bundle', // Helps with NAT traversal
+                rtcpMuxPolicy: 'require' // Helps with NAT traversal
             };
         }
 
@@ -1455,6 +1485,11 @@
             const statusElem = document.getElementById('statusText');
             const statusIcon = document.querySelector('#connectionStatus i');
             
+            // Add network type to status if connected
+            if (isConnected && appState.networkType !== 'unknown') {
+                text += ` (${appState.networkType.toUpperCase()})`;
+            }
+            
             statusElem.textContent = text;
             
             if (isConnected) {
@@ -1570,6 +1605,9 @@
             
             appState.reconnectAttempts = 0;
             showNotification('Connected', 'Call established successfully', 'success');
+            
+            // Update WiFi status UI
+            updateWiFiConnectionStatus();
         }
 
         function activateAudio() {
@@ -1599,6 +1637,9 @@
                     sdpMid: event.candidate.sdpMid,
                     sdpMLineIndex: event.candidate.sdpMLineIndex
                 });
+                
+                // Update WiFi status UI
+                updateWiFiConnectionStatus();
             }
         }
         
@@ -1608,6 +1649,9 @@
             const state = appState.peerConnection.iceConnectionState;
             debugLog(`ICE connection state changed to: ${state}`);
             updateIceStatus();
+            
+            // Update WiFi status UI
+            updateWiFiConnectionStatus();
             
             if (state === 'connected' || state === 'completed') {
                 updateStatus(`Call connected (${appState.roomId})`, true);
@@ -1673,6 +1717,27 @@
             document.getElementById('iceGatheringState').textContent = appState.peerConnection.iceGatheringState;
             document.getElementById('candidateCount').textContent = appState.candidateCount;
         }
+        
+        function updateWiFiConnectionStatus() {
+            if (!appState.peerConnection || appState.networkType !== 'wifi') return;
+            
+            const statusElem = document.getElementById('wifiConnectionStatus');
+            const statusText = document.getElementById('wifiStatusText');
+            statusElem.style.display = 'block';
+            
+            const state = appState.peerConnection.iceConnectionState;
+            
+            if (state === 'connected' || state === 'completed') {
+                statusText.innerHTML = '<i class="fas fa-check-circle"></i> WiFi connection optimized';
+                statusElem.className = 'wifi-connection-status active';
+            } else if (state === 'disconnected' || state === 'failed') {
+                statusText.innerHTML = '<i class="fas fa-exclamation-triangle"></i> WiFi connection issues detected';
+                statusElem.className = 'wifi-connection-status warning';
+            } else {
+                statusText.innerHTML = '<i class="fas fa-sync-alt"></i> Optimizing WiFi connection';
+                statusElem.className = 'wifi-connection-status';
+            }
+        }
 
         function initSignaling() {
             if (appState.signalingRef) {
@@ -1733,7 +1798,15 @@
                 await appState.peerConnection.setRemoteDescription(
                     new RTCSessionDescription(offer));
                 
+                // Create answer with WiFi-specific optimizations
                 const answer = await appState.peerConnection.createAnswer();
+                
+                // Optimize SDP for WiFi if needed
+                if (appState.networkType === 'wifi') {
+                    answer.sdp = optimizeSDPForWiFi(answer.sdp);
+                    debugLog('Optimized SDP for WiFi connection');
+                }
+                
                 await appState.peerConnection.setLocalDescription(answer);
                 
                 sendMessage(answer);
@@ -1756,6 +1829,88 @@
             debugLog(`Sending message: ${message.type}`);
             const dbRef = database.ref(`rooms/${appState.roomId}/messages`);
             dbRef.push(JSON.stringify(message));
+        }
+        
+        // Optimize SDP for WiFi connections
+        function optimizeSDPForWiFi(sdp) {
+            // Prioritize OPUS audio codec
+            sdp = preferAudioCodec(sdp, 'opus');
+            
+            // Adjust bandwidth for WiFi
+            sdp = setBandwidth(sdp, {
+                audio: 128,  // 128 kbps for audio
+                video: 0     // No video
+            });
+            
+            return sdp;
+        }
+        
+        // Helper function to prioritize a specific audio codec
+        function preferAudioCodec(sdp, codec) {
+            const lines = sdp.split('\n');
+            let mLineIndex = -1;
+            let codecIndex = -1;
+            
+            // Find the audio m-line
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i].startsWith('m=audio')) {
+                    mLineIndex = i;
+                    break;
+                }
+            }
+            
+            if (mLineIndex === -1) return sdp;
+            
+            // Find the preferred codec
+            const mLine = lines[mLineIndex];
+            const codecs = mLine.split(' ').slice(3);
+            
+            for (let i = 0; i < codecs.length; i++) {
+                if (codecs[i] === codec) {
+                    codecIndex = i;
+                    break;
+                }
+            }
+            
+            if (codecIndex === -1) return sdp;
+            
+            // Move preferred codec to front
+            if (codecIndex > 0) {
+                const temp = codecs[codecIndex];
+                codecs.splice(codecIndex, 1);
+                codecs.unshift(temp);
+                
+                lines[mLineIndex] = mLine.split(' ').slice(0, 3).concat(codecs).join(' ');
+            }
+            
+            return lines.join('\n');
+        }
+        
+        // Helper function to set bandwidth in SDP
+        function setBandwidth(sdp, bandwidth) {
+            let lines = sdp.split('\n');
+            let mLineIndex = -1;
+            
+            // Find the audio m-line
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i].startsWith('m=audio')) {
+                    mLineIndex = i;
+                    break;
+                }
+            }
+            
+            if (mLineIndex === -1) return sdp;
+            
+            // Remove existing bandwidth lines
+            lines = lines.filter(line => !line.startsWith('b=AS:') && !line.startsWith('b=TIAS:'));
+            
+            // Add new bandwidth line
+            if (bandwidth.audio > 0) {
+                lines.splice(mLineIndex + 1, 0, `b=AS:${bandwidth.audio}`);
+                lines.splice(mLineIndex + 1, 0, `b=TIAS:${bandwidth.audio * 1000}`);
+            }
+            
+            return lines.join('\n');
         }
         
         async function generateAudioRoom() {
@@ -1795,6 +1950,13 @@
                 
                 // Create offer
                 const offer = await appState.peerConnection.createOffer();
+                
+                // Optimize SDP for WiFi if needed
+                if (appState.networkType === 'wifi') {
+                    offer.sdp = optimizeSDPForWiFi(offer.sdp);
+                    debugLog('Optimized SDP for WiFi connection');
+                }
+                
                 await appState.peerConnection.setLocalDescription(offer);
                 sendMessage({ type: 'offer', sdp: offer.sdp });
                 
@@ -1908,7 +2070,7 @@
                     // Use more aggressive options for WiFi networks
                     const options = {iceRestart: true};
                     
-                    if (appState.iceRestartMode === 'aggressive') {
+                    if (appState.iceRestartMode === 'aggressive' || appState.networkType === 'wifi') {
                         debugLog('Using aggressive ICE restart options');
                         options.iceTransportPolicy = 'relay';
                         options.optional = [
@@ -1918,6 +2080,13 @@
                     }
                     
                     const offer = await appState.peerConnection.createOffer(options);
+                    
+                    // Optimize SDP for WiFi if needed
+                    if (appState.networkType === 'wifi') {
+                        offer.sdp = optimizeSDPForWiFi(offer.sdp);
+                        debugLog('Optimized SDP for WiFi connection during restart');
+                    }
+                    
                     await appState.peerConnection.setLocalDescription(offer);
                     sendMessage(offer);
                 } else {
@@ -1954,6 +2123,7 @@
             document.getElementById('audioActivationPanel').style.display = 'none';
             document.getElementById('connectionGuard').style.display = 'none';
             document.getElementById('reconnectionStatus').style.display = 'none';
+            document.getElementById('wifiConnectionStatus').style.display = 'none';
             stopTimer();
             updateStatus('Call ended', false);
             showNotification('Call Ended', 'Your call has been disconnected');
