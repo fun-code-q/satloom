@@ -821,7 +821,7 @@
     </div>
 
     <div class="footer">
-        <p>v6.0.2 | Powerd by SatLoom | <a href="#" id="showIceBtn">Show ICE Status</a></p>
+        <p>v6.1.0 | Powerd by SatLoom | <a href="#" id="showIceBtn">Show ICE Status</a></p>
     </div>
     
     <!-- Hidden audio element for remote stream -->
@@ -864,11 +864,41 @@
         function getRTCConfiguration() {
             // Enhanced ICE servers configuration with more reliable STUN servers
             const iceServers = [
+                // Reliable STUN servers
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
                 { urls: 'stun:stun2.l.google.com:19302' },
                 { urls: 'stun:stun3.l.google.com:19302' },
                 { urls: 'stun:stun4.l.google.com:19302' },
+                
+                // Public TURN servers optimized for WiFi networks
+                {
+                    urls: 'turn:openrelay.metered.ca:80',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:turn.bistri.com:80',
+                    credential: 'homeo',
+                    username: 'homeo'
+                },
+                {
+                    urls: 'turns:turn.bistri.com:443?transport=tcp',
+                    credential: 'homeo',
+                    username: 'homeo'
+                },
+                
+                // TURN servers for cellular networks
                 {
                     urls: 'turn:global.turn.twilio.com:3478?transport=udp',
                     username: 'satloom',
@@ -885,28 +915,23 @@
                     credential: 'muazkh'
                 },
                 {
-                    urls: 'turns:turn.bistri.com:80?transport=tcp',
-                    credential: 'homeo',
-                    username: 'homeo'
-                },
-                {
                     urls: 'turn:turn.anyfirewall.com:443?transport=tcp',
                     credential: 'webrtc',
                     username: 'webrtc'
                 },
-                // Additional reliable STUN servers for cellular networks
+                
+                // Additional reliable STUN servers
                 { urls: 'stun:stun.services.mozilla.com' },
                 { urls: 'stun:stun.voipstunt.com' },
                 { urls: 'stun:stun.iptel.org' },
                 { urls: 'stun:stun.ideasip.com' },
-                { urls: 'stun:stun.sipgate.net' },
-                // New TURN servers for improved WiFi compatibility
-                { urls: 'turn:turn.bistri.com:80', credential: 'homeo', username: 'homeo' },
-                { urls: 'turn:turn.anyfirewall.com:443', credential: 'webrtc', username: 'webrtc' },
-                { urls: 'turns:turn.anyfirewall.com:443?transport=tcp', credential: 'webrtc', username: 'webrtc' }
+                { urls: 'stun:stun.sipgate.net' }
             ];
             
-            return { iceServers };
+            return { 
+                iceServers,
+                iceTransportPolicy: 'all' // Use both relay and non-relay candidates
+            };
         }
 
         // State management
@@ -1821,6 +1846,17 @@
                 updateStatus(`Joining room ${roomId}...`, false);
                 showNotification('Joining', `Connecting to room: ${roomId}`);
                 document.getElementById('joinRoomBtn').style.display = 'none';
+                
+                // Add a timeout to check if connection is stuck
+                setTimeout(() => {
+                    if (!appState.isStarted && appState.peerConnection) {
+                        const state = appState.peerConnection.iceConnectionState;
+                        if (state === 'new' || state === 'checking') {
+                            debugLog('Connection taking too long, restarting ICE');
+                            restartICE();
+                        }
+                    }
+                }, 10000); // 10 seconds timeout
             } catch (err) {
                 showNotification('Connection Error', 'Failed to join room: ' + err.message, 'error', true);
             }
