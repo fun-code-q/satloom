@@ -899,7 +899,11 @@
                 { urls: 'stun:stun.voipstunt.com' },
                 { urls: 'stun:stun.iptel.org' },
                 { urls: 'stun:stun.ideasip.com' },
-                { urls: 'stun:stun.sipgate.net' }
+                { urls: 'stun:stun.sipgate.net' },
+                // New TURN servers for improved WiFi compatibility
+                { urls: 'turn:turn.bistri.com:80', credential: 'homeo', username: 'homeo' },
+                { urls: 'turn:turn.anyfirewall.com:443', credential: 'webrtc', username: 'webrtc' },
+                { urls: 'turns:turn.anyfirewall.com:443?transport=tcp', credential: 'webrtc', username: 'webrtc' }
             ];
             
             return { iceServers };
