@@ -662,7 +662,6 @@
     <span id="networkStatusText">WiFi Connected</span>
     <i class="fas fa-lightbulb"></i>
     </div>
-
     
     <div class="theme-toggle" id="themeToggle">
         <i class="fas fa-moon"></i>
@@ -749,7 +748,7 @@
     </div>
 
     <div class="footer">
-        <p>v5.4.0 | Fixed Signaling State Issues | <a href="#">SatLoom Developers</a></p>
+        <p>v5.3.0 | Fixed Network Switching Issues | <a href="#">SatLoom Developers</a></p>
     </div>
     
     <!-- Hidden audio element for remote stream -->
@@ -858,8 +857,7 @@
             networkType: 'unknown',
             isOnline: true,
             prevNetworkType: 'unknown',
-            debugMode: false,
-            isProcessingOffer: false
+            debugMode: false
         };
 
         // Initialize app
@@ -1456,45 +1454,16 @@
 
         async function handleOffer(offer) {
             try {
-                debugLog('Handling offer');
-                
                 if (!appState.peerConnection) {
                     if (!createPeerConnection()) return;
                 }
-
-                // Check if we're already processing an offer
-                if (appState.peerConnection.signalingState !== 'stable') {
-                    debugLog('Cannot handle offer - signaling state not stable: ' + 
-                             appState.peerConnection.signalingState);
-                    showNotification('Connection Busy', 'Processing previous connection attempt', 'warning');
-                    return;
-                }
-
-                // Set remote description first
-                debugLog('Setting remote description');
+                
                 await appState.peerConnection.setRemoteDescription(
                     new RTCSessionDescription(offer));
-
-                // Create and set local description
-                debugLog('Creating answer');
-                const answer = await appState.peerConnection.createAnswer();
                 
-                // Add this critical error handling
-                try {
-                    debugLog('Setting local description');
-                    await appState.peerConnection.setLocalDescription(answer);
-                } catch (err) {
-                    console.error('Error setting local description:', err);
-                    if (err.toString().includes('wrong state: stable')) {
-                        debugLog('Retrying after state error');
-                        // Wait a bit and retry
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                        await appState.peerConnection.setLocalDescription(answer);
-                    } else {
-                        throw err;
-                    }
-                }
-
+                const answer = await appState.peerConnection.createAnswer();
+                await appState.peerConnection.setLocalDescription(answer);
+                
                 sendMessage(answer);
                 appState.isStarted = true;
                 startTimer();
@@ -1505,18 +1474,7 @@
                 keepScreenAwake();
             } catch (err) {
                 console.error('Error handling offer:', err);
-                
-                // Specific error handling for state issues
-                if (err.toString().includes('wrong state: stable')) {
-                    showNotification('Connection Error', 
-                        'Please try joining the room again', 'error', true);
-                    // Force a reconnection
-                    endAudioCall();
-                    setTimeout(() => joinAudioRoom(appState.roomId), 1000);
-                } else {
-                    showNotification('Connection Error', 
-                        'Failed to handle offer: ' + err.message, 'error', true);
-                }
+                showNotification('Connection Error', 'Failed to handle offer: ' + err.message, 'error', true);
             }
         }
 
