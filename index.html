@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - Fixed Audio Calling</title>
+    <title>SatLoom - Audio Calling with Visualizer</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -198,9 +198,8 @@
         .audio-bar {
             width: 14px;
             background: linear-gradient(to top, #00d2ff, #3a7bd5);
-            border-radius: 7px 7px 0 0;
-            transition: height 0.1s ease-out;
-            height: 10px;
+            border-radius: 7px;
+            min-height: 10px;
         }
         
         .light-mode .audio-bar {
@@ -368,29 +367,6 @@
             100% {box-shadow: 0 0 0 0 rgba(58, 123, 213, 0)}
         }
 
-        .screen-awake-indicator {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 8px 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            z-index: 10;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.3s ease;
-            display: none;
-        }
-        
-        .light-mode .screen-awake-indicator {
-            background: rgba(0, 0, 0, 0.05);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            color: #333;
-        }
-
         @media (max-width: 600px) {
             .card {
                 padding: 20px;
@@ -422,6 +398,53 @@
             }
         }
         
+        /* Audio activation panel */
+        .audio-activation-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(7, 25, 43, 0.95);
+            border-radius: 12px;
+            padding: 15px 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(58, 123, 213, 0.3);
+            display: none;
+            z-index: 1000;
+        }
+        
+        .light-mode .audio-activation-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(30, 144, 255, 0.3);
+        }
+        
+        .audio-activation-panel p {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .audio-activation-panel button {
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .light-mode .audio-activation-panel button {
+            background: linear-gradient(135deg, #1e90ff, #00bfff);
+        }
+        
+        .audio-activation-panel button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(58, 123, 213, 0.3);
+        }
+
         /* Connection status indicators */
         .status-connected {
             color: #00ff9d !important;
@@ -495,6 +518,30 @@
             font-size: 16px;
             transition: all 0.3s ease;
             min-width: 180px;
+        }
+        
+        /* Screen awake indicator */
+        .screen-awake-indicator {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 8px 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            z-index: 10;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            display: none;
+        }
+        
+        .light-mode .screen-awake-indicator {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            color: #333;
         }
         
         /* Compatibility warning */
@@ -639,53 +686,6 @@
         .light-mode .ice-status-label {
             color: #666;
         }
-        
-        /* Audio activation panel */
-        .audio-activation-panel {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(7, 25, 43, 0.95);
-            border-radius: 12px;
-            padding: 15px 25px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(58, 123, 213, 0.3);
-            display: none;
-            z-index: 1000;
-        }
-        
-        .light-mode .audio-activation-panel {
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid rgba(30, 144, 255, 0.3);
-        }
-        
-        .audio-activation-panel p {
-            margin-bottom: 15px;
-            font-size: 16px;
-        }
-        
-        .audio-activation-panel button {
-            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-        
-        .light-mode .audio-activation-panel button {
-            background: linear-gradient(135deg, #1e90ff, #00bfff);
-        }
-        
-        .audio-activation-panel button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(58, 123, 213, 0.3);
-        }
     </style>
 </head>
 <body>
@@ -717,11 +717,6 @@
             <span class="ice-status-label">Candidates:</span>
             <span class="ice-status-value" id="candidateCount">0</span>
         </div>
-    </div>
-    
-    <div class="screen-awake-indicator" id="screenAwakeIndicator">
-        <i class="fas fa-sun"></i>
-        <span>Screen wake active</span>
     </div>
     
     <div class="theme-toggle" id="themeToggle">
@@ -815,7 +810,7 @@
     </div>
 
     <div class="footer">
-        <p>v6.1.0 | Powerd by SatLoom | <a href="#" id="showIceBtn">Show ICE Status</a></p>
+        <p>v7.0.0 | Powered by SatLoom | <a href="#" id="showIceBtn">Show ICE Status</a></p>
     </div>
     
     <!-- Hidden audio element for remote stream -->
@@ -856,7 +851,7 @@
 
         // ========== WEBRTC CONFIG ========== //
         function getRTCConfiguration() {
-            // Enhanced ICE servers configuration with more reliable STUN servers
+            // Enhanced ICE servers configuration
             const iceServers = [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
@@ -877,23 +872,7 @@
                     urls: 'turn:numb.viagenie.ca:3478',
                     username: 'webrtc@live.com',
                     credential: 'muazkh'
-                },
-                {
-                    urls: 'turns:turn.bistri.com:80?transport=tcp',
-                    credential: 'homeo',
-                    username: 'homeo'
-                },
-                {
-                    urls: 'turn:turn.anyfirewall.com:443?transport=tcp',
-                    credential: 'webrtc',
-                    username: 'webrtc'
-                },
-                // Additional reliable STUN servers for cellular networks
-                { urls: 'stun:stun.services.mozilla.com' },
-                { urls: 'stun:stun.voipstunt.com' },
-                { urls: 'stun:stun.iptel.org' },
-                { urls: 'stun:stun.ideasip.com' },
-                { urls: 'stun:stun.sipgate.net' }
+                }
             ];
             
             return { iceServers };
@@ -909,7 +888,7 @@
             isStarted: false,
             timer: null,
             startTime: null,
-            userId: generateUserId(),
+            userId: null,
             reconnectAttempts: 0,
             maxReconnectAttempts: 5,
             lastIceRestart: 0,
@@ -927,9 +906,8 @@
             debugMode: false,
             candidateCount: 0,
             audioContext: null,
-            analyzer: null,
-            animationFrameId: null,
-            wakeLockActive: false
+            analyser: null,
+            audioSource: null
         };
 
         // Initialize app
@@ -942,6 +920,7 @@
                 return;
             }
             
+            appState.userId = generateUserId();
             appState.remoteAudioElement = document.getElementById('remoteAudio');
             appState.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             
@@ -963,75 +942,17 @@
             // Setup network monitoring
             setupNetworkMonitoring();
             
-            // Initialize audio context for visualization
-            initAudioContext();
+            // Request microphone permission and set up visualizer
+            requestMicrophoneForVisualizer();
         }
         
         function generateUserId() {
             if (!localStorage.getItem('userId')) {
                 const userId = 'user-' + Math.random().toString(36).substr(2, 8);
                 localStorage.setItem('userId', userId);
+                return userId;
             }
             return localStorage.getItem('userId');
-        }
-        
-        function initAudioContext() {
-            try {
-                appState.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            } catch (e) {
-                console.error('Audio Context not supported:', e);
-            }
-        }
-        
-        function setupVisualizer(stream) {
-            if (!appState.audioContext) return;
-            
-            // Create analyzer
-            appState.analyzer = appState.audioContext.createAnalyser();
-            appState.analyzer.fftSize = 64;
-            
-            // Create source from stream
-            const source = appState.audioContext.createMediaStreamSource(stream);
-            source.connect(appState.analyzer);
-            
-            // Start visualization
-            visualize();
-        }
-        
-        function visualize() {
-            if (!appState.analyzer) return;
-            
-            const bufferLength = appState.analyzer.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-            appState.analyzer.getByteFrequencyData(dataArray);
-            
-            // Update bars
-            const barIds = ['bar1', 'bar2', 'bar3', 'bar4', 'bar5'];
-            const barCount = barIds.length;
-            const groupSize = Math.floor(bufferLength / barCount);
-            
-            for (let i = 0; i < barCount; i++) {
-                let sum = 0;
-                for (let j = 0; j < groupSize; j++) {
-                    sum += dataArray[i * groupSize + j];
-                }
-                const average = sum / groupSize;
-                const height = Math.min(average * 1.5, 100); // Scale to max 100px
-                document.getElementById(barIds[i]).style.height = `${height}px`;
-            }
-            
-            appState.animationFrameId = requestAnimationFrame(visualize);
-        }
-        
-        function stopVisualizer() {
-            if (appState.animationFrameId) {
-                cancelAnimationFrame(appState.animationFrameId);
-                appState.animationFrameId = null;
-            }
-            if (appState.analyzer) {
-                appState.analyzer.disconnect();
-                appState.analyzer = null;
-            }
         }
         
         function setupNetworkMonitoring() {
@@ -1253,19 +1174,10 @@
             if (!appState.isStarted) return;
             
             // Technique 1: Wake Lock API (if supported)
-            if ('wakeLock' in navigator && !appState.wakeLockActive) {
+            if ('wakeLock' in navigator) {
                 navigator.wakeLock.request('screen').then(wl => {
                     appState.wakeLock = wl;
-                    appState.wakeLockActive = true;
                     debugLog('Screen Wake Lock active');
-                    document.getElementById('screenAwakeIndicator').style.display = 'flex';
-                    
-                    // Handle wake lock release
-                    wl.addEventListener('release', () => {
-                        debugLog('Screen Wake Lock released');
-                        appState.wakeLockActive = false;
-                        document.getElementById('screenAwakeIndicator').style.display = 'none';
-                    });
                 }).catch(err => {
                     console.error('Wake Lock failed, using alternative:', err);
                     useAlternativeWakeMethods();
@@ -1281,8 +1193,6 @@
                 const video = document.getElementById('wakeLockVideo');
                 video.play().then(() => {
                     debugLog('Screen keep-awake video is playing');
-                    appState.wakeLockActive = true;
-                    document.getElementById('screenAwakeIndicator').style.display = 'flex';
                 }).catch(e => {
                     console.error('Video playback failed, using canvas:', e);
                     useCanvasWakeMethod();
@@ -1305,8 +1215,6 @@
                 ctx.fillRect(0, 0, 1, 1);
                 frame++;
                 debugLog('Canvas wake method active');
-                appState.wakeLockActive = true;
-                document.getElementById('screenAwakeIndicator').style.display = 'flex';
             }, 5000); // Update every 5 seconds
         }
         
@@ -1315,21 +1223,65 @@
             if (appState.wakeLock) {
                 appState.wakeLock.release();
                 appState.wakeLock = null;
-                appState.wakeLockActive = false;
             }
             
             // Clear alternative methods
             if (appState.wakeLockInterval) {
                 clearInterval(appState.wakeLockInterval);
                 appState.wakeLockInterval = null;
-                appState.wakeLockActive = false;
             }
             
             // Pause video
             const video = document.getElementById('wakeLockVideo');
             video.pause();
+        }
+
+        // ========== AUDIO VISUALIZER ========== //
+        async function requestMicrophoneForVisualizer() {
+            try {
+                const constraints = { audio: true };
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                setupAudioVisualizer(stream);
+                showNotification('Microphone Active', 'Audio visualizer is now active', 'success');
+                keepScreenAwake();
+            } catch (err) {
+                console.error('Microphone access error:', err);
+                showNotification('Microphone Required', 
+                    'Please allow microphone access for visualizer and screen wake', 'error');
+            }
+        }
+        
+        function setupAudioVisualizer(stream) {
+            // Create audio context and analyser
+            appState.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            appState.analyser = appState.audioContext.createAnalyser();
             
-            document.getElementById('screenAwakeIndicator').style.display = 'none';
+            // Connect microphone to analyser
+            appState.audioSource = appState.audioContext.createMediaStreamSource(stream);
+            appState.audioSource.connect(appState.analyser);
+            
+            // Configure analyser
+            appState.analyser.fftSize = 256;
+            const bufferLength = appState.analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            
+            // Start animation loop
+            function updateVisualizer() {
+                appState.analyser.getByteFrequencyData(dataArray);
+                
+                // Update bar heights
+                const bars = document.querySelectorAll('.audio-bar');
+                for (let i = 0; i < bars.length; i++) {
+                    // Scale the data for visual effect
+                    const value = dataArray[i * Math.floor(bufferLength / bars.length)];
+                    const height = Math.max(10, value / 256 * 100);
+                    bars[i].style.height = `${height}px`;
+                }
+                
+                requestAnimationFrame(updateVisualizer);
+            }
+            
+            updateVisualizer();
         }
 
         function setupEventListeners() {
@@ -1412,7 +1364,6 @@
         function stopTimer() {
             if (appState.timer) {
                 clearInterval(appState.timer);
-                appState.timer = null;
             }
             document.getElementById('audioCallTimer').textContent = '00:00';
         }
@@ -1431,10 +1382,6 @@
                     };
                 
                 appState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
-                
-                // Setup visualizer with local audio
-                setupVisualizer(appState.localStream);
-                
                 return true;
             } catch (err) {
                 console.error('Media initialization error:', err);
@@ -1827,13 +1774,9 @@
             document.getElementById('joinRoomBtn').style.display = 'flex';
             document.getElementById('audioActivationPanel').style.display = 'none';
             document.getElementById('connectionGuard').style.display = 'none';
-            document.getElementById('screenAwakeIndicator').style.display = 'none';
             stopTimer();
             updateStatus('Call ended', false);
             showNotification('Call Ended', 'Your call has been disconnected');
-            
-            // Stop visualizer
-            stopVisualizer();
             
             // Clean up remote audio
             if (appState.remoteAudioElement) {
@@ -1873,10 +1816,7 @@
             const roomParam = urlParams.get('room');
             
             if (roomParam) {
-                // Auto-join the room
-                setTimeout(() => {
-                    joinAudioRoom(roomParam);
-                }, 1000);
+                joinAudioRoom(roomParam);
             } else {
                 document.getElementById('joinRoomBtn').style.display = 'flex';
             }
@@ -1904,9 +1844,6 @@
                 updateStatus(`Joining room ${roomId}...`, false);
                 showNotification('Joining', `Connecting to room: ${roomId}`);
                 document.getElementById('joinRoomBtn').style.display = 'none';
-                
-                // Keep screen awake
-                keepScreenAwake();
             } catch (err) {
                 showNotification('Connection Error', 'Failed to join room: ' + err.message, 'error', true);
             }
