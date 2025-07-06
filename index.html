@@ -198,20 +198,15 @@
         .audio-bar {
             width: 14px;
             background: linear-gradient(to top, #00d2ff, #3a7bd5);
-            border-radius: 7px;
-            animation: equalizer 1.2s infinite ease-in-out;
+            border-radius: 7px 7px 0 0;
+            transition: height 0.1s ease-out;
+            height: 10px;
         }
         
         .light-mode .audio-bar {
             background: linear-gradient(to top, #00bfff, #1e90ff);
         }
         
-        .audio-bar:nth-child(1) { animation-delay: 0s; height: 40px; }
-        .audio-bar:nth-child(2) { animation-delay: 0.2s; height: 60px; }
-        .audio-bar:nth-child(3) { animation-delay: 0.4s; height: 50px; }
-        .audio-bar:nth-child(4) { animation-delay: 0.6s; height: 70px; }
-        .audio-bar:nth-child(5) { animation-delay: 0.8s; height: 30px; }
-
         .call-controls {
             display: flex;
             justify-content: center;
@@ -373,9 +368,27 @@
             100% {box-shadow: 0 0 0 0 rgba(58, 123, 213, 0)}
         }
 
-        @keyframes equalizer {
-            0%, 100% {height: 10px;}
-            50% {height: 80px;}
+        .screen-awake-indicator {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 8px 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            z-index: 10;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            display: none;
+        }
+        
+        .light-mode .screen-awake-indicator {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            color: #333;
         }
 
         @media (max-width: 600px) {
@@ -409,53 +422,6 @@
             }
         }
         
-        /* Audio activation panel */
-        .audio-activation-panel {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(7, 25, 43, 0.95);
-            border-radius: 12px;
-            padding: 15px 25px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(58, 123, 213, 0.3);
-            display: none;
-            z-index: 1000;
-        }
-        
-        .light-mode .audio-activation-panel {
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid rgba(30, 144, 255, 0.3);
-        }
-        
-        .audio-activation-panel p {
-            margin-bottom: 15px;
-            font-size: 16px;
-        }
-        
-        .audio-activation-panel button {
-            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-        
-        .light-mode .audio-activation-panel button {
-            background: linear-gradient(135deg, #1e90ff, #00bfff);
-        }
-        
-        .audio-activation-panel button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(58, 123, 213, 0.3);
-        }
-
         /* Connection status indicators */
         .status-connected {
             color: #00ff9d !important;
@@ -529,30 +495,6 @@
             font-size: 16px;
             transition: all 0.3s ease;
             min-width: 180px;
-        }
-        
-        /* Screen awake indicator */
-        .screen-awake-indicator {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 8px 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            z-index: 10;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.3s ease;
-            display: none;
-        }
-        
-        .light-mode .screen-awake-indicator {
-            background: rgba(0, 0, 0, 0.05);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            color: #333;
         }
         
         /* Compatibility warning */
@@ -698,9 +640,51 @@
             color: #666;
         }
         
-        /* Auto join button */
-        .auto-join-btn {
-            margin-top: 15px;
+        /* Audio activation panel */
+        .audio-activation-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(7, 25, 43, 0.95);
+            border-radius: 12px;
+            padding: 15px 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(58, 123, 213, 0.3);
+            display: none;
+            z-index: 1000;
+        }
+        
+        .light-mode .audio-activation-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(30, 144, 255, 0.3);
+        }
+        
+        .audio-activation-panel p {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .audio-activation-panel button {
+            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .light-mode .audio-activation-panel button {
+            background: linear-gradient(135deg, #1e90ff, #00bfff);
+        }
+        
+        .audio-activation-panel button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(58, 123, 213, 0.3);
         }
     </style>
 </head>
@@ -733,6 +717,11 @@
             <span class="ice-status-label">Candidates:</span>
             <span class="ice-status-value" id="candidateCount">0</span>
         </div>
+    </div>
+    
+    <div class="screen-awake-indicator" id="screenAwakeIndicator">
+        <i class="fas fa-sun"></i>
+        <span>Screen wake active</span>
     </div>
     
     <div class="theme-toggle" id="themeToggle">
@@ -780,11 +769,11 @@
             
             <div class="audio-visualizer" id="audioVisualizer">
                 <div class="audio-vis-bars">
-                    <div class="audio-bar"></div>
-                    <div class="audio-bar"></div>
-                    <div class="audio-bar"></div>
-                    <div class="audio-bar"></div>
-                    <div class="audio-bar"></div>
+                    <div class="audio-bar" id="bar1"></div>
+                    <div class="audio-bar" id="bar2"></div>
+                    <div class="audio-bar" id="bar3"></div>
+                    <div class="audio-bar" id="bar4"></div>
+                    <div class="audio-bar" id="bar5"></div>
                 </div>
             </div>
             
@@ -797,12 +786,6 @@
                 </button>
                 <button class="btn" id="joinRoomBtn" style="display: none;">
                     <i class="fas fa-sign-in-alt"></i> Join Room
-                </button>
-            </div>
-            
-            <div id="autoJoinContainer" style="display: none; margin-top: 15px;">
-                <button class="btn auto-join-btn" id="autoJoinBtn">
-                    <i class="fas fa-sign-in-alt"></i> Join Room Automatically
                 </button>
             </div>
             
@@ -832,7 +815,7 @@
     </div>
 
     <div class="footer">
-        <p>v6.1.0 | Powered by SatLoom | <a href="#" id="showIceBtn">Show ICE Status</a></p>
+        <p>v6.1.0 | Powerd by SatLoom | <a href="#" id="showIceBtn">Show ICE Status</a></p>
     </div>
     
     <!-- Hidden audio element for remote stream -->
@@ -926,7 +909,7 @@
             isStarted: false,
             timer: null,
             startTime: null,
-            userId: null,
+            userId: generateUserId(),
             reconnectAttempts: 0,
             maxReconnectAttempts: 5,
             lastIceRestart: 0,
@@ -942,7 +925,11 @@
             isOnline: true,
             prevNetworkType: 'unknown',
             debugMode: false,
-            candidateCount: 0
+            candidateCount: 0,
+            audioContext: null,
+            analyzer: null,
+            animationFrameId: null,
+            wakeLockActive: false
         };
 
         // Initialize app
@@ -955,7 +942,6 @@
                 return;
             }
             
-            appState.userId = generateUserId();
             appState.remoteAudioElement = document.getElementById('remoteAudio');
             appState.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             
@@ -976,15 +962,76 @@
             
             // Setup network monitoring
             setupNetworkMonitoring();
+            
+            // Initialize audio context for visualization
+            initAudioContext();
         }
         
         function generateUserId() {
             if (!localStorage.getItem('userId')) {
                 const userId = 'user-' + Math.random().toString(36).substr(2, 8);
                 localStorage.setItem('userId', userId);
-                return userId;
             }
             return localStorage.getItem('userId');
+        }
+        
+        function initAudioContext() {
+            try {
+                appState.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) {
+                console.error('Audio Context not supported:', e);
+            }
+        }
+        
+        function setupVisualizer(stream) {
+            if (!appState.audioContext) return;
+            
+            // Create analyzer
+            appState.analyzer = appState.audioContext.createAnalyser();
+            appState.analyzer.fftSize = 64;
+            
+            // Create source from stream
+            const source = appState.audioContext.createMediaStreamSource(stream);
+            source.connect(appState.analyzer);
+            
+            // Start visualization
+            visualize();
+        }
+        
+        function visualize() {
+            if (!appState.analyzer) return;
+            
+            const bufferLength = appState.analyzer.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            appState.analyzer.getByteFrequencyData(dataArray);
+            
+            // Update bars
+            const barIds = ['bar1', 'bar2', 'bar3', 'bar4', 'bar5'];
+            const barCount = barIds.length;
+            const groupSize = Math.floor(bufferLength / barCount);
+            
+            for (let i = 0; i < barCount; i++) {
+                let sum = 0;
+                for (let j = 0; j < groupSize; j++) {
+                    sum += dataArray[i * groupSize + j];
+                }
+                const average = sum / groupSize;
+                const height = Math.min(average * 1.5, 100); // Scale to max 100px
+                document.getElementById(barIds[i]).style.height = `${height}px`;
+            }
+            
+            appState.animationFrameId = requestAnimationFrame(visualize);
+        }
+        
+        function stopVisualizer() {
+            if (appState.animationFrameId) {
+                cancelAnimationFrame(appState.animationFrameId);
+                appState.animationFrameId = null;
+            }
+            if (appState.analyzer) {
+                appState.analyzer.disconnect();
+                appState.analyzer = null;
+            }
         }
         
         function setupNetworkMonitoring() {
@@ -1206,10 +1253,19 @@
             if (!appState.isStarted) return;
             
             // Technique 1: Wake Lock API (if supported)
-            if ('wakeLock' in navigator) {
+            if ('wakeLock' in navigator && !appState.wakeLockActive) {
                 navigator.wakeLock.request('screen').then(wl => {
                     appState.wakeLock = wl;
+                    appState.wakeLockActive = true;
                     debugLog('Screen Wake Lock active');
+                    document.getElementById('screenAwakeIndicator').style.display = 'flex';
+                    
+                    // Handle wake lock release
+                    wl.addEventListener('release', () => {
+                        debugLog('Screen Wake Lock released');
+                        appState.wakeLockActive = false;
+                        document.getElementById('screenAwakeIndicator').style.display = 'none';
+                    });
                 }).catch(err => {
                     console.error('Wake Lock failed, using alternative:', err);
                     useAlternativeWakeMethods();
@@ -1225,6 +1281,8 @@
                 const video = document.getElementById('wakeLockVideo');
                 video.play().then(() => {
                     debugLog('Screen keep-awake video is playing');
+                    appState.wakeLockActive = true;
+                    document.getElementById('screenAwakeIndicator').style.display = 'flex';
                 }).catch(e => {
                     console.error('Video playback failed, using canvas:', e);
                     useCanvasWakeMethod();
@@ -1247,6 +1305,8 @@
                 ctx.fillRect(0, 0, 1, 1);
                 frame++;
                 debugLog('Canvas wake method active');
+                appState.wakeLockActive = true;
+                document.getElementById('screenAwakeIndicator').style.display = 'flex';
             }, 5000); // Update every 5 seconds
         }
         
@@ -1255,17 +1315,21 @@
             if (appState.wakeLock) {
                 appState.wakeLock.release();
                 appState.wakeLock = null;
+                appState.wakeLockActive = false;
             }
             
             // Clear alternative methods
             if (appState.wakeLockInterval) {
                 clearInterval(appState.wakeLockInterval);
                 appState.wakeLockInterval = null;
+                appState.wakeLockActive = false;
             }
             
             // Pause video
             const video = document.getElementById('wakeLockVideo');
             video.pause();
+            
+            document.getElementById('screenAwakeIndicator').style.display = 'none';
         }
 
         function setupEventListeners() {
@@ -1282,7 +1346,6 @@
             document.getElementById('joinRoomBtn').addEventListener('click', showJoinRoomPrompt);
             document.getElementById('restartIceBtn').addEventListener('click', restartICE);
             document.getElementById('showIceBtn').addEventListener('click', toggleIceStatusPanel);
-            document.getElementById('autoJoinBtn').addEventListener('click', autoJoinRoomViaLink);
         }
 
         function showNotification(title, message, type = 'info', showRetry = false) {
@@ -1349,6 +1412,7 @@
         function stopTimer() {
             if (appState.timer) {
                 clearInterval(appState.timer);
+                appState.timer = null;
             }
             document.getElementById('audioCallTimer').textContent = '00:00';
         }
@@ -1367,6 +1431,10 @@
                     };
                 
                 appState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                // Setup visualizer with local audio
+                setupVisualizer(appState.localStream);
+                
                 return true;
             } catch (err) {
                 console.error('Media initialization error:', err);
@@ -1588,7 +1656,6 @@
                 updateStatus(`In audio call (${appState.roomId})`, true);
                 document.getElementById('audioControls').style.display = 'flex';
                 document.getElementById('joinRoomBtn').style.display = 'none';
-                document.getElementById('autoJoinContainer').style.display = 'none';
                 
                 // Keep screen awake
                 keepScreenAwake();
@@ -1645,7 +1712,6 @@
                 updateStatus(`In call (${appState.roomId})`, true);
                 document.getElementById('audioControls').style.display = 'flex';
                 document.getElementById('generateAudioRoom').style.display = 'none';
-                document.getElementById('autoJoinContainer').style.display = 'none';
                 
                 // Keep screen awake
                 keepScreenAwake();
@@ -1761,10 +1827,13 @@
             document.getElementById('joinRoomBtn').style.display = 'flex';
             document.getElementById('audioActivationPanel').style.display = 'none';
             document.getElementById('connectionGuard').style.display = 'none';
-            document.getElementById('autoJoinContainer').style.display = 'none';
+            document.getElementById('screenAwakeIndicator').style.display = 'none';
             stopTimer();
             updateStatus('Call ended', false);
             showNotification('Call Ended', 'Your call has been disconnected');
+            
+            // Stop visualizer
+            stopVisualizer();
             
             // Clean up remote audio
             if (appState.remoteAudioElement) {
@@ -1804,20 +1873,12 @@
             const roomParam = urlParams.get('room');
             
             if (roomParam) {
-                // Show auto-join button
-                document.getElementById('autoJoinContainer').style.display = 'block';
-                document.getElementById('joinRoomBtn').style.display = 'none';
+                // Auto-join the room
+                setTimeout(() => {
+                    joinAudioRoom(roomParam);
+                }, 1000);
             } else {
                 document.getElementById('joinRoomBtn').style.display = 'flex';
-            }
-        }
-        
-        async function autoJoinRoomViaLink() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const roomParam = urlParams.get('room');
-            
-            if (roomParam && roomParam.trim() !== "") {
-                joinAudioRoom(roomParam.trim());
             }
         }
         
@@ -1843,7 +1904,9 @@
                 updateStatus(`Joining room ${roomId}...`, false);
                 showNotification('Joining', `Connecting to room: ${roomId}`);
                 document.getElementById('joinRoomBtn').style.display = 'none';
-                document.getElementById('autoJoinContainer').style.display = 'none';
+                
+                // Keep screen awake
+                keepScreenAwake();
             } catch (err) {
                 showNotification('Connection Error', 'Failed to join room: ' + err.message, 'error', true);
             }
