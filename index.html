@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - Secure Login Free Audio Calling</title>
+    <title>SatLoom - Secure Audio Calling</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
@@ -532,56 +532,31 @@
             min-width: 180px;
         }
         
-        /* Screen awake indicator */
-        .screen-awake-indicator {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 8px 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        /* Reconnection status */
+        .reconnection-status {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
             font-size: 14px;
-            z-index: 10;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.3s ease;
             display: none;
+            z-index: 1000;
         }
         
-        .light-mode .screen-awake-indicator {
-            background: rgba(0, 0, 0, 0.05);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            color: #333;
+        .reconnecting-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #ffcc00;
+            margin-right: 8px;
+            animation: pulse 1.5s infinite;
         }
         
-        /* Compatibility warning */
-        .compatibility-warning {
-            background: rgba(255, 87, 87, 0.2);
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 20px;
-            text-align: center;
-            border: 1px solid rgba(255, 87, 87, 0.5);
-            display: none;
-        }
-        
-        .compatibility-warning h3 {
-            color: #ff5252;
-            margin-bottom: 10px;
-        }
-        
-        .compatibility-warning ul {
-            text-align: left;
-            margin: 10px 0;
-            padding-left: 20px;
-        }
-        
-        .compatibility-warning li {
-            margin-bottom: 5px;
-        }
-
         /* Network status indicator */
         .network-status {
             position: absolute;
@@ -617,164 +592,8 @@
             color: #ff5252;
         }
         
-        /* Debug panel */
-        .debug-panel {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 10px;
-            padding: 15px;
-            color: white;
-            font-family: monospace;
-            font-size: 12px;
-            max-width: 300px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-        }
-        
-        .debug-panel h3 {
-            margin-bottom: 8px;
-            color: #00d2ff;
-        }
-        
-        .debug-toggle {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 1001;
-            color: white;
-        }
-        
-        /* ICE Status Panel */
-        .ice-status-panel {
-            position: fixed;
-            top: 70px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 10px 15px;
-            z-index: 10;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            max-width: 300px;
-            font-size: 12px;
-            display: none;
-        }
-        
-        .ice-status-panel h4 {
-            margin-bottom: 5px;
-            color: #00d2ff;
-        }
-        
-        .ice-status-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 3px;
-        }
-        
-        .ice-status-label {
-            color: #b8c5d9;
-        }
-        
-        .ice-status-value {
-            font-weight: bold;
-        }
-        
-        .light-mode .ice-status-panel {
-            background: rgba(0, 0, 0, 0.05);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-        }
-        
-        .light-mode .ice-status-label {
-            color: #666;
-        }
-        
-        /* Room ID display */
-        .room-id-display {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 15px;
-            margin: 15px 0;
-            font-size: 24px;
-            font-weight: bold;
-            letter-spacing: 2px;
-            display: none;
-        }
-        
-        .light-mode .room-id-display {
-            background: rgba(0, 0, 0, 0.05);
-        }
-        
-        /* QR code container */
-        .qr-container {
-            margin: 20px auto;
-            padding: 10px;
-            background: white;
-            border-radius: 10px;
-            display: none;
-            max-width: 180px;
-        }
-        
-        /* WiFi troubleshooting tips */
-        .wifi-tips {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 20px;
-            text-align: left;
-            display: none;
-        }
-        
-        .wifi-tips h3 {
-            margin-bottom: 10px;
-            color: #00d2ff;
-        }
-        
-        .wifi-tips ul {
-            padding-left: 20px;
-        }
-        
-        .wifi-tips li {
-            margin-bottom: 8px;
-        }
-        
-        /* Reconnection status */
-        .reconnection-status {
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-size: 14px;
-            display: none;
-            z-index: 1000;
-        }
-        
-        .reconnecting-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background-color: #ffcc00;
-            margin-right: 8px;
-            animation: pulse 1.5s infinite;
-        }
-        
-        /* WiFi-specific UI element */
-        .wifi-connection-status {
+        /* Cellular-specific UI elements */
+        .cellular-connection-status {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 15px;
             padding: 15px;
@@ -783,54 +602,52 @@
             display: none;
         }
         
-        .wifi-connection-status.active {
+        .cellular-connection-status.active {
             border: 1px solid #00d2ff;
         }
         
-        .wifi-connection-status.warning {
+        .cellular-connection-status.warning {
             border: 1px solid #ffcc00;
         }
         
-        .wifi-connection-status.error {
+        .cellular-connection-status.error {
             border: 1px solid #ff5252;
         }
         
-        .wifi-connection-status i {
+        .cellular-connection-status i {
             margin-right: 8px;
+        }
+        
+        .cellular-tips {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: left;
+            display: none;
+        }
+        
+        .cellular-tips h3 {
+            margin-bottom: 10px;
+            color: #00d2ff;
+        }
+        
+        .cellular-tips ul {
+            padding-left: 20px;
+        }
+        
+        .cellular-tips li {
+            margin-bottom: 8px;
         }
     </style>
 </head>
 <body>
     <div class="network-status" id="networkStatus">
-        <i class="fas fa-wifi wifi"></i>
-        <span id="networkStatusText">WiFi Connected</span>
+        <i class="fas fa-signal cellular"></i>
+        <span id="networkStatusText">Cellular Network</span>
         <i class="fas fa-lightbulb"></i>
     </div>
-    
-    <div class="ice-status-panel" id="iceStatusPanel">
-        <h4>ICE Connection Status</h4>
-        <div class="ice-status-item">
-            <span class="ice-status-label">ICE State:</span>
-            <span class="ice-status-value" id="iceState">-</span>
-        </div>
-        <div class="ice-status-item">
-            <span class="ice-status-label">Signaling State:</span>
-            <span class="ice-status-value" id="signalingState">-</span>
-        </div>
-        <div class="ice-status-item">
-            <span class="ice-status-label">Connection State:</span>
-            <span class="ice-status-value" id="connectionState">-</span>
-        </div>
-        <div class="ice-status-item">
-            <span class="ice-status-label">ICE Gathering State:</span>
-            <span class="ice-status-value" id="iceGatheringState">-</span>
-        </div>
-        <div class="ice-status-item">
-            <span class="ice-status-label">Candidates:</span>
-            <span class="ice-status-value" id="candidateCount">0</span>
-        </div>
-    </div>
-    
+
     <div class="theme-toggle" id="themeToggle">
         <i class="fas fa-moon"></i>
     </div>
@@ -888,10 +705,6 @@
                 </div>
             </div>
             
-            <div class="room-id-display" id="roomIdDisplay"></div>
-            
-            <div class="qr-container" id="qrContainer"></div>
-            
             <div class="action-container">
                 <button class="btn" id="generateAudioRoom">
                     <i class="fas fa-network-wired"></i> Generate Room
@@ -919,55 +732,31 @@
                 </button>
             </div>
             
-            <div class="compatibility-warning" id="compatibilityWarning">
-                <h3><i class="fas fa-exclamation-triangle"></i> Compatibility Issue</h3>
-                <p>Your browser may have limited support for WebRTC features. For best results, use:</p>
-                <ul>
-                    <li>Google Chrome (latest version)</li>
-                    <li>Mozilla Firefox (latest version)</li>
-                    <li>Microsoft Edge (latest version)</li>
-                </ul>
-                <p>If problems persist, check your browser settings or try updating your browser.</p>
+            <!-- Cellular-specific UI elements -->
+            <div class="cellular-connection-status" id="cellularConnectionStatus">
+                <i class="fas fa-signal"></i>
+                <span id="cellularStatusText">Optimizing cellular connection</span>
             </div>
             
-            <div class="wifi-tips" id="wifiTips">
-                <h3><i class="fas fa-wifi"></i> WiFi Connection Tips</h3>
+            <div class="cellular-tips" id="cellularTips">
+                <h3><i class="fas fa-signal"></i> Cellular Connection Tips</h3>
                 <ul>
-                    <li>Ensure your router doesn't block WebRTC ports (3478, 5349, 19302)</li>
-                    <li>Try switching to mobile data if available</li>
-                    <li>Disable VPN or proxy connections</li>
-                    <li>Restart your router if connection issues persist</li>
-                    <li>Check firewall settings for UDP restrictions</li>
+                    <li>Ensure your cellular plan doesn't restrict VoIP services</li>
+                    <li>Try switching to a different network (3G/4G/5G) if available</li>
+                    <li>Disable data saver mode on your device</li>
+                    <li>Restart your device if connection issues persist</li>
+                    <li>Check for carrier restrictions on real-time communications</li>
                 </ul>
-            </div>
-            
-            <!-- WiFi-specific status indicator -->
-            <div class="wifi-connection-status" id="wifiConnectionStatus">
-                <i class="fas fa-wifi"></i>
-                <span id="wifiStatusText">Optimizing WiFi connection</span>
             </div>
         </div>
     </div>
 
     <div class="footer">
-        <p>v6.3.0 | Powerd by SatLoom | <a href="#" id="showIceBtn">Show ICE Status</a></p>
+        <p>v6.4.0 | Powerd by SatLoom | <a href="#" id="showDebug">Show Debug</a></p>
     </div>
     
     <!-- Hidden audio element for remote stream -->
     <audio id="remoteAudio" autoplay playsinline style="display: none;"></audio>
-    
-    <!-- Hidden elements for screen wake techniques -->
-    <video id="wakeLockVideo" loop muted playsinline style="display: none;"></video>
-    <canvas id="wakeLockCanvas" width="1" height="1" style="display: none;"></canvas>
-    
-    <!-- Debug panel -->
-    <div class="debug-panel" id="debugPanel">
-        <h3>Connection Debug</h3>
-        <div id="debugLog"></div>
-    </div>
-    <div class="debug-toggle" id="debugToggle">
-        <i class="fas fa-bug"></i>
-    </div>
     
     <!-- Firebase for signaling -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -991,89 +780,44 @@
 
         // ========== WEBRTC CONFIG ========== //
         function getRTCConfiguration() {
-            // Enhanced ICE servers configuration with more reliable TURN servers
+            // TURN servers optimized for cellular networks
             const iceServers = [
-                // Primary STUN servers
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' },
-                { urls: 'stun:stun3.l.google.com:19302' },
-                { urls: 'stun:stun4.l.google.com:19302' },
-                
-                // Public TURN servers optimized for WiFi networks
                 {
-                    urls: 'turn:openrelay.metered.ca:80',
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
-                },
-                {
-                    urls: 'turn:openrelay.metered.ca:443',
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
-                },
-                {
-                    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
-                },
-                {
-                    urls: 'turn:turn.bistri.com:80',
-                    credential: 'homeo',
-                    username: 'homeo'
-                },
-                {
-                    urls: 'turns:turn.bistri.com:443?transport=tcp',
-                    credential: 'homeo',
-                    username: 'homeo'
-                },
-                
-                // TURN servers for cellular networks
-                {
-                    urls: 'turn:global.turn.twilio.com:3478?transport=udp',
+                    urls: [
+                        'turn:global.turn.twilio.com:3478?transport=udp',
+                        'turn:global.turn.twilio.com:3478?transport=tcp',
+                        'turns:global.turn.twilio.com:443?transport=tcp'
+                    ],
                     username: 'satloom',
                     credential: 'satloom123'
                 },
                 {
-                    urls: 'turn:global.turn.twilio.com:3478?transport=tcp',
-                    username: 'satloom',
-                    credential: 'satloom123'
-                },
-                {
-                    urls: 'turn:numb.viagenie.ca:3478',
+                    urls: [
+                        'turn:numb.viagenie.ca:3478',
+                        'turns:numb.viagenie.ca:443'
+                    ],
                     username: 'webrtc@live.com',
                     credential: 'muazkh'
                 },
                 {
-                    urls: 'turn:turn.anyfirewall.com:443?transport=tcp',
+                    urls: [
+                        'turn:turn.anyfirewall.com:443?transport=tcp'
+                    ],
                     credential: 'webrtc',
                     username: 'webrtc'
                 },
                 
-                // Additional reliable TURN servers for WiFi bypass
-                {
-                    urls: 'turn:freeturn.net:3478',
-                    username: 'free',
-                    credential: 'free'
-                },
-                {
-                    urls: 'turns:turn.herewebrtc.com:443',
-                    credential: 'satloom',
-                    username: 'satloom'
-                },
-                
-                // Additional reliable STUN servers
-                { urls: 'stun:stun.services.mozilla.com' },
-                { urls: 'stun:stun.voipstunt.com' },
-                { urls: 'stun:stun.iptel.org' },
-                { urls: 'stun:stun.ideasip.com' },
-                { urls: 'stun:stun.sipgate.net' }
+                // STUN servers as fallback
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
             ];
             
             return { 
                 iceServers,
-                iceTransportPolicy: 'all', // Use both relay and non-relay candidates
-                bundlePolicy: 'max-bundle', // Helps with NAT traversal
-                rtcpMuxPolicy: 'require' // Helps with NAT traversal
+                iceTransportPolicy: 'relay', // Force TURN for cellular networks
+                bundlePolicy: 'max-bundle',
+                rtcpMuxPolicy: 'require',
+                iceCandidatePoolSize: 1
             };
         }
 
@@ -1089,38 +833,25 @@
             startTime: null,
             userId: null,
             reconnectAttempts: 0,
-            maxReconnectAttempts: 7,
+            maxReconnectAttempts: 5,
             lastIceRestart: 0,
             signalingRef: null,
             isMuted: false,
             remoteAudioElement: null,
             isPageVisible: true,
             connectionPaused: false,
-            wakeLock: null,
-            wakeLockInterval: null,
-            isMobile: false,
-            networkType: 'unknown',
+            isMobile: true,
+            networkType: 'cellular',
             isOnline: true,
-            prevNetworkType: 'unknown',
-            debugMode: false,
-            candidateCount: 0,
-            iceRestartMode: 'normal', // 'normal' or 'aggressive'
-            fullReconnectTimer: null
+            debugMode: false
         };
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', initApp);
 
         function initApp() {
-            // First check for WebRTC support
-            if (!isWebRTCSupported()) {
-                showCompatibilityWarning();
-                return;
-            }
-            
             appState.userId = generateUserId();
             appState.remoteAudioElement = document.getElementById('remoteAudio');
-            appState.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             
             setupEventListeners();
             autoJoinRoom();
@@ -1134,11 +865,12 @@
             }
             updateThemeIcon();
             
-            // Initialize screen wake techniques
-            initScreenWakeTechniques();
+            // Show cellular tips
+            document.getElementById('cellularTips').style.display = 'block';
             
-            // Setup network monitoring
-            setupNetworkMonitoring();
+            // Show initial status
+            updateStatus('Ready to connect');
+            showNotification('Cellular Mode', 'Optimized for mobile networks', 'info');
         }
         
         function generateUserId() {
@@ -1150,214 +882,44 @@
             return localStorage.getItem('userId');
         }
         
-        function setupNetworkMonitoring() {
-            // Listen for online/offline events
-            window.addEventListener('online', handleNetworkChange);
-            window.addEventListener('offline', handleNetworkChange);
-            
-            // Check network type if possible
-            if (navigator.connection) {
-                navigator.connection.addEventListener('change', handleNetworkChange);
-                handleNetworkChange(); // Initial call
-            } else {
-                // Fallback: assume WiFi if connection type not available
-                updateNetworkStatus('wifi', true);
-            }
-        }
-        
-        function handleNetworkChange() {
-            const isOnline = navigator.onLine;
-            let networkType = 'unknown';
-            
-            if (navigator.connection) {
-                networkType = navigator.connection.effectiveType || 'unknown';
-                const type = navigator.connection.type || 'unknown';
-                
-                if (type.includes('wifi') || type.includes('ethernet')) {
-                    networkType = 'wifi';
-                } else if (type.includes('cellular') || type.includes('2g') || type.includes('3g') || type.includes('4g')) {
-                    networkType = 'cellular';
-                } else {
-                    networkType = type;
-                }
-            }
-            
-            appState.isOnline = isOnline;
-            const prevNetworkType = appState.networkType;
-            appState.networkType = networkType;
-            
-            updateNetworkStatus(networkType, isOnline);
-            debugLog(`Network changed: ${prevNetworkType} -> ${networkType}, Online: ${isOnline}`);
-            
-            // Show WiFi troubleshooting tips when on WiFi
-            document.getElementById('wifiTips').style.display = networkType === 'wifi' ? 'block' : 'none';
-            
-            // Handle network change during call
-            if (appState.isStarted && isOnline && prevNetworkType !== networkType) {
-                debugLog(`Network type changed from ${prevNetworkType} to ${networkType} during call`);
-                showNotification('Network Changed', 'Reconnecting...', 'warning');
-                restartICE();
-            }
-            
-            if (isOnline) {
-                if (appState.isStarted) {
-                    showNotification('Back Online', 'Connection restored', 'success');
-                    if (appState.peerConnection) {
-                        const state = appState.peerConnection.iceConnectionState;
-                        if (state === 'disconnected' || state === 'failed') {
-                            restartICE();
-                        }
-                    }
-                }
-            } else {
-                showNotification('Network Offline', 'Please check your internet connection', 'error');
-            }
-        }
-        
-        function updateNetworkStatus(type, isOnline) {
-            const networkStatus = document.getElementById('networkStatus');
-            const networkText = document.getElementById('networkStatusText');
-            const icon = networkStatus.querySelector('i');
-            
-            // Remove all existing classes
-            icon.className = '';
-            
-            if (!isOnline) {
-                networkText.textContent = 'Offline';
-                icon.className = 'fas fa-globe offline';
-                networkStatus.style.display = 'flex';
-                return;
-            }
-            
-            switch(type) {
-                case 'wifi':
-                    networkText.textContent = 'WiFi Connected';
-                    icon.className = 'fas fa-wifi wifi';
-                    break;
-                case 'cellular':
-                    networkText.textContent = 'Cellular Network';
-                    icon.className = 'fas fa-signal cellular';
-                    break;
-                default:
-                    networkText.textContent = 'Online';
-                    icon.className = 'fas fa-globe';
-            }
-            
-            networkStatus.style.display = 'flex';
-        }
-        
-        function isWebRTCSupported() {
-            // Check for essential WebRTC components
-            const requiredFeatures = [
-                'RTCPeerConnection',
-                'RTCSessionDescription',
-                'RTCIceCandidate'
-            ];
-            
-            for (const feature of requiredFeatures) {
-                if (!window[feature]) {
-                    console.error(`WebRTC feature missing: ${feature}`);
-                    showNotification('Browser Incompatible', 
-                        `Your browser is missing essential WebRTC feature: ${feature}. Please update your browser.`, 
-                        'error');
-                    return false;
-                }
-            }
-            
-            // Check for getUserMedia support
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                console.error('getUserMedia not supported');
-                showNotification('Browser Incompatible', 
-                    'Your browser does not support microphone access. Please update your browser.', 
-                    'error');
-                return false;
-            }
-            
-            return true;
-        }
-        
-        function showCompatibilityWarning() {
-            document.getElementById('compatibilityWarning').style.display = 'block';
-            document.getElementById('generateAudioRoom').disabled = true;
-            updateStatus('Browser not supported', false);
-        }
-        
-        function initScreenWakeTechniques() {
-            // Create a tiny, silent video to keep screen awake
-            const video = document.getElementById('wakeLockVideo');
-            video.width = 1;
-            video.height = 1;
-            
-            // Create a canvas to draw a blank frame
-            const canvas = document.getElementById('wakeLockCanvas');
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, 1, 1);
-            
-            // Convert to video stream
-            const stream = canvas.captureStream(1);
-            video.srcObject = stream;
-        }
-
         function setupVisibilityHandlers() {
             // Handle visibility changes
             document.addEventListener('visibilitychange', handleVisibilityChange);
         }
 
         function handleVisibilityChange() {
-            const wasVisible = appState.isPageVisible;
             appState.isPageVisible = document.visibilityState === 'visible';
-            debugLog(`Visibility changed: ${wasVisible ? 'visible' : 'hidden'} -> ${appState.isPageVisible ? 'visible' : 'hidden'}`);
             
-            if (wasVisible && !appState.isPageVisible) {
-                // Page became hidden
+            if (!appState.isPageVisible) {
                 pauseConnection();
-            } else if (!wasVisible && appState.isPageVisible) {
-                // Page became visible
+            } else {
                 resumeConnection();
             }
-            
-            updateStatus(appState.isPageVisible ? 'Page is visible' : 'Page is in background', false);
         }
 
         function pauseConnection() {
             if (appState.isStarted && appState.peerConnection) {
-                debugLog('Pausing connection');
                 appState.connectionPaused = true;
                 document.getElementById('connectionGuard').style.display = 'flex';
                 showNotification('Connection Paused', 'Return to browser to resume call', 'warning');
-                
-                // Pause screen wake techniques
-                releaseScreenWake();
             }
         }
 
         function resumeConnection() {
             if (appState.connectionPaused && appState.peerConnection) {
-                debugLog('Resuming connection');
                 appState.connectionPaused = false;
                 document.getElementById('connectionGuard').style.display = 'none';
                 
-                // Resume remote audio
                 if (appState.remoteAudioElement && appState.remoteAudioElement.srcObject) {
                     appState.remoteAudioElement.play().catch(e => {
-                        console.error('Failed to resume audio:', e);
                         document.getElementById('audioActivationPanel').style.display = 'block';
                     });
                 }
                 
-                // Restart screen wake techniques
-                keepScreenAwake();
-                
-                // Force a reconnection
                 setTimeout(() => {
                     if (appState.peerConnection) {
                         const state = appState.peerConnection.iceConnectionState;
-                        if (state === 'disconnected' || state === 'failed' || state === 'closed') {
-                            debugLog(`ICE state after resume: ${state}, restarting ICE`);
-                            restartICE();
-                        } else {
-                            debugLog(`ICE state after resume: ${state}, forcing ICE restart`);
+                        if (state === 'disconnected' || state === 'failed') {
                             restartICE();
                         }
                     }
@@ -1365,73 +927,6 @@
                 
                 showNotification('Connection Resumed', 'Call has been restored', 'success');
             }
-        }
-
-        // ========== SCREEN AWAKE TECHNIQUES ========== //
-        function keepScreenAwake() {
-            if (!appState.isStarted) return;
-            
-            // Technique 1: Wake Lock API (if supported)
-            if ('wakeLock' in navigator) {
-                navigator.wakeLock.request('screen').then(wl => {
-                    appState.wakeLock = wl;
-                    debugLog('Screen Wake Lock active');
-                }).catch(err => {
-                    console.error('Wake Lock failed, using alternative:', err);
-                    useAlternativeWakeMethods();
-                });
-            } else {
-                useAlternativeWakeMethods();
-            }
-        }
-        
-        function useAlternativeWakeMethods() {
-            // Technique 2: Hidden video playback
-            try {
-                const video = document.getElementById('wakeLockVideo');
-                video.play().then(() => {
-                    debugLog('Screen keep-awake video is playing');
-                }).catch(e => {
-                    console.error('Video playback failed, using canvas:', e);
-                    useCanvasWakeMethod();
-                });
-            } catch (err) {
-                console.error('Error with video playback:', err);
-                useCanvasWakeMethod();
-            }
-        }
-        
-        function useCanvasWakeMethod() {
-            // Technique 3: Canvas animation
-            const canvas = document.getElementById('wakeLockCanvas');
-            const ctx = canvas.getContext('2d');
-            let frame = 0;
-            
-            appState.wakeLockInterval = setInterval(() => {
-                ctx.clearRect(0, 0, 1, 1);
-                ctx.fillStyle = frame % 2 === 0 ? 'white' : 'black';
-                ctx.fillRect(0, 0, 1, 1);
-                frame++;
-                debugLog('Canvas wake method active');
-            }, 5000); // Update every 5 seconds
-        }
-        
-        function releaseScreenWake() {
-            // Release Wake Lock API if used
-            if (appState.wakeLock) {
-                appState.wakeLock.release();
-                appState.wakeLock = null;
-            }
-            
-            // Clear alternative methods
-            if (appState.wakeLockInterval) {
-                clearInterval(appState.wakeLockInterval);
-                appState.wakeLockInterval = null;
-            }
-            
-            // Pause video
-            const video = document.getElementById('wakeLockVideo');
-            video.pause();
         }
 
         function setupEventListeners() {
@@ -1444,11 +939,10 @@
             document.getElementById('activateAudioBtn').addEventListener('click', activateAudio);
             document.getElementById('retryConnection').addEventListener('click', retryConnection);
             document.getElementById('resumeConnection').addEventListener('click', resumeConnection);
-            document.getElementById('debugToggle').addEventListener('click', toggleDebug);
             document.getElementById('joinRoomBtn').addEventListener('click', showJoinRoomPrompt);
             document.getElementById('restartIceBtn').addEventListener('click', restartICE);
-            document.getElementById('showIceBtn').addEventListener('click', toggleIceStatusPanel);
             document.getElementById('showQrBtn').addEventListener('click', generateQrCode);
+            document.getElementById('showDebug').addEventListener('click', toggleDebugPanel);
         }
 
         function showNotification(title, message, type = 'info', showRetry = false) {
@@ -1484,11 +978,6 @@
         function updateStatus(text, isConnected = false) {
             const statusElem = document.getElementById('statusText');
             const statusIcon = document.querySelector('#connectionStatus i');
-            
-            // Add network type to status if connected
-            if (isConnected && appState.networkType !== 'unknown') {
-                text += ` (${appState.networkType.toUpperCase()})`;
-            }
             
             statusElem.textContent = text;
             
@@ -1526,16 +1015,7 @@
 
         async function initMedia() {
             try {
-                // Mobile browsers often require simpler constraints
-                const constraints = appState.isMobile 
-                    ? { audio: true } 
-                    : { 
-                        audio: { 
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            autoGainControl: true
-                        } 
-                    };
+                const constraints = { audio: true };
                 
                 appState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
                 return true;
@@ -1563,13 +1043,6 @@
                 appState.peerConnection.ontrack = handleRemoteStream;
                 appState.peerConnection.onicecandidate = handleICECandidate;
                 appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
-                appState.peerConnection.onconnectionstatechange = handleConnectionStateChange;
-                appState.peerConnection.onsignalingstatechange = handleSignalingStateChange;
-                appState.peerConnection.onicegatheringstatechange = handleIceGatheringStateChange;
-                
-                // Reset candidate count
-                appState.candidateCount = 0;
-                updateIceStatus();
                 
                 return true;
             } catch (err) {
@@ -1597,7 +1070,6 @@
                 
                 // Handle autoplay restrictions
                 appState.remoteAudioElement.play().catch(e => {
-                    console.error('Autoplay blocked:', e);
                     document.getElementById('audioActivationPanel').style.display = 'block';
                     showNotification('Audio Blocked', 'Click to enable audio playback', 'warning');
                 });
@@ -1605,9 +1077,7 @@
             
             appState.reconnectAttempts = 0;
             showNotification('Connected', 'Call established successfully', 'success');
-            
-            // Update WiFi status UI
-            updateWiFiConnectionStatus();
+            updateCellularConnectionStatus();
         }
 
         function activateAudio() {
@@ -1616,7 +1086,6 @@
                     document.getElementById('audioActivationPanel').style.display = 'none';
                     showNotification('Audio Enabled', 'Sound is now active', 'success');
                 }).catch(e => {
-                    console.error('Still cannot play audio:', e);
                     showNotification('Audio Error', 'Failed to enable audio. Try clicking the page first.', 'error');
                 });
             }
@@ -1624,22 +1093,13 @@
 
         function handleICECandidate(event) {
             if (event.candidate && !appState.connectionPaused && appState.peerConnection) {
-                debugLog('Sending ICE candidate');
-                appState.candidateCount++;
-                updateIceStatus();
-                
-                const candidateType = event.candidate.candidate.split(' ')[7];
-                debugLog(`Local ICE candidate (type: ${candidateType})`);
-                
                 sendMessage({
                     type: 'candidate',
                     candidate: event.candidate.candidate,
                     sdpMid: event.candidate.sdpMid,
                     sdpMLineIndex: event.candidate.sdpMLineIndex
                 });
-                
-                // Update WiFi status UI
-                updateWiFiConnectionStatus();
+                updateCellularConnectionStatus();
             }
         }
         
@@ -1647,16 +1107,10 @@
             if (appState.connectionPaused || !appState.peerConnection) return;
             
             const state = appState.peerConnection.iceConnectionState;
-            debugLog(`ICE connection state changed to: ${state}`);
-            updateIceStatus();
-            
-            // Update WiFi status UI
-            updateWiFiConnectionStatus();
             
             if (state === 'connected' || state === 'completed') {
                 updateStatus(`Call connected (${appState.roomId})`, true);
                 appState.reconnectAttempts = 0;
-                appState.iceRestartMode = 'normal'; // Reset to normal mode after success
                 document.getElementById('reconnectionStatus').style.display = 'none';
             } else if (state === 'disconnected' || state === 'failed') {
                 updateStatus(`Connection ${state}`, false);
@@ -1664,18 +1118,11 @@
                 
                 if (appState.reconnectAttempts < appState.maxReconnectAttempts) {
                     appState.reconnectAttempts++;
-                    
-                    // Switch to aggressive mode after 2 attempts on WiFi
-                    if (appState.networkType === 'wifi' && appState.reconnectAttempts >= 2) {
-                        appState.iceRestartMode = 'aggressive';
-                    }
-                    
                     const delay = Math.min(1000 * Math.pow(2, appState.reconnectAttempts), 30000);
                     showNotification('Reconnecting', `Attempt ${appState.reconnectAttempts}/${appState.maxReconnectAttempts}`, 'warning');
                     setTimeout(() => restartICE(), delay);
                 } else {
                     showNotification('Connection Failed', 'Reconnection attempts exhausted', 'error', true);
-                    // Automatically try full reconnection after 3 seconds
                     setTimeout(() => {
                         if (appState.peerConnection && 
                             (appState.peerConnection.iceConnectionState === 'disconnected' || 
@@ -1685,57 +1132,27 @@
                     }, 3000);
                 }
             }
+            updateCellularConnectionStatus();
         }
         
-        function handleConnectionStateChange() {
-            if (!appState.peerConnection) return;
-            const state = appState.peerConnection.connectionState;
-            debugLog(`Connection state changed to: ${state}`);
-            updateIceStatus();
-        }
-        
-        function handleSignalingStateChange() {
-            if (!appState.peerConnection) return;
-            const state = appState.peerConnection.signalingState;
-            debugLog(`Signaling state changed to: ${state}`);
-            updateIceStatus();
-        }
-        
-        function handleIceGatheringStateChange() {
-            if (!appState.peerConnection) return;
-            const state = appState.peerConnection.iceGatheringState;
-            debugLog(`ICE gathering state changed to: ${state}`);
-            updateIceStatus();
-        }
-        
-        function updateIceStatus() {
+        function updateCellularConnectionStatus() {
             if (!appState.peerConnection) return;
             
-            document.getElementById('iceState').textContent = appState.peerConnection.iceConnectionState;
-            document.getElementById('signalingState').textContent = appState.peerConnection.signalingState;
-            document.getElementById('connectionState').textContent = appState.peerConnection.connectionState;
-            document.getElementById('iceGatheringState').textContent = appState.peerConnection.iceGatheringState;
-            document.getElementById('candidateCount').textContent = appState.candidateCount;
-        }
-        
-        function updateWiFiConnectionStatus() {
-            if (!appState.peerConnection || appState.networkType !== 'wifi') return;
-            
-            const statusElem = document.getElementById('wifiConnectionStatus');
-            const statusText = document.getElementById('wifiStatusText');
+            const statusElem = document.getElementById('cellularConnectionStatus');
+            const statusText = document.getElementById('cellularStatusText');
             statusElem.style.display = 'block';
             
             const state = appState.peerConnection.iceConnectionState;
             
             if (state === 'connected' || state === 'completed') {
-                statusText.innerHTML = '<i class="fas fa-check-circle"></i> WiFi connection optimized';
-                statusElem.className = 'wifi-connection-status active';
+                statusText.innerHTML = '<i class="fas fa-check-circle"></i> Cellular connection optimized';
+                statusElem.className = 'cellular-connection-status active';
             } else if (state === 'disconnected' || state === 'failed') {
-                statusText.innerHTML = '<i class="fas fa-exclamation-triangle"></i> WiFi connection issues detected';
-                statusElem.className = 'wifi-connection-status warning';
+                statusText.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Cellular connection issues detected';
+                statusElem.className = 'cellular-connection-status warning';
             } else {
-                statusText.innerHTML = '<i class="fas fa-sync-alt"></i> Optimizing WiFi connection';
-                statusElem.className = 'wifi-connection-status';
+                statusText.innerHTML = '<i class="fas fa-sync-alt"></i> Optimizing cellular connection';
+                statusElem.className = 'cellular-connection-status';
             }
         }
 
@@ -1750,7 +1167,6 @@
                 if (appState.connectionPaused || !appState.peerConnection) return;
                 
                 const message = JSON.parse(snapshot.val());
-                debugLog(`Received message: ${message.type}`);
                 
                 if (!appState.peerConnection) {
                     if (!createPeerConnection()) return;
@@ -1779,12 +1195,6 @@
                             endAudioCall();
                         }
                         break;
-                    case 'renegotiate':
-                        if (appState.isInitiator && appState.isStarted) {
-                            debugLog('Received renegotiate request');
-                            restartICE();
-                        }
-                        break;
                 }
             });
         }
@@ -1798,14 +1208,11 @@
                 await appState.peerConnection.setRemoteDescription(
                     new RTCSessionDescription(offer));
                 
-                // Create answer with WiFi-specific optimizations
+                // Create answer with cellular optimizations
                 const answer = await appState.peerConnection.createAnswer();
                 
-                // Optimize SDP for WiFi if needed
-                if (appState.networkType === 'wifi') {
-                    answer.sdp = optimizeSDPForWiFi(answer.sdp);
-                    debugLog('Optimized SDP for WiFi connection');
-                }
+                // Optimize SDP for cellular
+                answer.sdp = optimizeSDPForCellular(answer.sdp);
                 
                 await appState.peerConnection.setLocalDescription(answer);
                 
@@ -1816,8 +1223,7 @@
                 document.getElementById('audioControls').style.display = 'flex';
                 document.getElementById('joinRoomBtn').style.display = 'none';
                 
-                // Keep screen awake
-                keepScreenAwake();
+                showNotification('Call Started', 'You are now connected', 'success');
             } catch (err) {
                 console.error('Error handling offer:', err);
                 showNotification('Connection Error', 'Failed to handle offer: ' + err.message, 'error', true);
@@ -1826,96 +1232,22 @@
 
         function sendMessage(message) {
             if (!appState.roomId || appState.connectionPaused) return;
-            debugLog(`Sending message: ${message.type}`);
             const dbRef = database.ref(`rooms/${appState.roomId}/messages`);
             dbRef.push(JSON.stringify(message));
         }
         
-        // Optimize SDP for WiFi connections
-        function optimizeSDPForWiFi(sdp) {
-            // Prioritize OPUS audio codec
-            sdp = preferAudioCodec(sdp, 'opus');
+        // Optimize SDP for cellular connections
+        function optimizeSDPForCellular(sdp) {
+            // Adjust bandwidth for cellular networks
+            sdp = sdp.replace(/a=mid:audio/g, 'a=mid:audio\r\nb=AS:64\r\nb=TIAS:64000');
             
-            // Adjust bandwidth for WiFi
-            sdp = setBandwidth(sdp, {
-                audio: 128,  // 128 kbps for audio
-                video: 0     // No video
-            });
+            // Prioritize OPUS codec with specific settings
+            sdp = sdp.replace(/useinbandfec=1/g, 'useinbandfec=1; maxaveragebitrate=64000');
             
             return sdp;
         }
         
-        // Helper function to prioritize a specific audio codec
-        function preferAudioCodec(sdp, codec) {
-            const lines = sdp.split('\n');
-            let mLineIndex = -1;
-            let codecIndex = -1;
-            
-            // Find the audio m-line
-            for (let i = 0; i < lines.length; i++) {
-                if (lines[i].startsWith('m=audio')) {
-                    mLineIndex = i;
-                    break;
-                }
-            }
-            
-            if (mLineIndex === -1) return sdp;
-            
-            // Find the preferred codec
-            const mLine = lines[mLineIndex];
-            const codecs = mLine.split(' ').slice(3);
-            
-            for (let i = 0; i < codecs.length; i++) {
-                if (codecs[i] === codec) {
-                    codecIndex = i;
-                    break;
-                }
-            }
-            
-            if (codecIndex === -1) return sdp;
-            
-            // Move preferred codec to front
-            if (codecIndex > 0) {
-                const temp = codecs[codecIndex];
-                codecs.splice(codecIndex, 1);
-                codecs.unshift(temp);
-                
-                lines[mLineIndex] = mLine.split(' ').slice(0, 3).concat(codecs).join(' ');
-            }
-            
-            return lines.join('\n');
-        }
-        
-        // Helper function to set bandwidth in SDP
-        function setBandwidth(sdp, bandwidth) {
-            let lines = sdp.split('\n');
-            let mLineIndex = -1;
-            
-            // Find the audio m-line
-            for (let i = 0; i < lines.length; i++) {
-                if (lines[i].startsWith('m=audio')) {
-                    mLineIndex = i;
-                    break;
-                }
-            }
-            
-            if (mLineIndex === -1) return sdp;
-            
-            // Remove existing bandwidth lines
-            lines = lines.filter(line => !line.startsWith('b=AS:') && !line.startsWith('b=TIAS:'));
-            
-            // Add new bandwidth line
-            if (bandwidth.audio > 0) {
-                lines.splice(mLineIndex + 1, 0, `b=AS:${bandwidth.audio}`);
-                lines.splice(mLineIndex + 1, 0, `b=TIAS:${bandwidth.audio * 1000}`);
-            }
-            
-            return lines.join('\n');
-        }
-        
         async function generateAudioRoom() {
-            debugLog("Generate room button clicked");
-            
             // Check network status before proceeding
             if (!appState.isOnline) {
                 showNotification('No Internet Connection', 'Please connect to the internet to generate a room', 'error');
@@ -1925,17 +1257,6 @@
             try {
                 // Generate a new room ID
                 appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-                
-                // Show room ID
-                document.getElementById('roomIdDisplay').textContent = `Room ID: ${appState.roomId}`;
-                document.getElementById('roomIdDisplay').style.display = 'block';
-                
-                // Show copy button
-                document.getElementById('copyRoomLink').style.display = 'flex';
-                document.getElementById('showQrBtn').style.display = 'flex';
-                document.getElementById('joinRoomBtn').style.display = 'none';
-                
-                showNotification('Room Created', `Room ID: ${appState.roomId}`, 'success');
                 
                 // Initialize media
                 const mediaInitialized = await initMedia();
@@ -1948,14 +1269,11 @@
                 appState.isInitiator = true;
                 initSignaling();
                 
-                // Create offer
+                // Create offer with cellular optimizations
                 const offer = await appState.peerConnection.createOffer();
                 
-                // Optimize SDP for WiFi if needed
-                if (appState.networkType === 'wifi') {
-                    offer.sdp = optimizeSDPForWiFi(offer.sdp);
-                    debugLog('Optimized SDP for WiFi connection');
-                }
+                // Optimize SDP for cellular
+                offer.sdp = optimizeSDPForCellular(offer.sdp);
                 
                 await appState.peerConnection.setLocalDescription(offer);
                 sendMessage({ type: 'offer', sdp: offer.sdp });
@@ -1965,9 +1283,8 @@
                 updateStatus(`In call (${appState.roomId})`, true);
                 document.getElementById('audioControls').style.display = 'flex';
                 document.getElementById('generateAudioRoom').style.display = 'none';
-                
-                // Keep screen awake
-                keepScreenAwake();
+                document.getElementById('copyRoomLink').style.display = 'flex';
+                document.getElementById('showQrBtn').style.display = 'flex';
                 
                 showNotification('Call Started', 'You are now the host', 'success');
             } catch (err) {
@@ -1979,6 +1296,8 @@
         
         function generateQrCode() {
             const qrContainer = document.getElementById('qrContainer');
+            if (!qrContainer) return;
+            
             qrContainer.innerHTML = '';
             qrContainer.style.display = 'block';
             
@@ -2053,45 +1372,35 @@
         async function restartICE() {
             if (!appState.peerConnection || !appState.isStarted || appState.connectionPaused) return;
             
-            // Rate limit ICE restarts
             const now = Date.now();
             if (now - appState.lastIceRestart < 5000) {
-                debugLog('ICE restart rate limited');
                 return;
             }
             appState.lastIceRestart = now;
             
             try {
-                debugLog('Restarting ICE connection');
                 showNotification('Reconnecting', 'Re-establishing connection', 'warning');
                 
-                // Only initiator can create a new offer
                 if (appState.isInitiator) {
-                    // Use more aggressive options for WiFi networks
-                    const options = {iceRestart: true};
-                    
-                    if (appState.iceRestartMode === 'aggressive' || appState.networkType === 'wifi') {
-                        debugLog('Using aggressive ICE restart options');
-                        options.iceTransportPolicy = 'relay';
-                        options.optional = [
-                            {googImprovedWifiBwe: true},
-                            {googHighStartBitrate: true}
-                        ];
-                    }
+                    // Cellular-specific restart options
+                    const options = {
+                        iceRestart: true,
+                        offerToReceiveAudio: 1,
+                        iceTransportPolicy: 'relay'
+                    };
                     
                     const offer = await appState.peerConnection.createOffer(options);
                     
-                    // Optimize SDP for WiFi if needed
-                    if (appState.networkType === 'wifi') {
-                        offer.sdp = optimizeSDPForWiFi(offer.sdp);
-                        debugLog('Optimized SDP for WiFi connection during restart');
-                    }
+                    // Optimize for cellular
+                    offer.sdp = optimizeSDPForCellular(offer.sdp);
                     
                     await appState.peerConnection.setLocalDescription(offer);
                     sendMessage(offer);
                 } else {
-                    // Answerer sends renegotiate request
-                    sendMessage({ type: 'renegotiate' });
+                    // For non-initiators, create a new offer if possible
+                    const offer = await appState.peerConnection.createOffer();
+                    await appState.peerConnection.setLocalDescription(offer);
+                    sendMessage(offer);
                 }
             } catch (err) {
                 console.error('ICE restart error:', err);
@@ -2100,8 +1409,6 @@
         }
 
         function endAudioCall() {
-            debugLog('Ending audio call');
-            
             if (appState.peerConnection) {
                 appState.peerConnection.close();
                 appState.peerConnection = null;
@@ -2116,14 +1423,12 @@
             document.getElementById('audioControls').style.display = 'none';
             document.getElementById('copyRoomLink').style.display = 'none';
             document.getElementById('showQrBtn').style.display = 'none';
-            document.getElementById('qrContainer').style.display = 'none';
-            document.getElementById('roomIdDisplay').style.display = 'none';
             document.getElementById('generateAudioRoom').style.display = 'flex';
             document.getElementById('joinRoomBtn').style.display = 'flex';
             document.getElementById('audioActivationPanel').style.display = 'none';
             document.getElementById('connectionGuard').style.display = 'none';
             document.getElementById('reconnectionStatus').style.display = 'none';
-            document.getElementById('wifiConnectionStatus').style.display = 'none';
+            document.getElementById('cellularConnectionStatus').style.display = 'none';
             stopTimer();
             updateStatus('Call ended', false);
             showNotification('Call Ended', 'Your call has been disconnected');
@@ -2132,9 +1437,6 @@
             if (appState.remoteAudioElement) {
                 appState.remoteAudioElement.srcObject = null;
             }
-            
-            // Release screen wake techniques
-            releaseScreenWake();
             
             // Send bye message if in room
             if (appState.roomId) {
@@ -2147,7 +1449,6 @@
             appState.reconnectAttempts = 0;
             appState.remoteStream = null;
             appState.connectionPaused = false;
-            appState.iceRestartMode = 'normal';
             
             // Reset mute button
             const muteBtn = document.getElementById('audioAudioToggle');
@@ -2176,12 +1477,6 @@
         async function joinAudioRoom(roomId) {
             appState.roomId = roomId;
             
-            // Check network status before proceeding
-            if (!appState.isOnline) {
-                showNotification('No Internet Connection', 'Please connect to the internet to join a room', 'error');
-                return;
-            }
-            
             try {
                 // Initialize media
                 const mediaInitialized = await initMedia();
@@ -2196,16 +1491,15 @@
                 showNotification('Joining', `Connecting to room: ${roomId}`);
                 document.getElementById('joinRoomBtn').style.display = 'none';
                 
-                // Add a timeout to check if connection is stuck
+                // Extended timeout for cellular networks
                 setTimeout(() => {
                     if (!appState.isStarted && appState.peerConnection) {
                         const state = appState.peerConnection.iceConnectionState;
                         if (state === 'new' || state === 'checking') {
-                            debugLog('Connection taking too long, restarting ICE');
                             restartICE();
                         }
                     }
-                }, 10000); // 10 seconds timeout
+                }, 15000); // 15 seconds timeout
             } catch (err) {
                 showNotification('Connection Error', 'Failed to join room: ' + err.message, 'error', true);
             }
@@ -2230,10 +1524,8 @@
         function retryConnection() {
             if (appState.roomId) {
                 if (appState.isInitiator) {
-                    // Retry as initiator
                     generateAudioRoom();
                 } else {
-                    // Retry as joiner
                     joinAudioRoom(appState.roomId);
                 }
             } else {
@@ -2241,26 +1533,8 @@
             }
         }
         
-        function toggleDebug() {
-            appState.debugMode = !appState.debugMode;
-            document.getElementById('debugPanel').style.display = appState.debugMode ? 'block' : 'none';
-        }
-        
-        function debugLog(message) {
-            if (!appState.debugMode) return;
-            
-            const debugLog = document.getElementById('debugLog');
-            const logEntry = document.createElement('div');
-            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            debugLog.appendChild(logEntry);
-            
-            // Auto-scroll to bottom
-            debugLog.scrollTop = debugLog.scrollHeight;
-        }
-        
-        function toggleIceStatusPanel() {
-            const panel = document.getElementById('iceStatusPanel');
-            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+        function toggleDebugPanel() {
+            showNotification('Debug Info', 'Cellular connection optimized with TURN servers', 'info');
         }
     </script>
 </body>
