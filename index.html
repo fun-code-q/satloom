@@ -701,7 +701,7 @@
                     </div>
                     <div class="about-content">
                         <p>A free, open-source communication platform using WebRTC technology.</p>
-                        <p><strong>Version:</strong> 1.3.0</p>
+                        <p><strong>Version:</strong> 1.3.1</p>
                         <p><strong>Developed by:</strong> SatLoom Developers</p>
                         <p><strong>Features:</strong></p>
                         <ul>
@@ -993,6 +993,17 @@
                 appState.peerConnection.onconnectionstatechange = handleConnectionStateChange;
                 appState.peerConnection.onsignalingstatechange = handleSignalingStateChange;
                 
+                // Create a new remote stream
+                appState.remoteStream = new MediaStream();
+                
+                // Set the remote stream to the appropriate element based on mode
+                if (appState.currentMode === 'video') {
+                    const remoteVideo = document.getElementById('video-remote-video');
+                    remoteVideo.srcObject = appState.remoteStream;
+                } else {
+                    domRefs.remoteAudio.srcObject = appState.remoteStream;
+                }
+                
                 return true;
             } catch (err) {
                 console.error('Peer connection error:', err);
@@ -1004,27 +1015,16 @@
 
         function handleRemoteStream(event) {
             console.log('Remote stream received');
-            if (appState.currentMode === 'video') {
-                const remoteVideo = document.getElementById('video-remote-video');
-                // Reset the video element to force refresh
-                remoteVideo.srcObject = null;
-                remoteVideo.srcObject = event.streams[0];
-                appState.remoteStream = event.streams[0];
+            if (!appState.remoteStream) {
+                appState.remoteStream = new MediaStream();
+            }
+            
+            // Add the track to our remote stream
+            appState.remoteStream.addTrack(event.track);
+            
+            // For video mode, hide the spinner when we get the first video track
+            if (appState.currentMode === 'video' && event.track.kind === 'video') {
                 document.getElementById('videoSpinner').style.display = 'none';
-                
-                // Handle autoplay restrictions
-                remoteVideo.play().catch(e => {
-                    console.error('Video autoplay blocked:', e);
-                });
-            } else {
-                // For audio calls, use the hidden audio element
-                domRefs.remoteAudio.srcObject = event.streams[0];
-                
-                // Handle autoplay restrictions
-                domRefs.remoteAudio.play().catch(e => {
-                    console.error('Autoplay blocked:', e);
-                    showNotification('Audio Blocked', 'Click to enable audio playback', 'warning');
-                });
             }
         }
 
@@ -1093,8 +1093,13 @@
                         break;
                     case 'candidate':
                         if (appState.isStarted && appState.peerConnection.remoteDescription) {
-                            appState.peerConnection.addIceCandidate(
-                                new RTCIceCandidate(message));
+                            const candidate = new RTCIceCandidate({
+                                candidate: message.candidate,
+                                sdpMid: message.sdpMid,
+                                sdpMLineIndex: message.sdpMLineIndex
+                            });
+                            appState.peerConnection.addIceCandidate(candidate)
+                                .catch(e => console.error('Error adding ICE candidate:', e));
                         }
                         break;
                     case 'bye':
@@ -1237,19 +1242,21 @@
                 appState.textChatRef.off('child_added');
             }
             
+            // Use the correct path for text chats
             appState.textChatRef = firebase.database().ref(`textChats/${appState.roomId}/messages`);
             console.log(`Initializing text chat for room: ${appState.roomId}`);
             
             appState.textChatRef.on('child_added', snapshot => {
                 const message = snapshot.val();
-                addMessageToChat(message, 'text');
+                console.log('Received text message:', message);
+                addMessageToChat(message);
             });
             
             showNotification('Text Chat', `Joined chat room: ${appState.roomId}`, 'success');
         }
         
-        function addMessageToChat(message, mode) {
-            const chat = document.getElementById(`${mode}Chat`);
+        function addMessageToChat(message) {
+            const chat = document.getElementById('textChat');
             const messageElement = document.createElement('div');
             
             messageElement.className = `chat-message ${message.userId === appState.userId ? '' : 'remote'}`;
@@ -1269,6 +1276,11 @@
                 if (appState.localStream) {
                     appState.localStream.getTracks().forEach(track => track.stop());
                     appState.localStream = null;
+                }
+                
+                if (appState.remoteStream) {
+                    appState.remoteStream.getTracks().forEach(track => track.stop());
+                    appState.remoteStream = null;
                 }
                 
                 if (mode === 'video') {
@@ -1334,20 +1346,17 @@
 
         // ========== UTILITY FUNCTIONS ========== //
         function sendChatMessage(mode) {
-            const input = document.getElementById(`${mode}Message`);
+            const input = document.getElementById('textMessage');
             const message = input.value.trim();
             
-            if (message) {
-                if (mode === 'text') {
-                    // For text chat, send through Firebase
-                    const dbRef = firebase.database().ref(`textChats/${appState.roomId}/messages`);
-                    dbRef.push({
-                        text: message,
-                        userId: appState.userId,
-                        userName: 'User ' + appState.userId.substr(0, 4),
-                        timestamp: Date.now()
-                    });
-                }
+            if (message && appState.textChatRef) {
+                const dbRef = firebase.database().ref(`textChats/${appState.roomId}/messages`);
+                dbRef.push({
+                    text: message,
+                    userId: appState.userId,
+                    userName: 'User ' + appState.userId.substr(0, 4),
+                    timestamp: Date.now()
+                });
                 input.value = '';
             }
         }
