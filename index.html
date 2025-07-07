@@ -17,9 +17,6 @@
             --success-color: #4CAF50;
             --warning-color: #ff9800;
             --error-color: #f44336;
-            --sidebar-width: 280px;
-            --sidebar-min-width: 60px;
-            --transition-speed: 0.3s;
         }
 
         .light-mode {
@@ -46,72 +43,44 @@
             color: var(--text-primary);
             min-height: 100vh;
             display: flex;
-            padding: 10px;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
         }
 
-        /* Sidebar styles */
-        .sidebar {
+        .app-container {
+            max-width: 1200px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        @media (min-width: 992px) {
+            .app-container {
+                grid-template-columns: 280px 1fr;
+            }
+        }
+
+        .sidebar, .card {
             background: var(--card-bg);
             border-radius: 16px;
-            padding: 15px;
+            padding: 20px;
             backdrop-filter: blur(10px);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
             animation: fadeIn 0.5s ease;
-            width: var(--sidebar-width);
-            transition: all var(--transition-speed) ease;
-            position: relative;
-            overflow: hidden;
-            height: calc(100vh - 20px);
+        }
+
+        .sidebar {
             display: flex;
             flex-direction: column;
-        }
-
-        .sidebar.minimized {
-            width: var(--sidebar-min-width);
-        }
-
-        .sidebar.minimized .logo-text,
-        .sidebar.minimized .nav-text,
-        .sidebar.minimized .status-text {
-            display: none;
-        }
-
-        .sidebar.minimized .logo-icon {
-            margin-right: 0;
-        }
-
-        .sidebar.minimized .nav-link {
-            justify-content: center;
-        }
-
-        .sidebar.minimized .nav-link i {
-            margin-right: 0;
-            font-size: 1.2rem;
-        }
-
-        .toggle-sidebar {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: var(--text-primary);
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 10;
         }
 
         .logo {
             display: flex;
             align-items: center;
             margin-bottom: 30px;
-            padding-top: 10px;
-            position: relative;
         }
 
         .logo-icon {
@@ -124,7 +93,6 @@
             justify-content: center;
             margin-right: 10px;
             animation: pulse 2s infinite;
-            flex-shrink: 0;
         }
 
         .logo-text {
@@ -134,13 +102,11 @@
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            transition: opacity var(--transition-speed);
         }
 
         .nav-menu {
             list-style: none;
             margin-top: 20px;
-            flex-grow: 1;
         }
 
         .nav-item {
@@ -152,7 +118,6 @@
         .nav-item.active {
             transform: scale(1.02);
             box-shadow: 0 4px 15px rgba(58, 123, 213, 0.3);
-            background: rgba(58, 123, 213, 0.15);
         }
 
         .nav-link {
@@ -175,49 +140,21 @@
             margin-right: 10px;
             width: 20px;
             text-align: center;
-            flex-shrink: 0;
-        }
-
-        .nav-text {
-            transition: opacity var(--transition-speed);
-        }
-
-        .app-container {
-            display: flex;
-            width: 100%;
-            gap: 15px;
-            height: calc(100vh - 20px);
         }
 
         .main-content {
-            flex-grow: 1;
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            overflow: hidden;
+            gap: 20px;
         }
 
         .section {
             display: none;
-            height: 100%;
         }
 
         .section.active {
-            display: flex;
-            flex-direction: column;
+            display: block;
             animation: fadeIn 0.3s ease;
-        }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 20px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
         }
 
         .section-title {
@@ -236,7 +173,6 @@
         .input-group {
             display: flex;
             margin-bottom: 15px;
-            gap: 10px;
         }
 
         .input-styled {
@@ -267,7 +203,7 @@
             align-items: center;
             justify-content: center;
             transition: all 0.3s ease;
-            flex-shrink: 0;
+            margin: 5px;
         }
 
         .btn i {
@@ -288,7 +224,6 @@
             display: flex;
             justify-content: center;
             margin-top: 20px;
-            gap: 15px;
         }
 
         .control-btn {
@@ -299,10 +234,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            margin: 0 10px;
             cursor: pointer;
             transition: all 0.2s ease;
             color: white;
-            flex-shrink: 0;
         }
 
         .control-btn.mute {
@@ -318,8 +253,7 @@
             background: rgba(0, 0, 0, 0.2);
             border-radius: 12px;
             overflow: hidden;
-            flex-grow: 1;
-            display: none;
+            height: 300px;
             margin: 15px 0;
         }
         
@@ -334,13 +268,12 @@
             position: absolute;
             bottom: 15px;
             right: 15px;
-            width: 120px;
-            height: 90px;
+            width: 100px;
+            height: 75px;
             border-radius: 8px;
             border: 2px solid var(--accent-color);
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             background: #000;
-            display: none;
         }
 
         .notification {
@@ -372,7 +305,6 @@
             padding: 15px;
             margin-top: 15px;
             position: relative;
-            display: none;
         }
 
         .share-link {
@@ -404,7 +336,6 @@
             align-items: center;
             justify-content: center;
             margin: 20px 0;
-            display: none;
         }
 
         .settings-list {
@@ -448,7 +379,6 @@
             border-radius: 8px;
             padding: 10px;
             margin-bottom: 10px;
-            display: none;
         }
         
         .chat-message {
@@ -519,64 +449,25 @@
             display: none;
         }
         
-        /* Chat toggle button */
-        .chat-toggle {
-            position: absolute;
-            bottom: 15px;
-            right: 15px;
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
+        .visualizer-bars {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 5;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            align-items: flex-end;
+            height: 100%;
+            gap: 4px;
         }
         
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .app-container {
-                flex-direction: column;
-                height: auto;
-            }
-            
-            .sidebar {
-                width: 100%;
-                height: auto;
-                margin-bottom: 15px;
-            }
-            
-            .sidebar.minimized {
-                width: 100%;
-            }
-            
-            .sidebar.minimized .logo-text,
-            .sidebar.minimized .nav-text,
-            .sidebar.minimized .status-text {
-                display: inline;
-            }
-            
-            .sidebar.minimized .nav-link {
-                justify-content: flex-start;
-            }
-            
-            .sidebar.minimized .nav-link i {
-                margin-right: 10px;
-            }
-            
-            .main-content {
-                min-height: 70vh;
-            }
-            
-            #videoRemoteVideoContainer {
-                min-height: 300px;
-            }
+        .visualizer-bar {
+            width: 8px;
+            background: linear-gradient(to top, var(--accent-color), var(--primary-color));
+            border-radius: 4px;
+            animation: equalizer 1.2s infinite ease-in-out;
         }
+        
+        .visualizer-bar:nth-child(1) { animation-delay: 0s; height: 20px; }
+        .visualizer-bar:nth-child(2) { animation-delay: 0.2s; height: 30px; }
+        .visualizer-bar:nth-child(3) { animation-delay: 0.4s; height: 25px; }
+        .visualizer-bar:nth-child(4) { animation-delay: 0.6s; height: 35px; }
+        .visualizer-bar:nth-child(5) { animation-delay: 0.8s; height: 15px; }
 
         /* Animations */
         @keyframes gradient {
@@ -621,10 +512,6 @@
 
     <div class="app-container">
         <div class="sidebar">
-            <button class="toggle-sidebar" id="toggleSidebar">
-                <i class="fas fa-chevron-left"></i>
-            </button>
-            
             <div class="logo">
                 <div class="logo-icon">
                     <i class="fas fa-satellite-dish"></i>
@@ -632,32 +519,32 @@
                 <div class="logo-text">SatLoom</div>
             </div>
             <div class="status-indicator" id="connectionStatus">
-                <i class="fas fa-signal"></i> <span class="status-text" id="statusText">Ready to connect</span>
+                <i class="fas fa-signal"></i> <span id="statusText">Ready to connect</span>
             </div>
             <ul class="nav-menu">
-                <li class="nav-item">
-                    <a class="nav-link" data-section="audio-call">
-                        <i class="fas fa-phone"></i> <span class="nav-text">Audio Call</span>
+                <li class="nav-item active">
+                    <a class="nav-link active" data-section="audio-call">
+                        <i class="fas fa-phone"></i> Audio Call
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" data-section="video-call">
-                        <i class="fas fa-video"></i> <span class="nav-text">Video Call</span>
+                        <i class="fas fa-video"></i> Video Call
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" data-section="text-chat">
-                        <i class="fas fa-comments"></i> <span class="nav-text">Text Chat</span>
+                        <i class="fas fa-comments"></i> Text Chat
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" data-section="settings">
-                        <i class="fas fa-cog"></i> <span class="nav-text">Settings</span>
+                        <i class="fas fa-cog"></i> Settings
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" data-section="about">
-                        <i class="fas fa-info-circle"></i> <span class="nav-text">About</span>
+                        <i class="fas fa-info-circle"></i> About
                     </a>
                 </li>
             </ul>
@@ -683,20 +570,22 @@
                             <i class="fas fa-sign-in-alt"></i> Join Room
                         </button>
                     </div>
-                    <div id="audioRoomLinkContainer" class="share-link-container">
+                    <div id="audioRoomLinkContainer" class="share-link-container" style="display: none;">
                         <div class="share-link" id="audioRoomLink"></div>
                         <button class="copy-btn" id="copyAudioLink">
                             <i class="fas fa-copy"></i>
                         </button>
                     </div>
                     <div class="audio-visualizer" id="audioVisualizer">
-                        <div class="audio-bar"></div>
-                        <div class="audio-bar"></div>
-                        <div class="audio-bar"></div>
-                        <div class="audio-bar"></div>
-                        <div class="audio-bar"></div>
+                        <div class="visualizer-bars">
+                            <div class="visualizer-bar"></div>
+                            <div class="visualizer-bar"></div>
+                            <div class="visualizer-bar"></div>
+                            <div class="visualizer-bar"></div>
+                            <div class="visualizer-bar"></div>
+                        </div>
                     </div>
-                    <div class="call-controls" id="audioControls">
+                    <div class="call-controls" id="audioControls" style="display: none;">
                         <button class="control-btn mute" id="audioAudioToggle">
                             <i class="fas fa-microphone"></i>
                         </button>
@@ -726,7 +615,7 @@
                             <i class="fas fa-sign-in-alt"></i> Join Room
                         </button>
                     </div>
-                    <div id="videoRoomLinkContainer" class="share-link-container">
+                    <div id="videoRoomLinkContainer" class="share-link-container" style="display: none;">
                         <div class="share-link" id="videoRoomLink"></div>
                         <button class="copy-btn" id="copyVideoLink">
                             <i class="fas fa-copy"></i>
@@ -736,11 +625,8 @@
                         <video id="video-remote-video" autoplay playsinline></video>
                         <video id="video-local-video" autoplay playsinline muted></video>
                         <div class="spinner" id="videoSpinner"></div>
-                        <button class="chat-toggle" id="chatToggle">
-                            <i class="fas fa-comment"></i>
-                        </button>
                     </div>
-                    <div class="call-controls" id="videoControls">
+                    <div class="call-controls" id="videoControls" style="display: none;">
                         <button class="control-btn mute" id="videoVideoToggle">
                             <i class="fas fa-video"></i>
                         </button>
@@ -752,7 +638,7 @@
                         </button>
                     </div>
                     <div id="videoChat" class="chat-container"></div>
-                    <div class="input-group" id="videoMessageContainer">
+                    <div class="input-group">
                         <input type="text" id="videoMessage" class="input-styled" placeholder="Type a message...">
                         <button class="btn" id="sendVideoMessage">
                             <i class="fas fa-paper-plane"></i> Send
@@ -777,7 +663,7 @@
                             <i class="fas fa-sign-in-alt"></i> Join Room
                         </button>
                     </div>
-                    <div id="textRoomLinkContainer" class="share-link-container">
+                    <div id="textRoomLinkContainer" class="share-link-container" style="display: none;">
                         <div class="share-link" id="textRoomLink"></div>
                         <button class="copy-btn" id="copyTextLink">
                             <i class="fas fa-copy"></i>
@@ -822,8 +708,16 @@
                     </div>
                     <div class="about-content">
                         <p>A free, open-source communication platform using WebRTC technology.</p>
-                        <p><strong>Version:</strong> 1.3.0</p>
+                        <p><strong>Version:</strong> 1.2.0</p>
                         <p><strong>Developed by:</strong> SatLoom Developers</p>
+                        <p><strong>Features:</strong></p>
+                        <ul>
+                            <li>High-quality audio calls</li>
+                            <li>Video conferencing</li>
+                            <li>Real-time text chat</li>
+                            <li>Secure peer-to-peer connections</li>
+                            <li>Cross-platform compatibility</li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -838,20 +732,25 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
     <script>
-        // Initialize the application
-        document.addEventListener('DOMContentLoaded', () => {
-            // Set initial active section
-            setActiveSection('audio-call');
-            
-            // Setup event listeners
-            setupEventListeners();
-            
-            // Load settings
-            loadSettings();
-            
-            // Auto-join room if specified in URL
-            autoJoinRoom();
-        });
+        // ========== DOM ELEMENT REFERENCES ========== //
+        const domRefs = {
+            themeToggle: document.getElementById('themeToggle'),
+            notification: document.getElementById('globalNotification'),
+            notificationTitle: document.getElementById('notificationTitle'),
+            notificationMessage: document.getElementById('notificationMessage'),
+            connectionStatus: document.getElementById('connectionStatus'),
+            statusText: document.getElementById('statusText'),
+            audioCallTimer: document.getElementById('audioCallTimer'),
+            videoCallTimer: document.getElementById('videoCallTimer'),
+            sections: {
+                'audio-call': document.getElementById('audio-call-section'),
+                'video-call': document.getElementById('video-call-section'),
+                'text-chat': document.getElementById('text-chat-section'),
+                'settings': document.getElementById('settings-section'),
+                'about': document.getElementById('about-section')
+            },
+            remoteAudio: document.getElementById('remoteAudio')
+        };
 
         // ========== STATE MANAGEMENT ========== //
         const appState = {
@@ -866,7 +765,7 @@
             currentMode: 'audio-call',
             signalingRef: null,
             userId: 'user-' + Math.random().toString(36).substr(2, 8),
-            isSidebarMinimized: false
+            textChatRef: null
         };
 
         // ========== FIREBASE CONFIG ========== //
@@ -910,6 +809,15 @@
         }
 
         // ========== INITIALIZATION ========== //
+        document.addEventListener('DOMContentLoaded', initApp);
+
+        async function initApp() {
+            initFirebase();
+            setupEventListeners();
+            loadSettings();
+            autoJoinRoom();
+        }
+
         function initFirebase() {
             firebase.initializeApp(firebaseConfig);
         }
@@ -921,10 +829,7 @@
             });
 
             // Theme toggle
-            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
-            
-            // Toggle sidebar
-            document.getElementById('toggleSidebar').addEventListener('click', toggleSidebar);
+            domRefs.themeToggle.addEventListener('click', toggleTheme);
 
             // Audio call controls
             document.getElementById('generateAudioRoom').addEventListener('click', () => generateRoom('audio'));
@@ -941,9 +846,6 @@
             document.getElementById('videoAudioToggle').addEventListener('click', () => toggleAudio('video'));
             document.getElementById('sendVideoMessage').addEventListener('click', () => sendChatMessage('video'));
             document.getElementById('copyVideoLink').addEventListener('click', () => copyLink('video'));
-            
-            // Video chat toggle
-            document.getElementById('chatToggle').addEventListener('click', toggleVideoChat);
 
             // Text chat controls
             document.getElementById('generateTextRoom').addEventListener('click', () => generateRoom('text'));
@@ -959,19 +861,13 @@
         function loadSettings() {
             const savedTheme = localStorage.getItem('theme') || 'dark';
             document.body.className = `${savedTheme}-mode`;
-            document.getElementById('themeToggle').innerHTML = savedTheme === 'dark' ? 
+            domRefs.themeToggle.innerHTML = savedTheme === 'dark' ? 
                 '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
 
             document.getElementById('notifications-toggle').checked = 
                 localStorage.getItem('notifications') !== 'false';
             document.getElementById('notification-sound-toggle').checked = 
                 localStorage.getItem('notificationSound') !== 'false';
-            
-            // Load sidebar state
-            const sidebarState = localStorage.getItem('sidebarState');
-            if (sidebarState === 'minimized') {
-                toggleSidebar();
-            }
         }
 
         function autoJoinRoom() {
@@ -980,13 +876,7 @@
             const modeParam = urlParams.get('mode');
             
             if (roomParam && modeParam) {
-                // Set room ID in input
                 document.getElementById(`${modeParam}-room-id`).value = roomParam;
-                
-                // Switch to the correct section
-                setActiveSection(modeParam);
-                
-                // Join the room after a short delay
                 setTimeout(() => joinRoom(modeParam), 1000);
             }
         }
@@ -995,25 +885,16 @@
         function handleNavigation(e) {
             e.preventDefault();
             const sectionId = this.getAttribute('data-section');
-            setActiveSection(sectionId);
-        }
-        
-        function setActiveSection(sectionId) {
-            // Update navigation state
-            document.querySelectorAll('.nav-item').forEach(item => 
-                item.classList.remove('active'));
             
-            // Find and activate the clicked nav item
-            document.querySelectorAll('.nav-link').forEach(link => {
-                if (link.getAttribute('data-section') === sectionId) {
-                    link.parentElement.classList.add('active');
-                }
-            });
+            // Update navigation state
+            document.querySelectorAll('.nav-link').forEach(link => 
+                link.classList.remove('active'));
+            this.classList.add('active');
             
             // Update UI sections
             document.querySelectorAll('.section').forEach(section => 
                 section.classList.remove('active'));
-            document.getElementById(`${sectionId}-section`).classList.add('active');
+            domRefs.sections[sectionId].classList.add('active');
             
             appState.currentMode = sectionId;
         }
@@ -1023,51 +904,34 @@
             const isDark = document.body.classList.contains('dark-mode');
             document.body.classList.toggle('dark-mode', !isDark);
             document.body.classList.toggle('light-mode', isDark);
-            document.getElementById('themeToggle').innerHTML = isDark ? 
+            domRefs.themeToggle.innerHTML = isDark ? 
                 '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
             localStorage.setItem('theme', isDark ? 'light' : 'dark');
-        }
-        
-        // ========== SIDEBAR TOGGLE ========== //
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const toggleBtn = document.getElementById('toggleSidebar');
-            
-            sidebar.classList.toggle('minimized');
-            appState.isSidebarMinimized = !appState.isSidebarMinimized;
-            
-            // Update the toggle button icon
-            toggleBtn.innerHTML = appState.isSidebarMinimized ? 
-                '<i class="fas fa-chevron-right"></i>' : '<i class="fas fa-chevron-left"></i>';
-            
-            // Save state
-            localStorage.setItem('sidebarState', appState.isSidebarMinimized ? 'minimized' : 'expanded');
         }
 
         // ========== NOTIFICATION SYSTEM ========== //
         function showNotification(title, message, type = 'info') {
             if (!document.getElementById('notifications-toggle').checked) return;
             
-            const notification = document.getElementById('globalNotification');
-            notification.style.display = 'flex';
-            document.getElementById('notificationTitle').textContent = title;
-            document.getElementById('notificationMessage').textContent = message;
+            domRefs.notification.style.display = 'flex';
+            domRefs.notificationTitle.textContent = title;
+            domRefs.notificationMessage.textContent = message;
             
             // Set notification color based on type
-            notification.style.backgroundColor = 
+            domRefs.notification.style.backgroundColor = 
                 type === 'error' ? 'rgba(244, 67, 54, 0.8)' :
                 type === 'success' ? 'rgba(76, 175, 80, 0.8)' :
                 'rgba(58, 123, 213, 0.8)';
             
             setTimeout(() => {
-                notification.style.display = 'none';
+                domRefs.notification.style.display = 'none';
             }, 3000);
         }
 
         // ========== STATUS UPDATES ========== //
         function updateStatus(text, isConnected = false) {
-            document.getElementById('statusText').textContent = text;
-            document.getElementById('connectionStatus').className = 
+            domRefs.statusText.textContent = text;
+            domRefs.connectionStatus.className = 
                 `status-indicator ${isConnected ? 'status-connected' : ''}`;
         }
 
@@ -1079,15 +943,15 @@
                 const minutes = Math.floor(time / 60000);
                 const seconds = Math.floor((time % 60000) / 1000);
                 const timerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                document.getElementById('videoCallTimer').textContent = timerText;
-                document.getElementById('audioCallTimer').textContent = timerText;
+                domRefs.videoCallTimer.textContent = timerText;
+                domRefs.audioCallTimer.textContent = timerText;
             }, 1000);
         }
 
         function stopTimer() {
             clearInterval(appState.timer);
-            document.getElementById('videoCallTimer').textContent = '00:00';
-            document.getElementById('audioCallTimer').textContent = '00:00';
+            domRefs.videoCallTimer.textContent = '00:00';
+            domRefs.audioCallTimer.textContent = '00:00';
         }
 
         // ========== MEDIA MANAGEMENT ========== //
@@ -1103,7 +967,6 @@
                     document.getElementById('videoControls').style.display = 'flex';
                 } else {
                     document.getElementById('audioControls').style.display = 'flex';
-                    document.getElementById('audioVisualizer').style.display = 'flex';
                 }
                 
                 return true;
@@ -1151,16 +1014,13 @@
                 const remoteVideo = document.getElementById('video-remote-video');
                 remoteVideo.srcObject = event.streams[0];
                 appState.remoteStream = event.streams[0];
-                
-                // Show video elements
-                document.getElementById('videoRemoteVideoContainer').style.display = 'block';
-                document.getElementById('video-local-video').style.display = 'block';
+                document.getElementById('videoSpinner').style.display = 'none';
             } else {
                 // For audio calls, use the hidden audio element
-                document.getElementById('remoteAudio').srcObject = event.streams[0];
+                domRefs.remoteAudio.srcObject = event.streams[0];
                 
                 // Handle autoplay restrictions
-                document.getElementById('remoteAudio').play().catch(e => {
+                domRefs.remoteAudio.play().catch(e => {
                     console.error('Autoplay blocked:', e);
                     showNotification('Audio Blocked', 'Click to enable audio playback', 'warning');
                 });
@@ -1290,30 +1150,41 @@
             
             showNotification('Room Generated', `Room ID: ${appState.roomId}. Share with others.`, 'success');
             
-            // Initialize media and connection
-            const mediaInitialized = await initMedia(mode);
-            if (!mediaInitialized) return;
-            
-            const peerCreated = createPeerConnection();
-            if (!peerCreated) return;
-            
-            // Create offer
-            appState.isInitiator = true;
-            initSignaling();
-            
-            try {
-                const offer = await appState.peerConnection.createOffer();
-                await appState.peerConnection.setLocalDescription(offer);
-                sendMessage(offer);
+            // Initialize media and connection for audio/video
+            if (mode !== 'text') {
+                const mediaInitialized = await initMedia(mode);
+                if (!mediaInitialized) return;
                 
-                appState.isStarted = true;
-                startTimer();
-                updateStatus(`In ${mode} call (${appState.roomId})`, true);
-                showNotification('Call Started', `Connected to room: ${appState.roomId}`, 'success');
-            } catch (err) {
-                console.error('Error creating offer:', err);
-                showNotification('Error', 'Failed to start call', 'error');
-                updateStatus('Call failed', false);
+                const peerCreated = createPeerConnection();
+                if (!peerCreated) return;
+            } else {
+                // For text chat, just initialize the chat
+                initTextChat();
+            }
+            
+            // Create offer for audio/video
+            if (mode !== 'text') {
+                appState.isInitiator = true;
+                initSignaling();
+                
+                try {
+                    const offer = await appState.peerConnection.createOffer();
+                    await appState.peerConnection.setLocalDescription(offer);
+                    sendMessage(offer);
+                    
+                    appState.isStarted = true;
+                    startTimer();
+                    updateStatus(`In ${mode} call (${appState.roomId})`, true);
+                    showNotification('Call Started', `Connected to room: ${appState.roomId}`, 'success');
+                } catch (err) {
+                    console.error('Error creating offer:', err);
+                    showNotification('Error', 'Failed to start call', 'error');
+                    updateStatus('Call failed', false);
+                }
+            } else {
+                // For text mode
+                updateStatus(`In text chat (${appState.roomId})`, true);
+                showNotification('Chat Started', `Joined chat room: ${appState.roomId}`, 'success');
             }
         }
 
@@ -1325,66 +1196,101 @@
             }
             
             try {
-                const mediaInitialized = await initMedia(mode);
-                if (!mediaInitialized) return;
-                
-                const peerCreated = createPeerConnection();
-                if (!peerCreated) return;
-                
-                appState.isInitiator = false;
-                initSignaling();
-                
-                if (mode === 'video') {
-                    document.getElementById('videoSpinner').style.display = 'block';
+                if (mode !== 'text') {
+                    const mediaInitialized = await initMedia(mode);
+                    if (!mediaInitialized) return;
+                    
+                    const peerCreated = createPeerConnection();
+                    if (!peerCreated) return;
+                    
+                    if (mode === 'video') {
+                        document.getElementById('videoSpinner').style.display = 'block';
+                    }
+                } else {
+                    // Initialize text chat
+                    initTextChat();
                 }
                 
-                updateStatus(`Joining ${mode} call...`, false);
+                appState.isInitiator = false;
+                
+                if (mode !== 'text') {
+                    initSignaling();
+                }
+                
+                updateStatus(`Joining ${mode} room...`, false);
                 showNotification('Joining Room', `Connecting to room: ${appState.roomId}`);
             } catch (err) {
                 console.error('Error joining room:', err);
                 showNotification('Connection Error', 'Failed to join room: ' + err.message, 'error');
             }
         }
+        
+        // ========== TEXT CHAT FUNCTIONALITY ========== //
+        function initTextChat() {
+            if (appState.textChatRef) {
+                appState.textChatRef.off('child_added');
+            }
+            
+            appState.textChatRef = firebase.database().ref(`textChats/${appState.roomId}/messages`);
+            
+            appState.textChatRef.on('child_added', snapshot => {
+                const message = snapshot.val();
+                addMessageToChat(message, 'text');
+            });
+        }
+        
+        function addMessageToChat(message, mode) {
+            const chat = document.getElementById(`${mode}Chat`);
+            const messageElement = document.createElement('div');
+            
+            messageElement.className = `chat-message ${message.userId === appState.userId ? '' : 'remote'}`;
+            messageElement.innerHTML = `<strong>${message.userName}:</strong> ${message.text}`;
+            chat.appendChild(messageElement);
+            chat.scrollTop = chat.scrollHeight;
+        }
 
         // ========== CALL CONTROLS ========== //
         function hangup(mode) {
-            if (appState.peerConnection) {
-                appState.peerConnection.close();
-                appState.peerConnection = null;
-            }
-            
-            if (appState.localStream) {
-                appState.localStream.getTracks().forEach(track => track.stop());
-                appState.localStream = null;
+            if (mode !== 'text') {
+                if (appState.peerConnection) {
+                    appState.peerConnection.close();
+                    appState.peerConnection = null;
+                }
+                
+                if (appState.localStream) {
+                    appState.localStream.getTracks().forEach(track => track.stop());
+                    appState.localStream = null;
+                }
+                
+                if (mode === 'video') {
+                    document.getElementById('video-remote-video').srcObject = null;
+                    document.getElementById('video-local-video').srcObject = null;
+                    document.getElementById('videoSpinner').style.display = 'none';
+                } else {
+                    domRefs.remoteAudio.srcObject = null;
+                }
+                
+                stopTimer();
             }
             
             document.getElementById(`${mode}Controls`).style.display = 'none';
             document.getElementById(`${mode}RoomLinkContainer`).style.display = 'none';
             
-            if (mode === 'video') {
-                document.getElementById('video-remote-video').srcObject = null;
-                document.getElementById('video-local-video').srcObject = null;
-                document.getElementById('videoSpinner').style.display = 'none';
-                document.getElementById('videoRemoteVideoContainer').style.display = 'none';
-                document.getElementById('video-local-video').style.display = 'none';
-                document.getElementById('videoChat').style.display = 'none';
-                document.getElementById('videoMessageContainer').style.display = 'none';
-            } else {
-                document.getElementById('remoteAudio').srcObject = null;
-                document.getElementById('audioVisualizer').style.display = 'none';
-            }
-            
-            stopTimer();
             updateStatus('Call ended', false);
             showNotification('Call Ended', 'Your call has been disconnected');
             
-            if (appState.roomId) {
+            if (appState.roomId && mode !== 'text') {
                 sendMessage({ type: 'bye' });
             }
             
             if (appState.signalingRef) {
                 appState.signalingRef.off('child_added');
                 appState.signalingRef = null;
+            }
+            
+            if (appState.textChatRef) {
+                appState.textChatRef.off('child_added');
+                appState.textChatRef = null;
             }
             
             appState.isStarted = false;
@@ -1416,20 +1322,6 @@
                 }
             }
         }
-        
-        // ========== VIDEO CHAT TOGGLE ========== //
-        function toggleVideoChat() {
-            const chat = document.getElementById('videoChat');
-            const messageContainer = document.getElementById('videoMessageContainer');
-            
-            if (chat.style.display === 'none' || !chat.style.display) {
-                chat.style.display = 'block';
-                messageContainer.style.display = 'flex';
-            } else {
-                chat.style.display = 'none';
-                messageContainer.style.display = 'none';
-            }
-        }
 
         // ========== UTILITY FUNCTIONS ========== //
         function sendChatMessage(mode) {
@@ -1437,13 +1329,25 @@
             const message = input.value.trim();
             
             if (message) {
-                const chat = document.getElementById(`${mode}Chat`);
-                const messageElement = document.createElement('div');
-                
-                messageElement.className = 'chat-message';
-                messageElement.innerHTML = `<strong>You:</strong> ${message}`;
-                chat.appendChild(messageElement);
-                chat.scrollTop = chat.scrollHeight;
+                if (mode === 'text') {
+                    // For text chat, send through Firebase
+                    const dbRef = firebase.database().ref(`textChats/${appState.roomId}/messages`);
+                    dbRef.push({
+                        text: message,
+                        userId: appState.userId,
+                        userName: 'User ' + appState.userId.substr(0, 4),
+                        timestamp: Date.now()
+                    });
+                } else {
+                    // For video chat, just display locally for now
+                    const chat = document.getElementById(`${mode}Chat`);
+                    const messageElement = document.createElement('div');
+                    
+                    messageElement.className = 'chat-message';
+                    messageElement.innerHTML = `<strong>You:</strong> ${message}`;
+                    chat.appendChild(messageElement);
+                    chat.scrollTop = chat.scrollHeight;
+                }
                 
                 input.value = '';
             }
@@ -1462,9 +1366,6 @@
             localStorage.setItem('notificationSound', 
                 document.getElementById('notification-sound-toggle').checked);
         }
-        
-        // Initialize Firebase
-        initFirebase();
     </script>
 </body>
 </html>
