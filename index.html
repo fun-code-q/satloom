@@ -380,11 +380,54 @@
             width: 150px;
             height: 112px;
         }
-        #videoRemoteVideoContainer.fullscreen .fullscreen-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 10;
+        
+        /* Full screen controls overlay */
+        .fullscreen-controls-overlay {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        #videoRemoteVideoContainer.fullscreen:hover .fullscreen-controls-overlay {
+            opacity: 1;
+        }
+        .fullscreen-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .fullscreen-control-btn {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
+            font-size: 20px;
+        }
+        .fullscreen-control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+        .fullscreen-control-btn.end {
+            background: var(--error-color);
+        }
+        .fullscreen-control-btn.end:hover {
+            background: #d32f2f;
+        }
+        .fullscreen-control-btn.toggle-camera {
+            background: rgba(255, 255, 255, 0.2);
         }
         
         @keyframes gradient {
@@ -534,6 +577,24 @@
                         <video id="video-remote-video" autoplay playsinline></video>
                         <video id="video-local-video" autoplay playsinline muted></video>
                         <div class="spinner" id="videoSpinner"></div>
+                        
+                        <!-- Full screen controls overlay -->
+                        <div class="fullscreen-controls-overlay">
+                            <div class="fullscreen-controls">
+                                <div class="fullscreen-control-btn" id="fullScreenExitBtn">
+                                    <i class="fas fa-compress"></i>
+                                </div>
+                                <div class="fullscreen-control-btn" id="fullScreenToggleCameraBtn">
+                                    <i class="fas fa-video"></i>
+                                </div>
+                                <div class="fullscreen-control-btn" id="fullScreenToggleAudioBtn">
+                                    <i class="fas fa-microphone"></i>
+                                </div>
+                                <div class="fullscreen-control-btn end" id="fullScreenEndCallBtn">
+                                    <i class="fas fa-phone-slash"></i>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="call-controls" id="videoControls" style="display: none;">
                         <button class="control-btn" id="fullScreenToggle">
@@ -582,7 +643,7 @@
                     </div>
                 </div>
             </div>
-            <div class="section" id="settings-section">
+           <div class="section" id="settings-section">
                 <div class="card">
                     <div class="section-title">
                         <i class="fas fa-cog"></i> Settings
@@ -610,17 +671,8 @@
                     </div>
                     <div class="about-content">
                         <p>A free, open-source communication platform using WebRTC technology.</p>
-                        <p><strong>Version:</strong> 1.3.1</p>
+                        <p><strong>Version:</strong> 1.2.0</p>
                         <p><strong>Developed by:</strong> SatLoom Developers</p>
-                        <p><strong>Features:</strong></p>
-                        <ul>
-                            <li>High-quality audio calls</li>
-                            <li>Video conferencing</li>
-                            <li>Real-time text chat</li>
-                            <li>Secure peer-to-peer connections</li>
-                            <li>Cross-platform compatibility</li>
-                            <li><strong>NEW:</strong> Full-screen video mode</li>
-                        </ul>
                     </div>
                 </div>
             </div>
@@ -651,7 +703,11 @@ const domRefs = {
     },
     remoteAudio: document.getElementById('remoteAudio'),
     remoteVideoContainer: document.getElementById('videoRemoteVideoContainer'),
-    fullScreenToggle: document.getElementById('fullScreenToggle')
+    fullScreenToggle: document.getElementById('fullScreenToggle'),
+    fullScreenExitBtn: document.getElementById('fullScreenExitBtn'),
+    fullScreenToggleCameraBtn: document.getElementById('fullScreenToggleCameraBtn'),
+    fullScreenToggleAudioBtn: document.getElementById('fullScreenToggleAudioBtn'),
+    fullScreenEndCallBtn: document.getElementById('fullScreenEndCallBtn')
 };
 
 // ========== STATE MANAGEMENT ========== //
@@ -669,7 +725,8 @@ const appState = {
     userId: 'user-' + Math.random().toString(36).substr(2, 8),
     textChatRef: null,
     textChatInitialized: false,
-    isFullScreen: false
+    isFullScreen: false,
+    isCameraEnabled: true
 };
 
 // ========== FIREBASE CONFIG ========== //
@@ -749,6 +806,12 @@ function setupEventListeners() {
     
     // Full screen toggle
     domRefs.fullScreenToggle.addEventListener('click', toggleFullScreen);
+    domRefs.fullScreenExitBtn.addEventListener('click', toggleFullScreen);
+    
+    // Full screen controls
+    domRefs.fullScreenToggleCameraBtn.addEventListener('click', toggleVideo);
+    domRefs.fullScreenToggleAudioBtn.addEventListener('click', () => toggleAudio('video'));
+    domRefs.fullScreenEndCallBtn.addEventListener('click', () => hangup('video'));
 
     // Text chat controls
     document.getElementById('generateTextRoom').addEventListener('click', () => generateRoom('text'));
@@ -876,6 +939,7 @@ async function initMedia(mode) {
         if (mode === 'video') {
             document.getElementById('video-local-video').srcObject = appState.localStream;
             document.getElementById('videoControls').style.display = 'flex';
+            appState.isCameraEnabled = true;
         } else {
             document.getElementById('audioControls').style.display = 'flex';
         }
@@ -1314,6 +1378,11 @@ function hangup(mode) {
     
     appState.isStarted = false;
     appState.roomId = null;
+    
+    // Exit full screen if active
+    if (appState.isFullScreen) {
+        toggleFullScreen();
+    }
 }
 
 function toggleVideo() {
@@ -1321,10 +1390,18 @@ function toggleVideo() {
         const videoTrack = appState.localStream.getVideoTracks()[0];
         if (videoTrack) {
             videoTrack.enabled = !videoTrack.enabled;
+            appState.isCameraEnabled = videoTrack.enabled;
+            
+            // Update both normal and full screen buttons
             const button = document.getElementById('videoVideoToggle');
-            button.innerHTML = videoTrack.enabled ? 
+            const fullScreenButton = document.getElementById('fullScreenToggleCameraBtn');
+            
+            const icon = videoTrack.enabled ? 
                 '<i class="fas fa-video"></i>' : 
                 '<i class="fas fa-video-slash"></i>';
+            
+            button.innerHTML = icon;
+            fullScreenButton.innerHTML = icon;
         }
     }
 }
@@ -1334,25 +1411,34 @@ function toggleAudio(mode) {
         const audioTrack = appState.localStream.getAudioTracks()[0];
         if (audioTrack) {
             audioTrack.enabled = !audioTrack.enabled;
+            
+            // Update both normal and full screen buttons
             const button = document.getElementById(`${mode}AudioToggle`);
-            button.innerHTML = audioTrack.enabled ? 
+            const fullScreenButton = document.getElementById('fullScreenToggleAudioBtn');
+            
+            const icon = audioTrack.enabled ? 
                 '<i class="fas fa-microphone"></i>' : 
                 '<i class="fas fa-microphone-slash"></i>';
+            
+            button.innerHTML = icon;
+            fullScreenButton.innerHTML = icon;
         }
     }
 }
 
 // ========== FULL SCREEN TOGGLE ========== //
 function toggleFullScreen() {
+    const container = domRefs.remoteVideoContainer;
+    
     if (!appState.isFullScreen) {
         // Enter full screen
-        domRefs.remoteVideoContainer.classList.add('fullscreen');
+        container.classList.add('fullscreen');
         domRefs.fullScreenToggle.innerHTML = '<i class="fas fa-compress"></i>';
         appState.isFullScreen = true;
         showNotification('Full Screen', 'Press ESC to exit full screen mode', 'success');
     } else {
         // Exit full screen
-        domRefs.remoteVideoContainer.classList.remove('fullscreen');
+        container.classList.remove('fullscreen');
         domRefs.fullScreenToggle.innerHTML = '<i class="fas fa-expand"></i>';
         appState.isFullScreen = false;
     }
