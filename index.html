@@ -359,76 +359,77 @@
         .visualizer-bar:nth-child(4) { animation-delay: 0.6s; height: 35px; }
         .visualizer-bar:nth-child(5) { animation-delay: 0.8s; height: 15px; }
         
-        /* Full screen mode styles */
-        #videoRemoteVideoContainer.fullscreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 9999;
-            border-radius: 0;
-            margin: 0;
-            background: #000;
-        }
-        #videoRemoteVideoContainer.fullscreen #video-remote-video {
-            object-fit: contain;
-        }
-        #videoRemoteVideoContainer.fullscreen #video-local-video {
-            bottom: 20px;
-            right: 20px;
-            width: 150px;
-            height: 112px;
-        }
-        
-        /* Full screen controls overlay */
-        .fullscreen-controls-overlay {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 15px;
-            display: flex;
-            justify-content: center;
-            z-index: 10000;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        #videoRemoteVideoContainer.fullscreen:hover .fullscreen-controls-overlay {
-            opacity: 1;
-        }
-        .fullscreen-controls {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-        .fullscreen-control-btn {
-            width: 55px;
-            height: 55px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            color: white;
-            font-size: 20px;
-        }
-        .fullscreen-control-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(1.1);
-        }
-        .fullscreen-control-btn.end {
-            background: var(--error-color);
-        }
-        .fullscreen-control-btn.end:hover {
-            background: #d32f2f;
-        }
-        .fullscreen-control-btn.toggle-camera {
-            background: rgba(255, 255, 255, 0.2);
-        }
+      /* Full screen mode styles */
+#videoRemoteVideoContainer.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    border-radius: 0;
+    margin: 0;
+    background: #000;
+}
+#videoRemoteVideoContainer.fullscreen #video-remote-video {
+    object-fit: contain;
+}
+#videoRemoteVideoContainer.fullscreen #video-local-video {
+    bottom: 20px;
+    right: 20px;
+    width: 150px;
+    height: 112px;
+}
+
+/* Full screen controls overlay - FIXED POSITIONING */
+.fullscreen-controls-overlay {
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    width: 100%;
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+#videoRemoteVideoContainer.fullscreen:hover .fullscreen-controls-overlay {
+    opacity: 1;
+}
+.fullscreen-controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 12px 25px;
+    border-radius: 50px;
+}
+.fullscreen-control-btn {
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: white;
+    font-size: 20px;
+}
+.fullscreen-control-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+.fullscreen-control-btn.end {
+    background: var(--error-color);
+}
+.fullscreen-control-btn.end:hover {
+    background: #d32f2f;
+}
+.fullscreen-control-btn.toggle-camera {
+    background: rgba(255, 255, 255, 0.2);
+}
         
         @keyframes gradient {
             0% {background-position: 0% 50%}
