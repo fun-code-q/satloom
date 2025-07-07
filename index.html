@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - Free Calling</title>
+    <title>SatLoom - Video Call with Full Screen</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -222,6 +222,7 @@
             overflow: hidden;
             height: 300px;
             margin: 15px 0;
+            transition: all 0.3s ease;
         }
         #video-remote-video {
             width: 100%;
@@ -240,6 +241,7 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             background: #000;
             transform: scaleX(-1);
+            z-index: 10;
         }
         .notification {
             position: fixed;
@@ -356,6 +358,35 @@
         .visualizer-bar:nth-child(3) { animation-delay: 0.4s; height: 25px; }
         .visualizer-bar:nth-child(4) { animation-delay: 0.6s; height: 35px; }
         .visualizer-bar:nth-child(5) { animation-delay: 0.8s; height: 15px; }
+        
+        /* Full screen mode styles */
+        #videoRemoteVideoContainer.fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 9999;
+            border-radius: 0;
+            margin: 0;
+            background: #000;
+        }
+        #videoRemoteVideoContainer.fullscreen #video-remote-video {
+            object-fit: contain;
+        }
+        #videoRemoteVideoContainer.fullscreen #video-local-video {
+            bottom: 20px;
+            right: 20px;
+            width: 150px;
+            height: 112px;
+        }
+        #videoRemoteVideoContainer.fullscreen .fullscreen-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+        }
+        
         @keyframes gradient {
             0% {background-position: 0% 50%}
             50% {background-position: 100% 50%}
@@ -505,6 +536,9 @@
                         <div class="spinner" id="videoSpinner"></div>
                     </div>
                     <div class="call-controls" id="videoControls" style="display: none;">
+                        <button class="control-btn" id="fullScreenToggle">
+                            <i class="fas fa-expand"></i>
+                        </button>
                         <button class="control-btn mute" id="videoVideoToggle">
                             <i class="fas fa-video"></i>
                         </button>
@@ -585,6 +619,7 @@
                             <li>Real-time text chat</li>
                             <li>Secure peer-to-peer connections</li>
                             <li>Cross-platform compatibility</li>
+                            <li><strong>NEW:</strong> Full-screen video mode</li>
                         </ul>
                     </div>
                 </div>
@@ -614,7 +649,9 @@ const domRefs = {
         'settings': document.getElementById('settings-section'),
         'about': document.getElementById('about-section')
     },
-    remoteAudio: document.getElementById('remoteAudio')
+    remoteAudio: document.getElementById('remoteAudio'),
+    remoteVideoContainer: document.getElementById('videoRemoteVideoContainer'),
+    fullScreenToggle: document.getElementById('fullScreenToggle')
 };
 
 // ========== STATE MANAGEMENT ========== //
@@ -631,7 +668,8 @@ const appState = {
     signalingRef: null,
     userId: 'user-' + Math.random().toString(36).substr(2, 8),
     textChatRef: null,
-    textChatInitialized: false
+    textChatInitialized: false,
+    isFullScreen: false
 };
 
 // ========== FIREBASE CONFIG ========== //
@@ -708,6 +746,9 @@ function setupEventListeners() {
     document.getElementById('videoVideoToggle').addEventListener('click', toggleVideo);
     document.getElementById('videoAudioToggle').addEventListener('click', () => toggleAudio('video'));
     document.getElementById('copyVideoLink').addEventListener('click', () => copyLink('video'));
+    
+    // Full screen toggle
+    domRefs.fullScreenToggle.addEventListener('click', toggleFullScreen);
 
     // Text chat controls
     document.getElementById('generateTextRoom').addEventListener('click', () => generateRoom('text'));
@@ -1300,6 +1341,29 @@ function toggleAudio(mode) {
         }
     }
 }
+
+// ========== FULL SCREEN TOGGLE ========== //
+function toggleFullScreen() {
+    if (!appState.isFullScreen) {
+        // Enter full screen
+        domRefs.remoteVideoContainer.classList.add('fullscreen');
+        domRefs.fullScreenToggle.innerHTML = '<i class="fas fa-compress"></i>';
+        appState.isFullScreen = true;
+        showNotification('Full Screen', 'Press ESC to exit full screen mode', 'success');
+    } else {
+        // Exit full screen
+        domRefs.remoteVideoContainer.classList.remove('fullscreen');
+        domRefs.fullScreenToggle.innerHTML = '<i class="fas fa-expand"></i>';
+        appState.isFullScreen = false;
+    }
+}
+
+// Listen for ESC key to exit full screen
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && appState.isFullScreen) {
+        toggleFullScreen();
+    }
+});
 
 // ========== UTILITY FUNCTIONS ========== //
 function copyLink(mode) {
