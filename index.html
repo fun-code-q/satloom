@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SatLoom - Fixed Audio Calling</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -586,7 +585,7 @@
         .network-status {
             position: absolute;
             top: 20px;
-            left: 20px;
+            right: 20px;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 15px;
             padding: 8px 15px;
@@ -715,16 +714,6 @@
             background: rgba(0, 0, 0, 0.05);
         }
         
-        /* QR code container */
-        .qr-container {
-            margin: 20px auto;
-            padding: 10px;
-            background: white;
-            border-radius: 10px;
-            display: none;
-            max-width: 180px;
-        }
-        
         /* WiFi troubleshooting tips */
         .wifi-tips {
             background: rgba(255, 255, 255, 0.1);
@@ -815,8 +804,8 @@
         /* Connection direction indicator */
         .connection-direction {
             position: absolute;
-            top: 70px;
-            right: 20px;
+            top: 60px; /* Changed from 70px to 60px */
+            left: 20px; /* Changed from right to left */
             background: rgba(255, 255, 255, 0.1);
             border-radius: 15px;
             padding: 8px 15px;
@@ -939,8 +928,6 @@
             
             <div class="room-id-display" id="roomIdDisplay"></div>
             
-            <div class="qr-container" id="qrContainer"></div>
-            
             <div class="action-container">
                 <button class="btn" id="generateAudioRoom">
                     <i class="fas fa-network-wired"></i> Generate Room
@@ -950,9 +937,6 @@
                 </button>
                 <button class="btn" id="joinRoomBtn" style="display: none;">
                     <i class="fas fa-sign-in-alt"></i> Join Room
-                </button>
-                <button class="btn" id="showQrBtn" style="display: none;">
-                    <i class="fas fa-qrcode"></i> Share QR
                 </button>
             </div>
             
@@ -1532,7 +1516,6 @@
             document.getElementById('joinRoomBtn').addEventListener('click', showJoinRoomPrompt);
             document.getElementById('restartIceBtn').addEventListener('click', restartICE);
             document.getElementById('showIceBtn').addEventListener('click', toggleIceStatusPanel);
-            document.getElementById('showQrBtn').addEventListener('click', generateQrCode);
         }
 
         function showNotification(title, message, type = 'info', showRetry = false) {
@@ -1903,13 +1886,17 @@
                 // Generate a new room ID
                 appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
                 
+                // Update URL with room ID
+                const url = new URL(window.location);
+                url.searchParams.set('room', appState.roomId);
+                window.history.pushState({}, '', url);
+                
                 // Show room ID
                 document.getElementById('roomIdDisplay').textContent = `Room ID: ${appState.roomId}`;
                 document.getElementById('roomIdDisplay').style.display = 'block';
                 
                 // Show copy button
                 document.getElementById('copyRoomLink').style.display = 'flex';
-                document.getElementById('showQrBtn').style.display = 'flex';
                 document.getElementById('joinRoomBtn').style.display = 'none';
                 
                 showNotification('Room Created', `Room ID: ${appState.roomId}`, 'success');
@@ -1945,26 +1932,6 @@
                 showNotification('Connection Error', 'Failed to start call: ' + err.message, 'error', true);
                 updateStatus('Call failed', false);
             }
-        }
-        
-        function generateQrCode() {
-            const qrContainer = document.getElementById('qrContainer');
-            qrContainer.innerHTML = '';
-            qrContainer.style.display = 'block';
-            
-            const basePath = window.location.href.split('?')[0];
-            const fullLink = `${basePath}?room=${appState.roomId}`;
-            
-            new QRCode(qrContainer, {
-                text: fullLink,
-                width: 160,
-                height: 160,
-                colorDark : "#000000",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
-            });
-            
-            showNotification('QR Code Generated', 'Scan to join the room', 'success');
         }
 
         function copyRoomLink() {
@@ -2066,8 +2033,6 @@
             // Reset UI elements
             document.getElementById('audioControls').style.display = 'none';
             document.getElementById('copyRoomLink').style.display = 'none';
-            document.getElementById('showQrBtn').style.display = 'none';
-            document.getElementById('qrContainer').style.display = 'none';
             document.getElementById('roomIdDisplay').style.display = 'none';
             document.getElementById('generateAudioRoom').style.display = 'flex';
             document.getElementById('joinRoomBtn').style.display = 'flex';
@@ -2117,6 +2082,7 @@
             const roomParam = urlParams.get('room');
             
             if (roomParam) {
+                // Automatically join room if ID is in URL
                 joinAudioRoom(roomParam);
             } else {
                 document.getElementById('joinRoomBtn').style.display = 'flex';
@@ -2124,6 +2090,11 @@
         }
         
         async function joinAudioRoom(roomId) {
+            // Update URL with room ID
+            const url = new URL(window.location);
+            url.searchParams.set('room', roomId);
+            window.history.pushState({}, '', url);
+            
             appState.roomId = roomId;
             
             // Check network status before proceeding
