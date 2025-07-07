@@ -295,11 +295,6 @@
         .call-timer {
             font-size: 24px;
             text-align: center;
-            margin: 15I apologize, but I notice the code appears to have been cut off mid-CSS definition. I'll need to continue from where it left off and complete the full working code. Here's the corrected and complete version:
-
-        .call-timer {
-            font-size: 24px;
-            text-align: center;
             margin: 15px 0;
             color: var(--accent-color);
         }
@@ -521,7 +516,7 @@
                 <div class="logo-icon">
                     <i class="fas fa-satellite-dish"></i>
                 </div>
-                <div class="logo-text"> случаев</div>
+                <div class="logo-text">SatLoom</div>
             </div>
             <div class="status-indicator" id="connectionStatus">
                 <i class="fas fa-signal"></i> <span id="statusText">Ready to connect</span>
@@ -642,13 +637,6 @@
                             <i class="fas fa-phone-slash"></i>
                         </button>
                     </div>
-                    <div id="videoChat" class="chat-container"></div>
-                    <div class="input-group">
-                        <input type="text" id="videoMessage" class="input-styled" placeholder="Type a message...">
-                        <button class="btn" id="sendVideoMessage">
-                            <i class="fas fa-paper-plane"></i> Send
-                        </button>
-                    </div>
                 </div>
             </div>
 
@@ -713,7 +701,7 @@
                     </div>
                     <div class="about-content">
                         <p>A free, open-source communication platform using WebRTC technology.</p>
-                        <p><strong>Version:</strong> 1.2.0</p>
+                        <p><strong>Version:</strong> 1.3.0</p>
                         <p><strong>Developed by:</strong> SatLoom Developers</p>
                         <p><strong>Features:</strong></p>
                         <ul>
@@ -770,7 +758,7 @@
             currentMode: 'audio-call',
             signalingRef: null,
             userId: 'user-' + Math.random().toString(36).substr(2, 8),
-            chatRef: null
+            textChatRef: null
         };
 
         // ========== FIREBASE CONFIG ========== //
@@ -779,7 +767,7 @@
             authDomain: "satloom-rtc.firebaseapp.com",
             databaseURL: "https://satloom-rtc-default-rtdb.firebaseio.com",
             projectId: "satloom-rtc",
-            storageBucket: "satloom-rtc.firebasestorage.app",
+            storageBucket: "satloom-rtc.appspot.com",
             messagingSenderId: "273627860564",
             appId: "1:273627860564:web:c326b1bb6ffcb32fb0e7c1"
         };
@@ -788,12 +776,9 @@
         function getRTCConfiguration() {
             return {
                 iceServers: [
-                    // Public STUN servers
                     { urls: 'stun:stun.l.google.com:19302' },
                     { urls: 'stun:stun1.l.google.com:19302' },
                     { urls: 'stun:stun2.l.google.com:19302' },
-                    
-                    // Public TURN servers
                     {
                         urls: 'turn:openrelay.metered.ca:80',
                         username: 'openrelayproject',
@@ -849,7 +834,6 @@
             document.getElementById('endVideoCall').addEventListener('click', () => hangup('video'));
             document.getElementById('videoVideoToggle').addEventListener('click', toggleVideo);
             document.getElementById('videoAudioToggle').addEventListener('click', () => toggleAudio('video'));
-            document.getElementById('sendVideoMessage').addEventListener('click', () => sendChatMessage('video'));
             document.getElementById('copyVideoLink').addEventListener('click', () => copyLink('video'));
 
             // Text chat controls
@@ -861,6 +845,11 @@
             // Settings
             document.getElementById('notifications-toggle').addEventListener('change', saveSettings);
             document.getElementById('notification-sound-toggle').addEventListener('change', saveSettings);
+            
+            // Press Enter to send messages in text chat
+            document.getElementById('textMessage').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendChatMessage('text');
+            });
         }
 
         function loadSettings() {
@@ -1015,20 +1004,23 @@
 
         function handleRemoteStream(event) {
             console.log('Remote stream received');
-            const remoteStream = event.streams[0];
-            const videoTracks = remoteStream.getVideoTracks();
-            const audioTracks = remoteStream.getAudioTracks();
-            console.log('Video tracks:', videoTracks.length);
-            console.log('Audio tracks:', audioTracks.length);
             if (appState.currentMode === 'video') {
                 const remoteVideo = document.getElementById('video-remote-video');
-                remoteVideo.srcObject = remoteStream;
-                remoteVideo.onloadedmetadata = () => console.log('Remote video metadata loaded');
-                remoteVideo.onerror = (e) => console.error('Remote video error:', e);
-                appState.remoteStream = remoteStream;
+                // Reset the video element to force refresh
+                remoteVideo.srcObject = null;
+                remoteVideo.srcObject = event.streams[0];
+                appState.remoteStream = event.streams[0];
                 document.getElementById('videoSpinner').style.display = 'none';
+                
+                // Handle autoplay restrictions
+                remoteVideo.play().catch(e => {
+                    console.error('Video autoplay blocked:', e);
+                });
             } else {
+                // For audio calls, use the hidden audio element
                 domRefs.remoteAudio.srcObject = event.streams[0];
+                
+                // Handle autoplay restrictions
                 domRefs.remoteAudio.play().catch(e => {
                     console.error('Autoplay blocked:', e);
                     showNotification('Audio Blocked', 'Click to enable audio playback', 'warning');
@@ -1143,10 +1135,6 @@
 
         function sendMessage(message) {
             if (!appState.roomId) return;
-            console.log('Sending message:', message.type);
-            if (message.type === 'offer' || message.type === 'answer') {
-                console.log('SDP:', message.sdp);
-            }
             const dbRef = firebase.database().ref(`rooms/${appState.roomId}/messages`);
             dbRef.push(JSON.stringify(message));
         }
@@ -1172,7 +1160,7 @@
                 if (!peerCreated) return;
             } else {
                 // For text chat, just initialize the chat
-                initChatListener(mode);
+                initTextChat();
             }
             
             // Create offer for audio/video
@@ -1198,20 +1186,11 @@
                 // For text mode
                 updateStatus(`In text chat (${appState.roomId})`, true);
                 showNotification('Chat Started', `Joined chat room: ${appState.roomId}`, 'success');
-                // Add system message for room creation
-                const chatRef = firebase.database().ref(`chats/${appState.roomId}/messages`);
-                chatRef.push({
-                    text: 'Room created',
-                    userId: 'system',
-                    userName: 'System',
-                    timestamp: Date.now(),
-                    mode: 'text'
-                });
             }
         }
 
         async function joinRoom(mode) {
-            appState.roomId = document.getElementById(`${mode}-room-id`).value.trim().toUpperCase();
+            appState.roomId = document.getElementById(`${mode}-room-id`).value.trim();
             if (!appState.roomId) {
                 showNotification('Error', 'Please enter a room ID', 'error');
                 return;
@@ -1230,7 +1209,7 @@
                     }
                 } else {
                     // Initialize text chat
-                    initChatListener(mode);
+                    initTextChat();
                 }
                 
                 appState.isInitiator = false;
@@ -1247,31 +1226,34 @@
             }
         }
         
-        // ========== CHAT FUNCTIONALITY ========== //
-        function initChatListener(mode) {
-            if (appState.chatRef) {
-                appState.chatRef.off('child_added');
+        // ========== TEXT CHAT FUNCTIONALITY ========== //
+        function initTextChat() {
+            if (!appState.roomId) {
+                showNotification('Error', 'Room ID is not set', 'error');
+                return;
             }
-            appState.chatRef = firebase.database().ref(`chats/${appState.roomId}/messages`);
-            appState.chatRef.on('child_added', snapshot => {
+
+            if (appState.textChatRef) {
+                appState.textChatRef.off('child_added');
+            }
+            
+            appState.textChatRef = firebase.database().ref(`textChats/${appState.roomId}/messages`);
+            console.log(`Initializing text chat for room: ${appState.roomId}`);
+            
+            appState.textChatRef.on('child_added', snapshot => {
                 const message = snapshot.val();
-                if (message.mode === mode) {
-                    addMessageToChat(message, mode);
-                }
+                addMessageToChat(message, 'text');
             });
+            
+            showNotification('Text Chat', `Joined chat room: ${appState.roomId}`, 'success');
         }
         
         function addMessageToChat(message, mode) {
             const chat = document.getElementById(`${mode}Chat`);
             const messageElement = document.createElement('div');
             
-            if (message.userId === 'system') {
-                messageElement.className = 'chat-message system';
-                messageElement.textContent = message.text;
-            } else {
-                messageElement.className = `chat-message ${message.userId === appState.userId ? '' : 'remote'}`;
-                messageElement.innerHTML = `<strong>${message.userName}:</strong> ${message.text}`;
-            }
+            messageElement.className = `chat-message ${message.userId === appState.userId ? '' : 'remote'}`;
+            messageElement.innerHTML = `<strong>${message.userName}:</strong> ${message.text}`;
             chat.appendChild(messageElement);
             chat.scrollTop = chat.scrollHeight;
         }
@@ -1315,9 +1297,9 @@
                 appState.signalingRef = null;
             }
             
-            if (appState.chatRef) {
-                appState.chatRef.off('child_added');
-                appState.chatRef = null;
+            if (appState.textChatRef) {
+                appState.textChatRef.off('child_added');
+                appState.textChatRef = null;
             }
             
             appState.isStarted = false;
@@ -1356,14 +1338,14 @@
             const message = input.value.trim();
             
             if (message) {
-                if (mode === 'text' || mode === 'video') {
-                    const chatRef = firebase.database().ref(`chats/${appState.roomId}/messages`);
-                    chatRef.push({
+                if (mode === 'text') {
+                    // For text chat, send through Firebase
+                    const dbRef = firebase.database().ref(`textChats/${appState.roomId}/messages`);
+                    dbRef.push({
                         text: message,
                         userId: appState.userId,
                         userName: 'User ' + appState.userId.substr(0, 4),
-                        timestamp: Date.now(),
-                        mode: mode
+                        timestamp: Date.now()
                     });
                 }
                 input.value = '';
