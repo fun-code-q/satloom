@@ -774,7 +774,7 @@
             authDomain: "satloom-rtc.firebaseapp.com",
             databaseURL: "https://satloom-rtc-default-rtdb.firebaseio.com",
             projectId: "satloom-rtc",
-            storageBucket: "satloom-rtc.firebasestorage.app",
+            storageBucket: "satloom-rtc.appspot.com",
             messagingSenderId: "273627860564",
             appId: "1:273627860564:web:c326b1bb6ffcb32fb0e7c1"
         };
@@ -856,6 +856,14 @@
             // Settings
             document.getElementById('notifications-toggle').addEventListener('change', saveSettings);
             document.getElementById('notification-sound-toggle').addEventListener('change', saveSettings);
+            
+            // Press Enter to send messages
+            document.getElementById('videoMessage').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendChatMessage('video');
+            });
+            document.getElementById('textMessage').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendChatMessage('text');
+            });
         }
 
         function loadSettings() {
@@ -1012,6 +1020,7 @@
             console.log('Remote stream received');
             if (appState.currentMode === 'video') {
                 const remoteVideo = document.getElementById('video-remote-video');
+                remoteVideo.srcObject = null; // Reset first to force update
                 remoteVideo.srcObject = event.streams[0];
                 appState.remoteStream = event.streams[0];
                 document.getElementById('videoSpinner').style.display = 'none';
@@ -1099,6 +1108,11 @@
                     case 'bye':
                         if (appState.isStarted) {
                             hangup(appState.currentMode);
+                        }
+                        break;
+                    case 'chat':
+                        if (appState.currentMode === 'video') {
+                            addMessageToChat(message, 'video');
                         }
                         break;
                 }
@@ -1227,16 +1241,24 @@
         
         // ========== TEXT CHAT FUNCTIONALITY ========== //
         function initTextChat() {
+            if (!appState.roomId) {
+                showNotification('Error', 'Room ID is not set', 'error');
+                return;
+            }
+
             if (appState.textChatRef) {
                 appState.textChatRef.off('child_added');
             }
             
             appState.textChatRef = firebase.database().ref(`textChats/${appState.roomId}/messages`);
+            console.log(`Initializing text chat for room: ${appState.roomId}`);
             
             appState.textChatRef.on('child_added', snapshot => {
                 const message = snapshot.val();
                 addMessageToChat(message, 'text');
             });
+            
+            showNotification('Text Chat', `Joined chat room: ${appState.roomId}`, 'success');
         }
         
         function addMessageToChat(message, mode) {
@@ -1338,8 +1360,18 @@
                         userName: 'User ' + appState.userId.substr(0, 4),
                         timestamp: Date.now()
                     });
-                } else {
-                    // For video chat, just display locally for now
+                } else if (mode === 'video') {
+                    // For video chat, send through signaling
+                    if (appState.signalingRef) {
+                        sendMessage({
+                            type: 'chat',
+                            text: message,
+                            userId: appState.userId,
+                            userName: 'User ' + appState.userId.substr(0, 4)
+                        });
+                    }
+                    
+                    // Also display locally
                     const chat = document.getElementById(`${mode}Chat`);
                     const messageElement = document.createElement('div');
                     
