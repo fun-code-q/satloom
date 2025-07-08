@@ -1471,17 +1471,20 @@
         }
 
         function handleICEConnectionStateChange() {
-            if (!appState.peerConnection) return;
-            const state = appState.peerConnection.iceConnectionState;
-            console.log('ICE connection state changed to: ' + state);
-            
-            if (state === 'connected' || state === 'completed') {
-                updateStatus(`In ${appState.currentMode} call (${appState.roomId})`, 'connected');
-            } else if (state === 'disconnected' || state === 'failed') {
-                hangup(appState.currentMode);
-                resetUI(appState.currentMode);
-            }
-        }
+    if (!appState.peerConnection) return;
+    const state = appState.peerConnection.iceConnectionState;
+    console.log('ICE connection state changed to: ' + state);
+    if (state === 'connected' || state === 'completed') {
+        updateStatus(`In ${appState.currentMode} call (${appState.roomId})`, 'connected');
+        playNotificationSound();
+        showNotification('Connected', 'Peer has joined the call', 'success');
+    } else if (state === 'disconnected' || state === 'failed') {
+        playNotificationSound();
+        showNotification('Disconnected', 'Peer has left the call', 'success');
+        hangup(appState.currentMode);
+        resetUI(appState.currentMode);
+    }
+}
 
         function handleConnectionStateChange() {
             if (!appState.peerConnection) return;
@@ -1737,7 +1740,7 @@
             console.log('Text chat initialized successfully');
         }
 
-        function playNotificationSound() {
+function playNotificationSound() {
     if (document.getElementById('notification-sound-toggle').checked) {
         try {
             const notificationSound = document.getElementById('notificationSound');
