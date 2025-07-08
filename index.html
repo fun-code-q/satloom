@@ -215,8 +215,9 @@
             cursor: pointer;
             transition: all 0.2s ease;
             color: white;
+            font-size: 18px;
         }
-        .control-btn.mute {
+        .control-btn:not(.end) {
             background: rgba(255, 255, 255, 0.1);
         }
         .control-btn.end {
@@ -366,182 +367,75 @@
         .visualizer-bar:nth-child(4) { animation-delay: 0.6s; height: 35px; }
         .visualizer-bar:nth-child(5) { animation-delay: 0.8s; height: 15px; }
         
-    /* Full screen mode styles */
-#videoRemoteVideoContainer.fullscreen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 9999;
-    background-color: black;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
+        /* Camera switching button styles */
+        .switch-camera-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 20;
+            transition: all 0.2s ease;
+            display: none;
+        }
+        .switch-camera-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
 
-#videoRemoteVideoContainer.fullscreen #video-remote-video {
-    position: relative;
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-}
+        /* Setting item styles */
+        .setting-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+        .setting-item label {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
 
-/* Full screen controls - centered in device screen */
-.fullscreen-controls-overlay {
-    position: fixed;
-    bottom: 20px;
-    left: 0;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    z-index: 10000;
-}
-
-.fullscreen-controls {
-    display: flex;
-    gap: 15px;
-    background: rgba(0, 0, 0, 0.7);
-    padding: 12px 25px;
-    border-radius: 50px;
-}
-
-/* Local video positioning in fullscreen */
-#videoRemoteVideoContainer.fullscreen #video-local-video {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 150px;
-    height: 112px;
-    z-index: 10001;
-}
-
-/* Full screen controls overlay - FIXED POSITIONING */
-.fullscreen-controls-overlay {
-    position: fixed;
-    bottom: 20px;
-    left: 50%; /* Center horizontally */
-    transform: translateX(-50%); /* Adjust for exact center */
-    width: auto; /* Let content determine width */
-    z-index: 10000;
-    display: flex;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-/* Remove the padding-right adjustment */
-#videoRemoteVideoContainer.fullscreen .fullscreen-controls-overlay {
-    padding-right: 0;
-    justify-content: center;
-}
-
-/* Adjust the controls styling if needed */
-.fullscreen-controls {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-    background: rgba(0, 0, 0, 0.7);
-    padding: 12px 25px;
-    border-radius: 50px;
-    /* Remove any margin or positioning that might affect centering */
-    margin: 0 auto;
-}
-.fullscreen-control-btn {
-    width: 55px;
-    height: 55px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    color: white;
-    font-size: 20px;
-}
-.fullscreen-control-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: scale(1.1);
-}
-
-/* Camera switching button styles */
-.switch-camera-btn {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 20;
-    transition: all 0.2s ease;
-    display: none;
-}
-.switch-camera-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: scale(1.1);
-}
-
-/* Position fullscreen controls to the left of local video */
-#videoRemoteVideoContainer.fullscreen .fullscreen-controls-overlay {
-    justify-content: flex-end;
-    padding-right: 170px;
-}
-
-/* Setting item styles */
-.setting-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-.setting-item:last-child {
-    border-bottom: none;
-}
-.setting-item label {
-    font-size: 16px;
-    color: var(--text-secondary);
-}
-
-/* Animations */
-@keyframes gradient {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-@keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-}
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-@keyframes equalizer {
-    0%, 100% { transform: scaleY(0.4); }
-    50% { transform: scaleY(1); }
-}
-html, body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    width: 100%;
-    height: 100%;
-}
+        /* Animations */
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes equalizer {
+            0%, 100% { transform: scaleY(0.4); }
+            50% { transform: scaleY(1); }
+        }
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
     </style>
 </head>
 <body class="dark-mode">
@@ -627,7 +521,7 @@ html, body {
                         </div>
                     </div>
                     <div class="call-controls" id="audioControls" style="display: none;">
-                        <button class="control-btn mute" id="audioAudioToggle">
+                        <button class="control-btn" id="audioAudioToggle">
                             <i class="fas fa-microphone"></i>
                         </button>
                         <button class="control-btn end" id="endAudioCall">
@@ -670,39 +564,15 @@ html, body {
                         <button class="switch-camera-btn" id="switchCameraBtn" title="Switch Camera">
                             <i class="fas fa-sync-alt"></i>
                         </button>
-                        
-                        <!-- Full screen controls overlay -->
-                        <div class="fullscreen-controls-overlay">
-                            <div class="fullscreen-controls">
-                                <div class="fullscreen-control-btn" id="fullScreenExitBtn">
-                                    <i class="fas fa-compress"></i>
-                                </div>
-                                <div class="fullscreen-control-btn" id="fullScreenSwitchCameraBtn">
-                                    <i class="fas fa-sync-alt"></i>
-                                </div>
-                                <div class="fullscreen-control-btn" id="fullScreenToggleCameraBtn">
-                                    <i class="fas fa-video"></i>
-                                </div>
-                                <div class="fullscreen-control-btn" id="fullScreenToggleAudioBtn">
-                                    <i class="fas fa-microphone"></i>
-                                </div>
-                                <div class="fullscreen-control-btn end" id="fullScreenEndCallBtn">
-                                    <i class="fas fa-phone-slash"></i>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                     <div class="call-controls" id="videoControls" style="display: none;">
-                        <button class="control-btn" id="fullScreenToggle">
-                            <i class="fas fa-expand"></i>
-                        </button>
                         <button class="control-btn" id="switchCameraBtnNormal">
                             <i class="fas fa-sync-alt"></i>
                         </button>
-                        <button class="control-btn mute" id="videoVideoToggle">
+                        <button class="control-btn" id="videoVideoToggle">
                             <i class="fas fa-video"></i>
                         </button>
-                        <button class="control-btn mute" id="videoAudioToggle">
+                        <button class="control-btn" id="videoAudioToggle">
                             <i class="fas fa-microphone"></i>
                         </button>
                         <button class="control-btn end" id="endVideoCall">
@@ -741,7 +611,7 @@ html, body {
                         </button>
                     </div>
                     <div class="call-controls" id="textControls" style="display: none; margin-top: 15px;">
-                        <button class="btn btn-secondary" id="endTextChat">
+                        <button class="control-btn end" id="endTextChat">
                             <i class="fas fa-phone-slash"></i>
                         </button>
                     </div>
@@ -811,15 +681,8 @@ const domRefs = {
         'about': document.getElementById('about-section')
     },
     remoteAudio: document.getElementById('remoteAudio'),
-    remoteVideoContainer: document.getElementById('videoRemoteVideoContainer'),
-    fullScreenToggle: document.getElementById('fullScreenToggle'),
-    fullScreenExitBtn: document.getElementById('fullScreenExitBtn'),
-    fullScreenToggleCameraBtn: document.getElementById('fullScreenToggleCameraBtn'),
-    fullScreenToggleAudioBtn: document.getElementById('fullScreenToggleAudioBtn'),
-    fullScreenEndCallBtn: document.getElementById('fullScreenEndCallBtn'),
     switchCameraBtn: document.getElementById('switchCameraBtn'),
     switchCameraBtnNormal: document.getElementById('switchCameraBtnNormal'),
-    fullScreenSwitchCameraBtn: document.getElementById('fullScreenSwitchCameraBtn'),
     themeToggleSetting: document.getElementById('themeToggleSetting'),
     endTextChat: document.getElementById('endTextChat')
 };
@@ -839,7 +702,6 @@ const appState = {
     userId: 'user-' + Math.random().toString(36).substr(2, 8),
     textChatRef: null,
     textChatInitialized: false,
-    isFullScreen: false,
     isCameraEnabled: true,
     currentCamera: 'user',
     cameraDevices: []
@@ -942,20 +804,7 @@ function setupEventListeners() {
     // Camera switching buttons
     domRefs.switchCameraBtn.addEventListener('click', switchCamera);
     domRefs.switchCameraBtnNormal.addEventListener('click', switchCamera);
-    domRefs.fullScreenSwitchCameraBtn.addEventListener('click', switchCamera);
     
-    // Full screen toggle
-    domRefs.fullScreenToggle.addEventListener('click', toggleFullScreen);
-    domRefs.fullScreenExitBtn.addEventListener('click', toggleFullScreen);
-    
-    // Full screen controls
-    domRefs.fullScreenToggleCameraBtn.addEventListener('click', toggleVideo);
-    domRefs.fullScreenToggleAudioBtn.addEventListener('click', () => toggleAudio('video'));
-    domRefs.fullScreenEndCallBtn.addEventListener('click', () => {
-        hangup('video');
-        showSidebar();
-    });
-
     // Text chat controls
     document.getElementById('generateTextRoom').addEventListener('click', () => {
         hideSidebar();
@@ -1000,9 +849,9 @@ function loadSettings() {
 
 function updateThemeButton(theme) {
     if (theme === 'dark') {
-        domRefs.themeToggleSetting.innerHTML = '<i class="fas fa-sun"></i> Switch to Light';
+        domRefs.themeToggleSetting.innerHTML = '<i class="fas fa-moon"></i> Switch to Light';
     } else {
-        domRefs.themeToggleSetting.innerHTML = '<i class="fas fa-moon"></i> Switch to Dark';
+        domRefs.themeToggleSetting.innerHTML = '<i class="fas fa-sun"></i> Switch to Dark';
     }
 }
 
@@ -1144,7 +993,6 @@ async function initMedia(mode) {
             if (appState.cameraDevices.length > 1) {
                 document.getElementById('switchCameraBtn').style.display = 'block';
                 document.getElementById('switchCameraBtnNormal').style.display = 'block';
-                document.getElementById('fullScreenSwitchCameraBtn').style.display = 'flex';
             }
         } else {
             document.getElementById('audioControls').style.display = 'flex';
@@ -1222,20 +1070,7 @@ function createPeerConnection() {
         
         // Set the remote stream to the appropriate element based on mode
         if (appState.currentMode === 'video') {
-            const remoteVideo = document.getElementById('video-remote-video');
-
-remoteVideo.onloadedmetadata = () => {
-    const videoRatio = remoteVideo.videoWidth / remoteVideo.videoHeight;
-    const screenRatio = window.innerWidth / window.innerHeight;
-
-    if (videoRatio > screenRatio) {
-        remoteVideo.style.height = '100vh';
-        remoteVideo.style.width = 'auto';
-    } else {
-        remoteVideo.style.width = '100vw';
-        remoteVideo.style.height = 'auto';
-    }
-};
+            document.getElementById('video-remote-video').srcObject = appState.remoteStream;
         } else {
             domRefs.remoteAudio.srcObject = appState.remoteStream;
         }
@@ -1638,11 +1473,6 @@ function hangup(mode) {
     
     appState.isStarted = false;
     appState.roomId = null;
-    
-    // Exit full screen if active
-    if (appState.isFullScreen) {
-        toggleFullScreen();
-    }
 }
 
 function toggleVideo() {
@@ -1652,16 +1482,12 @@ function toggleVideo() {
             videoTrack.enabled = !videoTrack.enabled;
             appState.isCameraEnabled = videoTrack.enabled;
             
-            // Update both normal and full screen buttons
+            // Update button
             const button = document.getElementById('videoVideoToggle');
-            const fullScreenButton = document.getElementById('fullScreenToggleCameraBtn');
-            
             const icon = videoTrack.enabled ? 
                 '<i class="fas fa-video"></i>' : 
                 '<i class="fas fa-video-slash"></i>';
-            
             button.innerHTML = icon;
-            fullScreenButton.innerHTML = icon;
         }
     }
 }
@@ -1672,42 +1498,15 @@ function toggleAudio(mode) {
         if (audioTrack) {
             audioTrack.enabled = !audioTrack.enabled;
             
-            // Update both normal and full screen buttons
+            // Update button
             const button = document.getElementById(`${mode}AudioToggle`);
-            const fullScreenButton = document.getElementById('fullScreenToggleAudioBtn');
-            
             const icon = audioTrack.enabled ? 
                 '<i class="fas fa-microphone"></i>' : 
                 '<i class="fas fa-microphone-slash"></i>';
-            
             button.innerHTML = icon;
-            fullScreenButton.innerHTML = icon;
         }
     }
 }
-
-// ========== FULL SCREEN TOGGLE ========== //
-function toggleFullScreen() {
-    const container = document.getElementById('videoRemoteVideoContainer');
-    const body = document.body;
-
-    if (!appState.isFullScreen) {
-        container.classList.add('fullscreen');
-        body.style.overflow = 'hidden'; // Prevent scrolling
-        appState.isFullScreen = true;
-    } else {
-        container.classList.remove('fullscreen');
-        body.style.overflow = ''; // Restore scroll
-        appState.isFullScreen = false;
-    }
-}
-
-// Listen for ESC key to exit full screen
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && appState.isFullScreen) {
-        toggleFullScreen();
-    }
-});
 
 // ========== UTILITY FUNCTIONS ========== //
 function copyLink(mode) {
