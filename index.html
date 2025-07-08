@@ -105,6 +105,7 @@
             justify-content: center;
             margin-right: 10px;
             animation: pulse 2s infinite;
+            box-shadow: 0 0 0 0 rgba(58, 123, 213, 0.7);
         }
         .logo-text {
             font-size: 22px;
@@ -220,6 +221,9 @@
             margin: 4px;
             font-size: 14px;
             white-space: nowrap;
+        }
+        .btn i {
+            margin-right: 8px;
         }
         .btn:hover {
             transform: translateY(-2px);
@@ -411,6 +415,18 @@
             margin-right: 6px;
             font-size: 14px;
         }
+        .status-indicator.connected {
+            background: rgba(76, 175, 80, 0.15);
+            color: #4CAF50;
+        }
+        .status-indicator.connecting {
+            background: rgba(255, 152, 0, 0.15);
+            color: #FF9800;
+        }
+        .status-indicator.error {
+            background: rgba(244, 67, 54, 0.15);
+            color: #F44336;
+        }
         .visualizer-bars {
             display: flex;
             align-items: flex-end;
@@ -481,8 +497,18 @@
             to { opacity: 1; transform: translateY(0); }
         }
         @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+            0%, 100% { 
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(58, 123, 213, 0.7);
+            }
+            70% { 
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(58, 123, 213, 0);
+            }
+            100% { 
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(58, 123, 213, 0);
+            }
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -519,6 +545,19 @@
             font-size: 12px;
             padding: 15px 0 5px;
             margin-top: auto;
+            width: 100%;
+        }
+        
+        /* About section */
+        #about-section .card {
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 16px;
+        }
+        .about-content {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 14px;
         }
         
         /* Mobile Responsiveness */
@@ -677,10 +716,7 @@
                         <button class="btn btn-secondary" id="joinAudioRoom">
                             <i class="fas fa-sign-in-alt"></i> Join Room
                         </button>
-                    </div>
-                    <div id="audioRoomLinkContainer" class="share-link-container" style="display: none;">
-                        <div class="room-id-display">Room ID: <strong id="audioRoomIdDisplay"></strong></div>
-                        <button class="copy-btn" id="copyAudioLink">
+                        <button class="copy-btn" id="copyAudioLink" style="display: none; margin-left: 8px;">
                             <i class="fas fa-copy"></i>
                         </button>
                     </div>
@@ -721,10 +757,7 @@
                         <button class="btn btn-secondary" id="joinVideoRoom">
                             <i class="fas fa-sign-in-alt"></i> Join Room
                         </button>
-                    </div>
-                    <div id="videoRoomLinkContainer" class="share-link-container" style="display: none;">
-                        <div class="room-id-display">Room ID: <strong id="videoRoomIdDisplay"></strong></div>
-                        <button class="copy-btn" id="copyVideoLink">
+                        <button class="copy-btn" id="copyVideoLink" style="display: none; margin-left: 8px;">
                             <i class="fas fa-copy"></i>
                         </button>
                     </div>
@@ -769,11 +802,11 @@
                         <button class="btn btn-secondary" id="joinTextRoom">
                             <i class="fas fa-sign-in-alt"></i> Join Room
                         </button>
-                    </div>
-                    <div id="textRoomLinkContainer" class="share-link-container" style="display: none;">
-                        <div class="room-id-display">Room ID: <strong id="textRoomIdDisplay"></strong></div>
-                        <button class="copy-btn" id="copyTextLink">
+                        <button class="copy-btn" id="copyTextLink" style="display: none; margin-left: 8px;">
                             <i class="fas fa-copy"></i>
+                        </button>
+                        <button class="control-btn end" id="endTextChat" style="display: none; margin-left: 8px;">
+                            <i class="fas fa-phone-slash"></i>
                         </button>
                     </div>
                     <div id="textChat" class="chat-container">
@@ -787,11 +820,6 @@
                         <input type="text" id="textMessage" class="input-styled" placeholder="Type a message...">
                         <button class="btn" id="sendTextMessage">
                             <i class="fas fa-paper-plane"></i> Send
-                        </button>
-                    </div>
-                    <div class="call-controls" id="textControls" style="display: none; margin-top: 15px;">
-                        <button class="control-btn end" id="endTextChat">
-                            <i class="fas fa-phone-slash"></i>
                         </button>
                     </div>
                 </div>
@@ -823,18 +851,17 @@
                     </div>
                 </div>
             </div>
-            <div class="card" id="about-section" style="display: none;">
-                <div class="section-title">
-                <i class="fas fa-info-circle"></i> About
+            <div class="section" id="about-section">
+                <div class="card">
+                    <div class="section-title">
+                        <i class="fas fa-info-circle"></i> About
+                    </div>
+                    <div class="about-content">
+                        <p>A free, open-source communication platform using WebRTC technology.</p>
+                        <p><strong>Version:</strong> 1.7.0 (Firebase Integration)</p>
+                        <p><strong>Developed by:</strong> SatLoom Developers</p>
+                    </div>
                 </div>
-            
-              <div class="about-content">
-                <p>A free, open-source communication platform using WebRTC technology.</p>
-                <p><strong>Version:</strong> 1.7.0 (Firebase Integration)</p>
-                <p><strong>Developed by:</strong> SatLoom Developers</p>
-                
-              </div>
-          </div>
             </div>
             <!-- Footer -->
             <div class="app-footer">
@@ -1005,9 +1032,7 @@
             });
             document.getElementById('sendTextMessage').addEventListener('click', sendChatMessage);
             document.getElementById('copyTextLink').addEventListener('click', () => copyLink('text'));
-            
-            // Text chat hang up
-            domRefs.endTextChat.addEventListener('click', () => {
+            document.getElementById('endTextChat').addEventListener('click', () => {
                 hangup('text');
                 showSidebar();
             });
@@ -1103,9 +1128,9 @@
             const sectionId = this.getAttribute('data-section');
             
             // Update navigation state
-            document.querySelectorAll('.nav-link').forEach(link => 
-                link.classList.remove('active'));
-            this.classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(item => 
+                item.classList.remove('active'));
+            this.parentElement.classList.add('active');
             
             // Update UI sections
             document.querySelectorAll('.section').forEach(section => 
@@ -1151,10 +1176,26 @@
         }
 
         // ========== STATUS UPDATES ========== //
-        function updateStatus(text, isConnected = false) {
-            domRefs.statusText.textContent = text;
-            domRefs.connectionStatus.className = 
-                `status-indicator ${isConnected ? 'status-connected' : ''}`;
+        function updateStatus(text, status) {
+            const statusElem = document.getElementById('connectionStatus');
+            statusElem.textContent = text;
+            statusElem.className = 'status-indicator';
+            
+            if (status === 'connected') {
+                statusElem.classList.add('connected');
+                statusElem.innerHTML = `<i class="fas fa-check-circle"></i> ${text}`;
+            } 
+            else if (status === 'connecting') {
+                statusElem.classList.add('connecting');
+                statusElem.innerHTML = `<i class="fas fa-sync-alt fa-spin"></i> ${text}`;
+            }
+            else if (status === 'error') {
+                statusElem.classList.add('error');
+                statusElem.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${text}`;
+            }
+            else {
+                statusElem.innerHTML = `<i class="fas fa-info-circle"></i> ${text}`;
+            }
         }
 
         // ========== TIMER MANAGEMENT ========== //
@@ -1206,6 +1247,7 @@
                 showNotification('Media Error', 
                     `Could not access ${mode === 'video' ? 'camera/microphone' : 'microphone'}. 
                     Please check permissions.`, 'error');
+                updateStatus('Media access error', 'error');
                 return false;
             }
         }
@@ -1244,6 +1286,7 @@
             } catch (err) {
                 console.error('Camera switch error:', err);
                 showNotification('Camera Error', 'Failed to switch camera', 'error');
+                updateStatus('Camera switch failed', 'error');
             }
         }
 
@@ -1304,6 +1347,7 @@
                 console.error('Peer connection error:', err);
                 showNotification('Connection Error', 
                     `Failed to create peer connection: ${err.message}`, 'error');
+                updateStatus('Connection failed', 'error');
                 return false;
             }
         }
@@ -1340,7 +1384,7 @@
             console.log('ICE connection state changed to: ' + state);
             
             if (state === 'connected' || state === 'completed') {
-                updateStatus(`In ${appState.currentMode} call (${appState.roomId})`, true);
+                updateStatus(`In ${appState.currentMode} call (${appState.roomId})`, 'connected');
             } else if (state === 'disconnected' || state === 'failed') {
                 hangup(appState.currentMode);
             }
@@ -1422,7 +1466,7 @@
                 sendMessage(answer);
                 appState.isStarted = true;
                 startTimer();
-                updateStatus(`In ${appState.currentMode} call (${appState.roomId})`, true);
+                updateStatus(`In ${appState.currentMode} call (${appState.roomId})`, 'connected');
                 
                 if (appState.currentMode === 'video') {
                     document.getElementById('videoSpinner').style.display = 'none';
@@ -1430,6 +1474,7 @@
             } catch (err) {
                 console.error('Error handling offer:', err);
                 showNotification('Connection Error', 'Failed to handle offer: ' + err.message, 'error');
+                updateStatus('Offer handling failed', 'error');
             }
         }
 
@@ -1444,16 +1489,11 @@
             appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
             appState.currentMode = mode;
             
-            // Generate correct link with current path
-            const baseUrl = window.location.origin + window.location.pathname;
-            const roomLink = `${baseUrl}?room=${appState.roomId}&mode=${mode}`;
-            
-            // Update UI - show only room ID and copy button
-            document.getElementById(`${mode}-room-id`).value = appState.roomId;
-            document.getElementById(`${mode}RoomIdDisplay`).textContent = appState.roomId;
-            document.getElementById(`${mode}RoomLinkContainer`).style.display = 'flex';
+            // Update UI - show copy button
+            document.getElementById(`copy${mode.charAt(0).toUpperCase() + mode.slice(1)}Link`).style.display = 'inline-flex';
             
             showNotification('Room Generated', `Room ID: ${appState.roomId}. Share with others.`, 'success');
+            updateStatus(`Room created: ${appState.roomId}`, 'connecting');
             
             // Initialize media and connection for audio/video
             if (mode !== 'text') {
@@ -1473,19 +1513,19 @@
                     
                     appState.isStarted = true;
                     startTimer();
-                    updateStatus(`In ${mode} call (${appState.roomId})`, true);
+                    updateStatus(`In ${mode} call (${appState.roomId})`, 'connected');
                     showNotification('Call Started', `Connected to room: ${appState.roomId}`, 'success');
                 } catch (err) {
                     console.error('Error creating offer:', err);
                     showNotification('Error', 'Failed to start call', 'error');
-                    updateStatus('Call failed', false);
+                    updateStatus('Call failed', 'error');
                 }
             } else {
                 // For text chat, initialize the chat
                 initTextChat();
-                updateStatus(`In text chat (${appState.roomId})`, true);
+                updateStatus(`In text chat (${appState.roomId})`, 'connected');
                 showNotification('Chat Started', `Created chat room: ${appState.roomId}`, 'success');
-                document.getElementById('textControls').style.display = 'flex';
+                document.getElementById('endTextChat').style.display = 'inline-flex';
             }
         }
 
@@ -1513,18 +1553,20 @@
                     appState.isInitiator = false;
                     initSignaling();
                     
-                    updateStatus(`Joining ${mode} room...`, false);
+                    updateStatus(`Joining ${mode} room...`, 'connecting');
                     showNotification('Joining Room', `Connecting to room: ${appState.roomId}`);
                 } else {
                     // Initialize text chat
                     initTextChat();
-                    updateStatus(`Joined text chat (${appState.roomId})`, true);
+                    updateStatus(`Joined text chat (${appState.roomId})`, 'connected');
                     showNotification('Chat Joined', `Joined chat room: ${appState.roomId}`, 'success');
-                    document.getElementById('textControls').style.display = 'flex';
+                    document.getElementById('endTextChat').style.display = 'inline-flex';
+                    document.getElementById('copyTextLink').style.display = 'inline-flex';
                 }
             } catch (err) {
                 console.error('Error joining room:', err);
                 showNotification('Connection Error', 'Failed to join room: ' + err.message, 'error');
+                updateStatus('Join room failed', 'error');
             }
         }
 
@@ -1735,12 +1777,12 @@
                 // Clear chat messages
                 const chatContainer = document.getElementById('textChat');
                 chatContainer.innerHTML = '';
-                document.getElementById('textControls').style.display = 'none';
+                document.getElementById('endTextChat').style.display = 'none';
             }
             
-            document.getElementById(`${mode}RoomLinkContainer`).style.display = 'none';
+            document.getElementById(`copy${mode.charAt(0).toUpperCase() + mode.slice(1)}Link`).style.display = 'none';
             
-            updateStatus('Disconnected', false);
+            updateStatus('Ready to connect', 'disconnected');
             showNotification('Disconnected', `${mode} session ended`);
             
             if (appState.signalingRef) {
