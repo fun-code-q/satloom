@@ -1698,17 +1698,31 @@
         }
 
         function playNotificationSound() {
-            if (document.getElementById('notification-sound-toggle').checked) {
-                try {
-                    domRefs.notificationSound.currentTime = 0;
-                    domRefs.notificationSound.play().catch(e => {
-                        console.log('Audio play prevented:', e);
-                    });
-                } catch (e) {
-                    console.error('Error playing notification sound:', e);
-                }
-            }
+    if (document.getElementById('notification-sound-toggle').checked) {
+        try {
+            const notificationSound = document.getElementById('notificationSound');
+            notificationSound.currentTime = 0;
+            notificationSound.play().catch(e => {
+                console.log('Audio play prevented:', e);
+            });
+        } catch (e) {
+            console.error('Error playing notification sound:', e);
         }
+    }
+}
+
+// Update the message handler to play sound
+appState.textChatRef.child('messages').on('child_added', snapshot => {
+    const message = snapshot.val();
+    if (message) {
+        addMessageToChat(message);
+        
+        // Play notification sound for remote messages
+        if (message.userId !== appState.userId) {
+            playNotificationSound(); // Add this line
+        }
+    }
+});
 
         function addMessageToChat(message) {
             const chat = document.getElementById('textChat');
