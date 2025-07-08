@@ -652,6 +652,21 @@ html, body {
         height: 150px;
     }
 }
+
+
+@media (max-width: 600px) {
+    .call-controls {
+        flex-wrap: nowrap; /* prevent wrapping */
+        justify-content: center;
+        flex-direction: row;
+    }
+    .control-btn {
+        flex: 0 0 auto; /* prevent buttons from shrinking or growing unexpectedly */
+        margin: 0 2px;  /* reduce margin to save space */
+    }
+}
+
+        
     </style>
 </head>
 <body class="dark-mode">
