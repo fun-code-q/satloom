@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - Video Call with Full Screen</title>
+    <title>SatLoom - Enhanced Communication Platform</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -43,20 +43,25 @@
             justify-content: center;
             align-items: center;
             padding: 20px;
+            transition: background 0.5s ease;
         }
         .app-container {
             max-width: 1200px;
             width: 100%;
             display: grid;
-            grid-template-columns: 1fr;
+            grid-template-columns: 280px 1fr;
             gap: 20px;
             padding: 20px;
+            transition: all 0.3s ease;
+            align-items: center;
         }
-        @media (min-width: 992px) {
-            .app-container {
-                grid-template-columns: 280px 1fr;
-            }
-        }
+       .sidebar-hidden .app-container {
+    grid-template-columns: 0 1fr;
+}
+.sidebar-hidden .sidebar {
+    display: none;
+}
+        
         .sidebar, .card {
             background: var(--card-bg);
             border-radius: 16px;
@@ -64,6 +69,7 @@
             backdrop-filter: blur(10px);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
             animation: fadeIn 0.5s ease;
+            transition: all 0.3s ease;
         }
         .sidebar {
             display: flex;
@@ -195,6 +201,7 @@
             display: flex;
             justify-content: center;
             margin-top: 20px;
+            flex-wrap: wrap;
         }
         .control-btn {
             width: 50px;
@@ -359,7 +366,7 @@
         .visualizer-bar:nth-child(4) { animation-delay: 0.6s; height: 35px; }
         .visualizer-bar:nth-child(5) { animation-delay: 0.8s; height: 15px; }
         
-     /* Full screen mode styles */
+    /* Full screen mode styles */
 #videoRemoteVideoContainer.fullscreen {
     position: fixed;
     top: 0;
@@ -367,35 +374,71 @@
     width: 100vw;
     height: 100vh;
     z-index: 9999;
-    border-radius: 0;
+    background-color: black;
     margin: 0;
-    background: #000;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
+
 #videoRemoteVideoContainer.fullscreen #video-remote-video {
+    position: relative;
+    max-width: 100%;
+    max-height: 100%;
     object-fit: contain;
 }
+
+/* Full screen controls - centered in device screen */
+.fullscreen-controls-overlay {
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.fullscreen-controls {
+    display: flex;
+    gap: 15px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 12px 25px;
+    border-radius: 50px;
+}
+
+/* Local video positioning in fullscreen */
 #videoRemoteVideoContainer.fullscreen #video-local-video {
+    position: fixed;
     bottom: 20px;
     right: 20px;
     width: 150px;
     height: 112px;
+    z-index: 10001;
 }
 
 /* Full screen controls overlay - FIXED POSITIONING */
 .fullscreen-controls-overlay {
     position: fixed;
     bottom: 20px;
-    left: 0;
-    width: 100%;
+    left: 50%; /* Center horizontally */
+    transform: translateX(-50%); /* Adjust for exact center */
+    width: auto; /* Let content determine width */
     z-index: 10000;
     display: flex;
     justify-content: center;
     opacity: 0;
     transition: opacity 0.3s ease;
 }
-#videoRemoteVideoContainer.fullscreen:hover .fullscreen-controls-overlay {
-    opacity: 1;
+
+/* Remove the padding-right adjustment */
+#videoRemoteVideoContainer.fullscreen .fullscreen-controls-overlay {
+    padding-right: 0;
+    justify-content: center;
 }
+
+/* Adjust the controls styling if needed */
 .fullscreen-controls {
     display: flex;
     gap: 15px;
@@ -403,6 +446,8 @@
     background: rgba(0, 0, 0, 0.7);
     padding: 12px 25px;
     border-radius: 50px;
+    /* Remove any margin or positioning that might affect centering */
+    margin: 0 auto;
 }
 .fullscreen-control-btn {
     width: 55px;
@@ -420,6 +465,52 @@
 .fullscreen-control-btn:hover {
     background: rgba(255, 255, 255, 0.3);
     transform: scale(1.1);
+}
+
+/* Camera switching button styles */
+.switch-camera-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 20;
+    transition: all 0.2s ease;
+    display: none;
+}
+.switch-camera-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+/* Position fullscreen controls to the left of local video */
+#videoRemoteVideoContainer.fullscreen .fullscreen-controls-overlay {
+    justify-content: flex-end;
+    padding-right: 170px;
+}
+
+/* Setting item styles */
+.setting-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.setting-item:last-child {
+    border-bottom: none;
+}
+.setting-item label {
+    font-size: 16px;
+    color: var(--text-secondary);
 }
 
 /* Animations */
@@ -444,12 +535,16 @@
     0%, 100% { transform: scaleY(0.4); }
     50% { transform: scaleY(1); }
 }
+html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+}
     </style>
 </head>
 <body class="dark-mode">
-    <div class="theme-toggle" id="themeToggle">
-        <i class="fas fa-moon"></i>
-    </div>
     <div class="notification" id="globalNotification">
         <i class="notification-icon fas fa-info-circle"></i>
         <div class="notification-content">
@@ -571,11 +666,19 @@
                         <video id="video-local-video" autoplay playsinline muted></video>
                         <div class="spinner" id="videoSpinner"></div>
                         
+                        <!-- Camera switching button -->
+                        <button class="switch-camera-btn" id="switchCameraBtn" title="Switch Camera">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        
                         <!-- Full screen controls overlay -->
                         <div class="fullscreen-controls-overlay">
                             <div class="fullscreen-controls">
                                 <div class="fullscreen-control-btn" id="fullScreenExitBtn">
                                     <i class="fas fa-compress"></i>
+                                </div>
+                                <div class="fullscreen-control-btn" id="fullScreenSwitchCameraBtn">
+                                    <i class="fas fa-sync-alt"></i>
                                 </div>
                                 <div class="fullscreen-control-btn" id="fullScreenToggleCameraBtn">
                                     <i class="fas fa-video"></i>
@@ -592,6 +695,9 @@
                     <div class="call-controls" id="videoControls" style="display: none;">
                         <button class="control-btn" id="fullScreenToggle">
                             <i class="fas fa-expand"></i>
+                        </button>
+                        <button class="control-btn" id="switchCameraBtnNormal">
+                            <i class="fas fa-sync-alt"></i>
                         </button>
                         <button class="control-btn mute" id="videoVideoToggle">
                             <i class="fas fa-video"></i>
@@ -634,6 +740,11 @@
                             <i class="fas fa-paper-plane"></i> Send
                         </button>
                     </div>
+                    <div class="call-controls" id="textControls" style="display: none; margin-top: 15px;">
+                        <button class="btn btn-secondary" id="endTextChat">
+                            <i class="fas fa-phone-slash"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
            <div class="section" id="settings-section">
@@ -642,6 +753,12 @@
                         <i class="fas fa-cog"></i> Settings
                     </div>
                     <div class="settings-list">
+                        <div class="setting-item">
+                            <label>Theme:</label>
+                            <button id="themeToggleSetting" class="btn">
+                                <i class="fas fa-moon"></i> Switch to Light
+                            </button>
+                        </div>
                         <div class="setting-item">
                             <label>Notifications:</label>
                             <input type="checkbox" id="notifications-toggle" checked>
@@ -664,7 +781,7 @@
                     </div>
                     <div class="about-content">
                         <p>A free, open-source communication platform using WebRTC technology.</p>
-                        <p><strong>Version:</strong> 1.2.0</p>
+                        <p><strong>Version:</strong> 1.4.0</p>
                         <p><strong>Developed by:</strong> SatLoom Developers</p>
                     </div>
                 </div>
@@ -679,7 +796,6 @@
     <script>
        // ========== DOM ELEMENT REFERENCES ========== //
 const domRefs = {
-    themeToggle: document.getElementById('themeToggle'),
     notification: document.getElementById('globalNotification'),
     notificationTitle: document.getElementById('notificationTitle'),
     notificationMessage: document.getElementById('notificationMessage'),
@@ -700,7 +816,12 @@ const domRefs = {
     fullScreenExitBtn: document.getElementById('fullScreenExitBtn'),
     fullScreenToggleCameraBtn: document.getElementById('fullScreenToggleCameraBtn'),
     fullScreenToggleAudioBtn: document.getElementById('fullScreenToggleAudioBtn'),
-    fullScreenEndCallBtn: document.getElementById('fullScreenEndCallBtn')
+    fullScreenEndCallBtn: document.getElementById('fullScreenEndCallBtn'),
+    switchCameraBtn: document.getElementById('switchCameraBtn'),
+    switchCameraBtnNormal: document.getElementById('switchCameraBtnNormal'),
+    fullScreenSwitchCameraBtn: document.getElementById('fullScreenSwitchCameraBtn'),
+    themeToggleSetting: document.getElementById('themeToggleSetting'),
+    endTextChat: document.getElementById('endTextChat')
 };
 
 // ========== STATE MANAGEMENT ========== //
@@ -719,7 +840,9 @@ const appState = {
     textChatRef: null,
     textChatInitialized: false,
     isFullScreen: false,
-    isCameraEnabled: true
+    isCameraEnabled: true,
+    currentCamera: 'user',
+    cameraDevices: []
 };
 
 // ========== FIREBASE CONFIG ========== //
@@ -780,22 +903,46 @@ function setupEventListeners() {
     });
 
     // Theme toggle
-    domRefs.themeToggle.addEventListener('click', toggleTheme);
+    domRefs.themeToggleSetting.addEventListener('click', toggleTheme);
 
     // Audio call controls
-    document.getElementById('generateAudioRoom').addEventListener('click', () => generateRoom('audio'));
-    document.getElementById('joinAudioRoom').addEventListener('click', () => joinRoom('audio'));
-    document.getElementById('endAudioCall').addEventListener('click', () => hangup('audio'));
+    document.getElementById('generateAudioRoom').addEventListener('click', () => {
+        hideSidebar();
+        generateRoom('audio');
+    });
+    document.getElementById('joinAudioRoom').addEventListener('click', () => {
+        hideSidebar();
+        joinRoom('audio');
+    });
+    document.getElementById('endAudioCall').addEventListener('click', () => {
+        hangup('audio');
+        showSidebar();
+    });
+
     document.getElementById('audioAudioToggle').addEventListener('click', () => toggleAudio('audio'));
     document.getElementById('copyAudioLink').addEventListener('click', () => copyLink('audio'));
 
     // Video call controls
-    document.getElementById('generateVideoRoom').addEventListener('click', () => generateRoom('video'));
-    document.getElementById('joinVideoRoom').addEventListener('click', () => joinRoom('video'));
-    document.getElementById('endVideoCall').addEventListener('click', () => hangup('video'));
+    document.getElementById('generateVideoRoom').addEventListener('click', () => {
+        hideSidebar();
+        generateRoom('video');
+    });
+    document.getElementById('joinVideoRoom').addEventListener('click', () => {
+        hideSidebar();
+        joinRoom('video');
+    });
+    document.getElementById('endVideoCall').addEventListener('click', () => {
+        hangup('video');
+        showSidebar();
+    });
     document.getElementById('videoVideoToggle').addEventListener('click', toggleVideo);
     document.getElementById('videoAudioToggle').addEventListener('click', () => toggleAudio('video'));
     document.getElementById('copyVideoLink').addEventListener('click', () => copyLink('video'));
+    
+    // Camera switching buttons
+    domRefs.switchCameraBtn.addEventListener('click', switchCamera);
+    domRefs.switchCameraBtnNormal.addEventListener('click', switchCamera);
+    domRefs.fullScreenSwitchCameraBtn.addEventListener('click', switchCamera);
     
     // Full screen toggle
     domRefs.fullScreenToggle.addEventListener('click', toggleFullScreen);
@@ -804,13 +951,28 @@ function setupEventListeners() {
     // Full screen controls
     domRefs.fullScreenToggleCameraBtn.addEventListener('click', toggleVideo);
     domRefs.fullScreenToggleAudioBtn.addEventListener('click', () => toggleAudio('video'));
-    domRefs.fullScreenEndCallBtn.addEventListener('click', () => hangup('video'));
+    domRefs.fullScreenEndCallBtn.addEventListener('click', () => {
+        hangup('video');
+        showSidebar();
+    });
 
     // Text chat controls
-    document.getElementById('generateTextRoom').addEventListener('click', () => generateRoom('text'));
-    document.getElementById('joinTextRoom').addEventListener('click', () => joinRoom('text'));
+    document.getElementById('generateTextRoom').addEventListener('click', () => {
+        hideSidebar();
+        generateRoom('text');
+    });
+    document.getElementById('joinTextRoom').addEventListener('click', () => {
+        hideSidebar();
+        joinRoom('text');
+    });
     document.getElementById('sendTextMessage').addEventListener('click', sendChatMessage);
     document.getElementById('copyTextLink').addEventListener('click', () => copyLink('text'));
+    
+    // Text chat hang up
+    domRefs.endTextChat.addEventListener('click', () => {
+        hangup('text');
+        showSidebar();
+    });
 
     // Settings
     document.getElementById('notifications-toggle').addEventListener('change', saveSettings);
@@ -828,13 +990,20 @@ function setupEventListeners() {
 function loadSettings() {
     const savedTheme = localStorage.getItem('theme') || 'dark';
     document.body.className = `${savedTheme}-mode`;
-    domRefs.themeToggle.innerHTML = savedTheme === 'dark' ? 
-        '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
-
+    updateThemeButton(savedTheme);
+    
     document.getElementById('notifications-toggle').checked = 
         localStorage.getItem('notifications') !== 'false';
     document.getElementById('notification-sound-toggle').checked = 
         localStorage.getItem('notificationSound') !== 'false';
+}
+
+function updateThemeButton(theme) {
+    if (theme === 'dark') {
+        domRefs.themeToggleSetting.innerHTML = '<i class="fas fa-sun"></i> Switch to Light';
+    } else {
+        domRefs.themeToggleSetting.innerHTML = '<i class="fas fa-moon"></i> Switch to Dark';
+    }
 }
 
 function autoJoinRoom() {
@@ -844,7 +1013,41 @@ function autoJoinRoom() {
     
     if (roomParam && modeParam) {
         document.getElementById(`${modeParam}-room-id`).value = roomParam;
-        setTimeout(() => joinRoom(modeParam), 1000);
+        setTimeout(() => {
+            hideSidebar();
+            joinRoom(modeParam);
+        }, 1000);
+    }
+}
+
+// ========== SIDEBAR MANAGEMENT ========== //
+function hideSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const appContainer = document.querySelector('.app-container');
+
+    if (sidebar) sidebar.style.display = 'none';
+
+    if (appContainer) {
+        // Switch to flex layout for full centering
+        appContainer.style.display = 'flex';
+        appContainer.style.justifyContent = 'center';
+        appContainer.style.alignItems = 'center';
+        appContainer.style.padding = '20px';
+    }
+}
+
+function showSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const appContainer = document.querySelector('.app-container');
+
+    if (sidebar) sidebar.style.display = 'flex';
+
+    if (appContainer) {
+        // Restore original grid layout
+        appContainer.style.display = 'grid';
+        appContainer.style.gridTemplateColumns = '280px 1fr';
+        appContainer.style.justifyContent = '';
+        appContainer.style.alignItems = '';
     }
 }
 
@@ -871,9 +1074,10 @@ function toggleTheme() {
     const isDark = document.body.classList.contains('dark-mode');
     document.body.classList.toggle('dark-mode', !isDark);
     document.body.classList.toggle('light-mode', isDark);
-    domRefs.themeToggle.innerHTML = isDark ? 
-        '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+    
+    const newTheme = isDark ? 'light' : 'dark';
+    localStorage.setItem('theme', newTheme);
+    updateThemeButton(newTheme);
 }
 
 // ========== NOTIFICATION SYSTEM ========== //
@@ -925,7 +1129,7 @@ function stopTimer() {
 async function initMedia(mode) {
     try {
         const constraints = mode === 'video' ? 
-            { video: true, audio: true } : { audio: true };
+            { video: { facingMode: appState.currentCamera }, audio: true } : { audio: true };
         
         appState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
         
@@ -933,6 +1137,15 @@ async function initMedia(mode) {
             document.getElementById('video-local-video').srcObject = appState.localStream;
             document.getElementById('videoControls').style.display = 'flex';
             appState.isCameraEnabled = true;
+            
+            // Get available cameras
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            appState.cameraDevices = devices.filter(device => device.kind === 'videoinput');
+            if (appState.cameraDevices.length > 1) {
+                document.getElementById('switchCameraBtn').style.display = 'block';
+                document.getElementById('switchCameraBtnNormal').style.display = 'block';
+                document.getElementById('fullScreenSwitchCameraBtn').style.display = 'flex';
+            }
         } else {
             document.getElementById('audioControls').style.display = 'flex';
         }
@@ -944,6 +1157,43 @@ async function initMedia(mode) {
             `Could not access ${mode === 'video' ? 'camera/microphone' : 'microphone'}. 
             Please check permissions.`, 'error');
         return false;
+    }
+}
+
+// ========== CAMERA SWITCHING ========== //
+async function switchCamera() {
+    try {
+        // Toggle between front and back cameras
+        appState.currentCamera = appState.currentCamera === 'user' ? 'environment' : 'user';
+        
+        // Get new stream with updated constraints
+        const newStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: appState.currentCamera },
+            audio: true
+        });
+        
+        // Stop old tracks
+        appState.localStream.getTracks().forEach(track => track.stop());
+        
+        // Update local stream
+        appState.localStream = newStream;
+        document.getElementById('video-local-video').srcObject = appState.localStream;
+        
+        // Update peer connection
+        if (appState.peerConnection) {
+            const videoTrack = appState.localStream.getVideoTracks()[0];
+            const sender = appState.peerConnection.getSenders().find(
+                s => s.track && s.track.kind === 'video'
+            );
+            if (sender) {
+                sender.replaceTrack(videoTrack);
+            }
+        }
+        
+        showNotification('Camera Switched', `Now using ${appState.currentCamera === 'user' ? 'front' : 'rear'} camera`, 'success');
+    } catch (err) {
+        console.error('Camera switch error:', err);
+        showNotification('Camera Error', 'Failed to switch camera', 'error');
     }
 }
 
@@ -973,7 +1223,19 @@ function createPeerConnection() {
         // Set the remote stream to the appropriate element based on mode
         if (appState.currentMode === 'video') {
             const remoteVideo = document.getElementById('video-remote-video');
-            remoteVideo.srcObject = appState.remoteStream;
+
+remoteVideo.onloadedmetadata = () => {
+    const videoRatio = remoteVideo.videoWidth / remoteVideo.videoHeight;
+    const screenRatio = window.innerWidth / window.innerHeight;
+
+    if (videoRatio > screenRatio) {
+        remoteVideo.style.height = '100vh';
+        remoteVideo.style.width = 'auto';
+    } else {
+        remoteVideo.style.width = '100vw';
+        remoteVideo.style.height = 'auto';
+    }
+};
         } else {
             domRefs.remoteAudio.srcObject = appState.remoteStream;
         }
@@ -1161,6 +1423,7 @@ async function generateRoom(mode) {
         initTextChat();
         updateStatus(`In text chat (${appState.roomId})`, true);
         showNotification('Chat Started', `Created chat room: ${appState.roomId}`, 'success');
+        document.getElementById('textControls').style.display = 'flex';
     }
 }
 
@@ -1195,6 +1458,7 @@ async function joinRoom(mode) {
             initTextChat();
             updateStatus(`Joined text chat (${appState.roomId})`, true);
             showNotification('Chat Joined', `Joined chat room: ${appState.roomId}`, 'success');
+            document.getElementById('textControls').style.display = 'flex';
         }
     } catch (err) {
         console.error('Error joining room:', err);
@@ -1336,6 +1600,8 @@ function hangup(mode) {
             document.getElementById('video-remote-video').srcObject = null;
             document.getElementById('video-local-video').srcObject = null;
             document.getElementById('videoSpinner').style.display = 'none';
+            document.getElementById('switchCameraBtn').style.display = 'none';
+            document.getElementById('switchCameraBtnNormal').style.display = 'none';
         } else {
             domRefs.remoteAudio.srcObject = null;
         }
@@ -1357,6 +1623,7 @@ function hangup(mode) {
         // Clear chat messages
         const chatContainer = document.getElementById('textChat');
         chatContainer.innerHTML = '';
+        document.getElementById('textControls').style.display = 'none';
     }
     
     document.getElementById(`${mode}RoomLinkContainer`).style.display = 'none';
@@ -1421,18 +1688,16 @@ function toggleAudio(mode) {
 
 // ========== FULL SCREEN TOGGLE ========== //
 function toggleFullScreen() {
-    const container = domRefs.remoteVideoContainer;
-    
+    const container = document.getElementById('videoRemoteVideoContainer');
+    const body = document.body;
+
     if (!appState.isFullScreen) {
-        // Enter full screen
         container.classList.add('fullscreen');
-        domRefs.fullScreenToggle.innerHTML = '<i class="fas fa-compress"></i>';
+        body.style.overflow = 'hidden'; // Prevent scrolling
         appState.isFullScreen = true;
-        showNotification('Full Screen', 'Press ESC to exit full screen mode', 'success');
     } else {
-        // Exit full screen
         container.classList.remove('fullscreen');
-        domRefs.fullScreenToggle.innerHTML = '<i class="fas fa-expand"></i>';
+        body.style.overflow = ''; // Restore scroll
         appState.isFullScreen = false;
     }
 }
