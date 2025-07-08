@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SatLoom - Communication Platform</title>
+    <!-- Add favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛰️</text></svg>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -34,22 +35,19 @@
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        html, body {
-            overflow: hidden;
-            width: 100%;
-            height: 100%;
-        }
         body {
             background: linear-gradient(-45deg, var(--dark-bg), #203a43, #1c2b3a, #2c3e50);
             background-size: 400% 400%;
             animation: gradient 15s ease infinite;
             color: var(--text-primary);
+            min-height: 100vh;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
             padding: 10px;
             transition: background 0.5s ease;
+            /* Prevent scrollbar flashing */
+            overflow: hidden;
         }
         .app-container {
             max-width: 1200px;
@@ -59,10 +57,8 @@
             gap: 15px;
             padding: 15px;
             transition: all 0.3s ease;
-            align-items: start;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            /* Keep centered when sidebar hidden */
+            margin: 0 auto;
         }
         .mobile-menu-toggle {
             display: none;
@@ -90,7 +86,10 @@
             transition: all 0.3s ease;
             display: flex;
             flex-direction: column;
+            /* Fixed height to fit content */
             height: auto;
+            /* Prevent scrollbar */
+            overflow: hidden;
         }
         .logo {
             display: flex;
@@ -155,10 +154,14 @@
             flex-direction: column;
             gap: 15px;
             overflow: auto;
-            max-height: calc(100vh - 150px);
+            max-height: calc(100vh - 30px);
+            /* Prevent scrollbar flashing */
+            overflow: hidden;
         }
         .section {
             display: none;
+            /* Prevent scrollbar */
+            overflow: hidden;
         }
         .section.active {
             display: block;
@@ -170,6 +173,8 @@
             padding: 20px;
             backdrop-filter: blur(10px);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            /* Keep consistent size */
+            min-width: 600px;
         }
         .section-title {
             font-size: 18px;
@@ -219,10 +224,6 @@
             margin: 4px;
             font-size: 14px;
             white-space: nowrap;
-        }
-        .btn i {
-            margin-right: 6px;
-            font-size: 14px;
         }
         .btn:hover {
             transform: translateY(-2px);
@@ -309,35 +310,45 @@
             color: var(--accent-color);
         }
         .share-link-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+            position: relative;
             display: flex;
-            justify-content: center;
             align-items: center;
-            gap: 10px;
-            margin-top: 15px;
+            justify-content: space-between;
+        }
+        .share-link {
+            font-size: 13px;
+            color: var(--text-secondary);
+            word-break: break-all;
+            margin-bottom: 0;
+            display: none; /* Hide long text link */
+        }
+        .room-id-display {
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        .room-id-display strong {
+            color: var(--accent-color);
+            font-weight: bold;
         }
         .copy-btn {
             background: rgba(255, 255, 255, 0.1);
             border: none;
             color: var(--text-primary);
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
+            border-radius: 8px;
+            padding: 6px 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 12px;
             transition: all 0.2s ease;
         }
         .copy-btn:hover {
             background: rgba(255, 255, 255, 0.2);
-            transform: scale(1.1);
-        }
-        .room-id-badge {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 14px;
         }
         .audio-visualizer {
             height: 50px;
@@ -485,6 +496,13 @@
             0%, 100% { transform: scaleY(0.4); }
             50% { transform: scaleY(1); }
         }
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
         
         /* Typing indicator */
         .typing-indicator {
@@ -498,18 +516,13 @@
             align-self: flex-start;
         }
         
-        /* Footer */
-        .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
+        /* App footer */
+        .app-footer {
             text-align: center;
-            padding: 10px;
-            font-size: 13px;
             color: var(--text-secondary);
-            background: rgba(0, 0, 0, 0.2);
-            z-index: 10;
+            font-size: 12px;
+            padding: 15px 0 5px;
+            margin-top: auto;
         }
         
         /* Mobile Responsiveness */
@@ -543,11 +556,12 @@
             }
             
             .main-content {
-                max-height: calc(100vh - 100px);
+                max-height: calc(100vh - 20px);
             }
             
             .card {
                 padding: 15px;
+                min-width: unset;
             }
             
             #videoRemoteVideoContainer {
@@ -584,6 +598,10 @@
                 font-size: 16px;
             }
             
+            .share-link {
+                font-size: 12px;
+            }
+            
             .chat-container {
                 height: 150px;
             }
@@ -602,7 +620,6 @@
             <div class="notification-message" id="notificationMessage"></div>
         </div>
     </div>
-    
     <div class="app-container">
         <div class="sidebar" id="sidebar">
             <div class="logo">
@@ -663,9 +680,9 @@
                         </button>
                     </div>
                     <div id="audioRoomLinkContainer" class="share-link-container" style="display: none;">
-                        <div class="room-id-badge">Room ID: <span id="audioRoomIdBadge"></span></div>
-                        <button class="copy-btn" id="copyAudioLink" title="Copy link to clipboard">
-                            <i class="fas fa-copy"></i>
+                        <div class="room-id-display">Room ID: <strong id="audioRoomIdDisplay"></strong></div>
+                        <button class="copy-btn" id="copyAudioLink">
+                            <i class="fas fa-copy"></i> Copy Link
                         </button>
                     </div>
                     <div class="audio-visualizer" id="audioVisualizer">
@@ -707,9 +724,9 @@
                         </button>
                     </div>
                     <div id="videoRoomLinkContainer" class="share-link-container" style="display: none;">
-                        <div class="room-id-badge">Room ID: <span id="videoRoomIdBadge"></span></div>
-                        <button class="copy-btn" id="copyVideoLink" title="Copy link to clipboard">
-                            <i class="fas fa-copy"></i>
+                        <div class="room-id-display">Room ID: <strong id="videoRoomIdDisplay"></strong></div>
+                        <button class="copy-btn" id="copyVideoLink">
+                            <i class="fas fa-copy"></i> Copy Link
                         </button>
                     </div>
                     <div id="videoRemoteVideoContainer">
@@ -755,9 +772,9 @@
                         </button>
                     </div>
                     <div id="textRoomLinkContainer" class="share-link-container" style="display: none;">
-                        <div class="room-id-badge">Room ID: <span id="textRoomIdBadge"></span></div>
-                        <button class="copy-btn" id="copyTextLink" title="Copy link to clipboard">
-                            <i class="fas fa-copy"></i>
+                        <div class="room-id-display">Room ID: <strong id="textRoomIdDisplay"></strong></div>
+                        <button class="copy-btn" id="copyTextLink">
+                            <i class="fas fa-copy"></i> Copy Link
                         </button>
                     </div>
                     <div id="textChat" class="chat-container">
@@ -819,12 +836,11 @@
                     </div>
                 </div>
             </div>
+            <!-- Footer -->
+            <div class="app-footer">
+                <div>SatLoom v1.7.0 | Powered by SatLoom Developers</div>
+            </div>
         </div>
-    </div>
-    
-    <!-- Footer with version and credits -->
-    <div class="footer">
-        SatLoom v1.7.0 | Powered by SatLoom Developers
     </div>
     
     <!-- Hidden audio element for remote audio -->
@@ -1062,6 +1078,8 @@
             if (window.innerWidth > 900) {
                 // Desktop behavior - hide with animation
                 sidebar.style.display = 'none';
+                // Keep app container centered
+                document.querySelector('.app-container').style.gridTemplateColumns = '0 1fr';
             } else {
                 // Mobile behavior - slide out
                 sidebar.classList.remove('active');
@@ -1074,6 +1092,8 @@
             if (window.innerWidth > 900) {
                 // Desktop behavior - show with animation
                 sidebar.style.display = 'flex';
+                // Restore grid columns
+                document.querySelector('.app-container').style.gridTemplateColumns = '280px 1fr';
             } else {
                 // Mobile behavior - slide in
                 sidebar.classList.add('active');
@@ -1127,11 +1147,6 @@
                 type === 'error' ? 'rgba(244, 67, 54, 0.8)' :
                 type === 'success' ? 'rgba(76, 175, 80, 0.8)' :
                 'rgba(58, 123, 213, 0.8)';
-            
-            // Play notification sound for important notifications
-            if (type !== 'info' && document.getElementById('notification-sound-toggle').checked) {
-                playNotificationSound();
-            }
             
             setTimeout(() => {
                 domRefs.notification.style.display = 'none';
@@ -1432,12 +1447,13 @@
             appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
             appState.currentMode = mode;
             
-            // Get the correct base URL with path
+            // Generate correct link with current path
             const baseUrl = window.location.origin + window.location.pathname;
+            const roomLink = `${baseUrl}?room=${appState.roomId}&mode=${mode}`;
             
-            // Update UI - show room ID and copy button
+            // Update UI - show only room ID and copy button
             document.getElementById(`${mode}-room-id`).value = appState.roomId;
-            document.getElementById(`${mode}RoomIdBadge`).textContent = appState.roomId;
+            document.getElementById(`${mode}RoomIdDisplay`).textContent = appState.roomId;
             document.getElementById(`${mode}RoomLinkContainer`).style.display = 'flex';
             
             showNotification('Room Generated', `Room ID: ${appState.roomId}. Share with others.`, 'success');
@@ -1706,7 +1722,6 @@
                 
                 stopTimer();
                 document.getElementById(`${mode}Controls`).style.display = 'none';
-                document.getElementById(`${mode}RoomLinkContainer`).style.display = 'none';
                 
                 if (appState.roomId) {
                     sendMessage({ type: 'bye' });
@@ -1724,8 +1739,9 @@
                 const chatContainer = document.getElementById('textChat');
                 chatContainer.innerHTML = '';
                 document.getElementById('textControls').style.display = 'none';
-                document.getElementById('textRoomLinkContainer').style.display = 'none';
             }
+            
+            document.getElementById(`${mode}RoomLinkContainer`).style.display = 'none';
             
             updateStatus('Disconnected', false);
             showNotification('Disconnected', `${mode} session ended`);
@@ -1774,11 +1790,10 @@
 
         // ========== UTILITY FUNCTIONS ========== //
         function copyLink(mode) {
-            // Get the correct base URL with path
             const baseUrl = window.location.origin + window.location.pathname;
-            const link = `${baseUrl}?room=${appState.roomId}&mode=${mode}`;
+            const roomLink = `${baseUrl}?room=${appState.roomId}&mode=${mode}`;
             
-            navigator.clipboard.writeText(link).then(() => {
+            navigator.clipboard.writeText(roomLink).then(() => {
                 showNotification('Copied', 'Room link copied to clipboard', 'success');
             }).catch(err => {
                 console.error('Copy failed:', err);
