@@ -665,7 +665,13 @@ html, body {
         margin: 0 2px;  /* reduce margin to save space */
     }
 }
-
+   .system-message {
+            text-align: center;
+            margin: 10px 0;
+            color: var(--accent-color);
+            font-size: 0.85em;
+            font-style: italic;
+        }
         
     </style>
 </head>
@@ -1642,7 +1648,7 @@ html, body {
             }
         }
 
-        // ========== TEXT CHAT FUNCTIONALITY ========== //
+          // ========== TEXT CHAT FUNCTIONALITY ========== //
         function initTextChat() {
             if (!appState.roomId) {
                 showNotification('Error', 'Room ID is not set', 'error');
@@ -1657,7 +1663,6 @@ html, body {
             
             // Create the correct reference path
             appState.textChatRef = firebase.database().ref(`rooms/${appState.roomId}/textMessages`);
-            console.log(`Initializing text chat for room: ${appState.roomId}`);
             
             // Clear existing messages
             const chatContainer = document.getElementById('textChat');
@@ -1667,10 +1672,10 @@ html, body {
             // Initialize the textMessages node if it doesn't exist
             appState.textChatRef.once('value').then(snapshot => {
                 if (!snapshot.exists()) {
-                    console.log('Creating textMessages node for room: ', appState.roomId);
                     appState.textChatRef.set({
                         messages: {},
-                        typing: {}
+                        typing: {},
+                        participants: {}
                     }).then(() => {
                         console.log('textMessages node created successfully');
                     }).catch(error => {
@@ -1681,126 +1686,44 @@ html, body {
                 console.error('Error checking textMessages node: ', error);
             });
             
-            // Listen for new messages
-            appState.textChatRef.child('messages').on('child_added', snapshot => {
-                const message = snapshot.val();
-                console.log('New message received: ', message);
-                if (message) {
-                    addMessageToChat(message);
+            // NEW: Track participants in the chat room
+            const participantsRef = firebase.database().ref(`rooms/${appState.roomId}/participants`);
+            
+            // Set current user as a participant
+            participantsRef.child(appState.userId).set({
+                name: appState.userName,
+                joined: Date.now()
+            });
+            
+            // Remove participant when they disconnect
+            participantsRef.child(appState.userId).onDisconnect().remove();
+            
+            // NEW: Listen for new participants joining
+            participantsRef.on('child_added', snapshot => {
+                const participant = snapshot.val();
+                if (snapshot.key !== appState.userId) {
+                    // This is a new participant that's not the current user
+                    const joinTime = new Date(participant.joined).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     
-                    // Play notification sound for remote messages
-                    if (message.userId !== appState.userId) {
-                        playNotificationSound();
-                    }
+                    // Create system message
+                    const systemMessage = {
+                        text: `${participant.name} joined the chat`,
+                        userId: 'system',
+                        userName: 'System',
+                        timestamp: Date.now(),
+                        isSystem: true
+                    };
+                    
+                    // Add to chat
+                    addMessageToChat(systemMessage);
+                    
+                    // Play notification sound
+                    playNotificationSound();
+                    
+                    // Show notification
+                    showNotification('New Participant', `${participant.name} joined the chat`, 'success');
                 }
             });
-            
-            // Listen for typing status updates
-            appState.textChatRef.child('typing').on('value', snapshot => {
-                const typingData = snapshot.val();
-                if (!typingData) return;
-                
-                let someoneTyping = false;
-                for (const userId in typingData) {
-                    if (userId !== appState.userId && typingData[userId]) {
-                        someoneTyping = true;
-                        break;
-                    }
-                }
-                
-                domRefs.typingIndicator.style.display = someoneTyping ? 'block' : 'none';
-            });
-            
-            appState.textChatInitialized = true;
-            console.log('Text chat initialized successfully');
-        }
-
-function playNotificationSound() {
-    if (document.getElementById('notification-sound-toggle').checked) {
-        try {
-            const notificationSound = document.getElementById('notificationSound');
-            notificationSound.currentTime = 0;
-            notificationSound.play().catch(e => {
-                console.log('Audio play prevented:', e);
-            });
-        } catch (e) {
-            console.error('Error playing notification sound:', e);
-        }
-    }
-}
-
-// Update the message handler to play sound
-appState.textChatRef.child('messages').on('child_added', snapshot => {
-    const message = snapshot.val();
-    if (message) {
-        addMessageToChat(message);
-        
-        // Play notification sound for remote messages
-        if (message.userId !== appState.userId) {
-            playNotificationSound(); // Add this line
-        }
-    }
-});
-
-        function addMessageToChat(message) {
-            const chat = document.getElementById('textChat');
-            const messageElement = document.createElement('div');
-            
-            const isCurrentUser = message.userId === appState.userId;
-            const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            // Determine user class based on user ID
-            const userClass = isCurrentUser ? 'user2' : 'user1';
-            
-            messageElement.className = `chat-message ${userClass}`;
-            messageElement.innerHTML = `
-                <strong>${escapeHtml(message.userName)}</strong>
-                <div>${escapeHtml(message.text)}</div>
-                <span class="message-time">${time}</span>
-            `;
-            
-            chat.appendChild(messageElement);
-            chat.scrollTop = chat.scrollHeight;
-            
-            // Ensure typing indicator stays at bottom
-            domRefs.typingIndicator.style.order = '1';
-        }
-
-        function escapeHtml(unsafe) {
-            return unsafe
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
-
-        async function sendChatMessage() {
-            const input = document.getElementById('textMessage');
-            const message = input.value.trim();
-            
-            if (!message) {
-                showNotification('Error', 'Please enter a message', 'error');
-                return;
-            }
-            
-            if (!appState.roomId) {
-                showNotification('Error', 'No room connected', 'error');
-                return;
-            }
-            
-            if (!appState.textChatInitialized) {
-                showNotification('Error', 'Chat not initialized. Please join a room first.', 'error');
-                return;
-            }
-            
-            try {
-                const messageData = {
-                    text: message,
-                    userId: appState.userId,
-                    userName: appState.userName,
-                    timestamp: Date.now()
-                };
                 
                 // Use the correct path
                 const dbRef = firebase.database().ref(`rooms/${appState.roomId}/textMessages/messages`);
@@ -1960,6 +1883,36 @@ appState.textChatRef.child('messages').on('child_added', snapshot => {
                     button.innerHTML = icon;
                 }
             }
+        }
+
+        function addMessageToChat(message) {
+            const chat = document.getElementById('textChat');
+            
+            if (message.isSystem) {
+                // Create system notification element
+                const systemElement = document.createElement('div');
+                systemElement.className = 'system-message';
+                systemElement.textContent = message.text;
+                chat.appendChild(systemElement);
+            } else {
+                // Existing message display logic
+                const messageElement = document.createElement('div');
+                const isCurrentUser = message.userId === appState.userId;
+                const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const userClass = isCurrentUser ? 'user2' : 'user1';
+                
+                messageElement.className = `chat-message ${userClass}`;
+                messageElement.innerHTML = `
+                    <strong>${escapeHtml(message.userName)}</strong>
+                    <div>${escapeHtml(message.text)}</div>
+                    <span class="message-time">${time}</span>
+                `;
+                
+                chat.appendChild(messageElement);
+            }
+            
+            chat.scrollTop = chat.scrollHeight;
+            domRefs.typingIndicator.style.order = '1';
         }
 
         // ========== UTILITY FUNCTIONS ========== //
