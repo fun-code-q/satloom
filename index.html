@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - Enhanced Communication Platform</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <title>SatLoom - Communication Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         :root {
             --primary-color: #3a7bd5;
@@ -42,7 +42,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 10px;
             transition: background 0.5s ease;
         }
         .app-container {
@@ -50,39 +50,47 @@
             width: 100%;
             display: grid;
             grid-template-columns: 280px 1fr;
-            gap: 20px;
-            padding: 20px;
+            gap: 15px;
+            padding: 15px;
             transition: all 0.3s ease;
-            align-items: center;
         }
-        .sidebar-hidden .app-container {
-            grid-template-columns: 0 1fr;
-        }
-        .sidebar-hidden .sidebar {
+        .mobile-menu-toggle {
             display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background: var(--card-bg);
+            border: none;
+            color: var(--text-primary);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
-        
-        .sidebar, .card {
+        .sidebar {
             background: var(--card-bg);
             border-radius: 16px;
-            padding: 20px;
+            padding: 15px;
             backdrop-filter: blur(10px);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
             animation: fadeIn 0.5s ease;
             transition: all 0.3s ease;
-        }
-        .sidebar {
             display: flex;
             flex-direction: column;
+            overflow-y: auto;
+            max-height: calc(100vh - 30px);
         }
         .logo {
             display: flex;
             align-items: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
         .logo-icon {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             display: flex;
@@ -92,7 +100,7 @@
             animation: pulse 2s infinite;
         }
         .logo-text {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
             background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
             -webkit-background-clip: text;
@@ -101,10 +109,10 @@
         }
         .nav-menu {
             list-style: none;
-            margin-top: 20px;
+            margin-top: 15px;
         }
         .nav-item {
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             border-radius: 8px;
             transition: all 0.3s ease;
         }
@@ -115,26 +123,30 @@
         .nav-link {
             display: flex;
             align-items: center;
-            padding: 12px 15px;
+            padding: 10px 12px;
             color: var(--text-secondary);
             text-decoration: none;
             border-radius: 8px;
             transition: all 0.3s ease;
             cursor: pointer;
+            font-size: 14px;
         }
         .nav-link:hover, .nav-link.active {
             background: rgba(58, 123, 213, 0.15);
             color: var(--text-primary);
         }
         .nav-link i {
-            margin-right: 10px;
-            width: 20px;
+            margin-right: 8px;
+            width: 18px;
             text-align: center;
+            font-size: 16px;
         }
         .main-content {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 15px;
+            overflow: auto;
+            max-height: calc(100vh - 30px);
         }
         .section {
             display: none;
@@ -143,30 +155,41 @@
             display: block;
             animation: fadeIn 0.3s ease;
         }
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
         .section-title {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 600;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
             color: var(--accent-color);
         }
         .section-title i {
-            margin-right: 10px;
+            margin-right: 8px;
+            font-size: 16px;
         }
         .input-group {
             display: flex;
-            margin-bottom: 15px;
+            flex-direction: column;
+            margin-bottom: 12px;
+            gap: 10px;
         }
         .input-styled {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 12px 15px;
+            padding: 10px 12px;
             color: var(--text-primary);
             border-radius: 8px;
             width: 100%;
             outline: none;
             transition: all 0.3s ease;
+            font-size: 14px;
         }
         .input-styled:focus {
             border-color: var(--accent-color);
@@ -176,7 +199,7 @@
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
             border: none;
-            padding: 12px 20px;
+            padding: 10px 15px;
             border-radius: 8px;
             cursor: pointer;
             font-weight: 500;
@@ -184,10 +207,13 @@
             align-items: center;
             justify-content: center;
             transition: all 0.3s ease;
-            margin: 5px;
+            margin: 4px;
+            font-size: 14px;
+            white-space: nowrap;
         }
         .btn i {
-            margin-right: 8px;
+            margin-right: 6px;
+            font-size: 14px;
         }
         .btn:hover {
             transform: translateY(-2px);
@@ -200,22 +226,23 @@
         .call-controls {
             display: flex;
             justify-content: center;
-            margin-top: 20px;
+            margin-top: 15px;
             flex-wrap: wrap;
+            gap: 5px;
         }
         .control-btn {
-            width: 50px;
-            height: 50px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
             border: none;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 10px;
+            margin: 0 5px;
             cursor: pointer;
             transition: all 0.2s ease;
             color: white;
-            font-size: 18px;
+            font-size: 16px;
         }
         .control-btn:not(.end) {
             background: rgba(255, 255, 255, 0.1);
@@ -228,8 +255,8 @@
             background: rgba(0, 0, 0, 0.2);
             border-radius: 12px;
             overflow: hidden;
-            height: 300px;
-            margin: 15px 0;
+            height: 250px;
+            margin: 12px 0;
             transition: all 0.3s ease;
         }
         #video-remote-video {
@@ -240,10 +267,10 @@
         }
         #video-local-video {
             position: absolute;
-            bottom: 15px;
-            right: 15px;
-            width: 100px;
-            height: 75px;
+            bottom: 12px;
+            right: 12px;
+            width: 80px;
+            height: 60px;
             border-radius: 8px;
             border: 2px solid var(--accent-color);
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
@@ -253,88 +280,90 @@
         }
         .notification {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 15px;
+            right: 15px;
             background: var(--card-bg);
             border-radius: 8px;
-            padding: 15px;
+            padding: 12px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             display: flex;
             align-items: center;
-            max-width: 300px;
+            max-width: 280px;
             z-index: 1000;
             backdrop-filter: blur(10px);
             display: none;
         }
         .call-timer {
-            font-size: 24px;
+            font-size: 20px;
             text-align: center;
-            margin: 15px 0;
+            margin: 12px 0;
             color: var(--accent-color);
         }
         .share-link-container {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 8px;
-            padding: 15px;
-            margin-top: 15px;
+            padding: 12px;
+            margin-top: 12px;
             position: relative;
         }
         .share-link {
-            font-size: 14px;
+            font-size: 13px;
             color: var(--text-secondary);
             word-break: break-all;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         .copy-btn {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: 8px;
+            right: 8px;
             background: rgba(255, 255, 255, 0.1);
             border: none;
             color: var(--text-primary);
-            width: 30px;
-            height: 30px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            font-size: 12px;
         }
         .audio-visualizer {
-            height: 60px;
+            height: 50px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 20px 0;
+            margin: 15px 0;
         }
         .spinner {
             border: 4px solid rgba(0, 0, 0, 0.1);
             border-left-color: var(--accent-color);
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 35px;
+            height: 35px;
             animation: spin 1s linear infinite;
-            margin: 20px auto;
+            margin: 15px auto;
             display: none;
         }
         .chat-container {
-            height: 200px;
+            height: 180px;
             overflow-y: auto;
             background: rgba(0, 0, 0, 0.1);
             border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 10px;
+            padding: 8px;
+            margin-bottom: 8px;
             display: flex;
             flex-direction: column;
         }
         .chat-message {
-            margin: 8px 0;
-            padding: 8px;
+            margin: 6px 0;
+            padding: 6px;
             border-radius: 8px;
             background: rgba(255, 255, 255, 0.1);
-            max-width: 80%;
+            max-width: 85%;
             align-self: flex-start;
             animation: fadeIn 0.3s ease;
+            font-size: 13px;
         }
         .chat-message.remote {
             background: rgba(58, 123, 213, 0.15);
@@ -342,55 +371,56 @@
         }
         .chat-message strong {
             color: var(--accent-color);
-            font-size: 0.9em;
+            font-size: 0.85em;
         }
         .chat-message .message-time {
-            font-size: 0.7em;
+            font-size: 0.65em;
             color: var(--text-secondary);
-            margin-top: 4px;
+            margin-top: 3px;
             display: block;
             text-align: right;
         }
         .status-indicator {
-            padding: 8px 12px;
+            padding: 8px 10px;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 8px;
-            font-size: 14px;
-            margin-bottom: 20px;
+            font-size: 13px;
+            margin-bottom: 15px;
             display: flex;
             align-items: center;
         }
         .status-indicator i {
-            margin-right: 8px;
+            margin-right: 6px;
+            font-size: 14px;
         }
         .visualizer-bars {
             display: flex;
             align-items: flex-end;
             height: 100%;
-            gap: 4px;
+            gap: 3px;
         }
         .visualizer-bar {
-            width: 8px;
+            width: 6px;
             background: linear-gradient(to top, var(--accent-color), var(--primary-color));
             border-radius: 4px;
             animation: equalizer 1.2s infinite ease-in-out;
         }
-        .visualizer-bar:nth-child(1) { animation-delay: 0s; height: 20px; }
-        .visualizer-bar:nth-child(2) { animation-delay: 0.2s; height: 30px; }
-        .visualizer-bar:nth-child(3) { animation-delay: 0.4s; height: 25px; }
-        .visualizer-bar:nth-child(4) { animation-delay: 0.6s; height: 35px; }
-        .visualizer-bar:nth-child(5) { animation-delay: 0.8s; height: 15px; }
+        .visualizer-bar:nth-child(1) { animation-delay: 0s; height: 18px; }
+        .visualizer-bar:nth-child(2) { animation-delay: 0.2s; height: 25px; }
+        .visualizer-bar:nth-child(3) { animation-delay: 0.4s; height: 22px; }
+        .visualizer-bar:nth-child(4) { animation-delay: 0.6s; height: 30px; }
+        .visualizer-bar:nth-child(5) { animation-delay: 0.8s; height: 12px; }
         
         /* Camera switching button styles */
         .switch-camera-btn {
             position: absolute;
-            top: 15px;
-            right: 15px;
+            top: 12px;
+            right: 12px;
             background: rgba(255, 255, 255, 0.2);
             border: none;
             color: white;
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -399,6 +429,7 @@
             z-index: 20;
             transition: all 0.2s ease;
             display: none;
+            font-size: 14px;
         }
         .switch-camera-btn:hover {
             background: rgba(255, 255, 255, 0.3);
@@ -410,14 +441,14 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 0;
+            padding: 10px 0;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 14px;
         }
         .setting-item:last-child {
             border-bottom: none;
         }
         .setting-item label {
-            font-size: 16px;
             color: var(--text-secondary);
         }
 
@@ -433,7 +464,7 @@
         }
         @keyframes pulse {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+            50% { transform: scale(1.05); }
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -456,15 +487,97 @@
             display: none;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 12px;
-            padding: 8px 12px;
-            margin: 5px 0;
-            font-size: 12px;
+            padding: 6px 10px;
+            margin: 4px 0;
+            font-size: 11px;
             color: var(--text-secondary);
             align-self: flex-start;
+        }
+        
+        /* Mobile Responsiveness */
+        @media (max-width: 900px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                padding: 10px;
+                gap: 10px;
+            }
+            
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 280px;
+                height: 100%;
+                z-index: 900;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .mobile-menu-toggle {
+                display: flex;
+            }
+            
+            .main-content {
+                max-height: calc(100vh - 20px);
+            }
+            
+            .card {
+                padding: 15px;
+            }
+            
+            #videoRemoteVideoContainer {
+                height: 200px;
+            }
+            
+            #video-local-video {
+                width: 70px;
+                height: 52px;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .call-controls {
+                gap: 3px;
+            }
+            
+            .control-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 14px;
+            }
+            
+            .section-title {
+                font-size: 16px;
+            }
+            
+            .share-link {
+                font-size: 12px;
+            }
+            
+            .chat-container {
+                height: 150px;
+            }
         }
     </style>
 </head>
 <body class="dark-mode">
+    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+    
     <div class="notification" id="globalNotification">
         <i class="notification-icon fas fa-info-circle"></i>
         <div class="notification-content">
@@ -473,7 +586,7 @@
         </div>
     </div>
     <div class="app-container">
-        <div class="sidebar">
+        <div class="sidebar" id="sidebar">
             <div class="logo">
                 <div class="logo-icon">
                     <i class="fas fa-satellite-dish"></i>
@@ -683,23 +796,57 @@
                     </div>
                     <div class="about-content">
                         <p>A free, open-source communication platform using WebRTC technology.</p>
-                        <p><strong>Version:</strong> 1.5.0</p>
+                        <p><strong>Version:</strong> 1.6.0</p>
                         <p><strong>Developed by:</strong> SatLoom Developers</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    
     <!-- Hidden audio element for remote audio -->
     <audio id="remoteAudio" autoplay playsinline></audio>
     <!-- Notification sound element -->
     <audio id="notificationSound" preload="auto">
         <source src="https://assets.mixkit.co/sfx/preview/mixkit-notification-886.mp3" type="audio/mpeg">
     </audio>
+    
     <!-- Firebase for signaling -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
     <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDeksN3qPZCmNuoASlEqG38XVmag6ecTh8",
+            authDomain: "satloom-rtc.firebaseapp.com",
+            databaseURL: "https://satloom-rtc-default-rtdb.firebaseio.com",
+            projectId: "satloom-rtc",
+            storageBucket: "satloom-rtc.appspot.com",
+            messagingSenderId: "273627860564",
+            appId: "1:273627860564:web:c326b1bb6ffcb32fb0e7c1"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        
+        // Mobile menu toggle
+        document.getElementById('mobileMenuToggle').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('active');
+        });
+        
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(event) {
+            const sidebar = document.getElementById('sidebar');
+            const mobileMenu = document.getElementById('mobileMenuToggle');
+            
+            if (window.innerWidth <= 900 && 
+                !sidebar.contains(event.target) && 
+                event.target !== mobileMenu &&
+                !mobileMenu.contains(event.target)) {
+                sidebar.classList.remove('active');
+            }
+        });
+        
         // ========== DOM ELEMENT REFERENCES ========== //
         const domRefs = {
             notification: document.getElementById('globalNotification'),
@@ -749,181 +896,6 @@
             typingTimeout: null
         };
 
-        // ========== FIREBASE CONFIG ========== //
-        const firebaseConfig = {
-            apiKey: "AIzaSyDeksN3qPZCmNuoASlEqG38XVmag6ecTh8",
-            authDomain: "satloom-rtc.firebaseapp.com",
-            databaseURL: "https://satloom-rtc-default-rtdb.firebaseio.com",
-            projectId: "satloom-rtc",
-            storageBucket: "satloom-rtc.appspot.com",
-            messagingSenderId: "273627860564",
-            appId: "1:273627860564:web:c326b1bb6ffcb32fb0e7c1"
-        };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-
-        // ========== TEXT CHAT FUNCTIONALITY ========== //
-        function initTextChat() {
-            if (!appState.roomId) {
-                showNotification('Error', 'Room ID is not set', 'error');
-                return;
-            }
-
-            // Clean up previous chat reference
-            if (appState.textChatRef) {
-                appState.textChatRef.off('child_added');
-                appState.textChatRef.off('value');
-            }
-            
-            // Create the correct reference path
-            appState.textChatRef = firebase.database().ref(`rooms/${appState.roomId}/textMessages`);
-            console.log(`Initializing text chat for room: ${appState.roomId}`);
-            
-            // Clear existing messages
-            const chatContainer = document.getElementById('textChat');
-            chatContainer.innerHTML = '<div class="typing-indicator" id="typingIndicator"><i class="fas fa-circle"></i><i class="fas fa-circle"></i><i class="fas fa-circle"></i></div>';
-            domRefs.typingIndicator = document.getElementById('typingIndicator');
-            
-            // Initialize the textMessages node if it doesn't exist
-            appState.textChatRef.once('value').then(snapshot => {
-                if (!snapshot.exists()) {
-                    console.log('Creating textMessages node for room: ', appState.roomId);
-                    appState.textChatRef.set({
-                        messages: {},
-                        typing: {}
-                    }).then(() => {
-                        console.log('textMessages node created successfully');
-                    }).catch(error => {
-                        console.error('Error creating textMessages node: ', error);
-                    });
-                }
-            }).catch(error => {
-                console.error('Error checking textMessages node: ', error);
-            });
-            
-            // Listen for new messages
-            appState.textChatRef.child('messages').on('child_added', snapshot => {
-                const message = snapshot.val();
-                console.log('New message received: ', message);
-                if (message) {
-                    addMessageToChat(message);
-                    
-                    // Play notification sound for remote messages
-                    if (message.userId !== appState.userId) {
-                        playNotificationSound();
-                    }
-                }
-            });
-            
-            // Listen for typing status updates
-            appState.textChatRef.child('typing').on('value', snapshot => {
-                const typingData = snapshot.val();
-                if (!typingData) return;
-                
-                let someoneTyping = false;
-                for (const userId in typingData) {
-                    if (userId !== appState.userId && typingData[userId]) {
-                        someoneTyping = true;
-                        break;
-                    }
-                }
-                
-                domRefs.typingIndicator.style.display = someoneTyping ? 'block' : 'none';
-            });
-            
-            appState.textChatInitialized = true;
-            console.log('Text chat initialized successfully');
-        }
-
-        function playNotificationSound() {
-            if (document.getElementById('notification-sound-toggle').checked) {
-                try {
-                    domRefs.notificationSound.currentTime = 0;
-                    domRefs.notificationSound.play().catch(e => {
-                        console.log('Audio play prevented:', e);
-                    });
-                } catch (e) {
-                    console.error('Error playing notification sound:', e);
-                }
-            }
-        }
-
-        function addMessageToChat(message) {
-            const chat = document.getElementById('textChat');
-            const messageElement = document.createElement('div');
-            
-            const isCurrentUser = message.userId === appState.userId;
-            const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            messageElement.className = `chat-message ${isCurrentUser ? '' : 'remote'}`;
-            messageElement.innerHTML = `
-                <strong>${escapeHtml(message.userName)}</strong>
-                <div>${escapeHtml(message.text)}</div>
-                <span class="message-time">${time}</span>
-            `;
-            
-            chat.appendChild(messageElement);
-            chat.scrollTop = chat.scrollHeight;
-        }
-
-        function escapeHtml(unsafe) {
-            return unsafe
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
-
-        async function sendChatMessage() {
-            const input = document.getElementById('textMessage');
-            const message = input.value.trim();
-            
-            if (!message) {
-                showNotification('Error', 'Please enter a message', 'error');
-                return;
-            }
-            
-            if (!appState.roomId) {
-                showNotification('Error', 'No room connected', 'error');
-                return;
-            }
-            
-            if (!appState.textChatInitialized) {
-                showNotification('Error', 'Chat not initialized. Please join a room first.', 'error');
-                return;
-            }
-            
-            try {
-                const messageData = {
-                    text: message,
-                    userId: appState.userId,
-                    userName: appState.userName,
-                    timestamp: Date.now()
-                };
-                
-                // Use the correct path
-                const dbRef = firebase.database().ref(`rooms/${appState.roomId}/textMessages/messages`);
-                await dbRef.push(messageData);
-                input.value = '';
-                console.log('Message sent successfully');
-                
-            } catch (error) {
-                console.error('Error sending message:', error);
-                showNotification('Error', `Failed to send message: ${error.message}`, 'error');
-            }
-        }
-
-        function sendTypingStatus(isTyping) {
-            if (!appState.roomId || !appState.textChatInitialized) return;
-            
-            const typingRef = firebase.database().ref(
-                `rooms/${appState.roomId}/textMessages/typing/${appState.userId}`
-            );
-            typingRef.set(isTyping);
-        }
-
         // ========== INITIALIZATION ========== //
         document.addEventListener('DOMContentLoaded', initApp);
 
@@ -931,6 +903,7 @@
             setupEventListeners();
             loadSettings();
             autoJoinRoom();
+            adjustForMobile();
         }
 
         function setupEventListeners() {
@@ -1060,32 +1033,42 @@
 
         // ========== SIDEBAR MANAGEMENT ========== //
         function hideSidebar() {
-            const sidebar = document.querySelector('.sidebar');
+            const sidebar = document.getElementById('sidebar');
             const appContainer = document.querySelector('.app-container');
-
-            if (sidebar) sidebar.style.display = 'none';
-
-            if (appContainer) {
-                // Switch to flex layout for full centering
-                appContainer.style.display = 'flex';
-                appContainer.style.justifyContent = 'center';
-                appContainer.style.alignItems = 'center';
-                appContainer.style.padding = '20px';
+            
+            if (window.innerWidth > 900) {
+                // Desktop behavior
+                if (sidebar) sidebar.style.display = 'none';
+                
+                if (appContainer) {
+                    appContainer.style.display = 'flex';
+                    appContainer.style.justifyContent = 'center';
+                    appContainer.style.alignItems = 'center';
+                    appContainer.style.padding = '20px';
+                }
+            } else {
+                // Mobile behavior - just close the sidebar
+                sidebar.classList.remove('active');
             }
         }
-
+        
         function showSidebar() {
-            const sidebar = document.querySelector('.sidebar');
+            const sidebar = document.getElementById('sidebar');
             const appContainer = document.querySelector('.app-container');
-
-            if (sidebar) sidebar.style.display = 'flex';
-
-            if (appContainer) {
-                // Restore original grid layout
-                appContainer.style.display = 'grid';
-                appContainer.style.gridTemplateColumns = '280px 1fr';
-                appContainer.style.justifyContent = '';
-                appContainer.style.alignItems = '';
+            
+            if (window.innerWidth > 900) {
+                // Desktop behavior
+                if (sidebar) sidebar.style.display = 'flex';
+                
+                if (appContainer) {
+                    appContainer.style.display = 'grid';
+                    appContainer.style.gridTemplateColumns = '280px 1fr';
+                    appContainer.style.justifyContent = '';
+                    appContainer.style.alignItems = '';
+                }
+            } else {
+                // Mobile behavior - open the sidebar
+                sidebar.classList.add('active');
             }
         }
 
@@ -1105,6 +1088,11 @@
             domRefs.sections[sectionId].classList.add('active');
             
             appState.currentMode = sectionId;
+            
+            // Close sidebar on mobile after navigation
+            if (window.innerWidth <= 900) {
+                document.getElementById('sidebar').classList.remove('active');
+            }
         }
 
         // ========== THEME MANAGEMENT ========== //
@@ -1512,6 +1500,167 @@
             }
         }
 
+        // ========== TEXT CHAT FUNCTIONALITY ========== //
+        function initTextChat() {
+            if (!appState.roomId) {
+                showNotification('Error', 'Room ID is not set', 'error');
+                return;
+            }
+
+            // Clean up previous chat reference
+            if (appState.textChatRef) {
+                appState.textChatRef.off('child_added');
+                appState.textChatRef.off('value');
+            }
+            
+            // Create the correct reference path
+            appState.textChatRef = firebase.database().ref(`rooms/${appState.roomId}/textMessages`);
+            console.log(`Initializing text chat for room: ${appState.roomId}`);
+            
+            // Clear existing messages
+            const chatContainer = document.getElementById('textChat');
+            chatContainer.innerHTML = '<div class="typing-indicator" id="typingIndicator"><i class="fas fa-circle"></i><i class="fas fa-circle"></i><i class="fas fa-circle"></i></div>';
+            domRefs.typingIndicator = document.getElementById('typingIndicator');
+            
+            // Initialize the textMessages node if it doesn't exist
+            appState.textChatRef.once('value').then(snapshot => {
+                if (!snapshot.exists()) {
+                    console.log('Creating textMessages node for room: ', appState.roomId);
+                    appState.textChatRef.set({
+                        messages: {},
+                        typing: {}
+                    }).then(() => {
+                        console.log('textMessages node created successfully');
+                    }).catch(error => {
+                        console.error('Error creating textMessages node: ', error);
+                    });
+                }
+            }).catch(error => {
+                console.error('Error checking textMessages node: ', error);
+            });
+            
+            // Listen for new messages
+            appState.textChatRef.child('messages').on('child_added', snapshot => {
+                const message = snapshot.val();
+                console.log('New message received: ', message);
+                if (message) {
+                    addMessageToChat(message);
+                    
+                    // Play notification sound for remote messages
+                    if (message.userId !== appState.userId) {
+                        playNotificationSound();
+                    }
+                }
+            });
+            
+            // Listen for typing status updates
+            appState.textChatRef.child('typing').on('value', snapshot => {
+                const typingData = snapshot.val();
+                if (!typingData) return;
+                
+                let someoneTyping = false;
+                for (const userId in typingData) {
+                    if (userId !== appState.userId && typingData[userId]) {
+                        someoneTyping = true;
+                        break;
+                    }
+                }
+                
+                domRefs.typingIndicator.style.display = someoneTyping ? 'block' : 'none';
+            });
+            
+            appState.textChatInitialized = true;
+            console.log('Text chat initialized successfully');
+        }
+
+        function playNotificationSound() {
+            if (document.getElementById('notification-sound-toggle').checked) {
+                try {
+                    domRefs.notificationSound.currentTime = 0;
+                    domRefs.notificationSound.play().catch(e => {
+                        console.log('Audio play prevented:', e);
+                    });
+                } catch (e) {
+                    console.error('Error playing notification sound:', e);
+                }
+            }
+        }
+
+        function addMessageToChat(message) {
+            const chat = document.getElementById('textChat');
+            const messageElement = document.createElement('div');
+            
+            const isCurrentUser = message.userId === appState.userId;
+            const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            messageElement.className = `chat-message ${isCurrentUser ? '' : 'remote'}`;
+            messageElement.innerHTML = `
+                <strong>${escapeHtml(message.userName)}</strong>
+                <div>${escapeHtml(message.text)}</div>
+                <span class="message-time">${time}</span>
+            `;
+            
+            chat.appendChild(messageElement);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('textMessage');
+            const message = input.value.trim();
+            
+            if (!message) {
+                showNotification('Error', 'Please enter a message', 'error');
+                return;
+            }
+            
+            if (!appState.roomId) {
+                showNotification('Error', 'No room connected', 'error');
+                return;
+            }
+            
+            if (!appState.textChatInitialized) {
+                showNotification('Error', 'Chat not initialized. Please join a room first.', 'error');
+                return;
+            }
+            
+            try {
+                const messageData = {
+                    text: message,
+                    userId: appState.userId,
+                    userName: appState.userName,
+                    timestamp: Date.now()
+                };
+                
+                // Use the correct path
+                const dbRef = firebase.database().ref(`rooms/${appState.roomId}/textMessages/messages`);
+                await dbRef.push(messageData);
+                input.value = '';
+                console.log('Message sent successfully');
+                
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showNotification('Error', `Failed to send message: ${error.message}`, 'error');
+            }
+        }
+
+        function sendTypingStatus(isTyping) {
+            if (!appState.roomId || !appState.textChatInitialized) return;
+            
+            const typingRef = firebase.database().ref(
+                `rooms/${appState.roomId}/textMessages/typing/${appState.userId}`
+            );
+            typingRef.set(isTyping);
+        }
+
         // ========== CALL CONTROLS ========== //
         function hangup(mode) {
             if (mode !== 'text') {
@@ -1625,6 +1774,22 @@
             localStorage.setItem('notificationSound', 
                 document.getElementById('notification-sound-toggle').checked);
         }
+        
+        function adjustForMobile() {
+            if (window.innerWidth <= 900) {
+                // Mobile adjustments
+                document.getElementById('mobileMenuToggle').style.display = 'flex';
+                document.getElementById('sidebar').classList.remove('active');
+            } else {
+                // Desktop adjustments
+                document.getElementById('mobileMenuToggle').style.display = 'none';
+                document.getElementById('sidebar').style.display = 'flex';
+                document.getElementById('sidebar').classList.remove('active');
+            }
+        }
+        
+        // Run on resize
+        window.addEventListener('resize', adjustForMobile);
     </script>
 </body>
 </html>
