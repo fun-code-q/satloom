@@ -61,16 +61,15 @@
             grid-template-columns: 0 1fr;
             gap: 0;
         }
-
-          .app-container.sidebar-hidden .sidebar {
-    padding: 0;
-    margin: 0;
-    border: none;
-    opacity: 0;
-    width: 0;
-    height: 0;
-    overflow: hidden;
-   }
+        .app-container.sidebar-hidden .sidebar {
+            padding: 0;
+            margin: 0;
+            border: none;
+            opacity: 0;
+            width: 0;
+            height: 0;
+            overflow: hidden;
+        }
         .mobile-menu-toggle {
             display: none;
             position: fixed;
@@ -1004,7 +1003,7 @@
             });
             document.getElementById('endAudioCall').addEventListener('click', () => {
                 hangup('audio');
-                showSidebar();
+                resetUI('audio');
             });
 
             document.getElementById('audioAudioToggle').addEventListener('click', () => toggleAudio('audio'));
@@ -1021,7 +1020,7 @@
             });
             document.getElementById('endVideoCall').addEventListener('click', () => {
                 hangup('video');
-                showSidebar();
+                resetUI('video');
             });
             document.getElementById('videoVideoToggle').addEventListener('click', toggleVideo);
             document.getElementById('videoAudioToggle').addEventListener('click', () => toggleAudio('video'));
@@ -1044,7 +1043,7 @@
             document.getElementById('copyTextLink').addEventListener('click', () => copyLink('text'));
             document.getElementById('endTextChat').addEventListener('click', () => {
                 hangup('text');
-                showSidebar();
+                resetUI('text');
             });
 
             // Settings
@@ -1127,10 +1126,10 @@
             console.error('Invalid mode parameter:', modeParam);
             showNotification('Error', 'Invalid mode specified in URL', 'error');
         }
-    }
-}
+            }
+            }
 
-        function switchToSection(sectionId) {
+            function switchToSection(sectionId) {
     // Update navigation items
     document.querySelectorAll('.nav-item').forEach(item => 
         item.classList.remove('active'));
@@ -1146,7 +1145,7 @@
     if (section) {
         section.classList.add('active');
     }
-}
+    }
 
         // ========== SIDEBAR MANAGEMENT ========== //
         function hideSidebar() {
@@ -1161,19 +1160,19 @@
             }
         }
         
-       function showSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    
-    if (window.innerWidth > 900) {
-        // Desktop behavior - show sidebar
-        domRefs.appContainer.classList.remove('sidebar-hidden');
-        // Make sure sidebar is visible
-        sidebar.style.display = 'flex';
-    } else {
-        // Mobile behavior - slide in
-        sidebar.classList.add('active');
-    }
-}
+        function showSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            
+            if (window.innerWidth > 900) {
+                // Desktop behavior - show sidebar
+                domRefs.appContainer.classList.remove('sidebar-hidden');
+                // Make sure sidebar is visible
+                sidebar.style.display = 'flex';
+            } else {
+                // Mobile behavior - slide in
+                sidebar.classList.add('active');
+            }
+        }
 
         // ========== NAVIGATION ========== //
         function handleNavigation(e) {
@@ -1440,6 +1439,7 @@
                 updateStatus(`In ${appState.currentMode} call (${appState.roomId})`, 'connected');
             } else if (state === 'disconnected' || state === 'failed') {
                 hangup(appState.currentMode);
+                resetUI(appState.currentMode);
             }
         }
 
@@ -1497,6 +1497,7 @@
                     case 'bye':
                         if (appState.isStarted) {
                             hangup(appState.currentMode);
+                            resetUI(appState.currentMode);
                         }
                         break;
                 }
@@ -1845,6 +1846,49 @@
             
             appState.isStarted = false;
             appState.roomId = null;
+        }
+
+        function resetUI(mode) {
+            // Clear room ID
+            document.getElementById(`${mode}-room-id`).value = '';
+            
+            // Reset call timer
+            stopTimer();
+            
+            // Reset visual elements
+            if (mode === 'audio') {
+                // Reset audio controls
+                document.getElementById('audioVisualizer').innerHTML = `
+                    <div class="visualizer-bars">
+                        <div class="visualizer-bar"></div>
+                        <div class="visualizer-bar"></div>
+                        <div class="visualizer-bar"></div>
+                        <div class="visualizer-bar"></div>
+                        <div class="visualizer-bar"></div>
+                    </div>
+                `;
+            }
+            else if (mode === 'video') {
+                // Hide video controls
+                document.getElementById('videoControls').style.display = 'none';
+                document.getElementById('switchCameraBtn').style.display = 'none';
+                
+                // Reset video elements
+                document.getElementById('video-remote-video').srcObject = null;
+                document.getElementById('video-local-video').srcObject = null;
+                document.getElementById('videoSpinner').style.display = 'none';
+            }
+            else if (mode === 'text') {
+                // Clear chat messages
+                document.getElementById('textChat').innerHTML = '';
+                document.getElementById('textMessage').value = '';
+            }
+            
+            // Show sidebar again
+            showSidebar();
+            
+            // Show notification
+            showNotification('Session Ended', 'Returned to initial state', 'success');
         }
 
         function toggleVideo() {
