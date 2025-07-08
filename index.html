@@ -511,10 +511,13 @@
                 z-index: 900;
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
+                display: none; /* Hide by default on mobile */
+                max-height: 100vh; /* Fit screen height */
             }
             
             .sidebar.active {
-                transform: translateX(-100%);
+                transform: translateX(0);
+                display: flex; /* Show when active */
             }
             
             .mobile-menu-toggle {
@@ -796,7 +799,7 @@
                     </div>
                     <div class="about-content">
                         <p>A free, open-source communication platform using WebRTC technology.</p>
-                        <p><strong>Version:</strong> 1.6.0</p>
+                        <p><strong>Version:</strong> 1.7.0</p>
                         <p><strong>Developed by:</strong> SatLoom Developers</p>
                     </div>
                 </div>
@@ -831,7 +834,8 @@
         
         // Mobile menu toggle
         document.getElementById('mobileMenuToggle').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('active');
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('active');
         });
         
         // Close sidebar when clicking outside on mobile
@@ -1034,40 +1038,24 @@
         // ========== SIDEBAR MANAGEMENT ========== //
         function hideSidebar() {
             const sidebar = document.getElementById('sidebar');
-            const appContainer = document.querySelector('.app-container');
             
             if (window.innerWidth > 900) {
-                // Desktop behavior
-                if (sidebar) sidebar.style.display = 'none';
-                
-                if (appContainer) {
-                    appContainer.style.display = 'flex';
-                    appContainer.style.justifyContent = 'center';
-                    appContainer.style.alignItems = 'center';
-                    appContainer.style.padding = '20px';
-                }
+                // Desktop behavior - hide with animation
+                sidebar.style.display = 'none';
             } else {
-                // Mobile behavior - just close the sidebar
+                // Mobile behavior - slide out
                 sidebar.classList.remove('active');
             }
         }
         
         function showSidebar() {
             const sidebar = document.getElementById('sidebar');
-            const appContainer = document.querySelector('.app-container');
             
             if (window.innerWidth > 900) {
-                // Desktop behavior
-                if (sidebar) sidebar.style.display = 'flex';
-                
-                if (appContainer) {
-                    appContainer.style.display = 'grid';
-                    appContainer.style.gridTemplateColumns = '280px 1fr';
-                    appContainer.style.justifyContent = '';
-                    appContainer.style.alignItems = '';
-                }
+                // Desktop behavior - show with animation
+                sidebar.style.display = 'flex';
             } else {
-                // Mobile behavior - open the sidebar
+                // Mobile behavior - slide in
                 sidebar.classList.add('active');
             }
         }
@@ -1784,7 +1772,6 @@
                 // Desktop adjustments
                 document.getElementById('mobileMenuToggle').style.display = 'none';
                 document.getElementById('sidebar').style.display = 'flex';
-                document.getElementById('sidebar').classList.remove('active');
             }
         }
         
