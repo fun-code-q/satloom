@@ -61,6 +61,16 @@
             grid-template-columns: 0 1fr;
             gap: 0;
         }
+
+          .app-container.sidebar-hidden .sidebar {
+    padding: 0;
+    margin: 0;
+    border: none;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+   }
         .mobile-menu-toggle {
             display: none;
             position: fixed;
@@ -1110,17 +1120,19 @@
             }
         }
         
-        function showSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            
-            if (window.innerWidth > 900) {
-                // Desktop behavior - show sidebar
-                domRefs.appContainer.classList.remove('sidebar-hidden');
-            } else {
-                // Mobile behavior - slide in
-                sidebar.classList.add('active');
-            }
-        }
+       function showSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    
+    if (window.innerWidth > 900) {
+        // Desktop behavior - show sidebar
+        domRefs.appContainer.classList.remove('sidebar-hidden');
+        // Make sure sidebar is visible
+        sidebar.style.display = 'flex';
+    } else {
+        // Mobile behavior - slide in
+        sidebar.classList.add('active');
+    }
+}
 
         // ========== NAVIGATION ========== //
         function handleNavigation(e) {
