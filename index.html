@@ -648,6 +648,45 @@
             .share-link {
                 font-size: 12px;
             }
+
+            /* Different bubble colors for users */
+        .chat-message.user1 {
+            background: rgba(58, 123, 213, 0.25);
+            align-self: flex-start;
+        }
+        
+        .chat-message.user2 {
+            background: rgba(76, 175, 80, 0.25);
+            align-self: flex-end;
+        }
+        
+        /* New chat input layout */
+        .chat-input-container {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .chat-input-container .input-styled {
+            flex: 1;
+        }
+        
+        .chat-input-container .btn {
+            padding: 10px 15px;
+        }
+        
+        /* Typing indicator position */
+        .typing-indicator {
+            position: sticky;
+            bottom: 0;
+            margin-top: 8px;
+            align-self: flex-start;
+        }
+        
+        /* Send button icon */
+        .send-icon {
+            font-size: 16px;
+        }
             
             .chat-container {
                 height: 150px;
@@ -797,42 +836,43 @@
                 </div>
             </div>
             <div class="section" id="text-chat-section">
-                <div class="card">
-                    <div class="section-title">
-                        <i class="fas fa-comments"></i> Text Chat
-                    </div>
-                    <div class="input-group">
-                        <input type="text" id="text-room-id" class="input-styled" placeholder="Enter Room ID">
-                    </div>
-                    <div class="call-controls">
-                        <button class="btn" id="generateTextRoom">
-                            <i class="fas fa-network-wired"></i> Generate Room
-                        </button>
-                        <button class="btn btn-secondary" id="joinTextRoom">
-                            <i class="fas fa-sign-in-alt"></i> Join Room
-                        </button>
-                        <button class="copy-btn" id="copyTextLink" style="display: none; margin-left: 8px;">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                        <button class="control-btn end" id="endTextChat" style="display: none; margin-left: 8px;">
-                            <i class="fas fa-phone-slash"></i>
-                        </button>
-                    </div>
-                    <div id="textChat" class="chat-container">
-                        <div class="typing-indicator" id="typingIndicator">
-                            <i class="fas fa-circle"></i>
-                            <i class="fas fa-circle"></i>
-                            <i class="fas fa-circle"></i>
-                        </div>
-                    </div>
-                    <div class="input-group">
-                        <input type="text" id="textMessage" class="input-styled" placeholder="Type a message...">
-                        <button class="btn" id="sendTextMessage">
-                            <i class="fas fa-paper-plane"></i> Send
-                        </button>
-                    </div>
+        <div class="card">
+            <div class="section-title">
+                <i class="fas fa-comments"></i> Text Chat
+            </div>
+            <div class="input-group">
+                <input type="text" id="text-room-id" class="input-styled" placeholder="Enter Room ID">
+            </div>
+            <div class="call-controls">
+                <button class="btn" id="generateTextRoom">
+                    <i class="fas fa-network-wired"></i> Generate Room
+                </button>
+                <button class="btn btn-secondary" id="joinTextRoom">
+                    <i class="fas fa-sign-in-alt"></i> Join Room
+                </button>
+                <button class="copy-btn" id="copyTextLink" style="display: none; margin-left: 8px;">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <button class="control-btn end" id="endTextChat" style="display: none; margin-left: 8px;">
+                    <i class="fas fa-phone-slash"></i>
+                </button>
+            </div>
+            <div id="textChat" class="chat-container">
+                <div class="typing-indicator" id="typingIndicator">
+                    <i class="fas fa-circle"></i>
+                    <i class="fas fa-circle"></i>
+                    <i class="fas fa-circle"></i>
                 </div>
             </div>
+            <!-- Updated chat input layout -->
+            <div class="chat-input-container">
+                <input type="text" id="textMessage" class="input-styled" placeholder="Type a message...">
+                <button class="btn" id="sendTextMessage">
+                    <i class="fas fa-paper-plane send-icon"></i>
+                </button>
+            </div>
+        </div>
+    </div>
             <div class="section" id="settings-section">
                 <div class="card">
                     <div class="section-title">
@@ -1731,7 +1771,10 @@ appState.textChatRef.child('messages').on('child_added', snapshot => {
             const isCurrentUser = message.userId === appState.userId;
             const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
-            messageElement.className = `chat-message ${isCurrentUser ? '' : 'remote'}`;
+            // Determine user class based on user ID
+            const userClass = isCurrentUser ? 'user2' : 'user1';
+            
+            messageElement.className = `chat-message ${userClass}`;
             messageElement.innerHTML = `
                 <strong>${escapeHtml(message.userName)}</strong>
                 <div>${escapeHtml(message.text)}</div>
@@ -1740,6 +1783,9 @@ appState.textChatRef.child('messages').on('child_added', snapshot => {
             
             chat.appendChild(messageElement);
             chat.scrollTop = chat.scrollHeight;
+            
+            // Ensure typing indicator stays at bottom
+            domRefs.typingIndicator.style.order = '1';
         }
 
         function escapeHtml(unsafe) {
