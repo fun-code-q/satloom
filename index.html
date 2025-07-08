@@ -1365,7 +1365,7 @@ function initTextChat() {
         appState.textChatRef.off('value');
     }
     
-    // FIXED: Use the 'rooms' path instead of 'textChats'
+    // Create the correct reference path
     appState.textChatRef = firebase.database().ref(`rooms/${appState.roomId}/textMessages`);
     console.log(`Initializing text chat for room: ${appState.roomId}`);
     
@@ -1374,15 +1374,19 @@ function initTextChat() {
     chatContainer.innerHTML = '<div class="typing-indicator" id="typingIndicator"><i class="fas fa-circle"></i><i class="fas fa-circle"></i><i class="fas fa-circle"></i></div>';
     domRefs.typingIndicator = document.getElementById('typingIndicator');
     
-    // Create messages node under the room
-    appState.textChatRef.child('messages').set({}).catch(error => {
-        console.log('Messages node initialized');
+    // Ensure the textMessages node exists
+    appState.textChatRef.once('value').then(snapshot => {
+        if (!snapshot.exists()) {
+            appState.textChatRef.set({
+                messages: {},
+                typing: {}
+            });
+        }
     });
     
     // Listen for new messages
     appState.textChatRef.child('messages').on('child_added', snapshot => {
         const message = snapshot.val();
-        console.log('Received text message:', message);
         if (message) {
             addMessageToChat(message);
         }
@@ -1393,7 +1397,6 @@ function initTextChat() {
         const typingData = snapshot.val();
         if (!typingData) return;
         
-        // Find if any other user is typing
         let someoneTyping = false;
         for (const userId in typingData) {
             if (userId !== appState.userId && typingData[userId]) {
@@ -1402,7 +1405,6 @@ function initTextChat() {
             }
         }
         
-        // Update typing indicator
         domRefs.typingIndicator.style.display = someoneTyping ? 'block' : 'none';
     });
     
@@ -1413,18 +1415,9 @@ async function sendChatMessage() {
     const input = document.getElementById('textMessage');
     const message = input.value.trim();
     
-    if (!message) {
-        showNotification('Error', 'Please enter a message', 'error');
-        return;
-    }
-    
-    if (!appState.roomId) {
-        showNotification('Error', 'No room connected', 'error');
-        return;
-    }
-    
-    if (!appState.textChatInitialized) {
-        showNotification('Error', 'Chat not initialized. Please join a room first.', 'error');
+    if (!message) return;
+    if (!appState.roomId || !appState.textChatInitialized) {
+        showNotification('Error', 'Chat not ready. Please join a room first.', 'error');
         return;
     }
     
@@ -1436,7 +1429,7 @@ async function sendChatMessage() {
             timestamp: Date.now()
         };
         
-        // FIXED: Use the 'rooms' path instead of 'textChats'
+        // Use the correct path
         const dbRef = firebase.database().ref(`rooms/${appState.roomId}/textMessages/messages`);
         await dbRef.push(messageData);
         input.value = '';
@@ -1450,8 +1443,9 @@ async function sendChatMessage() {
 function sendTypingStatus(isTyping) {
     if (!appState.roomId || !appState.textChatInitialized) return;
     
-    // FIXED: Use the 'rooms' path instead of 'textChats'
-    const typingRef = firebase.database().ref(`rooms/${appState.roomId}/textMessages/typing/${appState.userId}`);
+    const typingRef = firebase.database().ref(
+        `rooms/${appState.roomId}/textMessages/typing/${appState.userId}`
+    );
     typingRef.set(isTyping);
 }
 
