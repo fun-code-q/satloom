@@ -1094,18 +1094,59 @@
         }
 
         function autoJoinRoom() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const roomParam = urlParams.get('room');
-            const modeParam = urlParams.get('mode');
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomParam = urlParams.get('room');
+    const modeParam = urlParams.get('mode');
+    
+    if (roomParam && modeParam) {
+        // Map mode to section ID
+        const sectionMap = {
+            'audio': 'audio-call',
+            'video': 'video-call',
+            'text': 'text-chat'
+        };
+        const sectionId = sectionMap[modeParam];
+        
+        if (sectionId) {
+            // Switch to the correct section
+            switchToSection(sectionId);
             
-            if (roomParam && modeParam) {
-                document.getElementById(`${modeParam}-room-id`).value = roomParam;
-                setTimeout(() => {
-                    hideSidebar();
-                    joinRoom(modeParam);
-                }, 1000);
+            // Set the room ID in the input field
+            const inputId = `${modeParam}-room-id`;
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.value = roomParam;
             }
+            
+            // Join the room after a short delay
+            setTimeout(() => {
+                hideSidebar();
+                joinRoom(modeParam);
+            }, 500); // Reduced delay to 500ms for a smoother experience
+        } else {
+            console.error('Invalid mode parameter:', modeParam);
+            showNotification('Error', 'Invalid mode specified in URL', 'error');
         }
+    }
+}
+
+        function switchToSection(sectionId) {
+    // Update navigation items
+    document.querySelectorAll('.nav-item').forEach(item => 
+        item.classList.remove('active'));
+    const navLink = document.querySelector(`.nav-link[data-section="${sectionId}"]`);
+    if (navLink) {
+        navLink.parentElement.classList.add('active');
+    }
+    
+    // Update sections
+    document.querySelectorAll('.section').forEach(section => 
+        section.classList.remove('active'));
+    const section = document.getElementById(`${sectionId}-section`);
+    if (section) {
+        section.classList.add('active');
+    }
+}
 
         // ========== SIDEBAR MANAGEMENT ========== //
         function hideSidebar() {
