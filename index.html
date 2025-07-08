@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SatLoom - Communication Platform</title>
-    <!-- Add favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛰️</text></svg>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -46,7 +45,6 @@
             align-items: center;
             padding: 10px;
             transition: background 0.5s ease;
-            /* Prevent scrollbar flashing */
             overflow: hidden;
         }
         .app-container {
@@ -57,8 +55,11 @@
             gap: 15px;
             padding: 15px;
             transition: all 0.3s ease;
-            /* Keep centered when sidebar hidden */
             margin: 0 auto;
+        }
+        .app-container.sidebar-hidden {
+            grid-template-columns: 0 1fr;
+            gap: 0;
         }
         .mobile-menu-toggle {
             display: none;
@@ -86,9 +87,7 @@
             transition: all 0.3s ease;
             display: flex;
             flex-direction: column;
-            /* Fixed height to fit content */
             height: auto;
-            /* Prevent scrollbar */
             overflow: hidden;
         }
         .logo {
@@ -155,12 +154,10 @@
             gap: 15px;
             overflow: auto;
             max-height: calc(100vh - 30px);
-            /* Prevent scrollbar flashing */
             overflow: hidden;
         }
         .section {
             display: none;
-            /* Prevent scrollbar */
             overflow: hidden;
         }
         .section.active {
@@ -173,8 +170,7 @@
             padding: 20px;
             backdrop-filter: blur(10px);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-            /* Keep consistent size */
-            min-width: 600px;
+            width: 100%;
         }
         .section-title {
             font-size: 18px;
@@ -324,7 +320,7 @@
             color: var(--text-secondary);
             word-break: break-all;
             margin-bottom: 0;
-            display: none; /* Hide long text link */
+            display: none;
         }
         .room-id-display {
             font-size: 14px;
@@ -532,6 +528,10 @@
                 padding: 10px;
                 gap: 10px;
             }
+            .app-container.sidebar-hidden {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
             
             .sidebar {
                 position: fixed;
@@ -542,13 +542,13 @@
                 z-index: 900;
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
-                display: none; /* Hide by default on mobile */
-                max-height: 100vh; /* Fit screen height */
+                display: none;
+                max-height: 100vh;
             }
             
             .sidebar.active {
                 transform: translateX(0);
-                display: flex; /* Show when active */
+                display: flex;
             }
             
             .mobile-menu-toggle {
@@ -561,7 +561,6 @@
             
             .card {
                 padding: 15px;
-                min-width: unset;
             }
             
             #videoRemoteVideoContainer {
@@ -620,7 +619,7 @@
             <div class="notification-message" id="notificationMessage"></div>
         </div>
     </div>
-    <div class="app-container">
+    <div class="app-container" id="appContainer">
         <div class="sidebar" id="sidebar">
             <div class="logo">
                 <div class="logo-icon">
@@ -682,7 +681,7 @@
                     <div id="audioRoomLinkContainer" class="share-link-container" style="display: none;">
                         <div class="room-id-display">Room ID: <strong id="audioRoomIdDisplay"></strong></div>
                         <button class="copy-btn" id="copyAudioLink">
-                            <i class="fas fa-copy"></i> Copy Link
+                            <i class="fas fa-copy"></i>
                         </button>
                     </div>
                     <div class="audio-visualizer" id="audioVisualizer">
@@ -726,7 +725,7 @@
                     <div id="videoRoomLinkContainer" class="share-link-container" style="display: none;">
                         <div class="room-id-display">Room ID: <strong id="videoRoomIdDisplay"></strong></div>
                         <button class="copy-btn" id="copyVideoLink">
-                            <i class="fas fa-copy"></i> Copy Link
+                            <i class="fas fa-copy"></i>
                         </button>
                     </div>
                     <div id="videoRemoteVideoContainer">
@@ -774,7 +773,7 @@
                     <div id="textRoomLinkContainer" class="share-link-container" style="display: none;">
                         <div class="room-id-display">Room ID: <strong id="textRoomIdDisplay"></strong></div>
                         <button class="copy-btn" id="copyTextLink">
-                            <i class="fas fa-copy"></i> Copy Link
+                            <i class="fas fa-copy"></i>
                         </button>
                     </div>
                     <div id="textChat" class="chat-container">
@@ -824,17 +823,18 @@
                     </div>
                 </div>
             </div>
-            <div class="section" id="about-section">
-                <div class="card">
-                    <div class="section-title">
-                        <i class="fas fa-info-circle"></i> About
-                    </div>
-                    <div class="about-content">
-                        <p>A free, open-source communication platform using WebRTC technology.</p>
-                        <p><strong>Version:</strong> 1.7.0</p>
-                        <p><strong>Developed by:</strong> SatLoom Developers</p>
-                    </div>
+            <div class="card" id="about-section" style="display: none;">
+                <div class="section-title">
+                <i class="fas fa-info-circle"></i> About
                 </div>
+            
+              <div class="about-content">
+                <p>A free, open-source communication platform using WebRTC technology.</p>
+                <p><strong>Version:</strong> 1.7.0 (Firebase Integration)</p>
+                <p><strong>Developed by:</strong> SatLoom Developers</p>
+                
+              </div>
+          </div>
             </div>
             <!-- Footer -->
             <div class="app-footer">
@@ -910,7 +910,8 @@
             endTextChat: document.getElementById('endTextChat'),
             textChat: document.getElementById('textChat'),
             typingIndicator: document.getElementById('typingIndicator'),
-            notificationSound: document.getElementById('notificationSound')
+            notificationSound: document.getElementById('notificationSound'),
+            appContainer: document.getElementById('appContainer')
         };
 
         // ========== STATE MANAGEMENT ========== //
@@ -1076,10 +1077,8 @@
             const sidebar = document.getElementById('sidebar');
             
             if (window.innerWidth > 900) {
-                // Desktop behavior - hide with animation
-                sidebar.style.display = 'none';
-                // Keep app container centered
-                document.querySelector('.app-container').style.gridTemplateColumns = '0 1fr';
+                // Desktop behavior - hide sidebar
+                domRefs.appContainer.classList.add('sidebar-hidden');
             } else {
                 // Mobile behavior - slide out
                 sidebar.classList.remove('active');
@@ -1090,10 +1089,8 @@
             const sidebar = document.getElementById('sidebar');
             
             if (window.innerWidth > 900) {
-                // Desktop behavior - show with animation
-                sidebar.style.display = 'flex';
-                // Restore grid columns
-                document.querySelector('.app-container').style.gridTemplateColumns = '280px 1fr';
+                // Desktop behavior - show sidebar
+                domRefs.appContainer.classList.remove('sidebar-hidden');
             } else {
                 // Mobile behavior - slide in
                 sidebar.classList.add('active');
