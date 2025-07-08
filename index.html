@@ -1664,18 +1664,13 @@
             });
             
             // Listen for new messages
-            appState.textChatRef.child('messages').on('child_added', snapshot => {
-                const message = snapshot.val();
-                console.log('New message received: ', message);
-                if (message) {
-                    addMessageToChat(message);
-                    
-                    // Play notification sound for remote messages
-                    if (message.userId !== appState.userId) {
-                        playNotificationSound();
-                    }
-                }
-            });
+           appState.textChatRef.child('messages').on('child_added', snapshot => {
+    const message = snapshot.val();
+    if (message && message.userId !== appState.userId) {
+        addMessageToChat(message);
+        playNotificationSound();
+    }
+});
             
             // Listen for typing status updates
             appState.textChatRef.child('typing').on('value', snapshot => {
@@ -1698,17 +1693,15 @@
         }
 
         function playNotificationSound() {
-            if (document.getElementById('notification-sound-toggle').checked) {
-                try {
-                    domRefs.notificationSound.currentTime = 0;
-                    domRefs.notificationSound.play().catch(e => {
-                        console.log('Audio play prevented:', e);
-                    });
-                } catch (e) {
-                    console.error('Error playing notification sound:', e);
-                }
-            }
+    if (document.getElementById('notification-sound-toggle').checked) {
+        try {
+            domRefs.notificationSound.currentTime = 0;
+            domRefs.notificationSound.play();
+        } catch (e) {
+            console.error('Error playing notification sound:', e);
         }
+    }
+}
 
         function addMessageToChat(message) {
             const chat = document.getElementById('textChat');
@@ -1937,12 +1930,15 @@
             });
         }
 
-        function saveSettings() {
-            localStorage.setItem('notifications', 
-                document.getElementById('notifications-toggle').checked);
-            localStorage.setItem('notificationSound', 
-                document.getElementById('notification-sound-toggle').checked);
-        }
+       function saveSettings() {
+    localStorage.setItem('notificationSound', 
+        document.getElementById('notification-sound-toggle').checked);
+}
+
+function loadSettings() {
+    document.getElementById('notification-sound-toggle').checked = 
+        localStorage.getItem('notificationSound') !== 'false';
+}
         
         function adjustForMobile() {
             if (window.innerWidth <= 900) {
