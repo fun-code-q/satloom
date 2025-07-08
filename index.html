@@ -55,12 +55,12 @@
             transition: all 0.3s ease;
             align-items: center;
         }
-       .sidebar-hidden .app-container {
-    grid-template-columns: 0 1fr;
-}
-.sidebar-hidden .sidebar {
-    display: none;
-}
+        .sidebar-hidden .app-container {
+            grid-template-columns: 0 1fr;
+        }
+        .sidebar-hidden .sidebar {
+            display: none;
+        }
         
         .sidebar, .card {
             background: var(--card-bg);
@@ -324,18 +324,32 @@
             border-radius: 8px;
             padding: 10px;
             margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
         }
         .chat-message {
             margin: 8px 0;
             padding: 8px;
             border-radius: 8px;
             background: rgba(255, 255, 255, 0.1);
+            max-width: 80%;
+            align-self: flex-start;
+            animation: fadeIn 0.3s ease;
         }
         .chat-message.remote {
             background: rgba(58, 123, 213, 0.15);
+            align-self: flex-end;
         }
         .chat-message strong {
             color: var(--accent-color);
+            font-size: 0.9em;
+        }
+        .chat-message .message-time {
+            font-size: 0.7em;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            display: block;
+            text-align: right;
         }
         .status-indicator {
             padding: 8px 12px;
@@ -435,6 +449,18 @@
             overflow: hidden;
             width: 100%;
             height: 100%;
+        }
+        
+        /* Typing indicator */
+        .typing-indicator {
+            display: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 8px 12px;
+            margin: 5px 0;
+            font-size: 12px;
+            color: var(--text-secondary);
+            align-self: flex-start;
         }
     </style>
 </head>
@@ -603,7 +629,13 @@
                             <i class="fas fa-copy"></i>
                         </button>
                     </div>
-                    <div id="textChat" class="chat-container"></div>
+                    <div id="textChat" class="chat-container">
+                        <div class="typing-indicator" id="typingIndicator">
+                            <i class="fas fa-circle"></i>
+                            <i class="fas fa-circle"></i>
+                            <i class="fas fa-circle"></i>
+                        </div>
+                    </div>
                     <div class="input-group">
                         <input type="text" id="textMessage" class="input-styled" placeholder="Type a message...">
                         <button class="btn" id="sendTextMessage">
@@ -684,7 +716,9 @@ const domRefs = {
     switchCameraBtn: document.getElementById('switchCameraBtn'),
     switchCameraBtnNormal: document.getElementById('switchCameraBtnNormal'),
     themeToggleSetting: document.getElementById('themeToggleSetting'),
-    endTextChat: document.getElementById('endTextChat')
+    endTextChat: document.getElementById('endTextChat'),
+    textChat: document.getElementById('textChat'),
+    typingIndicator: document.getElementById('typingIndicator')
 };
 
 // ========== STATE MANAGEMENT ========== //
@@ -704,7 +738,10 @@ const appState = {
     textChatInitialized: false,
     isCameraEnabled: true,
     currentCamera: 'user',
-    cameraDevices: []
+    cameraDevices: [],
+    userName: 'User-' + Math.floor(Math.random() * 1000), // Generate random username
+    isTyping: false,
+    typingTimeout: null
 };
 
 // ========== FIREBASE CONFIG ========== //
@@ -833,6 +870,20 @@ function setupEventListeners() {
             e.preventDefault();
             sendChatMessage();
         }
+    });
+    
+    // Typing detection
+    document.getElementById('textMessage').addEventListener('input', () => {
+        if (!appState.isTyping) {
+            appState.isTyping = true;
+            sendTypingStatus(true);
+        }
+        
+        clearTimeout(appState.typingTimeout);
+        appState.typingTimeout = setTimeout(() => {
+            appState.isTyping = false;
+            sendTypingStatus(false);
+        }, 1000);
     });
 }
 
@@ -1311,18 +1362,20 @@ function initTextChat() {
     // Clean up previous chat reference
     if (appState.textChatRef) {
         appState.textChatRef.off('child_added');
+        appState.textChatRef.off('value');
     }
     
     // Use the correct path for text chats
-    appState.textChatRef = firebase.database().ref(`textChats/${appState.roomId}/messages`);
+    appState.textChatRef = firebase.database().ref(`textChats/${appState.roomId}`);
     console.log(`Initializing text chat for room: ${appState.roomId}`);
     
     // Clear existing messages
     const chatContainer = document.getElementById('textChat');
-    chatContainer.innerHTML = '';
+    chatContainer.innerHTML = '<div class="typing-indicator" id="typingIndicator"><i class="fas fa-circle"></i><i class="fas fa-circle"></i><i class="fas fa-circle"></i></div>';
+    domRefs.typingIndicator = document.getElementById('typingIndicator');
     
     // Listen for new messages
-    appState.textChatRef.on('child_added', snapshot => {
+    appState.textChatRef.child('messages').on('child_added', snapshot => {
         const message = snapshot.val();
         console.log('Received text message:', message);
         if (message) {
@@ -1330,15 +1383,22 @@ function initTextChat() {
         }
     });
     
-    // Add connection listener to handle errors
-    appState.textChatRef.on('child_added', snapshot => {
-        const message = snapshot.val();
-        if (message) {
-            addMessageToChat(message);
+    // Listen for typing status updates
+    appState.textChatRef.child('typing').on('value', snapshot => {
+        const typingData = snapshot.val();
+        if (!typingData) return;
+        
+        // Find if any other user is typing
+        let someoneTyping = false;
+        for (const userId in typingData) {
+            if (userId !== appState.userId && typingData[userId]) {
+                someoneTyping = true;
+                break;
+            }
         }
-    }, error => {
-        console.error('Firebase error:', error);
-        showNotification('Error', 'Failed to connect to chat room', 'error');
+        
+        // Update typing indicator
+        domRefs.typingIndicator.style.display = someoneTyping ? 'block' : 'none';
     });
     
     appState.textChatInitialized = true;
@@ -1354,8 +1414,15 @@ function addMessageToChat(message) {
         return;
     }
     
-    messageElement.className = `chat-message ${message.userId === appState.userId ? '' : 'remote'}`;
-    messageElement.innerHTML = `<strong>${escapeHtml(message.userName)}:</strong> ${escapeHtml(message.text)}`;
+    const isCurrentUser = message.userId === appState.userId;
+    const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    messageElement.className = `chat-message ${isCurrentUser ? '' : 'remote'}`;
+    messageElement.innerHTML = `
+        <strong>${escapeHtml(message.userName)}</strong>
+        <div>${escapeHtml(message.text)}</div>
+        <span class="message-time">${time}</span>
+    `;
     
     chat.appendChild(messageElement);
     chat.scrollTop = chat.scrollHeight;
@@ -1393,7 +1460,7 @@ function sendChatMessage() {
         const messageData = {
             text: message,
             userId: appState.userId,
-            userName: 'User-' + appState.userId.slice(-4),
+            userName: appState.userName,
             timestamp: Date.now()
         };
         
@@ -1411,6 +1478,13 @@ function sendChatMessage() {
         console.error('Error in sendChatMessage:', error);
         showNotification('Error', 'Failed to send message', 'error');
     }
+}
+
+function sendTypingStatus(isTyping) {
+    if (!appState.roomId || !appState.textChatInitialized) return;
+    
+    const typingRef = firebase.database().ref(`textChats/${appState.roomId}/typing/${appState.userId}`);
+    typingRef.set(isTyping);
 }
 
 // ========== CALL CONTROLS ========== //
@@ -1451,6 +1525,7 @@ function hangup(mode) {
         // For text chat, just clean up
         if (appState.textChatRef) {
             appState.textChatRef.off('child_added');
+            appState.textChatRef.off('value');
             appState.textChatRef = null;
         }
         appState.textChatInitialized = false;
