@@ -1980,15 +1980,26 @@
                 document.getElementById('video-local-video').srcObject = appState.localStream;
                 
                 // Update peer connection
-                if (appState.peerConnection) {
-                    const videoTrack = appState.localStream.getVideoTracks()[0];
-                    const sender = appState.peerConnection.getSenders().find(
-                        s => s.track && s.track.kind === 'video'
-                    );
-                    if (sender) {
-                        sender.replaceTrack(videoTrack);
-                    }
-                }
+        if (appState.peerConnection) {
+            const videoTrack = appState.localStream.getVideoTracks()[0];
+            const audioTrack = appState.localStream.getAudioTracks()[0]; // Get audio track
+            
+            // Replace video track
+            const videoSender = appState.peerConnection.getSenders().find(
+                s => s.track && s.track.kind === 'video'
+            );
+            if (videoSender && videoTrack) {
+                videoSender.replaceTrack(videoTrack);
+            }
+            
+            // Replace audio track
+            const audioSender = appState.peerConnection.getSenders().find(
+                s => s.track && s.track.kind === 'audio'
+            );
+            if (audioSender && audioTrack) {
+                audioSender.replaceTrack(audioTrack);
+            }
+        }
                 
                 showNotification('Camera Switched', `Now using ${appState.currentCamera === 'user' ? 'front' : 'rear'} camera`, 'success');
             } catch (err) {
