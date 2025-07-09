@@ -181,6 +181,7 @@
             backdrop-filter: blur(10px);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
             width: 100%;
+            position: relative;
         }
         .section-title {
             font-size: 18px;
@@ -709,38 +710,65 @@
             display: none !important;
         }
         
-        /* Adjust for mobile in fullscreen */
-        @media (max-width: 900px) {
-            .fullscreen-video-mode .call-controls {
-                bottom: 10px;
-            }
-            
-            .fullscreen-video-mode #video-local-video {
-                width: 100px;
-                height: 75px;
-                bottom: 80px;
-                right: 10px;
-            }
-            
-            .fullscreen-video-mode .call-timer {
-                top: 10px;
-                left: 10px;
-                font-size: 16px;
-            }
-            
-            .top-controls-container {
-                top: 10px;
-                right: 10px;
-            }
-            
-            .top-control-btn {
-                width: 36px;
-                height: 36px;
-                font-size: 14px;
-            }
+        /* Theater mode styles */
+        .theater-container {
+            display: none;
+            margin-top: 15px;
         }
         
-        /* Fullscreen text chat mode */
+        .url-input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .media-player-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            height: 0;
+            overflow: hidden;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            background: #000;
+        }
+        
+        .media-player {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .theater-controls {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .theater-controls button {
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .theater-controls button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .theater-chat-container {
+            margin-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 15px;
+        }
+        
+        /* ========== TEXT CHAT FULLSCREEN MODE ========== */
         .fullscreen-text-mode {
             overflow: hidden;
         }
@@ -781,103 +809,103 @@
             padding: 0;
         }
         
-        .fullscreen-text-mode #textChat {
+        .fullscreen-text-mode .text-chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+        
+        .fullscreen-text-mode .text-chat-container .chat-container {
             flex: 1;
             height: auto;
             border-radius: 0;
             margin: 0;
         }
         
-        .fullscreen-text-mode .chat-input-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 15px;
-            background: var(--card-bg);
-            z-index: 10001;
-            border-top: 1px solid rgba(255,255,255,0.1);
+        .fullscreen-text-mode .text-chat-container .chat-input-container {
+            margin-top: 15px;
+            padding: 0 20px 20px;
         }
         
-        .fullscreen-text-mode .text-top-controls-container {
-            display: flex;
-        }
-        
-        /* Hide room controls in fullscreen */
-        .fullscreen-text-mode .input-group,
-        .fullscreen-text-mode .call-controls {
-            display: none !important;
-        }
-        
-        /* Adjust chat for mobile in fullscreen */
-        @media (max-width: 900px) {
-            .fullscreen-text-mode .chat-input-container {
-                padding: 10px;
-            }
-            
-            .fullscreen-text-mode .chat-input-container .input-styled {
-                padding: 12px;
-            }
-            
-            .fullscreen-text-mode .chat-input-container .btn {
-                padding: 12px 16px;
-            }
-        }
-        
-        /* Fullscreen toggle button */
-        .fullscreen-toggle-btn {
+        .fullscreen-text-mode .text-controls {
             position: absolute;
-            top: 15px;
-            left: 15px;
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: var(--text-primary);
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 100;
-            transition: all 0.2s ease;
-            font-size: 14px;
-            display: none;
-        }
-        
-        .fullscreen-toggle-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: scale(1.1);
-        }
-        
-        .text-top-controls-container {
-            position: absolute;
-            top: 15px;
-            right: 15px;
+            top: 20px;
+            right: 20px;
             display: flex;
             gap: 8px;
-            z-index: 10002;
-            display: none;
+            z-index: 10001;
         }
         
-        .text-top-control-btn {
+        .fullscreen-text-mode .text-controls button {
             width: 40px;
             height: 40px;
             border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
             border: none;
+            color: white;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             transition: all 0.2s ease;
-            color: white;
             font-size: 16px;
-            background: rgba(255, 255, 255, 0.2);
         }
         
-        .text-top-control-btn:hover {
+        .fullscreen-text-mode .text-controls button:hover {
             background: rgba(255, 255, 255, 0.3);
             transform: scale(1.1);
+        }
+        
+        /* Hide room controls in fullscreen text mode */
+        .fullscreen-text-mode .input-group,
+        .fullscreen-text-mode .call-controls:not(.text-controls) {
+            display: none !important;
+        }
+        
+        /* Adjust for mobile in fullscreen */
+        @media (max-width: 900px) {
+            .fullscreen-video-mode .call-controls {
+                bottom: 10px;
+            }
+            
+            .fullscreen-video-mode #video-local-video {
+                width: 100px;
+                height: 75px;
+                bottom: 80px;
+                right: 10px;
+            }
+            
+            .fullscreen-video-mode .call-timer {
+                top: 10px;
+                left: 10px;
+                font-size: 16px;
+            }
+            
+            .top-controls-container {
+                top: 10px;
+                right: 10px;
+            }
+            
+            .top-control-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
+            }
+            
+            .theater-controls {
+                flex-wrap: wrap;
+            }
+            
+            .theater-controls button {
+                flex: 1;
+                min-width: 100px;
+            }
+            
+            .fullscreen-text-mode .text-controls {
+                top: 10px;
+                right: 10px;
+            }
         }
         
         @media (max-width: 900px) {
@@ -972,9 +1000,105 @@
                 margin: 0 2px;
             }
         }
+
+        /* Fullscreen toggle buttons */
+        .fullscreen-toggle-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: var(--text-primary);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+        
+        .text-fullscreen-toggle {
+            top: 55px;
+            right: 15px;
+        }
+        
+        .fullscreen-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        /* New styles for desktop hamburger menu */
+        .desktop-menu-toggle {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: var(--card-bg);
+            border: none;
+            color: var(--text-primary);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .desktop-menu-toggle:hover {
+            transform: scale(1.1);
+            background: rgba(58, 123, 213, 0.2);
+        }
+        
+        .desktop-menu-toggle .close-icon {
+            display: none;
+        }
+        
+        .sidebar-open .desktop-menu-toggle .menu-icon {
+            display: none;
+        }
+        
+        .sidebar-open .desktop-menu-toggle .close-icon {
+            display: block;
+        }
+        
+        .app-container.sidebar-hidden .sidebar {
+            transform: translateX(-100%);
+            opacity: 0;
+            width: 0;
+            height: 0;
+            overflow: hidden;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .sidebar {
+            transition: all 0.3s ease;
+            transform: translateX(0);
+        }
+        @media (max-width: 900px) {
+            .mobile-menu-toggle {
+                display: flex;
+            }
+            .desktop-menu-toggle {
+                display: none;
+            }
+        }
+
     </style>
 </head>
 <body class="dark-mode">
+     <!-- Add desktop menu toggle button -->
+    <button class="desktop-menu-toggle" id="desktopMenuToggle">
+        <i class="fas fa-bars menu-icon"></i>
+        <i class="fas fa-times close-icon"></i>
+    </button>
     <button class="mobile-menu-toggle" id="mobileMenuToggle">
         <i class="fas fa-bars"></i>
     </button>
@@ -1011,6 +1135,11 @@
                 <li class="nav-item">
                     <a class="nav-link" data-section="text-chat">
                         <i class="fas fa-comments"></i> Text Chat
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-section="theater">
+                        <i class="fas fa-film"></i> Theater
                     </a>
                 </li>
                 <li class="nav-item">
@@ -1115,6 +1244,9 @@
             </div>
             <div class="section" id="text-chat-section">
                 <div class="card">
+                    <button class="fullscreen-toggle-btn text-fullscreen-toggle" id="textFullscreenToggle" title="Enter fullscreen">
+                        <i class="fas fa-expand"></i>
+                    </button>
                     <div class="section-title">
                         <i class="fas fa-comments"></i> Text Chat
                     </div>
@@ -1135,18 +1267,94 @@
                             <i class="fas fa-phone-slash"></i>
                         </button>
                     </div>
-                    <div id="textChat" class="chat-container">
-                        <div class="typing-indicator" id="typingIndicator">
-                            <i class="fas fa-circle"></i>
-                            <i class="fas fa-circle"></i>
-                            <i class="fas fa-circle"></i>
+                    <div class="text-chat-container">
+                        <div id="textChat" class="chat-container">
+                            <div class="typing-indicator" id="typingIndicator">
+                                <i class="fas fa-circle"></i>
+                                <i class="fas fa-circle"></i>
+                                <i class="fas fa-circle"></i>
+                            </div>
+                        </div>
+                        <div class="chat-input-container">
+                            <input type="text" id="textMessage" class="input-styled" placeholder="Type a message...">
+                            <button class="btn" id="sendTextMessage">
+                                <i class="fas fa-paper-plane send-icon"></i>
+                            </button>
                         </div>
                     </div>
-                    <div class="chat-input-container">
-                        <input type="text" id="textMessage" class="input-styled" placeholder="Type a message...">
-                        <button class="btn" id="sendTextMessage">
-                            <i class="fas fa-paper-plane send-icon"></i>
+                </div>
+            </div>
+            <div class="section" id="theater-section">
+                <div class="card">
+                    <div class="section-title">
+                        <i class="fas fa-film"></i> Theater Mode
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="theater-room-id" class="input-styled" placeholder="Enter Room ID">
+                    </div>
+                    <div class="call-controls">
+                        <button class="btn" id="generateTheaterRoom">
+                            <i class="fas fa-network-wired"></i> Generate Room
                         </button>
+                        <button class="btn btn-secondary" id="joinTheaterRoom">
+                            <i class="fas fa-sign-in-alt"></i> Join Room
+                        </button>
+                        <button class="copy-btn" id="copyTheaterLink" style="display: none; margin-left: 8px;">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button class="control-btn end" id="endTheaterSession" style="display: none; margin-left: 8px;">
+                            <i class="fas fa-phone-slash"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="theater-container" id="theaterContainer">
+                        <div class="url-input-group">
+                            <input type="text" id="mediaUrl" class="input-styled" placeholder="Paste YouTube, Vimeo, or direct video link...">
+                            <button class="btn" id="loadMedia">
+                                <i class="fas fa-play"></i> Load
+                            </button>
+                        </div>
+                        
+                        <div class="media-player-container">
+                            <iframe id="mediaPlayer" class="media-player" allowfullscreen></iframe>
+                        </div>
+                        
+                        <div class="theater-controls">
+                            <button id="playPauseBtn">
+                                <i class="fas fa-play"></i> Play/Pause
+                            </button>
+                            <button id="rewindBtn">
+                                <i class="fas fa-backward"></i> 10s
+                            </button>
+                            <button id="forwardBtn">
+                                <i class="fas fa-forward"></i> 10s
+                            </button>
+                        </div>
+                        
+                        <div class="theater-chat-container">
+                            <div class="section-title" style="margin-bottom: 10px;">
+                                <i class="fas fa-comments"></i> Chat
+                            </div>
+                            <div id="theaterChat" class="chat-container">
+                                <div class="typing-indicator" id="theaterTypingIndicator">
+                                    <i class="fas fa-circle"></i>
+                                    <i class="fas fa-circle"></i>
+                                    <i class="fas fa-circle"></i>
+                                </div>
+                            </div>
+                            <div class="chat-input-container">
+                                <input type="text" id="theaterMessage" class="input-styled" placeholder="Type a message...">
+                                <button class="btn" id="sendTheaterMessage">
+                                    <i class="fas fa-paper-plane send-icon"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="call-controls" style="margin-top: 15px;">
+                            <button class="control-btn" id="theaterAudioToggle">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1209,16 +1417,14 @@
     </div>
     
     <!-- Text chat fullscreen controls -->
-    <div class="text-top-controls-container" id="textTopControlsContainer">
-        <button class="text-top-control-btn" id="exitTextFullscreenBtn" title="Exit fullscreen">
+    <div class="text-controls" id="textControls" style="display: none;">
+        <button class="top-control-btn" id="copyTextLinkTop" title="Copy room link">
+            <i class="fas fa-copy"></i>
+        </button>
+        <button class="top-control-btn" id="exitTextFullscreenBtn" title="Exit fullscreen">
             <i class="fas fa-compress"></i>
         </button>
     </div>
-    
-    <!-- Fullscreen toggle button for text chat -->
-    <button class="fullscreen-toggle-btn" id="textFullscreenToggle" title="Enter fullscreen">
-        <i class="fas fa-expand"></i>
-    </button>
     
     <!-- Hidden audio element for remote audio -->
     <audio id="remoteAudio" autoplay playsinline></audio>
@@ -1245,25 +1451,6 @@
         
         firebase.initializeApp(firebaseConfig);
         
-        // Mobile menu toggle
-        document.getElementById('mobileMenuToggle').addEventListener('click', function() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('active');
-        });
-        
-        // Close sidebar when clicking outside on mobile
-        document.addEventListener('click', function(event) {
-            const sidebar = document.getElementById('sidebar');
-            const mobileMenu = document.getElementById('mobileMenuToggle');
-            
-            if (window.innerWidth <= 900 && 
-                !sidebar.contains(event.target) && 
-                event.target !== mobileMenu &&
-                !mobileMenu.contains(event.target)) {
-                sidebar.classList.remove('active');
-            }
-        });
-        
         // ========== DOM ELEMENT REFERENCES ========== //
         const domRefs = {
             notification: document.getElementById('globalNotification'),
@@ -1277,6 +1464,7 @@
                 'audio-call': document.getElementById('audio-call-section'),
                 'video-call': document.getElementById('video-call-section'),
                 'text-chat': document.getElementById('text-chat-section'),
+                'theater': document.getElementById('theater-section'),
                 'settings': document.getElementById('settings-section'),
                 'about': document.getElementById('about-section')
             },
@@ -1290,8 +1478,19 @@
             notificationSound: document.getElementById('notificationSound'),
             appContainer: document.getElementById('appContainer'),
             topControlsContainer: document.getElementById('topControlsContainer'),
-            textTopControlsContainer: document.getElementById('textTopControlsContainer'),
-            textFullscreenToggle: document.getElementById('textFullscreenToggle')
+            textControls: document.getElementById('textControls'),
+            theaterContainer: document.getElementById('theaterContainer'),
+            mediaPlayer: document.getElementById('mediaPlayer'),
+            mediaUrl: document.getElementById('mediaUrl'),
+            loadMedia: document.getElementById('loadMedia'),
+            playPauseBtn: document.getElementById('playPauseBtn'),
+            rewindBtn: document.getElementById('rewindBtn'),
+            forwardBtn: document.getElementById('forwardBtn'),
+            theaterChat: document.getElementById('theaterChat'),
+            theaterMessage: document.getElementById('theaterMessage'),
+            sendTheaterMessage: document.getElementById('sendTheaterMessage'),
+            theaterAudioToggle: document.getElementById('theaterAudioToggle'),
+            theaterTypingIndicator: document.getElementById('theaterTypingIndicator')
         };
 
         // ========== STATE MANAGEMENT ========== //
@@ -1312,11 +1511,15 @@
             isCameraEnabled: true,
             currentCamera: 'user',
             cameraDevices: [],
-            userName: 'User-' + Math.floor(Math.random() * 1000), // Generate random username
+            userName: 'User-' + Math.floor(Math.random() * 1000),
             isTyping: false,
             typingTimeout: null,
             participantsRef: null,
-            isFullscreen: false
+            isFullscreen: false,
+            theaterMediaUrl: null,
+            isMediaPlaying: false,
+            mediaCurrentTime: 0,
+            theaterAudioEnabled: true
         };
 
         // ========== INITIALIZATION ========== //
@@ -1328,8 +1531,42 @@
             autoJoinRoom();
             adjustForMobile();
         }
+        // Add event listener for desktop menu toggle
+        document.getElementById('desktopMenuToggle').addEventListener('click', function() {
+            const appContainer = document.getElementById('appContainer');
+            const body = document.body;
+            
+            if (appContainer.classList.contains('sidebar-hidden')) {
+                // Show sidebar
+                appContainer.classList.remove('sidebar-hidden');
+                body.classList.add('sidebar-open');
+            } else {
+                // Hide sidebar
+                appContainer.classList.add('sidebar-hidden');
+                body.classList.remove('sidebar-open');
+            }
+        });
 
         function setupEventListeners() {
+            // Mobile menu toggle
+            document.getElementById('mobileMenuToggle').addEventListener('click', function() {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.toggle('active');
+            });
+            
+            // Close sidebar when clicking outside on mobile
+            document.addEventListener('click', function(event) {
+                const sidebar = document.getElementById('sidebar');
+                const mobileMenu = document.getElementById('mobileMenuToggle');
+                
+                if (window.innerWidth <= 900 && 
+                    !sidebar.contains(event.target) && 
+                    event.target !== mobileMenu &&
+                    !mobileMenu.contains(event.target)) {
+                    sidebar.classList.remove('active');
+                }
+            });
+            
             // Navigation
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.addEventListener('click', handleNavigation);
@@ -1351,7 +1588,6 @@
                 hangup('audio');
                 resetUI('audio');
             });
-
             document.getElementById('audioAudioToggle').addEventListener('click', () => toggleAudio('audio'));
             document.getElementById('copyAudioLink').addEventListener('click', () => copyLink('audio'));
 
@@ -1392,6 +1628,50 @@
                 resetUI('text');
             });
 
+            // Theater mode controls
+            document.getElementById('generateTheaterRoom').addEventListener('click', () => {
+                hideSidebar();
+                generateRoom('theater');
+            });
+            document.getElementById('joinTheaterRoom').addEventListener('click', () => {
+                hideSidebar();
+                joinRoom('theater');
+            });
+            document.getElementById('endTheaterSession').addEventListener('click', () => {
+                hangup('theater');
+                resetUI('theater');
+            });
+            document.getElementById('copyTheaterLink').addEventListener('click', () => copyLink('theater'));
+            
+            // Media controls
+            document.getElementById('loadMedia').addEventListener('click', loadMedia);
+            document.getElementById('playPauseBtn').addEventListener('click', togglePlayPause);
+            document.getElementById('rewindBtn').addEventListener('click', () => seekMedia(-10));
+            document.getElementById('forwardBtn').addEventListener('click', () => seekMedia(10));
+            document.getElementById('theaterAudioToggle').addEventListener('click', toggleTheaterAudio);
+            
+            // Theater chat
+            document.getElementById('sendTheaterMessage').addEventListener('click', sendTheaterChatMessage);
+            document.getElementById('theaterMessage').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    sendTheaterChatMessage();
+                }
+            });
+            
+            document.getElementById('theaterMessage').addEventListener('input', () => {
+                if (!appState.isTyping) {
+                    appState.isTyping = true;
+                    sendTheaterTypingStatus(true);
+                }
+                
+                clearTimeout(appState.typingTimeout);
+                appState.typingTimeout = setTimeout(() => {
+                    appState.isTyping = false;
+                    sendTheaterTypingStatus(false);
+                }, 1000);
+            });
+
             // Settings
             document.getElementById('notifications-toggle').addEventListener('change', saveSettings);
             document.getElementById('notification-sound-toggle').addEventListener('change', saveSettings);
@@ -1424,16 +1704,16 @@
             document.getElementById('copyVideoLinkTop').addEventListener('click', () => copyLink('video'));
             
             // Text chat fullscreen controls
+            document.getElementById('textFullscreenToggle').addEventListener('click', enterFullscreenTextMode);
             document.getElementById('exitTextFullscreenBtn').addEventListener('click', exitFullscreenTextMode);
-            domRefs.textFullscreenToggle.addEventListener('click', enterFullscreenTextMode);
+            document.getElementById('copyTextLinkTop').addEventListener('click', () => copyLink('text'));
             
             // Handle escape key
             document.addEventListener('keydown', function(event) {
-                if (event.key === 'Escape') {
-                    if (appState.isFullscreen && appState.currentMode === 'video') {
+                if (event.key === 'Escape' && appState.isFullscreen) {
+                    if (appState.currentMode === 'video') {
                         exitFullscreenVideoMode();
-                    }
-                    else if (appState.isFullscreen && appState.currentMode === 'text') {
+                    } else if (appState.currentMode === 'text-chat') {
                         exitFullscreenTextMode();
                     }
                 }
@@ -1472,7 +1752,8 @@
                 const sectionMap = {
                     'audio': 'audio-call',
                     'video': 'video-call',
-                    'text': 'text-chat'
+                    'text': 'text-chat',
+                    'theater': 'theater'
                 };
                 const sectionId = sectionMap[modeParam];
                 
@@ -1518,12 +1799,15 @@
         }
 
         // ========== SIDEBAR MANAGEMENT ========== //
-        function hideSidebar() {
+       function hideSidebar() {
             const sidebar = document.getElementById('sidebar');
+            const appContainer = document.getElementById('appContainer');
+            const body = document.body;
             
             if (window.innerWidth > 900) {
                 // Desktop behavior - hide sidebar
-                domRefs.appContainer.classList.add('sidebar-hidden');
+                appContainer.classList.add('sidebar-hidden');
+                body.classList.remove('sidebar-open');
             } else {
                 // Mobile behavior - slide out
                 sidebar.classList.remove('active');
@@ -1532,17 +1816,19 @@
         
         function showSidebar() {
             const sidebar = document.getElementById('sidebar');
+            const appContainer = document.getElementById('appContainer');
+            const body = document.body;
             
             if (window.innerWidth > 900) {
                 // Desktop behavior - show sidebar
-                domRefs.appContainer.classList.remove('sidebar-hidden');
-                // Make sure sidebar is visible
-                sidebar.style.display = 'flex';
+                appContainer.classList.remove('sidebar-hidden');
+                body.classList.add('sidebar-open');
             } else {
                 // Mobile behavior - slide in
                 sidebar.classList.add('active');
             }
         }
+
 
         // ========== NAVIGATION ========== //
         function handleNavigation(e) {
@@ -1922,8 +2208,17 @@
             showNotification('Room Generated', `Room ID: ${appState.roomId}. Share with others.`, 'success');
             updateStatus(`Room created: ${appState.roomId}`, 'connecting');
             
-            // Initialize media and connection for audio/video
-            if (mode !== 'text') {
+            if (mode === 'theater') {
+                // Show theater controls
+                domRefs.theaterContainer.style.display = 'block';
+                document.getElementById('endTheaterSession').style.display = 'inline-flex';
+                
+                // Initialize signaling
+                initTheaterSignaling();
+                
+                updateStatus(`In theater session (${appState.roomId})`, 'connected');
+                showNotification('Theater Started', `Created theater room: ${appState.roomId}`, 'success');
+            } else if (mode !== 'text') {
                 const mediaInitialized = await initMedia(mode);
                 if (!mediaInitialized) return;
                 
@@ -1958,9 +2253,6 @@
                 updateStatus(`In text chat (${appState.roomId})`, 'connected');
                 showNotification('Chat Started', `Created chat room: ${appState.roomId}`, 'success');
                 document.getElementById('endTextChat').style.display = 'inline-flex';
-                
-                // Show fullscreen toggle button
-                domRefs.textFullscreenToggle.style.display = 'block';
             }
         }
 
@@ -1974,7 +2266,18 @@
             }
             
             try {
-                if (mode !== 'text') {
+                if (mode === 'theater') {
+                    // Show theater controls
+                    domRefs.theaterContainer.style.display = 'block';
+                    document.getElementById('endTheaterSession').style.display = 'inline-flex';
+                    document.getElementById('copyTheaterLink').style.display = 'inline-flex';
+                    
+                    // Initialize signaling
+                    initTheaterSignaling();
+                    
+                    updateStatus(`Joined theater session (${appState.roomId})`, 'connected');
+                    showNotification('Theater Joined', `Joined theater room: ${appState.roomId}`, 'success');
+                } else if (mode !== 'text') {
                     const mediaInitialized = await initMedia(mode);
                     if (!mediaInitialized) return;
                     
@@ -2002,15 +2305,259 @@
                     showNotification('Chat Joined', `Joined chat room: ${appState.roomId}`, 'success');
                     document.getElementById('endTextChat').style.display = 'inline-flex';
                     document.getElementById('copyTextLink').style.display = 'inline-flex';
-                    
-                    // Show fullscreen toggle button
-                    domRefs.textFullscreenToggle.style.display = 'block';
                 }
             } catch (err) {
                 console.error('Error joining room:', err);
                 showNotification('Connection Error', 'Failed to join room: ' + err.message, 'error');
                 updateStatus('Join room failed', 'error');
             }
+        }
+
+        // ========== THEATER MODE FUNCTIONS ========== //
+        function loadMedia() {
+            const url = domRefs.mediaUrl.value.trim();
+            if (!url) {
+                showNotification('Error', 'Please enter a media URL', 'error');
+                return;
+            }
+            
+            // Store the URL in state
+            appState.theaterMediaUrl = url;
+            
+            // Send to other participants
+            if (appState.signalingRef) {
+                sendTheaterMessage({
+                    type: 'media',
+                    url: url
+                });
+            }
+            
+            // Update player
+            updateMediaPlayer(url);
+        }
+        
+        function updateMediaPlayer(url) {
+            let embedUrl = url;
+            
+            // Handle YouTube URLs
+            if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                const videoId = getYouTubeId(url);
+                if (videoId) {
+                    embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
+                }
+            }
+            // Handle Vimeo URLs
+            else if (url.includes('vimeo.com')) {
+                const videoId = getVimeoId(url);
+                if (videoId) {
+                    embedUrl = `https://player.vimeo.com/video/${videoId}?autoplay=1`;
+                }
+            }
+            
+            // Update the player
+            domRefs.mediaPlayer.src = embedUrl;
+            appState.isMediaPlaying = true;
+            updatePlayPauseButton();
+        }
+        
+        function getYouTubeId(url) {
+            const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[7].length === 11) ? match[7] : null;
+        }
+        
+        function getVimeoId(url) {
+            const regExp = /^.*(vimeo\.com\/)((channels\/[A-z]+\/)|(groups\/[A-z]+\/videos\/))?([0-9]+)/;
+            const match = url.match(regExp);
+            return match ? match[5] : null;
+        }
+        
+        function togglePlayPause() {
+            appState.isMediaPlaying = !appState.isMediaPlaying;
+            updatePlayPauseButton();
+            
+            // Send command to other participants
+            if (appState.signalingRef) {
+                sendTheaterMessage({
+                    type: 'playback',
+                    playing: appState.isMediaPlaying
+                });
+            }
+        }
+        
+        function updatePlayPauseButton() {
+            const icon = appState.isMediaPlaying ? 
+                '<i class="fas fa-pause"></i>' : 
+                '<i class="fas fa-play"></i>';
+            domRefs.playPauseBtn.innerHTML = icon + ' ' + (appState.isMediaPlaying ? 'Pause' : 'Play');
+        }
+        
+        function seekMedia(seconds) {
+            // This would normally control the player, but since we're using iframes,
+            // we can't directly control external players. In a real implementation, 
+            // we would need to use the respective player APIs.
+            
+            // For demo purposes, we'll show a notification
+            const action = seconds > 0 ? 'Forward' : 'Rewind';
+            showNotification('Seek', `${action} ${Math.abs(seconds)} seconds`);
+            
+            // Send command to other participants
+            if (appState.signalingRef) {
+                sendTheaterMessage({
+                    type: 'seek',
+                    seconds: seconds
+                });
+            }
+        }
+        
+        function toggleTheaterAudio() {
+            appState.theaterAudioEnabled = !appState.theaterAudioEnabled;
+            
+            // Update button
+            const icon = appState.theaterAudioEnabled ? 
+                '<i class="fas fa-microphone"></i>' : 
+                '<i class="fas fa-microphone-slash"></i>';
+            domRefs.theaterAudioToggle.innerHTML = icon;
+            
+            // In a real implementation, this would toggle the audio stream
+            showNotification('Microphone', `Microphone ${appState.theaterAudioEnabled ? 'enabled' : 'disabled'}`);
+        }
+        
+        function sendTheaterMessage(message) {
+            if (!appState.roomId) return;
+            const dbRef = firebase.database().ref(`theaterRooms/${appState.roomId}/messages`);
+            dbRef.push(JSON.stringify(message));
+        }
+        
+        function sendTheaterChatMessage() {
+            const input = domRefs.theaterMessage;
+            const message = input.value.trim();
+            
+            if (!message) {
+                showNotification('Error', 'Please enter a message', 'error');
+                return;
+            }
+            
+            if (!appState.roomId) {
+                showNotification('Error', 'No room connected', 'error');
+                return;
+            }
+            
+            try {
+                const messageData = {
+                    text: message,
+                    userId: appState.userId,
+                    userName: appState.userName,
+                    timestamp: Date.now()
+                };
+                
+                const dbRef = firebase.database().ref(`theaterRooms/${appState.roomId}/chatMessages`);
+                dbRef.push(messageData);
+                input.value = '';
+                
+            } catch (error) {
+                console.error('Error sending theater message:', error);
+                showNotification('Error', `Failed to send message: ${error.message}`, 'error');
+            }
+        }
+        
+        function sendTheaterTypingStatus(isTyping) {
+            if (!appState.roomId) return;
+            
+            const typingRef = firebase.database().ref(
+                `theaterRooms/${appState.roomId}/typing/${appState.userId}`
+            );
+            typingRef.set(isTyping);
+        }
+        
+        function initTheaterSignaling() {
+            if (appState.signalingRef) {
+                appState.signalingRef.off('child_added');
+            }
+            
+            appState.signalingRef = firebase.database().ref(`theaterRooms/${appState.roomId}/messages`);
+            
+            appState.signalingRef.on('child_added', snapshot => {
+                const message = JSON.parse(snapshot.val());
+                
+                switch (message.type) {
+                    case 'media':
+                        appState.theaterMediaUrl = message.url;
+                        domRefs.mediaUrl.value = message.url;
+                        updateMediaPlayer(message.url);
+                        break;
+                    case 'playback':
+                        appState.isMediaPlaying = message.playing;
+                        updatePlayPauseButton();
+                        break;
+                    case 'seek':
+                        seekMedia(message.seconds);
+                        break;
+                }
+            });
+
+            // Initialize chat
+            initTheaterChat();
+        }
+        
+        function initTheaterChat() {
+            if (!appState.roomId) return;
+            
+            const chatRef = firebase.database().ref(`theaterRooms/${appState.roomId}/chatMessages`);
+            
+            // Clear existing messages
+            domRefs.theaterChat.innerHTML = '<div class="typing-indicator" id="theaterTypingIndicator"><i class="fas fa-circle"></i><i class="fas fa-circle"></i><i class="fas fa-circle"></i></div>';
+            domRefs.theaterTypingIndicator = document.getElementById('theaterTypingIndicator');
+            
+            // Listen for new messages
+            chatRef.on('child_added', snapshot => {
+                const message = snapshot.val();
+                if (message) {
+                    addMessageToTheaterChat(message);
+                    
+                    // Play notification sound for remote messages
+                    if (message.userId !== appState.userId) {
+                        playNotificationSound();
+                    }
+                }
+            });
+            
+            // Listen for typing status updates
+            const typingRef = firebase.database().ref(`theaterRooms/${appState.roomId}/typing`);
+            typingRef.on('value', snapshot => {
+                const typingData = snapshot.val();
+                if (!typingData) return;
+                
+                let someoneTyping = false;
+                for (const userId in typingData) {
+                    if (userId !== appState.userId && typingData[userId]) {
+                        someoneTyping = true;
+                        break;
+                    }
+                }
+                
+                domRefs.theaterTypingIndicator.style.display = someoneTyping ? 'block' : 'none';
+            });
+        }
+        
+        function addMessageToTheaterChat(message) {
+            const chat = domRefs.theaterChat;
+            
+            const messageElement = document.createElement('div');
+            const isCurrentUser = message.userId === appState.userId;
+            const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const userClass = isCurrentUser ? 'user2' : 'user1';
+            
+            messageElement.className = `chat-message ${userClass}`;
+            messageElement.innerHTML = `
+                <strong>${escapeHtml(message.userName)}</strong>
+                <div>${escapeHtml(message.text)}</div>
+                <span class="message-time">${time}</span>
+            `;
+            
+            chat.appendChild(messageElement);
+            chat.scrollTop = chat.scrollHeight;
+            domRefs.theaterTypingIndicator.style.order = '1';
         }
 
         // ========== TEXT CHAT FUNCTIONALITY ========== //
@@ -2266,7 +2813,24 @@
 
         // ========== CALL CONTROLS ========== //
         function hangup(mode) {
-            if (mode !== 'text') {
+            if (mode === 'theater') {
+                // Hide theater controls
+                domRefs.theaterContainer.style.display = 'none';
+                document.getElementById('endTheaterSession').style.display = 'none';
+                document.getElementById('copyTheaterLink').style.display = 'none';
+                
+                // Reset media player
+                domRefs.mediaPlayer.src = '';
+                domRefs.mediaUrl.value = '';
+                
+                if (appState.signalingRef) {
+                    appState.signalingRef.off('child_added');
+                    appState.signalingRef = null;
+                }
+                
+                updateStatus('Ready to connect', 'disconnected');
+                showNotification('Disconnected', 'Theater session ended');
+            } else if (mode !== 'text') {
                 if (appState.peerConnection) {
                     appState.peerConnection.close();
                     appState.peerConnection = null;
@@ -2324,13 +2888,8 @@
                 chatContainer.innerHTML = '';
                 document.getElementById('endTextChat').style.display = 'none';
                 
-                // Exit fullscreen if active
-                if (appState.isFullscreen) {
-                    exitFullscreenTextMode();
-                }
-                
-                // Hide the fullscreen toggle button
-                domRefs.textFullscreenToggle.style.display = 'none';
+                // Exit fullscreen text mode if active
+                exitFullscreenTextMode();
             }
             
             document.getElementById(`copy${mode.charAt(0).toUpperCase() + mode.slice(1)}Link`).style.display = 'none';
@@ -2381,9 +2940,13 @@
                 // Clear chat messages
                 document.getElementById('textChat').innerHTML = '';
                 document.getElementById('textMessage').value = '';
-                
-                // Hide fullscreen button
-                domRefs.textFullscreenToggle.style.display = 'none';
+            }
+            else if (mode === 'theater') {
+                // Clear media player and URL
+                domRefs.mediaPlayer.src = '';
+                domRefs.mediaUrl.value = '';
+                domRefs.theaterChat.innerHTML = '';
+                domRefs.theaterMessage.value = '';
             }
             
             // Show sidebar again
@@ -2495,14 +3058,18 @@
         // ========== FULLSCREEN TEXT MODE ========== //
         function enterFullscreenTextMode() {
             document.body.classList.add('fullscreen-text-mode');
-            domRefs.textTopControlsContainer.style.display = 'flex';
+            domRefs.textControls.style.display = 'flex';
             appState.isFullscreen = true;
             
             // Hide mobile menu toggle in fullscreen
             document.getElementById('mobileMenuToggle').style.display = 'none';
             
             // Hide the fullscreen toggle button
-            domRefs.textFullscreenToggle.style.display = 'none';
+            document.getElementById('textFullscreenToggle').style.display = 'none';
+            
+            // Expand the chat container
+            const chatContainer = document.getElementById('textChat');
+            chatContainer.style.height = 'calc(100vh - 120px)';
             
             // Hide room controls
             document.getElementById('text-room-id').style.display = 'none';
@@ -2514,7 +3081,7 @@
         
         function exitFullscreenTextMode() {
             document.body.classList.remove('fullscreen-text-mode');
-            domRefs.textTopControlsContainer.style.display = 'none';
+            domRefs.textControls.style.display = 'none';
             appState.isFullscreen = false;
             
             // Show mobile menu toggle if on mobile
@@ -2523,7 +3090,11 @@
             }
             
             // Show the fullscreen toggle button
-            domRefs.textFullscreenToggle.style.display = 'block';
+            document.getElementById('textFullscreenToggle').style.display = 'block';
+            
+            // Reset chat container height
+            const chatContainer = document.getElementById('textChat');
+            chatContainer.style.height = '180px';
             
             // Show room controls
             document.getElementById('text-room-id').style.display = 'block';
@@ -2545,6 +3116,13 @@
                             setTimeout(() => {
                                 remoteVideo.style.height = '100%';
                             }, 50);
+                        }
+                    }
+                    else if (appState.currentMode === 'text-chat') {
+                        // Adjust chat container height
+                        const chatContainer = document.getElementById('textChat');
+                        if (chatContainer) {
+                            chatContainer.style.height = 'calc(100vh - 120px)';
                         }
                     }
                 }, 300);
@@ -2575,11 +3153,17 @@
             if (window.innerWidth <= 900) {
                 // Mobile adjustments
                 document.getElementById('mobileMenuToggle').style.display = 'flex';
+                document.getElementById('desktopMenuToggle').style.display = 'none';
                 document.getElementById('sidebar').classList.remove('active');
+                document.body.classList.remove('sidebar-open');
             } else {
                 // Desktop adjustments
                 document.getElementById('mobileMenuToggle').style.display = 'none';
+                document.getElementById('desktopMenuToggle').style.display = 'flex';
                 document.getElementById('sidebar').style.display = 'flex';
+                
+                // Show sidebar by default on desktop
+                document.getElementById('appContainer').classList.remove('sidebar-hidden');
             }
         }
         
