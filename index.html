@@ -593,10 +593,15 @@
             height: auto;
             border-radius: 0;
             margin: 0;
+            display: flex;
+            position: relative;
         }
         
         .fullscreen-video-mode #video-remote-video {
             border-radius: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         
         .fullscreen-video-mode .call-controls {
@@ -609,23 +614,32 @@
         }
         
         .fullscreen-video-mode .call-timer {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 10001;
-            color: white;
-            font-size: 18px;
-            background: rgba(0,0,0,0.3);
-            padding: 5px 10px;
-            border-radius: 5px;
+        position: absolute;
+        top: 0px;
+        left: 90%;
+        transform: translateX(-50%);
+        z-index: 10001;
+        color: var(--accent-color); /* Blue color */
+        font-size: 20px;
+        background: rgba(7, 25, 43, 0.6); /* Semi-transparent blue */
+        padding: 8px 16px;
+        border-radius: 20px;
+        backdrop-filter: blur(5px);
+        text-align: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
         
         .fullscreen-video-mode #video-local-video {
-            width: 120px;
-            height: 90px;
+            width: 160px;  /* Increased from 120px */
+            height: 120px; /* Increased from 90px */
             bottom: 100px;
             right: 20px;
             z-index: 10001;
+            position: absolute;
+            border-radius: 8px;
+            border: 2px solid white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            transform: scaleX(-1); /* Mirror effect */
         }
         
         .fullscreen-video-mode .switch-camera-btn {
@@ -1104,57 +1118,55 @@
             50% { transform: scaleY(1); }
         }
         
-       .video-placeholder {
-    width: 160px;
-    height: 100px;
-    
-    border-radius: 8px;
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    
-}
+        .video-placeholder {
+            width: 160px;
+            height: 100px;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-.video-icon {
-    font-size: 40px;
-    color: var(--accent-color);
-    position: relative;
-    z-index: 2;
-}
+        .video-icon {
+            font-size: 40px;
+            color: var(--accent-color);
+            position: relative;
+            z-index: 2;
+        }
 
-.video-placeholder::before,
-.video-placeholder::after {
-    content: '';
-    position: absolute;
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: var(--accent-color);
-    opacity: 0.2;
-    z-index: 1;
-    animation: videoPulse 2s infinite;
-}
+        .video-placeholder::before,
+        .video-placeholder::after {
+            content: '';
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            opacity: 0.2;
+            z-index: 1;
+            animation: videoPulse 2s infinite;
+        }
 
-.video-placeholder::after {
-    animation-delay: 1s;
-}
+        .video-placeholder::after {
+            animation-delay: 1s;
+        }
 
-@keyframes videoPulse {
-    0% {
-        transform: scale(0.8);
-        opacity: 0.4;
-    }
-    70% {
-        transform: scale(1.5);
-        opacity: 0;
-    }
-    100% {
-        transform: scale(1.5);
-        opacity: 0;
-    }
-}
+        @keyframes videoPulse {
+            0% {
+                transform: scale(0.8);
+                opacity: 0.4;
+            }
+            70% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+        }
 
         /* Text chat animation */
         .chat-placeholder {
@@ -1203,68 +1215,98 @@
             100% { opacity: 0; transform: translateY(-10px); }
         }
         
-    /* Theater animation */
-   .theater-placeholder {
-    width: 160px;
-    height: 100px;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: visible;
-    margin: 40px auto; /* Add space above and below, auto centers horizontally */
-}
+        /* Video containers */
+        #videoRemoteVideoContainer {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+            margin: 15px 0;
+            display: none;
+        }
+        
+        #video-remote-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        #video-local-video {
+            position: absolute;
+            width: 80px;
+            height: 60px;
+            bottom: 12px;
+            right: 12px;
+            border-radius: 8px;
+            border: 2px solid white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            z-index: 10;
+            transform: scaleX(-1);
+        }
+        
+        /* Theater animation */
+        .theater-placeholder {
+            width: 160px;
+            height: 100px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: visible;
+            margin: 40px auto;
+        }
 
+        .clapperboard {
+            position: relative;
+            width: 80px;
+            height: 60px;
+        }
 
-.clapperboard {
-    position: relative;
-    width: 80px;
-    height: 60px;
-}
+        .clapper-top {
+            position: absolute;
+            width: 80px;
+            height: 20px;
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(255, 255, 255, 0.05),
+                rgba(255, 255, 255, 0.05) 10px,
+                var(--accent-color) 10px,
+                var(--accent-color) 20px
+            );
+            border-radius: 2px;
+            top: 0;
+            left: 0;
+            transform-origin: left bottom;
+            animation: clap 1.5s infinite alternate;
+        }
 
-.clapper-top {
-    position: absolute;
-    width: 80px;
-    height: 20px;
-    background: repeating-linear-gradient(
-        45deg,
-        rgba(255, 255, 255, 0.05),
-        rgba(255, 255, 255, 0.05) 10px,
-        var(--accent-color) 10px,
-        var(--accent-color) 20px
-    );
-    border-radius: 2px;
-    top: 0;
-    left: 0;
-    transform-origin: left bottom;
-    animation: clap 1.5s infinite alternate;
-}
+        .clapper-bottom {
+            position: absolute;
+            width: 80px;
+            height: 40px;
+            background: var(--accent-color);
+            border-radius: 4px;
+            bottom: 0;
+            left: 0;
+        }
 
-.clapper-bottom {
-    position: absolute;
-    width: 80px;
-    height: 40px;
-    background: var(--accent-color);
-    border-radius: 4px;
-    bottom: 0;
-    left: 0;
-}
+        .clapper-bottom::after {
+            content: "";
+            position: absolute;
+            width: 70%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            top: 12px;
+            left: 15%;
+            border-radius: 2px;
+        }
 
-.clapper-bottom::after {
-    content: "";
-    position: absolute;
-    width: 70%;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.05);
-    top: 12px;
-    left: 15%;
-    border-radius: 2px;
-}
-
-@keyframes clap {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(-30deg); }
-}
+        @keyframes clap {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(-30deg); }
+        }
 
 </style>
 </head>
@@ -1407,7 +1449,7 @@
                             <i class="fas fa-video video-icon"></i>
                         </div>
                     </div>
-                    <div id="videoRemoteVideoContainer" style="display: none;">
+                    <div id="videoRemoteVideoContainer">
                         <video id="video-remote-video" autoplay playsinline></video>
                         <video id="video-local-video" autoplay playsinline muted></video>
                         <div class="spinner" id="videoSpinner"></div>
@@ -1513,16 +1555,12 @@
                         </button>
                     </div>
 
-                   <div class="theater-placeholder">
-    <div class="clapperboard">
-        <div class="clapper-top"></div>
-        <div class="clapper-bottom"></div>
-    </div>
-    </div>
-
-
-
-
+                    <div class="theater-placeholder">
+                        <div class="clapperboard">
+                            <div class="clapper-top"></div>
+                            <div class="clapper-bottom"></div>
+                        </div>
+                    </div>
 
                     <div class="theater-container" id="theaterContainer" style="display: none;">
                         <div class="url-input-group">
@@ -1629,12 +1667,6 @@
     <div class="top-controls-container" id="topControlsContainer">
         <button class="top-control-btn" id="copyVideoLinkTop" title="Copy room link">
             <i class="fas fa-copy"></i>
-        </button>
-        <button class="top-control-btn" id="fullscreenToggleBtn" title="Fullscreen">
-            <i class="fas fa-expand"></i>
-        </button>
-        <button class="top-control-btn" id="exitFullscreenBtn" title="Exit fullscreen">
-            <i class="fas fa-compress"></i>
         </button>
     </div>
     
@@ -1923,8 +1955,8 @@
             });
             
             // Fullscreen controls
-            document.getElementById('exitFullscreenBtn').addEventListener('click', exitFullscreenVideoMode);
-            document.getElementById('fullscreenToggleBtn').addEventListener('click', enterFullscreenVideoMode);
+            document.getElementById('exitFullscreenBtn')?.addEventListener('click', exitFullscreenVideoMode);
+            document.getElementById('fullscreenToggleBtn')?.addEventListener('click', enterFullscreenVideoMode);
             document.getElementById('copyVideoLinkTop').addEventListener('click', () => copyLink('video'));
             
             // Text chat fullscreen controls
@@ -2526,6 +2558,7 @@
                     
                     if (mode === 'video') {
                         document.getElementById('videoSpinner').style.display = 'block';
+                        document.getElementById('videoRemoteVideoContainer').style.display = 'block';
                     }
                     
                     appState.isInitiator = false;
@@ -3094,7 +3127,9 @@
                     document.getElementById('switchCameraBtnNormal').style.display = 'none';
                     
                     // Exit fullscreen for video mode
-                    exitFullscreenVideoMode();
+                    if (appState.isFullscreen) {
+                        exitFullscreenVideoMode();
+                    }
                 } else {
                     domRefs.remoteAudio.srcObject = null;
                 }
@@ -3129,7 +3164,9 @@
                 document.getElementById('endTextChat').style.display = 'none';
                 
                 // Exit fullscreen text mode if active
-                exitFullscreenTextMode();
+                if (appState.isFullscreen) {
+                    exitFullscreenTextMode();
+                }
             }
             
             document.getElementById(`copy${mode.charAt(0).toUpperCase() + mode.slice(1)}Link`).style.display = 'none';
@@ -3167,10 +3204,10 @@
                 document.getElementById('video-remote-video').srcObject = null;
                 document.getElementById('video-local-video').srcObject = null;
                 document.getElementById('videoSpinner').style.display = 'none';
+                document.getElementById('videoRemoteVideoContainer').style.display = 'none';
                 
                 // Show placeholder again
                 document.querySelector('#video-call-section .placeholder-animation').style.display = 'flex';
-                document.getElementById('videoRemoteVideoContainer').style.display = 'none';
             }
             else if (mode === 'text') {
                 // Clear chat messages
@@ -3269,6 +3306,9 @@
             document.getElementById('generateVideoRoom').style.display = 'none';
             document.getElementById('joinVideoRoom').style.display = 'none';
             document.getElementById('copyVideoLink').style.display = 'none';
+            
+            // Hide placeholder animation
+            document.querySelector('#video-call-section .placeholder-animation').style.display = 'none';
         }
         
         function exitFullscreenVideoMode() {
