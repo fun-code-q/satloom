@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - Communication Platform</title>
+    <title>SatLoom - Fullscreen Text Chat</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛰️</text></svg>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -669,7 +669,7 @@
         
         /* Top right controls container */
         .top-controls-container {
-            position: absolute;
+            position: fixed;
             top: 20px;
             right: 20px;
             display: flex;
@@ -709,37 +709,72 @@
             display: none !important;
         }
         
-        /* Adjust for mobile in fullscreen */
-        @media (max-width: 900px) {
-            .fullscreen-video-mode .call-controls {
-                bottom: 10px;
-            }
-            
-            .fullscreen-video-mode #video-local-video {
-                width: 100px;
-                height: 75px;
-                bottom: 80px;
-                right: 10px;
-            }
-            
-            .fullscreen-video-mode .call-timer {
-                top: 10px;
-                left: 10px;
-                font-size: 16px;
-            }
-            
-            .top-controls-container {
-                top: 10px;
-                right: 10px;
-            }
-            
-            .top-control-btn {
-                width: 36px;
-                height: 36px;
-                font-size: 14px;
-            }
+        /* ===== NEW FULLSCREEN TEXT CHAT STYLES ===== */
+        .fullscreen-text-mode {
+            overflow: hidden;
         }
         
+        .fullscreen-text-mode .app-container {
+            grid-template-columns: 0 1fr;
+            gap: 0;
+            max-width: 100%;
+            padding: 0;
+            margin: 0;
+            height: 100vh;
+        }
+        
+        .fullscreen-text-mode .sidebar {
+            display: none;
+        }
+        
+        .fullscreen-text-mode .main-content {
+            max-height: 100vh;
+            padding: 0;
+        }
+        
+        .fullscreen-text-mode #text-chat-section {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10000;
+            background: var(--dark-bg);
+        }
+        
+        .fullscreen-text-mode #text-chat-section .card {
+            border-radius: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+        }
+        
+        .fullscreen-text-mode #textChat {
+            flex: 1;
+            height: auto !important;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Hide room controls in fullscreen */
+        .fullscreen-text-mode .input-group,
+        .fullscreen-text-mode .call-controls:not(.top-controls) {
+            display: none !important;
+        }
+        
+        /* Show top controls in fullscreen */
+        .fullscreen-text-mode .top-controls-container {
+            display: flex;
+        }
+        
+        /* Adjust chat input in fullscreen */
+        .fullscreen-text-mode .chat-input-container {
+            margin-top: 0;
+        }
+        
+        /* Adjust for mobile in fullscreen */
         @media (max-width: 900px) {
             .app-container {
                 grid-template-columns: 1fr;
@@ -791,6 +826,20 @@
             }
             #copyTextLink {
                 margin-left: auto !important;
+            }
+            .top-controls-container {
+                top: 10px;
+                right: 10px;
+            }
+            
+            .top-control-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
+            }
+            
+            .fullscreen-text-mode #textChat {
+                margin-bottom: 5px;
             }
         }
         @media (max-width: 480px) {
@@ -994,6 +1043,9 @@
                         <button class="control-btn end" id="endTextChat" style="display: none; margin-left: 8px;">
                             <i class="fas fa-phone-slash"></i>
                         </button>
+                        <button class="btn" id="enterFullscreenTextBtn" style="display: none; margin-left: 8px;">
+                            <i class="fas fa-expand"></i>
+                        </button>
                     </div>
                     <div id="textChat" class="chat-container">
                         <div class="typing-indicator" id="typingIndicator">
@@ -1057,14 +1109,14 @@
     
     <!-- Top right controls container -->
     <div class="top-controls-container" id="topControlsContainer">
-        <button class="top-control-btn" id="copyVideoLinkTop" title="Copy room link">
+        <button class="top-control-btn" id="copyTextLinkTop" title="Copy room link">
             <i class="fas fa-copy"></i>
         </button>
-        <button class="top-control-btn" id="fullscreenToggleBtn" title="Fullscreen">
-            <i class="fas fa-expand"></i>
-        </button>
-        <button class="top-control-btn" id="exitFullscreenBtn" title="Exit fullscreen">
+        <button class="top-control-btn" id="exitFullscreenTextBtn" title="Exit fullscreen">
             <i class="fas fa-compress"></i>
+        </button>
+        <button class="top-control-btn" id="enterFullscreenTextBtnTop" title="Enter fullscreen">
+            <i class="fas fa-expand"></i>
         </button>
     </div>
     
@@ -1162,7 +1214,8 @@
             isTyping: false,
             typingTimeout: null,
             participantsRef: null,
-            isFullscreen: false
+            isFullscreen: false,
+            fullscreenMode: null
         };
 
         // ========== INITIALIZATION ========== //
@@ -1265,14 +1318,18 @@
             });
             
             // Fullscreen controls
-            document.getElementById('exitFullscreenBtn').addEventListener('click', exitFullscreenVideoMode);
-            document.getElementById('fullscreenToggleBtn').addEventListener('click', enterFullscreenVideoMode);
-            document.getElementById('copyVideoLinkTop').addEventListener('click', () => copyLink('video'));
+            document.getElementById('exitFullscreenTextBtn').addEventListener('click', exitFullscreenTextMode);
+            document.getElementById('enterFullscreenTextBtn').addEventListener('click', enterFullscreenTextMode);
+            document.getElementById('enterFullscreenTextBtnTop').addEventListener('click', enterFullscreenTextMode);
+            document.getElementById('copyTextLinkTop').addEventListener('click', () => {
+                copyLink('text');
+                showNotification('Copied', 'Room link copied to clipboard', 'success');
+            });
             
             // Handle escape key
             document.addEventListener('keydown', function(event) {
-                if (event.key === 'Escape' && appState.isFullscreen) {
-                    exitFullscreenVideoMode();
+                if (event.key === 'Escape' && appState.isFullscreen && appState.fullscreenMode === 'text') {
+                    exitFullscreenTextMode();
                 }
             });
             
@@ -1794,7 +1851,18 @@
                 initTextChat();
                 updateStatus(`In text chat (${appState.roomId})`, 'connected');
                 showNotification('Chat Started', `Created chat room: ${appState.roomId}`, 'success');
+                
+                // Show controls
+                document.getElementById('enterFullscreenTextBtn').style.display = 'inline-flex';
                 document.getElementById('endTextChat').style.display = 'inline-flex';
+                
+                // Hide room controls
+                document.getElementById('text-room-id').style.display = 'none';
+                document.getElementById('generateTextRoom').style.display = 'none';
+                document.getElementById('joinTextRoom').style.display = 'none';
+                
+                // Enter fullscreen mode
+                enterFullscreenTextMode();
             }
         }
 
@@ -1834,8 +1902,18 @@
                     initTextChat();
                     updateStatus(`Joined text chat (${appState.roomId})`, 'connected');
                     showNotification('Chat Joined', `Joined chat room: ${appState.roomId}`, 'success');
+                    
+                    // Show controls
+                    document.getElementById('enterFullscreenTextBtn').style.display = 'inline-flex';
                     document.getElementById('endTextChat').style.display = 'inline-flex';
-                    document.getElementById('copyTextLink').style.display = 'inline-flex';
+                    
+                    // Hide room controls
+                    document.getElementById('text-room-id').style.display = 'none';
+                    document.getElementById('generateTextRoom').style.display = 'none';
+                    document.getElementById('joinTextRoom').style.display = 'none';
+                    
+                    // Enter fullscreen mode
+                    enterFullscreenTextMode();
                 }
             } catch (err) {
                 console.error('Error joining room:', err);
@@ -2119,9 +2197,6 @@
                     document.getElementById('videoSpinner').style.display = 'none';
                     document.getElementById('switchCameraBtn').style.display = 'none';
                     document.getElementById('switchCameraBtnNormal').style.display = 'none';
-                    
-                    // Exit fullscreen for video mode
-                    exitFullscreenVideoMode();
                 } else {
                     domRefs.remoteAudio.srcObject = null;
                 }
@@ -2154,6 +2229,12 @@
                 const chatContainer = document.getElementById('textChat');
                 chatContainer.innerHTML = '';
                 document.getElementById('endTextChat').style.display = 'none';
+                document.getElementById('enterFullscreenTextBtn').style.display = 'none';
+                
+                // Exit fullscreen if active
+                if (appState.fullscreenMode === 'text') {
+                    exitFullscreenTextMode();
+                }
             }
             
             document.getElementById(`copy${mode.charAt(0).toUpperCase() + mode.slice(1)}Link`).style.display = 'none';
@@ -2204,6 +2285,11 @@
                 // Clear chat messages
                 document.getElementById('textChat').innerHTML = '';
                 document.getElementById('textMessage').value = '';
+                
+                // Show room controls again
+                document.getElementById('text-room-id').style.display = 'block';
+                document.getElementById('generateTextRoom').style.display = 'inline-flex';
+                document.getElementById('joinTextRoom').style.display = 'inline-flex';
             }
             
             // Show sidebar again
@@ -2246,82 +2332,44 @@
             }
         }
 
-        // ========== FULLSCREEN VIDEO MODE ========== //
-        function enterFullscreenVideoMode() {
-            document.body.classList.add('fullscreen-video-mode');
+        // ========== FULLSCREEN TEXT CHAT MODE ========== //
+        function enterFullscreenTextMode() {
+            document.body.classList.add('fullscreen-text-mode');
             domRefs.topControlsContainer.style.display = 'flex';
             appState.isFullscreen = true;
+            appState.fullscreenMode = 'text';
             
             // Hide mobile menu toggle in fullscreen
             document.getElementById('mobileMenuToggle').style.display = 'none';
             
-            // Adjust video elements for fullscreen
-            const remoteVideo = document.getElementById('video-remote-video');
-            const localVideo = document.getElementById('video-local-video');
-            
-            if (remoteVideo) {
-                remoteVideo.style.objectFit = 'cover';
-            }
-            
-            if (localVideo) {
-                localVideo.style.width = '120px';
-                localVideo.style.height = '90px';
-                localVideo.style.bottom = '100px';
-                localVideo.style.right = '20px';
-            }
-            
-            // Hide spinner if visible
-            document.getElementById('videoSpinner').style.display = 'none';
-            
-            // Hide room controls
-            document.getElementById('video-room-id').style.display = 'none';
-            document.getElementById('generateVideoRoom').style.display = 'none';
-            document.getElementById('joinVideoRoom').style.display = 'none';
-            document.getElementById('copyVideoLink').style.display = 'none';
+            // Focus on chat input
+            setTimeout(() => {
+                document.getElementById('textMessage').focus();
+            }, 300);
         }
         
-        function exitFullscreenVideoMode() {
-            document.body.classList.remove('fullscreen-video-mode');
+        function exitFullscreenTextMode() {
+            document.body.classList.remove('fullscreen-text-mode');
             domRefs.topControlsContainer.style.display = 'none';
             appState.isFullscreen = false;
+            appState.fullscreenMode = null;
             
             // Show mobile menu toggle if on mobile
             if (window.innerWidth <= 900) {
                 document.getElementById('mobileMenuToggle').style.display = 'flex';
             }
-            
-            // Reset video elements
-            const remoteVideo = document.getElementById('video-remote-video');
-            const localVideo = document.getElementById('video-local-video');
-            
-            if (remoteVideo) {
-                remoteVideo.style.objectFit = 'cover';
-            }
-            
-            if (localVideo) {
-                localVideo.style.width = '80px';
-                localVideo.style.height = '60px';
-                localVideo.style.bottom = '12px';
-                localVideo.style.right = '12px';
-            }
-            
-            // Show room controls
-            document.getElementById('video-room-id').style.display = 'block';
-            document.getElementById('generateVideoRoom').style.display = 'inline-flex';
-            document.getElementById('joinVideoRoom').style.display = 'inline-flex';
-            document.getElementById('copyVideoLink').style.display = 'inline-flex';
         }
-        
+
         function handleOrientationChange() {
-            if (appState.isFullscreen) {
+            if (appState.isFullscreen && appState.fullscreenMode === 'text') {
                 // Small delay to allow orientation to complete
                 setTimeout(() => {
-                    // Force video element resize
-                    const remoteVideo = document.getElementById('video-remote-video');
-                    if (remoteVideo) {
-                        remoteVideo.style.height = 'auto';
+                    // Force chat container resize
+                    const chatContainer = document.getElementById('textChat');
+                    if (chatContainer) {
+                        chatContainer.style.height = 'auto';
                         setTimeout(() => {
-                            remoteVideo.style.height = '100%';
+                            chatContainer.style.height = '100%';
                         }, 50);
                     }
                 }, 300);
