@@ -667,28 +667,46 @@
             right: 20px;
         }
         
-        /* Exit fullscreen button */
-        .exit-fullscreen-btn {
+        /* Top right controls container */
+        .top-controls-container {
             position: absolute;
             top: 20px;
             right: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
-            width: 36px;
-            height: 36px;
+            display: flex;
+            gap: 8px;
+            z-index: 10002;
+            display: none;
+        }
+        
+        .fullscreen-video-mode .top-controls-container {
+            display: flex;
+        }
+        
+        /* Control buttons in top right */
+        .top-control-btn {
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
+            border: none;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            z-index: 10002;
             transition: all 0.2s ease;
-            display: none;
+            color: white;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.2);
         }
         
-        .fullscreen-video-mode .exit-fullscreen-btn {
-            display: flex;
+        .top-control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+        
+        /* Hide room controls in fullscreen */
+        .fullscreen-video-mode .input-group,
+        .fullscreen-video-mode .call-controls:not(.bottom-controls) {
+            display: none !important;
         }
         
         /* Adjust for mobile in fullscreen */
@@ -708,6 +726,17 @@
                 top: 10px;
                 left: 10px;
                 font-size: 16px;
+            }
+            
+            .top-controls-container {
+                top: 10px;
+                right: 10px;
+            }
+            
+            .top-control-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
             }
         }
         
@@ -928,7 +957,7 @@
                             <i class="fas fa-sync-alt"></i>
                         </button>
                     </div>
-                    <div class="call-controls" id="videoControls" style="display: none;">
+                    <div class="call-controls bottom-controls" id="videoControls" style="display: none;">
                         <button class="control-btn" id="switchCameraBtnNormal">
                             <i class="fas fa-sync-alt"></i>
                         </button>
@@ -1026,10 +1055,18 @@
         </div>
     </div>
     
-    <!-- Exit fullscreen button -->
-    <button class="exit-fullscreen-btn" id="exitFullscreenBtn" title="Exit fullscreen">
-        <i class="fas fa-compress"></i>
-    </button>
+    <!-- Top right controls container -->
+    <div class="top-controls-container" id="topControlsContainer">
+        <button class="top-control-btn" id="copyVideoLinkTop" title="Copy room link">
+            <i class="fas fa-copy"></i>
+        </button>
+        <button class="top-control-btn" id="fullscreenToggleBtn" title="Fullscreen">
+            <i class="fas fa-expand"></i>
+        </button>
+        <button class="top-control-btn" id="exitFullscreenBtn" title="Exit fullscreen">
+            <i class="fas fa-compress"></i>
+        </button>
+    </div>
     
     <!-- Hidden audio element for remote audio -->
     <audio id="remoteAudio" autoplay playsinline></audio>
@@ -1099,7 +1136,8 @@
             textChat: document.getElementById('textChat'),
             typingIndicator: document.getElementById('typingIndicator'),
             notificationSound: document.getElementById('notificationSound'),
-            appContainer: document.getElementById('appContainer')
+            appContainer: document.getElementById('appContainer'),
+            topControlsContainer: document.getElementById('topControlsContainer')
         };
 
         // ========== STATE MANAGEMENT ========== //
@@ -1123,7 +1161,8 @@
             userName: 'User-' + Math.floor(Math.random() * 1000), // Generate random username
             isTyping: false,
             typingTimeout: null,
-            participantsRef: null
+            participantsRef: null,
+            isFullscreen: false
         };
 
         // ========== INITIALIZATION ========== //
@@ -1225,12 +1264,14 @@
                 }, 1000);
             });
             
-            // Fullscreen exit button
+            // Fullscreen controls
             document.getElementById('exitFullscreenBtn').addEventListener('click', exitFullscreenVideoMode);
+            document.getElementById('fullscreenToggleBtn').addEventListener('click', enterFullscreenVideoMode);
+            document.getElementById('copyVideoLinkTop').addEventListener('click', () => copyLink('video'));
             
             // Handle escape key
             document.addEventListener('keydown', function(event) {
-                if (event.key === 'Escape' && document.body.classList.contains('fullscreen-video-mode')) {
+                if (event.key === 'Escape' && appState.isFullscreen) {
                     exitFullscreenVideoMode();
                 }
             });
@@ -2208,7 +2249,8 @@
         // ========== FULLSCREEN VIDEO MODE ========== //
         function enterFullscreenVideoMode() {
             document.body.classList.add('fullscreen-video-mode');
-            document.getElementById('exitFullscreenBtn').style.display = 'flex';
+            domRefs.topControlsContainer.style.display = 'flex';
+            appState.isFullscreen = true;
             
             // Hide mobile menu toggle in fullscreen
             document.getElementById('mobileMenuToggle').style.display = 'none';
@@ -2230,11 +2272,18 @@
             
             // Hide spinner if visible
             document.getElementById('videoSpinner').style.display = 'none';
+            
+            // Hide room controls
+            document.getElementById('video-room-id').style.display = 'none';
+            document.getElementById('generateVideoRoom').style.display = 'none';
+            document.getElementById('joinVideoRoom').style.display = 'none';
+            document.getElementById('copyVideoLink').style.display = 'none';
         }
         
         function exitFullscreenVideoMode() {
             document.body.classList.remove('fullscreen-video-mode');
-            document.getElementById('exitFullscreenBtn').style.display = 'none';
+            domRefs.topControlsContainer.style.display = 'none';
+            appState.isFullscreen = false;
             
             // Show mobile menu toggle if on mobile
             if (window.innerWidth <= 900) {
@@ -2255,10 +2304,16 @@
                 localVideo.style.bottom = '12px';
                 localVideo.style.right = '12px';
             }
+            
+            // Show room controls
+            document.getElementById('video-room-id').style.display = 'block';
+            document.getElementById('generateVideoRoom').style.display = 'inline-flex';
+            document.getElementById('joinVideoRoom').style.display = 'inline-flex';
+            document.getElementById('copyVideoLink').style.display = 'inline-flex';
         }
         
         function handleOrientationChange() {
-            if (document.body.classList.contains('fullscreen-video-mode')) {
+            if (appState.isFullscreen) {
                 // Small delay to allow orientation to complete
                 setTimeout(() => {
                     // Force video element resize
