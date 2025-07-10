@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SatLoom - Communication Platform</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛰️</text></svg>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         :root {
@@ -434,6 +433,7 @@
         .visualizer-bar:nth-child(3) { animation-delay: 0.4s; height: 22px; }
         .visualizer-bar:nth-child(4) { animation-delay: 0.6s; height: 30px; }
         .visualizer-bar:nth-child(5) { animation-delay: 0.8s; height: 12px; }
+
         .switch-camera-btn {
             position: absolute;
             top: 12px;
@@ -786,6 +786,9 @@
             display: flex;
             flex-direction: column;
             padding: 0;
+            background: transparent;
+            box-shadow: none;
+            backdrop-filter: none;
         }
         
         .fullscreen-text-mode .text-chat-container {
@@ -793,6 +796,7 @@
             display: flex;
             flex-direction: column;
             padding: 20px;
+            height: 100%;
         }
         
         .fullscreen-text-mode .text-chat-container .chat-container {
@@ -800,11 +804,12 @@
             height: auto;
             border-radius: 0;
             margin: 0;
+            background: rgba(0, 0, 0, 0.2);
         }
         
         .fullscreen-text-mode .text-chat-container .chat-input-container {
             margin-top: 15px;
-            padding: 0 20px 20px;
+            padding: 0;
         }
         
         .fullscreen-text-mode .text-controls {
@@ -840,6 +845,34 @@
         .fullscreen-text-mode .input-group,
         .fullscreen-text-mode .call-controls:not(.text-controls) {
             display: none !important;
+        }
+        #textFullscreenToggle {
+        display: none !important;
+        }
+        #exitTextFullscreenBtn {
+    display: none !important;
+}
+        
+        /* Header for text chat in fullscreen */
+        .text-chat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .text-chat-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+        }
+        
+        .text-chat-header-controls {
+            display: flex;
+            gap: 8px;
         }
         
         /* Adjust for mobile in fullscreen */
@@ -885,6 +918,13 @@
                 top: 10px;
                 right: 10px;
             }
+            
+            .text-chat-header {
+                padding: 10px;
+            }
+        }
+        .fullscreen-text-mode .chat-message .message-time {
+            display: none !important;
         }
         
         @media (max-width: 900px) {
@@ -1307,6 +1347,102 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(-30deg); }
         }
+        /* ========== HIDE TEXT CHAT TIMER ========== */
+        #text-chat-section .section-title .call-timer {
+        display: none !important;
+        }
+        /* ========== ALWAYS SHOW MENU IN FULLSCREEN MODES ========== */
+.fullscreen-video-mode .mobile-menu-toggle,
+.fullscreen-text-mode .mobile-menu-toggle,
+.fullscreen-video-mode .desktop-menu-toggle,
+.fullscreen-text-mode .desktop-menu-toggle {
+    display: flex !important;
+    z-index: 10001; /* Higher than fullscreen content */
+}
+
+.fullscreen-video-mode .sidebar,
+.fullscreen-text-mode .sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 280px !important;
+    height: 100vh !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s ease !important;
+    z-index: 10002 !important;
+    display: flex !important;
+    opacity: 1 !important;
+    border-radius: 0 !important;
+}
+
+.fullscreen-video-mode .sidebar.active,
+.fullscreen-text-mode .sidebar.active {
+    transform: translateX(0) !important;
+    box-shadow: 8px 0 15px rgba(0, 0, 0, 0.2);
+}
+
+.fullscreen-video-mode .mobile-menu-toggle,
+.fullscreen-video-mode .desktop-menu-toggle {
+    top: 20px !important;
+    left: 20px !important;
+    right: auto !important;
+}
+
+.fullscreen-text-mode .mobile-menu-toggle,
+.fullscreen-text-mode .desktop-menu-toggle {
+    top: 20px !important;
+    left: 20px !important;
+    right: auto !important;
+}
+
+@media (max-width: 900px) {
+    .fullscreen-video-mode .mobile-menu-toggle,
+    .fullscreen-text-mode .mobile-menu-toggle {
+        top: 10px !important;
+        left: 10px !important;
+    }
+}
+
+/* Add this to your CSS */
+.fullscreen-video-mode .sidebar,
+.fullscreen-text-mode .sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 280px !important;
+    height: 100vh !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s ease !important;
+    z-index: 10002 !important;
+    display: flex !important;
+    opacity: 1 !important;
+    border-radius: 0 !important;
+}
+
+.fullscreen-video-mode .sidebar.active,
+.fullscreen-text-mode .sidebar.active {
+    transform: translateX(0) !important;
+    box-shadow: 8px 0 15px rgba(0, 0, 0, 0.2);
+}
+
+.fullscreen-video-mode .mobile-menu-toggle,
+.fullscreen-text-mode .mobile-menu-toggle,
+.fullscreen-video-mode .desktop-menu-toggle,
+.fullscreen-text-mode .desktop-menu-toggle {
+    display: flex !important;
+    z-index: 10003 !important; /* Higher than sidebar */
+    top: 20px !important;
+    left: 20px !important;
+    right: auto !important;
+}
+
+@media (max-width: 900px) {
+    .fullscreen-video-mode .mobile-menu-toggle,
+    .fullscreen-text-mode .mobile-menu-toggle {
+        top: 10px !important;
+        left: 10px !important;
+    }
+}
 
 </style>
 </head>
@@ -1523,6 +1659,9 @@
                             <button class="btn" id="sendTextMessage">
                                 <i class="fas fa-paper-plane send-icon"></i>
                             </button>
+                            <button class="control-btn end" id="endTextChatFullscreen">
+                                <i class="fas fa-phone-slash"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1692,1771 +1831,1818 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
     <script>
-        // Initialize Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyDeksN3qPZCmNuoASlEqG38XVmag6ecTh8",
-            authDomain: "satloom-rtc.firebaseapp.com",
-            databaseURL: "https://satloom-rtc-default-rtdb.firebaseio.com",
-            projectId: "satloom-rtc",
-            storageBucket: "satloom-rtc.appspot.com",
-            messagingSenderId: "273627860564",
-            appId: "1:273627860564:web:c326b1bb6ffcb32fb0e7c1"
-        };
+   // Initialize Firebase
+const firebaseConfig = {
+    apiKey: "AIzaSyDeksN3qPZCmNuoASlEqG38XVmag6ecTh8",
+    authDomain: "satloom-rtc.firebaseapp.com",
+    databaseURL: "https://satloom-rtc-default-rtdb.firebaseio.com",
+    projectId: "satloom-rtc",
+    storageBucket: "satloom-rtc.appspot.com",
+    messagingSenderId: "273627860564",
+    appId: "1:273627860564:web:c326b1bb6ffcb32fb0e7c1"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+// ========== DOM ELEMENT REFERENCES ========== //
+const domRefs = {
+    notification: document.getElementById('globalNotification'),
+    notificationTitle: document.getElementById('notificationTitle'),
+    notificationMessage: document.getElementById('notificationMessage'),
+    connectionStatus: document.getElementById('connectionStatus'),
+    statusText: document.getElementById('statusText'),
+    audioCallTimer: document.getElementById('audioCallTimer'),
+    videoCallTimer: document.getElementById('videoCallTimer'),
+    textChatTimer: document.getElementById('textChatTimer'),
+    theaterTimer: document.getElementById('theaterTimer'),
+    sections: {
+        'audio-call': document.getElementById('audio-call-section'),
+        'video-call': document.getElementById('video-call-section'),
+        'text-chat': document.getElementById('text-chat-section'),
+        'theater': document.getElementById('theater-section'),
+        'settings': document.getElementById('settings-section'),
+        'about': document.getElementById('about-section')
+    },
+    remoteAudio: document.getElementById('remoteAudio'),
+    switchCameraBtn: document.getElementById('switchCameraBtn'),
+    switchCameraBtnNormal: document.getElementById('switchCameraBtnNormal'),
+    themeToggleSetting: document.getElementById('themeToggleSetting'),
+    endTextChat: document.getElementById('endTextChat'),
+    endTextChatFullscreen: document.getElementById('endTextChatFullscreen'),
+    textChat: document.getElementById('textChat'),
+    typingIndicator: document.getElementById('typingIndicator'),
+    notificationSound: document.getElementById('notificationSound'),
+    appContainer: document.getElementById('appContainer'),
+    topControlsContainer: document.getElementById('topControlsContainer'),
+    textControls: document.getElementById('textControls'),
+    theaterContainer: document.getElementById('theaterContainer'),
+    mediaPlayer: document.getElementById('mediaPlayer'),
+    mediaUrl: document.getElementById('mediaUrl'),
+    loadMedia: document.getElementById('loadMedia'),
+    playPauseBtn: document.getElementById('playPauseBtn'),
+    rewindBtn: document.getElementById('rewindBtn'),
+    forwardBtn: document.getElementById('forwardBtn'),
+    theaterChat: document.getElementById('theaterChat'),
+    theaterMessage: document.getElementById('theaterMessage'),
+    sendTheaterMessage: document.getElementById('sendTheaterMessage'),
+    theaterAudioToggle: document.getElementById('theaterAudioToggle'),
+    theaterTypingIndicator: document.getElementById('theaterTypingIndicator')
+};
+
+// ========== STATE MANAGEMENT ========== //
+const appState = {
+    localStream: null,
+    remoteStream: null,
+    peerConnection: null,
+    roomId: null,
+    isInitiator: false,
+    isStarted: false,
+    timer: null,
+    startTime: null,
+    currentMode: 'audio-call',
+    signalingRef: null,
+    userId: 'user-' + Math.random().toString(36).substr(2, 8),
+    textChatRef: null,
+    textChatInitialized: false,
+    isCameraEnabled: true,
+    currentCamera: 'user',
+    cameraDevices: [],
+    userName: 'User-' + Math.floor(Math.random() * 1000),
+    isTyping: false,
+    typingTimeout: null,
+    participantsRef: null,
+    isFullscreen: false,
+    theaterMediaUrl: null,
+    isMediaPlaying: false,
+    mediaCurrentTime: 0,
+    theaterAudioEnabled: true
+};
+
+// ========== INITIALIZATION ========== //
+document.addEventListener('DOMContentLoaded', initApp);
+
+async function initApp() {
+    setupEventListeners();
+    loadSettings();
+    autoJoinRoom();
+    adjustForMobile();
+}
+
+function setupEventListeners() {
+    // Mobile menu toggle
+    document.getElementById('mobileMenuToggle').addEventListener('click', function() {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('active');
+    });
+    
+    // Desktop menu toggle
+    document.getElementById('desktopMenuToggle').addEventListener('click', function() {
+        const appContainer = document.getElementById('appContainer');
+        const body = document.body;
+        const sidebar = document.getElementById('sidebar');
         
-        firebase.initializeApp(firebaseConfig);
+        // Check if we are in fullscreen mode
+        const isFullscreen = body.classList.contains('fullscreen-video-mode') || 
+                         body.classList.contains('fullscreen-text-mode');
         
-        // ========== DOM ELEMENT REFERENCES ========== //
-        const domRefs = {
-            notification: document.getElementById('globalNotification'),
-            notificationTitle: document.getElementById('notificationTitle'),
-            notificationMessage: document.getElementById('notificationMessage'),
-            connectionStatus: document.getElementById('connectionStatus'),
-            statusText: document.getElementById('statusText'),
-            audioCallTimer: document.getElementById('audioCallTimer'),
-            videoCallTimer: document.getElementById('videoCallTimer'),
-            textChatTimer: document.getElementById('textChatTimer'),
-            theaterTimer: document.getElementById('theaterTimer'),
-            sections: {
-                'audio-call': document.getElementById('audio-call-section'),
-                'video-call': document.getElementById('video-call-section'),
-                'text-chat': document.getElementById('text-chat-section'),
-                'theater': document.getElementById('theater-section'),
-                'settings': document.getElementById('settings-section'),
-                'about': document.getElementById('about-section')
-            },
-            remoteAudio: document.getElementById('remoteAudio'),
-            switchCameraBtn: document.getElementById('switchCameraBtn'),
-            switchCameraBtnNormal: document.getElementById('switchCameraBtnNormal'),
-            themeToggleSetting: document.getElementById('themeToggleSetting'),
-            endTextChat: document.getElementById('endTextChat'),
-            textChat: document.getElementById('textChat'),
-            typingIndicator: document.getElementById('typingIndicator'),
-            notificationSound: document.getElementById('notificationSound'),
-            appContainer: document.getElementById('appContainer'),
-            topControlsContainer: document.getElementById('topControlsContainer'),
-            textControls: document.getElementById('textControls'),
-            theaterContainer: document.getElementById('theaterContainer'),
-            mediaPlayer: document.getElementById('mediaPlayer'),
-            mediaUrl: document.getElementById('mediaUrl'),
-            loadMedia: document.getElementById('loadMedia'),
-            playPauseBtn: document.getElementById('playPauseBtn'),
-            rewindBtn: document.getElementById('rewindBtn'),
-            forwardBtn: document.getElementById('forwardBtn'),
-            theaterChat: document.getElementById('theaterChat'),
-            theaterMessage: document.getElementById('theaterMessage'),
-            sendTheaterMessage: document.getElementById('sendTheaterMessage'),
-            theaterAudioToggle: document.getElementById('theaterAudioToggle'),
-            theaterTypingIndicator: document.getElementById('theaterTypingIndicator')
-        };
-
-        // ========== STATE MANAGEMENT ========== //
-        const appState = {
-            localStream: null,
-            remoteStream: null,
-            peerConnection: null,
-            roomId: null,
-            isInitiator: false,
-            isStarted: false,
-            timer: null,
-            startTime: null,
-            currentMode: 'audio-call',
-            signalingRef: null,
-            userId: 'user-' + Math.random().toString(36).substr(2, 8),
-            textChatRef: null,
-            textChatInitialized: false,
-            isCameraEnabled: true,
-            currentCamera: 'user',
-            cameraDevices: [],
-            userName: 'User-' + Math.floor(Math.random() * 1000),
-            isTyping: false,
-            typingTimeout: null,
-            participantsRef: null,
-            isFullscreen: false,
-            theaterMediaUrl: null,
-            isMediaPlaying: false,
-            mediaCurrentTime: 0,
-            theaterAudioEnabled: true
-        };
-
-        // ========== INITIALIZATION ========== //
-        document.addEventListener('DOMContentLoaded', initApp);
-
-        async function initApp() {
-            setupEventListeners();
-            loadSettings();
-            autoJoinRoom();
-            adjustForMobile();
-        }
-        // Add event listener for desktop menu toggle
-        document.getElementById('desktopMenuToggle').addEventListener('click', function() {
-            const appContainer = document.getElementById('appContainer');
-            const body = document.body;
-            
+        if (isFullscreen) {
+            // In fullscreen mode, toggle the active class
+            sidebar.classList.toggle('active');
+        } else {
+            // Original behavior for non-fullscreen
             if (appContainer.classList.contains('sidebar-hidden')) {
-                // Show sidebar
                 appContainer.classList.remove('sidebar-hidden');
                 body.classList.add('sidebar-open');
             } else {
-                // Hide sidebar
                 appContainer.classList.add('sidebar-hidden');
                 body.classList.remove('sidebar-open');
             }
-        });
-
-        function setupEventListeners() {
-            // Mobile menu toggle
-            document.getElementById('mobileMenuToggle').addEventListener('click', function() {
-                const sidebar = document.getElementById('sidebar');
-                sidebar.classList.toggle('active');
-            });
-            
-            // Close sidebar when clicking outside on mobile
-            document.addEventListener('click', function(event) {
-                const sidebar = document.getElementById('sidebar');
-                const mobileMenu = document.getElementById('mobileMenuToggle');
-                
-                if (window.innerWidth <= 900 && 
-                    !sidebar.contains(event.target) && 
-                    event.target !== mobileMenu &&
-                    !mobileMenu.contains(event.target)) {
-                    sidebar.classList.remove('active');
-                }
-            });
-            
-            // Navigation
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.addEventListener('click', handleNavigation);
-            });
-
-            // Theme toggle
-            domRefs.themeToggleSetting.addEventListener('click', toggleTheme);
-
-            // Audio call controls
-            document.getElementById('generateAudioRoom').addEventListener('click', () => {
-                hideSidebar();
-                generateRoom('audio');
-            });
-            document.getElementById('joinAudioRoom').addEventListener('click', () => {
-                hideSidebar();
-                joinRoom('audio');
-            });
-            document.getElementById('endAudioCall').addEventListener('click', () => {
-                hangup('audio');
-                resetUI('audio');
-            });
-            document.getElementById('audioAudioToggle').addEventListener('click', () => toggleAudio('audio'));
-            document.getElementById('copyAudioLink').addEventListener('click', () => copyLink('audio'));
-
-            // Video call controls
-            document.getElementById('generateVideoRoom').addEventListener('click', () => {
-                hideSidebar();
-                generateRoom('video');
-            });
-            document.getElementById('joinVideoRoom').addEventListener('click', () => {
-                hideSidebar();
-                joinRoom('video');
-            });
-            document.getElementById('endVideoCall').addEventListener('click', () => {
-                hangup('video');
-                resetUI('video');
-            });
-            document.getElementById('videoVideoToggle').addEventListener('click', toggleVideo);
-            document.getElementById('videoAudioToggle').addEventListener('click', () => toggleAudio('video'));
-            document.getElementById('copyVideoLink').addEventListener('click', () => copyLink('video'));
-            
-            // Camera switching buttons
-            domRefs.switchCameraBtn.addEventListener('click', switchCamera);
-            domRefs.switchCameraBtnNormal.addEventListener('click', switchCamera);
-            
-            // Text chat controls
-            document.getElementById('generateTextRoom').addEventListener('click', () => {
-                hideSidebar();
-                generateRoom('text');
-            });
-            document.getElementById('joinTextRoom').addEventListener('click', () => {
-                hideSidebar();
-                joinRoom('text');
-            });
-            document.getElementById('sendTextMessage').addEventListener('click', sendChatMessage);
-            document.getElementById('copyTextLink').addEventListener('click', () => copyLink('text'));
-            document.getElementById('endTextChat').addEventListener('click', () => {
-                hangup('text');
-                resetUI('text');
-            });
-
-            // Theater mode controls
-            document.getElementById('generateTheaterRoom').addEventListener('click', () => {
-                hideSidebar();
-                generateRoom('theater');
-            });
-            document.getElementById('joinTheaterRoom').addEventListener('click', () => {
-                hideSidebar();
-                joinRoom('theater');
-            });
-            document.getElementById('endTheaterSession').addEventListener('click', () => {
-                hangup('theater');
-                resetUI('theater');
-            });
-            document.getElementById('copyTheaterLink').addEventListener('click', () => copyLink('theater'));
-            
-            // Media controls
-            document.getElementById('loadMedia').addEventListener('click', loadMedia);
-            document.getElementById('playPauseBtn').addEventListener('click', togglePlayPause);
-            document.getElementById('rewindBtn').addEventListener('click', () => seekMedia(-10));
-            document.getElementById('forwardBtn').addEventListener('click', () => seekMedia(10));
-            document.getElementById('theaterAudioToggle').addEventListener('click', toggleTheaterAudio);
-            
-            // Theater chat
-            document.getElementById('sendTheaterMessage').addEventListener('click', sendTheaterChatMessage);
-            document.getElementById('theaterMessage').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    sendTheaterChatMessage();
-                }
-            });
-            
-            document.getElementById('theaterMessage').addEventListener('input', () => {
-                if (!appState.isTyping) {
-                    appState.isTyping = true;
-                    sendTheaterTypingStatus(true);
-                }
-                
-                clearTimeout(appState.typingTimeout);
-                appState.typingTimeout = setTimeout(() => {
-                    appState.isTyping = false;
-                    sendTheaterTypingStatus(false);
-                }, 1000);
-            });
-
-            // Settings
-            document.getElementById('notifications-toggle').addEventListener('change', saveSettings);
-            document.getElementById('notification-sound-toggle').addEventListener('change', saveSettings);
-            
-            // Press Enter to send messages in text chat
-            document.getElementById('textMessage').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    sendChatMessage();
-                }
-            });
-            
-            // Typing detection
-            document.getElementById('textMessage').addEventListener('input', () => {
-                if (!appState.isTyping) {
-                    appState.isTyping = true;
-                    sendTypingStatus(true);
-                }
-                
-                clearTimeout(appState.typingTimeout);
-                appState.typingTimeout = setTimeout(() => {
-                    appState.isTyping = false;
-                    sendTypingStatus(false);
-                }, 1000);
-            });
-            
-            // Fullscreen controls
-            document.getElementById('exitFullscreenBtn')?.addEventListener('click', exitFullscreenVideoMode);
-            document.getElementById('fullscreenToggleBtn')?.addEventListener('click', enterFullscreenVideoMode);
-            document.getElementById('copyVideoLinkTop').addEventListener('click', () => copyLink('video'));
-            
-            // Text chat fullscreen controls
-            document.getElementById('textFullscreenToggle').addEventListener('click', enterFullscreenTextMode);
-            document.getElementById('exitTextFullscreenBtn').addEventListener('click', exitFullscreenTextMode);
-            document.getElementById('copyTextLinkTop').addEventListener('click', () => copyLink('text'));
-            
-            // Handle escape key
-            document.addEventListener('keydown', function(event) {
-                if (event.key === 'Escape' && appState.isFullscreen) {
-                    if (appState.currentMode === 'video') {
-                        exitFullscreenVideoMode();
-                    } else if (appState.currentMode === 'text-chat') {
-                        exitFullscreenTextMode();
-                    }
-                }
-            });
-            
-            // Handle orientation changes
-            window.addEventListener('orientationchange', handleOrientationChange);
         }
-
-        function loadSettings() {
-            const savedTheme = localStorage.getItem('theme') || 'dark';
-            document.body.className = `${savedTheme}-mode`;
-            updateThemeButton(savedTheme);
-            
-            document.getElementById('notifications-toggle').checked = 
-                localStorage.getItem('notifications') !== 'false';
-            document.getElementById('notification-sound-toggle').checked = 
-                localStorage.getItem('notificationSound') !== 'false';
-        }
-
-        function updateThemeButton(theme) {
-            if (theme === 'dark') {
-                domRefs.themeToggleSetting.innerHTML = '<i class="fas fa-moon"></i> Switch to Light';
-            } else {
-                domRefs.themeToggleSetting.innerHTML = '<i class="fas fa-sun"></i> Switch to Dark';
-            }
-        }
-
-        function autoJoinRoom() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const roomParam = urlParams.get('room');
-            const modeParam = urlParams.get('mode');
-            
-            if (roomParam && modeParam) {
-                // Map mode to section ID
-                const sectionMap = {
-                    'audio': 'audio-call',
-                    'video': 'video-call',
-                    'text': 'text-chat',
-                    'theater': 'theater'
-                };
-                const sectionId = sectionMap[modeParam];
-                
-                if (sectionId) {
-                    // Switch to the correct section
-                    switchToSection(sectionId);
-                    
-                    // Set the room ID in the input field
-                    const inputId = `${modeParam}-room-id`;
-                    const input = document.getElementById(inputId);
-                    if (input) {
-                        input.value = roomParam;
-                    }
-                    
-                    // Join the room after a short delay
-                    setTimeout(() => {
-                        hideSidebar();
-                        joinRoom(modeParam);
-                    }, 500);
-                } else {
-                    console.error('Invalid mode parameter:', modeParam);
-                    showNotification('Error', 'Invalid mode specified in URL', 'error');
-                }
-            }
-        }
-
-        function switchToSection(sectionId) {
-            // Update navigation items
-            document.querySelectorAll('.nav-item').forEach(item => 
-                item.classList.remove('active'));
-            const navLink = document.querySelector(`.nav-link[data-section="${sectionId}"]`);
-            if (navLink) {
-                navLink.parentElement.classList.add('active');
-            }
-            
-            // Update sections
-            document.querySelectorAll('.section').forEach(section => 
-                section.classList.remove('active'));
-            const section = document.getElementById(`${sectionId}-section`);
-            if (section) {
-                section.classList.add('active');
-            }
-            
-            // Update current mode
-            appState.currentMode = sectionId;
-        }
-
-        // ========== SIDEBAR MANAGEMENT ========== //
-       function hideSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const appContainer = document.getElementById('appContainer');
-            const body = document.body;
-            
-            if (window.innerWidth > 900) {
-                // Desktop behavior - hide sidebar
-                appContainer.classList.add('sidebar-hidden');
-                body.classList.remove('sidebar-open');
-            } else {
-                // Mobile behavior - slide out
+    });
+    
+    // Close sidebar when clicking outside
+    document.addEventListener('click', function(event) {
+        const sidebar = document.getElementById('sidebar');
+        const mobileMenu = document.getElementById('mobileMenuToggle');
+        const desktopMenu = document.getElementById('desktopMenuToggle');
+        
+        const isFullscreen = document.body.classList.contains('fullscreen-video-mode') || 
+                         document.body.classList.contains('fullscreen-text-mode');
+        
+        // For mobile or fullscreen mode
+        if (window.innerWidth <= 900 || isFullscreen) {
+            if (sidebar.classList.contains('active') &&
+                !sidebar.contains(event.target) &&
+                event.target !== mobileMenu &&
+                !mobileMenu.contains(event.target) &&
+                event.target !== desktopMenu &&
+                !desktopMenu.contains(event.target)) {
                 sidebar.classList.remove('active');
             }
         }
-        
-        function showSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const appContainer = document.getElementById('appContainer');
-            const body = document.body;
-            
-            if (window.innerWidth > 900) {
-                // Desktop behavior - show sidebar
-                appContainer.classList.remove('sidebar-hidden');
-                body.classList.add('sidebar-open');
-            } else {
-                // Mobile behavior - slide in
-                sidebar.classList.add('active');
-            }
-        }
+    });
 
+    // Navigation
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', handleNavigation);
+    });
 
-        // ========== NAVIGATION ========== //
-        function handleNavigation(e) {
+    // Theme toggle
+    domRefs.themeToggleSetting.addEventListener('click', toggleTheme);
+
+    // Audio call controls
+    document.getElementById('generateAudioRoom').addEventListener('click', () => {
+        hideSidebar();
+        generateRoom('audio');
+    });
+    document.getElementById('joinAudioRoom').addEventListener('click', () => {
+        hideSidebar();
+        joinRoom('audio');
+    });
+    document.getElementById('endAudioCall').addEventListener('click', () => {
+        hangup('audio');
+        resetUI('audio');
+    });
+    document.getElementById('audioAudioToggle').addEventListener('click', () => toggleAudio('audio'));
+    document.getElementById('copyAudioLink').addEventListener('click', () => copyLink('audio'));
+
+    // Video call controls
+    document.getElementById('generateVideoRoom').addEventListener('click', () => {
+        hideSidebar();
+        generateRoom('video');
+    });
+    document.getElementById('joinVideoRoom').addEventListener('click', () => {
+        hideSidebar();
+        joinRoom('video');
+    });
+    document.getElementById('endVideoCall').addEventListener('click', () => {
+        hangup('video');
+        resetUI('video');
+    });
+    document.getElementById('videoVideoToggle').addEventListener('click', toggleVideo);
+    document.getElementById('videoAudioToggle').addEventListener('click', () => toggleAudio('video'));
+    document.getElementById('copyVideoLink').addEventListener('click', () => copyLink('video'));
+    
+    // Camera switching buttons
+    domRefs.switchCameraBtn.addEventListener('click', switchCamera);
+    domRefs.switchCameraBtnNormal.addEventListener('click', switchCamera);
+    
+    // Text chat controls
+    document.getElementById('generateTextRoom').addEventListener('click', () => {
+        hideSidebar();
+        generateRoom('text');
+    });
+    document.getElementById('joinTextRoom').addEventListener('click', () => {
+        hideSidebar();
+        joinRoom('text');
+    });
+    document.getElementById('sendTextMessage').addEventListener('click', sendChatMessage);
+    document.getElementById('copyTextLink').addEventListener('click', () => copyLink('text'));
+    document.getElementById('endTextChat').addEventListener('click', () => {
+        hangup('text');
+        resetUI('text');
+    });
+    document.getElementById('endTextChatFullscreen').addEventListener('click', () => {
+        hangup('text');
+        resetUI('text');
+    });
+
+    // Theater mode controls
+    document.getElementById('generateTheaterRoom').addEventListener('click', () => {
+        hideSidebar();
+        generateRoom('theater');
+    });
+    document.getElementById('joinTheaterRoom').addEventListener('click', () => {
+        hideSidebar();
+        joinRoom('theater');
+    });
+    document.getElementById('endTheaterSession').addEventListener('click', () => {
+        hangup('theater');
+        resetUI('theater');
+    });
+    document.getElementById('copyTheaterLink').addEventListener('click', () => copyLink('theater'));
+    
+    // Media controls
+    document.getElementById('loadMedia').addEventListener('click', loadMedia);
+    document.getElementById('playPauseBtn').addEventListener('click', togglePlayPause);
+    document.getElementById('rewindBtn').addEventListener('click', () => seekMedia(-10));
+    document.getElementById('forwardBtn').addEventListener('click', () => seekMedia(10));
+    document.getElementById('theaterAudioToggle').addEventListener('click', toggleTheaterAudio);
+    
+    // Theater chat
+    document.getElementById('sendTheaterMessage').addEventListener('click', sendTheaterChatMessage);
+    document.getElementById('theaterMessage').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
             e.preventDefault();
-            const sectionId = this.getAttribute('data-section');
-            
-            // Update navigation state
-            document.querySelectorAll('.nav-item').forEach(item => 
-                item.classList.remove('active'));
-            this.parentElement.classList.add('active');
-            
-            // Update UI sections
-            document.querySelectorAll('.section').forEach(section => 
-                section.classList.remove('active'));
-            domRefs.sections[sectionId].classList.add('active');
-            
-            appState.currentMode = sectionId;
-            
-            // Close sidebar on mobile after navigation
-            if (window.innerWidth <= 900) {
-                document.getElementById('sidebar').classList.remove('active');
+            sendTheaterChatMessage();
+        }
+    });
+    
+    document.getElementById('theaterMessage').addEventListener('input', () => {
+        if (!appState.isTyping) {
+            appState.isTyping = true;
+            sendTheaterTypingStatus(true);
+        }
+        
+        clearTimeout(appState.typingTimeout);
+        appState.typingTimeout = setTimeout(() => {
+            appState.isTyping = false;
+            sendTheaterTypingStatus(false);
+        }, 1000);
+    });
+
+    // Settings
+    document.getElementById('notifications-toggle').addEventListener('change', saveSettings);
+    document.getElementById('notification-sound-toggle').addEventListener('change', saveSettings);
+    
+    // Press Enter to send messages in text chat
+    document.getElementById('textMessage').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            sendChatMessage();
+        }
+    });
+    
+    // Typing detection
+    document.getElementById('textMessage').addEventListener('input', () => {
+        if (!appState.isTyping) {
+            appState.isTyping = true;
+            sendTypingStatus(true);
+        }
+        
+        clearTimeout(appState.typingTimeout);
+        appState.typingTimeout = setTimeout(() => {
+            appState.isTyping = false;
+            sendTypingStatus(false);
+        }, 1000);
+    });
+    
+    // Fullscreen controls
+    document.getElementById('exitFullscreenBtn')?.addEventListener('click', exitFullscreenVideoMode);
+    document.getElementById('fullscreenToggleBtn')?.addEventListener('click', enterFullscreenVideoMode);
+    document.getElementById('copyVideoLinkTop').addEventListener('click', () => copyLink('video'));
+    
+    // Text chat fullscreen controls
+    document.getElementById('textFullscreenToggle').addEventListener('click', enterFullscreenTextMode);
+    document.getElementById('exitTextFullscreenBtn').addEventListener('click', exitFullscreenTextMode);
+    document.getElementById('copyTextLinkTop').addEventListener('click', () => copyLink('text'));
+    
+    // Handle escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && appState.isFullscreen) {
+            if (appState.currentMode === 'video') {
+                exitFullscreenVideoMode();
+            } else if (appState.currentMode === 'text-chat') {
+                exitFullscreenTextMode();
             }
         }
+    });
+    
+    // Handle orientation changes
+    window.addEventListener('orientationchange', handleOrientationChange);
+}
 
-        // ========== THEME MANAGEMENT ========== //
-        function toggleTheme() {
-            const isDark = document.body.classList.contains('dark-mode');
-            document.body.classList.toggle('dark-mode', !isDark);
-            document.body.classList.toggle('light-mode', isDark);
-            
-            const newTheme = isDark ? 'light' : 'dark';
-            localStorage.setItem('theme', newTheme);
-            updateThemeButton(newTheme);
-        }
+function loadSettings() {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.body.className = `${savedTheme}-mode`;
+    updateThemeButton(savedTheme);
+    
+    document.getElementById('notifications-toggle').checked = 
+        localStorage.getItem('notifications') !== 'false';
+    document.getElementById('notification-sound-toggle').checked = 
+        localStorage.getItem('notificationSound') !== 'false';
+}
 
-        // ========== NOTIFICATION SYSTEM ========== //
-        function showNotification(title, message, type = 'info') {
-            if (!document.getElementById('notifications-toggle').checked) return;
+function updateThemeButton(theme) {
+    if (theme === 'dark') {
+        domRefs.themeToggleSetting.innerHTML = '<i class="fas fa-moon"></i> Switch to Light';
+    } else {
+        domRefs.themeToggleSetting.innerHTML = '<i class="fas fa-sun"></i> Switch to Dark';
+    }
+}
+
+function autoJoinRoom() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomParam = urlParams.get('room');
+    const modeParam = urlParams.get('mode');
+    
+    if (roomParam && modeParam) {
+        // Map mode to section ID
+        const sectionMap = {
+            'audio': 'audio-call',
+            'video': 'video-call',
+            'text': 'text-chat',
+            'theater': 'theater'
+        };
+        const sectionId = sectionMap[modeParam];
+        
+        if (sectionId) {
+            // Switch to the correct section
+            switchToSection(sectionId);
             
-            domRefs.notification.style.display = 'flex';
-            domRefs.notificationTitle.textContent = title;
-            domRefs.notificationMessage.textContent = message;
+            // Set the room ID in the input field
+            const inputId = `${modeParam}-room-id`;
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.value = roomParam;
+            }
             
-            // Set notification color based on type
-            domRefs.notification.style.backgroundColor = 
-                type === 'error' ? 'rgba(244, 67, 54, 0.8)' :
-                type === 'success' ? 'rgba(76, 175, 80, 0.8)' :
-                'rgba(58, 123, 213, 0.8)';
-            
+            // Join the room after a short delay
             setTimeout(() => {
-                domRefs.notification.style.display = 'none';
-            }, 3000);
+                hideSidebar();
+                joinRoom(modeParam);
+            }, 500);
+        } else {
+            console.error('Invalid mode parameter:', modeParam);
+            showNotification('Error', 'Invalid mode specified in URL', 'error');
         }
+    }
+}
 
-        // ========== STATUS UPDATES ========== //
-        function updateStatus(text, status) {
-            const statusElem = document.getElementById('connectionStatus');
-            statusElem.textContent = text;
-            statusElem.className = 'status-indicator';
+function switchToSection(sectionId) {
+    // Update navigation items
+    document.querySelectorAll('.nav-item').forEach(item => 
+        item.classList.remove('active'));
+    const navLink = document.querySelector(`.nav-link[data-section="${sectionId}"]`);
+    if (navLink) {
+        navLink.parentElement.classList.add('active');
+    }
+    
+    // Update sections
+    document.querySelectorAll('.section').forEach(section => 
+        section.classList.remove('active'));
+    const section = document.getElementById(`${sectionId}-section`);
+    if (section) {
+        section.classList.add('active');
+    }
+    
+    // Update current mode
+    appState.currentMode = sectionId;
+}
+
+// ========== SIDEBAR MANAGEMENT ========== //
+function hideSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const appContainer = document.getElementById('appContainer');
+    const body = document.body;
+    
+    if (window.innerWidth > 900) {
+        // Desktop behavior - hide sidebar
+        appContainer.classList.add('sidebar-hidden');
+        body.classList.remove('sidebar-open');
+    } else {
+        // Mobile behavior - slide out
+        sidebar.classList.remove('active');
+    }
+}
+
+function showSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const appContainer = document.getElementById('appContainer');
+    const body = document.body;
+    
+    if (window.innerWidth > 900) {
+        // Desktop behavior - show sidebar
+        appContainer.classList.remove('sidebar-hidden');
+        body.classList.add('sidebar-open');
+    } else {
+        // Mobile behavior - slide in
+        sidebar.classList.add('active');
+    }
+}
+
+// ========== FIXED NAVIGATION FUNCTION ========== //
+function handleNavigation(e) {
+    e.preventDefault();
+    const sectionId = this.getAttribute('data-section');
+    switchToSection(sectionId);
+    
+    // Close sidebar after navigation
+    document.getElementById('sidebar').classList.remove('active');
+}
+
+// ========== THEME MANAGEMENT ========== //
+function toggleTheme() {
+    const isDark = document.body.classList.contains('dark-mode');
+    document.body.classList.toggle('dark-mode', !isDark);
+    document.body.classList.toggle('light-mode', isDark);
+    
+    const newTheme = isDark ? 'light' : 'dark';
+    localStorage.setItem('theme', newTheme);
+    updateThemeButton(newTheme);
+}
+
+// ========== NOTIFICATION SYSTEM ========== //
+function showNotification(title, message, type = 'info') {
+    if (!document.getElementById('notifications-toggle').checked) return;
+    
+    domRefs.notification.style.display = 'flex';
+    domRefs.notificationTitle.textContent = title;
+    domRefs.notificationMessage.textContent = message;
+    
+    // Set notification color based on type
+    domRefs.notification.style.backgroundColor = 
+        type === 'error' ? 'rgba(244, 67, 54, 0.8)' :
+        type === 'success' ? 'rgba(76, 175, 80, 0.8)' :
+        'rgba(58, 123, 213, 0.8)';
+    
+    setTimeout(() => {
+        domRefs.notification.style.display = 'none';
+    }, 3000);
+}
+
+// ========== STATUS UPDATES ========== //
+function updateStatus(text, status) {
+    const statusElem = document.getElementById('connectionStatus');
+    statusElem.textContent = text;
+    statusElem.className = 'status-indicator';
+    
+    if (status === 'connected') {
+        statusElem.classList.add('connected');
+        statusElem.innerHTML = `<i class="fas fa-check-circle"></i> ${text}`;
+    } 
+    else if (status === 'connecting') {
+        statusElem.classList.add('connecting');
+        statusElem.innerHTML = `<i class="fas fa-sync-alt fa-spin"></i> ${text}`;
+    }
+    else if (status === 'error') {
+        statusElem.classList.add('error');
+        statusElem.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${text}`;
+    }
+    else {
+        statusElem.innerHTML = `<i class="fas fa-info-circle"></i> ${text}`;
+    }
+}
+
+// ========== TIMER MANAGEMENT ========== //
+function startTimer() {
+    appState.startTime = Date.now();
+    appState.timer = setInterval(() => {
+        const time = Date.now() - appState.startTime;
+        const minutes = Math.floor(time / 60000);
+        const seconds = Math.floor((time % 60000) / 1000);
+        const timerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        domRefs.videoCallTimer.textContent = timerText;
+        domRefs.audioCallTimer.textContent = timerText;
+        domRefs.textChatTimer.textContent = timerText;
+        domRefs.theaterTimer.textContent = timerText;
+    }, 1000);
+}
+
+function stopTimer() {
+    clearInterval(appState.timer);
+    domRefs.videoCallTimer.textContent = '00:00';
+    domRefs.audioCallTimer.textContent = '00:00';
+    domRefs.textChatTimer.textContent = '00:00';
+    domRefs.theaterTimer.textContent = '00:00';
+}
+
+// ========== MEDIA MANAGEMENT ========== //
+async function initMedia(mode) {
+    try {
+        const constraints = mode === 'video' ? 
+            { video: { facingMode: appState.currentCamera }, audio: true } : { audio: true };
+        
+        appState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        
+        if (mode === 'video') {
+            document.getElementById('video-local-video').srcObject = appState.localStream;
+            document.getElementById('videoControls').style.display = 'flex';
+            appState.isCameraEnabled = true;
             
-            if (status === 'connected') {
-                statusElem.classList.add('connected');
-                statusElem.innerHTML = `<i class="fas fa-check-circle"></i> ${text}`;
-            } 
-            else if (status === 'connecting') {
-                statusElem.classList.add('connecting');
-                statusElem.innerHTML = `<i class="fas fa-sync-alt fa-spin"></i> ${text}`;
+            // Get available cameras
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            appState.cameraDevices = devices.filter(device => device.kind === 'videoinput');
+            if (appState.cameraDevices.length > 1) {
+                document.getElementById('switchCameraBtn').style.display = 'block';
+                document.getElementById('switchCameraBtnNormal').style.display = 'block';
             }
-            else if (status === 'error') {
-                statusElem.classList.add('error');
-                statusElem.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${text}`;
-            }
-            else {
-                statusElem.innerHTML = `<i class="fas fa-info-circle"></i> ${text}`;
-            }
-        }
-
-        // ========== TIMER MANAGEMENT ========== //
-        function startTimer() {
-            appState.startTime = Date.now();
-            appState.timer = setInterval(() => {
-                const time = Date.now() - appState.startTime;
-                const minutes = Math.floor(time / 60000);
-                const seconds = Math.floor((time % 60000) / 1000);
-                const timerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                domRefs.videoCallTimer.textContent = timerText;
-                domRefs.audioCallTimer.textContent = timerText;
-                domRefs.textChatTimer.textContent = timerText;
-                domRefs.theaterTimer.textContent = timerText;
-            }, 1000);
-        }
-
-        function stopTimer() {
-            clearInterval(appState.timer);
-            domRefs.videoCallTimer.textContent = '00:00';
-            domRefs.audioCallTimer.textContent = '00:00';
-            domRefs.textChatTimer.textContent = '00:00';
-            domRefs.theaterTimer.textContent = '00:00';
-        }
-
-        // ========== MEDIA MANAGEMENT ========== //
-        async function initMedia(mode) {
-            try {
-                const constraints = mode === 'video' ? 
-                    { video: { facingMode: appState.currentCamera }, audio: true } : { audio: true };
-                
-                appState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
-                
-                if (mode === 'video') {
-                    document.getElementById('video-local-video').srcObject = appState.localStream;
-                    document.getElementById('videoControls').style.display = 'flex';
-                    appState.isCameraEnabled = true;
-                    
-                    // Get available cameras
-                    const devices = await navigator.mediaDevices.enumerateDevices();
-                    appState.cameraDevices = devices.filter(device => device.kind === 'videoinput');
-                    if (appState.cameraDevices.length > 1) {
-                        document.getElementById('switchCameraBtn').style.display = 'block';
-                        document.getElementById('switchCameraBtnNormal').style.display = 'block';
-                    }
-                } else {
-                    document.getElementById('audioControls').style.display = 'flex';
-                }
-                
-                return true;
-            } catch (err) {
-                console.error('Media access error:', err);
-                showNotification('Media Error', 
-                    `Could not access ${mode === 'video' ? 'camera/microphone' : 'microphone'}. 
-                    Please check permissions.`, 'error');
-                updateStatus('Media access error', 'error');
-                return false;
-            }
-        }
-
-        // ========== CAMERA SWITCHING ========== //
-        async function switchCamera() {
-            try {
-                // Toggle between front and back cameras
-                appState.currentCamera = appState.currentCamera === 'user' ? 'environment' : 'user';
-                
-                // Get new stream with updated constraints
-                const newStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: appState.currentCamera },
-                    audio: true
-                });
-                
-                // Stop old tracks
-                appState.localStream.getTracks().forEach(track => track.stop());
-                
-                // Update local stream
-                appState.localStream = newStream;
-                document.getElementById('video-local-video').srcObject = appState.localStream;
-                
-                // Update peer connection
-                if (appState.peerConnection) {
-                    const videoTrack = appState.localStream.getVideoTracks()[0];
-                    const audioTrack = appState.localStream.getAudioTracks()[0];
-                    const videoSender = appState.peerConnection.getSenders().find(
-                        s => s.track && s.track.kind === 'video'
-                    );
-                    const audioSender = appState.peerConnection.getSenders().find(
-                        s => s.track && s.track.kind === 'audio'
-                    );
-                    
-                    if (videoSender && videoTrack) {
-                        videoSender.replaceTrack(videoTrack);
-                    }
-                    
-                    if (audioSender && audioTrack) {
-                        audioSender.replaceTrack(audioTrack);
-                    }
-                }
-                
-                showNotification('Camera Switched', `Now using ${appState.currentCamera === 'user' ? 'front' : 'rear'} camera`, 'success');
-            } catch (err) {
-                console.error('Camera switch error:', err);
-                showNotification('Camera Error', 'Failed to switch camera', 'error');
-                updateStatus('Camera switch failed', 'error');
-            }
-        }
-
-        // ========== WEBRTC CONNECTION MANAGEMENT ========== //
-        function createPeerConnection() {
-            try {
-                const pcConfig = {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' },
-                        {
-                            urls: 'turn:openrelay.metered.ca:80',
-                            username: 'openrelayproject',
-                            credential: 'openrelayproject'
-                        },
-                        {
-                            urls: 'turn:openrelay.metered.ca:443',
-                            username: 'openrelayproject',
-                            credential: 'openrelayproject'
-                        },
-                        {
-                            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-                            username: 'openrelayproject',
-                            credential: 'openrelayproject'
-                        }
-                    ]
-                };
-                
-                appState.peerConnection = new RTCPeerConnection(pcConfig);
-                
-                // Add local stream tracks
-                if (appState.localStream) {
-                    appState.localStream.getTracks().forEach(track => {
-                        appState.peerConnection.addTrack(track, appState.localStream);
-                    });
-                }
-                
-                // Set up event handlers
-                appState.peerConnection.ontrack = handleRemoteStream;
-                appState.peerConnection.onicecandidate = handleICECandidate;
-                appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
-                appState.peerConnection.onconnectionstatechange = handleConnectionStateChange;
-                appState.peerConnection.onsignalingstatechange = handleSignalingStateChange;
-                
-                // Create a new remote stream
-                appState.remoteStream = new MediaStream();
-                
-                // Set the remote stream to the appropriate element based on mode
-                if (appState.currentMode === 'video') {
-                    document.getElementById('video-remote-video').srcObject = appState.remoteStream;
-                } else {
-                    domRefs.remoteAudio.srcObject = appState.remoteStream;
-                }
-                
-                return true;
-            } catch (err) {
-                console.error('Peer connection error:', err);
-                showNotification('Connection Error', 
-                    `Failed to create peer connection: ${err.message}`, 'error');
-                updateStatus('Connection failed', 'error');
-                return false;
-            }
-        }
-
-        function handleRemoteStream(event) {
-            console.log('Remote stream received');
-            if (!appState.remoteStream) {
-                appState.remoteStream = new MediaStream();
-            }
-            
-            // Add the track to our remote stream
-            appState.remoteStream.addTrack(event.track);
-            
-            // For video mode, hide the spinner when we get the first video track
-            if (appState.currentMode === 'video' && event.track.kind === 'video') {
-                document.getElementById('videoSpinner').style.display = 'none';
-            }
-        }
-
-        function handleICECandidate(event) {
-            if (event.candidate && appState.signalingRef) {
-                sendMessage({
-                    type: 'candidate',
-                    candidate: event.candidate.candidate,
-                    sdpMid: event.candidate.sdpMid,
-                    sdpMLineIndex: event.candidate.sdpMLineIndex
-                });
-            }
-        }
-
-        function handleICEConnectionStateChange() {
-            if (!appState.peerConnection) return;
-            const state = appState.peerConnection.iceConnectionState;
-            console.log('ICE connection state changed to: ' + state);
-            if (state === 'connected' || state === 'completed') {
-                updateStatus(`In ${appState.currentMode} call (${appState.roomId})`, 'connected');
-                playNotificationSound();
-                showNotification('Connected', 'Peer has joined the call', 'success');
-            } else if (state === 'disconnected' || state === 'failed') {
-                playNotificationSound();
-                showNotification('Disconnected', 'Peer has left the call', 'success');
-                hangup(appState.currentMode);
-                resetUI(appState.currentMode);
-            }
-        }
-
-        function handleConnectionStateChange() {
-            if (!appState.peerConnection) return;
-            const state = appState.peerConnection.connectionState;
-            console.log('Connection state changed to: ' + state);
-        }
-
-        function handleSignalingStateChange() {
-            if (!appState.peerConnection) return;
-            const state = appState.peerConnection.signalingState;
-            console.log('Signaling state changed to: ' + state);
-        }
-
-        // ========== SIGNALING ========== //
-        function initSignaling() {
-            if (appState.signalingRef) {
-                appState.signalingRef.off('child_added');
-            }
-            
-            appState.signalingRef = firebase.database().ref(`rooms/${appState.roomId}/messages`);
-            
-            appState.signalingRef.on('child_added', snapshot => {
-                const message = JSON.parse(snapshot.val());
-                console.log('Received message:', message.type);
-                
-                if (!appState.peerConnection) {
-                    if (!createPeerConnection()) return;
-                }
-                
-                switch (message.type) {
-                    case 'offer':
-                        if (!appState.isInitiator && !appState.isStarted) {
-                            handleOffer(message);
-                        }
-                        break;
-                    case 'answer':
-                        if (appState.isStarted) {
-                            appState.peerConnection.setRemoteDescription(
-                                new RTCSessionDescription(message));
-                        }
-                        break;
-                    case 'candidate':
-                        if (appState.isStarted && appState.peerConnection.remoteDescription) {
-                            const candidate = new RTCIceCandidate({
-                                candidate: message.candidate,
-                                sdpMid: message.sdpMid,
-                                sdpMLineIndex: message.sdpMLineIndex
-                            });
-                            appState.peerConnection.addIceCandidate(candidate)
-                                .catch(e => console.error('Error adding ICE candidate:', e));
-                        }
-                        break;
-                    case 'bye':
-                        if (appState.isStarted) {
-                            hangup(appState.currentMode);
-                            resetUI(appState.currentMode);
-                        }
-                        break;
-                }
-            });
-        }
-
-        async function handleOffer(offer) {
-            try {
-                if (!appState.peerConnection) {
-                    if (!createPeerConnection()) return;
-                }
-                
-                await appState.peerConnection.setRemoteDescription(
-                    new RTCSessionDescription(offer));
-                
-                // Create answer
-                const answer = await appState.peerConnection.createAnswer();
-                await appState.peerConnection.setLocalDescription(answer);
-                
-                sendMessage(answer);
-                appState.isStarted = true;
-                startTimer();
-                updateStatus(`In ${appState.currentMode} call (${appState.roomId})`, 'connected');
-                
-                if (appState.currentMode === 'video') {
-                    document.getElementById('videoSpinner').style.display = 'none';
-                }
-            } catch (err) {
-                console.error('Error handling offer:', err);
-                showNotification('Connection Error', 'Failed to handle offer: ' + err.message, 'error');
-                updateStatus('Offer handling failed', 'error');
-            }
-        }
-
-        function sendMessage(message) {
-            if (!appState.roomId) return;
-            const dbRef = firebase.database().ref(`rooms/${appState.roomId}/messages`);
-            dbRef.push(JSON.stringify(message));
-        }
-
-        // ========== ROOM MANAGEMENT ========== //
-        async function generateRoom(mode) {
-            appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-            appState.currentMode = mode;
-            
-            // Update UI - show copy button
-            document.getElementById(`copy${mode.charAt(0).toUpperCase() + mode.slice(1)}Link`).style.display = 'inline-flex';
-            
-            showNotification('Room Generated', `Room ID: ${appState.roomId}. Share with others.`, 'success');
-            updateStatus(`Room created: ${appState.roomId}`, 'connecting');
-            
-            if (mode === 'theater') {
-                // Show theater controls
-                domRefs.theaterContainer.style.display = 'block';
-                document.getElementById('endTheaterSession').style.display = 'inline-flex';
-                
-                // Initialize signaling
-                initTheaterSignaling();
-                
-                updateStatus(`In theater session (${appState.roomId})`, 'connected');
-                showNotification('Theater Started', `Created theater room: ${appState.roomId}`, 'success');
-            } else if (mode !== 'text') {
-                const mediaInitialized = await initMedia(mode);
-                if (!mediaInitialized) return;
-                
-                const peerCreated = createPeerConnection();
-                if (!peerCreated) return;
-                
-                appState.isInitiator = true;
-                initSignaling();
-                
-                try {
-                    const offer = await appState.peerConnection.createOffer();
-                    await appState.peerConnection.setLocalDescription(offer);
-                    sendMessage(offer);
-                    
-                    appState.isStarted = true;
-                    startTimer();
-                    updateStatus(`In ${mode} call (${appState.roomId})`, 'connected');
-                    showNotification('Call Started', `Connected to room: ${appState.roomId}`, 'success');
-                    
-                    // Enter fullscreen for video mode
-                    if (mode === 'video') {
-                        enterFullscreenVideoMode();
-                    }
-                } catch (err) {
-                    console.error('Error creating offer:', err);
-                    showNotification('Error', 'Failed to start call', 'error');
-                    updateStatus('Call failed', 'error');
-                }
-            } else {
-                // For text chat, initialize the chat
-                initTextChat();
-                updateStatus(`In text chat (${appState.roomId})`, 'connected');
-                showNotification('Chat Started', `Created chat room: ${appState.roomId}`, 'success');
-                document.getElementById('endTextChat').style.display = 'inline-flex';
-            }
-        }
-
-        async function joinRoom(mode) {
-            appState.roomId = document.getElementById(`${mode}-room-id`).value.trim();
-            appState.currentMode = mode;
-            
-            if (!appState.roomId) {
-                showNotification('Error', 'Please enter a room ID', 'error');
-                return;
-            }
-            
-            try {
-                if (mode === 'theater') {
-                    // Show theater controls
-                    domRefs.theaterContainer.style.display = 'block';
-                    document.getElementById('endTheaterSession').style.display = 'inline-flex';
-                    document.getElementById('copyTheaterLink').style.display = 'inline-flex';
-                    
-                    // Initialize signaling
-                    initTheaterSignaling();
-                    
-                    updateStatus(`Joined theater session (${appState.roomId})`, 'connected');
-                    showNotification('Theater Joined', `Joined theater room: ${appState.roomId}`, 'success');
-                } else if (mode !== 'text') {
-                    const mediaInitialized = await initMedia(mode);
-                    if (!mediaInitialized) return;
-                    
-                    const peerCreated = createPeerConnection();
-                    if (!peerCreated) return;
-                    
-                    if (mode === 'video') {
-                        document.getElementById('videoSpinner').style.display = 'block';
-                        document.getElementById('videoRemoteVideoContainer').style.display = 'block';
-                    }
-                    
-                    appState.isInitiator = false;
-                    initSignaling();
-                    
-                    updateStatus(`Joining ${mode} room...`, 'connecting');
-                    showNotification('Joining Room', `Connecting to room: ${appState.roomId}`);
-                    
-                    // Enter fullscreen for video mode
-                    if (mode === 'video') {
-                        enterFullscreenVideoMode();
-                    }
-                } else {
-                    // Initialize text chat
-                    initTextChat();
-                    updateStatus(`Joined text chat (${appState.roomId})`, 'connected');
-                    showNotification('Chat Joined', `Joined chat room: ${appState.roomId}`, 'success');
-                    document.getElementById('endTextChat').style.display = 'inline-flex';
-                    document.getElementById('copyTextLink').style.display = 'inline-flex';
-                }
-            } catch (err) {
-                console.error('Error joining room:', err);
-                showNotification('Connection Error', 'Failed to join room: ' + err.message, 'error');
-                updateStatus('Join room failed', 'error');
-            }
-        }
-
-        // ========== THEATER MODE FUNCTIONS ========== //
-        function loadMedia() {
-            const url = domRefs.mediaUrl.value.trim();
-            if (!url) {
-                showNotification('Error', 'Please enter a media URL', 'error');
-                return;
-            }
-            
-            // Store the URL in state
-            appState.theaterMediaUrl = url;
-            
-            // Send to other participants
-            if (appState.signalingRef) {
-                sendTheaterMessage({
-                    type: 'media',
-                    url: url
-                });
-            }
-            
-            // Update player
-            updateMediaPlayer(url);
+        } else {
+            document.getElementById('audioControls').style.display = 'flex';
         }
         
-        function updateMediaPlayer(url) {
-            let embedUrl = url;
-            
-            // Handle YouTube URLs
-            if (url.includes('youtube.com') || url.includes('youtu.be')) {
-                const videoId = getYouTubeId(url);
-                if (videoId) {
-                    embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
-                }
-            }
-            // Handle Vimeo URLs
-            else if (url.includes('vimeo.com')) {
-                const videoId = getVimeoId(url);
-                if (videoId) {
-                    embedUrl = `https://player.vimeo.com/video/${videoId}?autoplay=1`;
-                }
-            }
-            
-            // Update the player
-            domRefs.mediaPlayer.src = embedUrl;
-            appState.isMediaPlaying = true;
-            updatePlayPauseButton();
-        }
+        return true;
+    } catch (err) {
+        console.error('Media access error:', err);
+        showNotification('Media Error', 
+            `Could not access ${mode === 'video' ? 'camera/microphone' : 'microphone'}. 
+            Please check permissions.`, 'error');
+        updateStatus('Media access error', 'error');
+        return false;
+    }
+}
+
+// ========== CAMERA SWITCHING ========== //
+async function switchCamera() {
+    try {
+        // Toggle between front and back cameras
+        appState.currentCamera = appState.currentCamera === 'user' ? 'environment' : 'user';
         
-        function getYouTubeId(url) {
-            const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-            const match = url.match(regExp);
-            return (match && match[7].length === 11) ? match[7] : null;
-        }
+        // Get new stream with updated constraints
+        const newStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: appState.currentCamera },
+            audio: true
+        });
         
-        function getVimeoId(url) {
-            const regExp = /^.*(vimeo\.com\/)((channels\/[A-z]+\/)|(groups\/[A-z]+\/videos\/))?([0-9]+)/;
-            const match = url.match(regExp);
-            return match ? match[5] : null;
-        }
+        // Stop old tracks
+        appState.localStream.getTracks().forEach(track => track.stop());
         
-        function togglePlayPause() {
-            appState.isMediaPlaying = !appState.isMediaPlaying;
-            updatePlayPauseButton();
-            
-            // Send command to other participants
-            if (appState.signalingRef) {
-                sendTheaterMessage({
-                    type: 'playback',
-                    playing: appState.isMediaPlaying
-                });
-            }
-        }
+        // Update local stream
+        appState.localStream = newStream;
+        document.getElementById('video-local-video').srcObject = appState.localStream;
         
-        function updatePlayPauseButton() {
-            const icon = appState.isMediaPlaying ? 
-                '<i class="fas fa-pause"></i>' : 
-                '<i class="fas fa-play"></i>';
-            domRefs.playPauseBtn.innerHTML = icon + ' ' + (appState.isMediaPlaying ? 'Pause' : 'Play');
-        }
-        
-        function seekMedia(seconds) {
-            // This would normally control the player, but since we're using iframes,
-            // we can't directly control external players. In a real implementation, 
-            // we would need to use the respective player APIs.
-            
-            // For demo purposes, we'll show a notification
-            const action = seconds > 0 ? 'Forward' : 'Rewind';
-            showNotification('Seek', `${action} ${Math.abs(seconds)} seconds`);
-            
-            // Send command to other participants
-            if (appState.signalingRef) {
-                sendTheaterMessage({
-                    type: 'seek',
-                    seconds: seconds
-                });
-            }
-        }
-        
-        function toggleTheaterAudio() {
-            appState.theaterAudioEnabled = !appState.theaterAudioEnabled;
-            
-            // Update button
-            const icon = appState.theaterAudioEnabled ? 
-                '<i class="fas fa-microphone"></i>' : 
-                '<i class="fas fa-microphone-slash"></i>';
-            domRefs.theaterAudioToggle.innerHTML = icon;
-            
-            // In a real implementation, this would toggle the audio stream
-            showNotification('Microphone', `Microphone ${appState.theaterAudioEnabled ? 'enabled' : 'disabled'}`);
-        }
-        
-        function sendTheaterMessage(message) {
-            if (!appState.roomId) return;
-            const dbRef = firebase.database().ref(`theaterRooms/${appState.roomId}/messages`);
-            dbRef.push(JSON.stringify(message));
-        }
-        
-        function sendTheaterChatMessage() {
-            const input = domRefs.theaterMessage;
-            const message = input.value.trim();
-            
-            if (!message) {
-                showNotification('Error', 'Please enter a message', 'error');
-                return;
-            }
-            
-            if (!appState.roomId) {
-                showNotification('Error', 'No room connected', 'error');
-                return;
-            }
-            
-            try {
-                const messageData = {
-                    text: message,
-                    userId: appState.userId,
-                    userName: appState.userName,
-                    timestamp: Date.now()
-                };
-                
-                const dbRef = firebase.database().ref(`theaterRooms/${appState.roomId}/chatMessages`);
-                dbRef.push(messageData);
-                input.value = '';
-                
-            } catch (error) {
-                console.error('Error sending theater message:', error);
-                showNotification('Error', `Failed to send message: ${error.message}`, 'error');
-            }
-        }
-        
-        function sendTheaterTypingStatus(isTyping) {
-            if (!appState.roomId) return;
-            
-            const typingRef = firebase.database().ref(
-                `theaterRooms/${appState.roomId}/typing/${appState.userId}`
+        // Update peer connection
+        if (appState.peerConnection) {
+            const videoTrack = appState.localStream.getVideoTracks()[0];
+            const audioTrack = appState.localStream.getAudioTracks()[0];
+            const videoSender = appState.peerConnection.getSenders().find(
+                s => s.track && s.track.kind === 'video'
             );
-            typingRef.set(isTyping);
-        }
-        
-        function initTheaterSignaling() {
-            if (appState.signalingRef) {
-                appState.signalingRef.off('child_added');
+            const audioSender = appState.peerConnection.getSenders().find(
+                s => s.track && s.track.kind === 'audio'
+            );
+            
+            if (videoSender && videoTrack) {
+                videoSender.replaceTrack(videoTrack);
             }
             
-            appState.signalingRef = firebase.database().ref(`theaterRooms/${appState.roomId}/messages`);
-            
-            appState.signalingRef.on('child_added', snapshot => {
-                const message = JSON.parse(snapshot.val());
-                
-                switch (message.type) {
-                    case 'media':
-                        appState.theaterMediaUrl = message.url;
-                        domRefs.mediaUrl.value = message.url;
-                        updateMediaPlayer(message.url);
-                        break;
-                    case 'playback':
-                        appState.isMediaPlaying = message.playing;
-                        updatePlayPauseButton();
-                        break;
-                    case 'seek':
-                        seekMedia(message.seconds);
-                        break;
-                }
-            });
-
-            // Initialize chat
-            initTheaterChat();
+            if (audioSender && audioTrack) {
+                audioSender.replaceTrack(audioTrack);
+            }
         }
         
-        function initTheaterChat() {
-            if (!appState.roomId) return;
-            
-            const chatRef = firebase.database().ref(`theaterRooms/${appState.roomId}/chatMessages`);
-            
-            // Clear existing messages
-            domRefs.theaterChat.innerHTML = '<div class="typing-indicator" id="theaterTypingIndicator"><i class="fas fa-circle"></i><i class="fas fa-circle"></i><i class="fas fa-circle"></i></div>';
-            domRefs.theaterTypingIndicator = document.getElementById('theaterTypingIndicator');
-            
-            // Listen for new messages
-            chatRef.on('child_added', snapshot => {
-                const message = snapshot.val();
-                if (message) {
-                    addMessageToTheaterChat(message);
-                    
-                    // Play notification sound for remote messages
-                    if (message.userId !== appState.userId) {
-                        playNotificationSound();
-                    }
+        showNotification('Camera Switched', `Now using ${appState.currentCamera === 'user' ? 'front' : 'rear'} camera`, 'success');
+    } catch (err) {
+        console.error('Camera switch error:', err);
+        showNotification('Camera Error', 'Failed to switch camera', 'error');
+        updateStatus('Camera switch failed', 'error');
+    }
+}
+
+// ========== WEBRTC CONNECTION MANAGEMENT ========== //
+function createPeerConnection() {
+    try {
+        const pcConfig = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                {
+                    urls: 'turn:openrelay.metered.ca:80',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
                 }
-            });
-            
-            // Listen for typing status updates
-            const typingRef = firebase.database().ref(`theaterRooms/${appState.roomId}/typing`);
-            typingRef.on('value', snapshot => {
-                const typingData = snapshot.val();
-                if (!typingData) return;
-                
-                let someoneTyping = false;
-                for (const userId in typingData) {
-                    if (userId !== appState.userId && typingData[userId]) {
-                        someoneTyping = true;
-                        break;
-                    }
-                }
-                
-                domRefs.theaterTypingIndicator.style.display = someoneTyping ? 'block' : 'none';
+            ]
+        };
+        
+        appState.peerConnection = new RTCPeerConnection(pcConfig);
+        
+        // Add local stream tracks
+        if (appState.localStream) {
+            appState.localStream.getTracks().forEach(track => {
+                appState.peerConnection.addTrack(track, appState.localStream);
             });
         }
         
-        function addMessageToTheaterChat(message) {
-            const chat = domRefs.theaterChat;
-            
-            const messageElement = document.createElement('div');
-            const isCurrentUser = message.userId === appState.userId;
-            const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const userClass = isCurrentUser ? 'user2' : 'user1';
-            
-            messageElement.className = `chat-message ${userClass}`;
-            messageElement.innerHTML = `
-                <strong>${escapeHtml(message.userName)}</strong>
-                <div>${escapeHtml(message.text)}</div>
-                <span class="message-time">${time}</span>
-            `;
-            
-            chat.appendChild(messageElement);
-            chat.scrollTop = chat.scrollHeight;
-            domRefs.theaterTypingIndicator.style.order = '1';
+        // Set up event handlers
+        appState.peerConnection.ontrack = handleRemoteStream;
+        appState.peerConnection.onicecandidate = handleICECandidate;
+        appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
+        appState.peerConnection.onconnectionstatechange = handleConnectionStateChange;
+        appState.peerConnection.onsignalingstatechange = handleSignalingStateChange;
+        
+        // Create a new remote stream
+        appState.remoteStream = new MediaStream();
+        
+        // Set the remote stream to the appropriate element based on mode
+        if (appState.currentMode === 'video') {
+            document.getElementById('video-remote-video').srcObject = appState.remoteStream;
+        } else {
+            domRefs.remoteAudio.srcObject = appState.remoteStream;
         }
+        
+        return true;
+    } catch (err) {
+        console.error('Peer connection error:', err);
+        showNotification('Connection Error', 
+            `Failed to create peer connection: ${err.message}`, 'error');
+        updateStatus('Connection failed', 'error');
+        return false;
+    }
+}
 
-        // ========== TEXT CHAT FUNCTIONALITY ========== //
-        function initTextChat() {
-            if (!appState.roomId) {
-                showNotification('Error', 'Room ID is not set', 'error');
-                return;
-            }
+function handleRemoteStream(event) {
+    console.log('Remote stream received');
+    if (!appState.remoteStream) {
+        appState.remoteStream = new MediaStream();
+    }
+    
+    // Add the track to our remote stream
+    appState.remoteStream.addTrack(event.track);
+    
+    // For video mode, hide the spinner when we get the first video track
+    if (appState.currentMode === 'video' && event.track.kind === 'video') {
+        document.getElementById('videoSpinner').style.display = 'none';
+    }
+}
 
-            // Clean up previous chat reference
-            if (appState.textChatRef) {
-                appState.textChatRef.off('child_added');
-                appState.textChatRef.off('value');
-            }
-            
-            if (appState.participantsRef) {
-                appState.participantsRef.off();
-            }
-            
-            // Create the correct reference path
-            appState.textChatRef = firebase.database().ref(`rooms/${appState.roomId}/textMessages`);
-            console.log(`Initializing text chat for room: ${appState.roomId}`);
-            
-            // Clear existing messages
-            const chatContainer = document.getElementById('textChat');
-            chatContainer.innerHTML = '<div class="typing-indicator" id="typingIndicator"><i class="fas fa-circle"></i><i class="fas fa-circle"></i><i class="fas fa-circle"></i></div>';
-            domRefs.typingIndicator = document.getElementById('typingIndicator');
-            
-            // Initialize the textMessages node if it doesn't exist
-            appState.textChatRef.once('value').then(snapshot => {
-                if (!snapshot.exists()) {
-                    console.log('Creating textMessages node for room: ', appState.roomId);
-                    appState.textChatRef.set({
-                        messages: {},
-                        typing: {},
-                        participants: {}
-                    }).then(() => {
-                        console.log('textMessages node created successfully');
-                    }).catch(error => {
-                        console.error('Error creating textMessages node: ', error);
+function handleICECandidate(event) {
+    if (event.candidate && appState.signalingRef) {
+        sendMessage({
+            type: 'candidate',
+            candidate: event.candidate.candidate,
+            sdpMid: event.candidate.sdpMid,
+            sdpMLineIndex: event.candidate.sdpMLineIndex
+        });
+    }
+}
+
+function handleICEConnectionStateChange() {
+    if (!appState.peerConnection) return;
+    const state = appState.peerConnection.iceConnectionState;
+    console.log('ICE connection state changed to: ' + state);
+    if (state === 'connected' || state === 'completed') {
+        updateStatus(`In ${appState.currentMode} call (${appState.roomId})`, 'connected');
+        playNotificationSound();
+        showNotification('Connected', 'Peer has joined the call', 'success');
+    } 
+    else if (state === 'disconnected' || state === 'failed') {
+        playNotificationSound();
+        showNotification('Disconnected', 'Peer has left the call', 'success');
+        hangup(appState.currentMode);
+        resetUI(appState.currentMode);
+    }
+}
+
+function handleConnectionStateChange() {
+    if (!appState.peerConnection) return;
+    const state = appState.peerConnection.connectionState;
+    console.log('Connection state changed to: ' + state);
+}
+
+function handleSignalingStateChange() {
+    if (!appState.peerConnection) return;
+    const state = appState.peerConnection.signalingState;
+    console.log('Signaling state changed to: ' + state);
+}
+
+// ========== SIGNALING ========== //
+function initSignaling() {
+    if (appState.signalingRef) {
+        appState.signalingRef.off('child_added');
+    }
+    
+    appState.signalingRef = firebase.database().ref(`rooms/${appState.roomId}/messages`);
+    
+    appState.signalingRef.on('child_added', snapshot => {
+        const message = JSON.parse(snapshot.val());
+        console.log('Received message:', message.type);
+        
+        if (!appState.peerConnection) {
+            if (!createPeerConnection()) return;
+        }
+        
+        switch (message.type) {
+            case 'offer':
+                if (!appState.isInitiator && !appState.isStarted) {
+                    handleOffer(message);
+                }
+                break;
+            case 'answer':
+                if (appState.isStarted) {
+                    appState.peerConnection.setRemoteDescription(
+                        new RTCSessionDescription(message));
+                }
+                break;
+            case 'candidate':
+                if (appState.isStarted && appState.peerConnection.remoteDescription) {
+                    const candidate = new RTCIceCandidate({
+                        candidate: message.candidate,
+                        sdpMid: message.sdpMid,
+                        sdpMLineIndex: message.sdpMLineIndex
                     });
+                    appState.peerConnection.addIceCandidate(candidate)
+                        .catch(e => console.error('Error adding ICE candidate:', e));
                 }
+                break;
+            case 'bye':
+                if (appState.isStarted) {
+                    hangup(appState.currentMode);
+                    resetUI(appState.currentMode);
+                }
+                break;
+        }
+    });
+}
+
+async function handleOffer(offer) {
+    try {
+        if (!appState.peerConnection) {
+            if (!createPeerConnection()) return;
+        }
+        
+        await appState.peerConnection.setRemoteDescription(
+            new RTCSessionDescription(offer));
+        
+        // Create answer
+        const answer = await appState.peerConnection.createAnswer();
+        await appState.peerConnection.setLocalDescription(answer);
+        
+        sendMessage(answer);
+        appState.isStarted = true;
+        startTimer();
+        updateStatus(`In ${appState.currentMode} call (${appState.roomId})`, 'connected');
+        
+        if (appState.currentMode === 'video') {
+            document.getElementById('videoSpinner').style.display = 'none';
+        }
+    } catch (err) {
+        console.error('Error handling offer:', err);
+        showNotification('Connection Error', 'Failed to handle offer: ' + err.message, 'error');
+        updateStatus('Offer handling failed', 'error');
+    }
+}
+
+function sendMessage(message) {
+    if (!appState.roomId) return;
+    const dbRef = firebase.database().ref(`rooms/${appState.roomId}/messages`);
+    dbRef.push(JSON.stringify(message));
+}
+
+// ========== ROOM MANAGEMENT ========== //
+async function generateRoom(mode) {
+    appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+    appState.currentMode = mode;
+    
+    // Update UI - show copy button
+    document.getElementById(`copy${mode.charAt(0).toUpperCase() + mode.slice(1)}Link`).style.display = 'inline-flex';
+    
+    showNotification('Room Generated', `Room ID: ${appState.roomId}. Share with others.`, 'success');
+    updateStatus(`Room created: ${appState.roomId}`, 'connecting');
+    
+    if (mode === 'theater') {
+        // Show theater controls
+        domRefs.theaterContainer.style.display = 'block';
+        document.getElementById('endTheaterSession').style.display = 'inline-flex';
+        
+        // Initialize signaling
+        initTheaterSignaling();
+        
+        updateStatus(`In theater session (${appState.roomId})`, 'connected');
+        showNotification('Theater Started', `Created theater room: ${appState.roomId}`, 'success');
+    } else if (mode !== 'text') {
+        const mediaInitialized = await initMedia(mode);
+        if (!mediaInitialized) return;
+        
+        const peerCreated = createPeerConnection();
+        if (!peerCreated) return;
+        
+        appState.isInitiator = true;
+        initSignaling();
+        
+        try {
+            const offer = await appState.peerConnection.createOffer();
+            await appState.peerConnection.setLocalDescription(offer);
+            sendMessage(offer);
+            
+            appState.isStarted = true;
+            startTimer();
+            updateStatus(`In ${mode} call (${appState.roomId})`, 'connected');
+            showNotification('Call Started', `Connected to room: ${appState.roomId}`, 'success');
+            
+            // Enter fullscreen for video mode
+            if (mode === 'video') {
+                enterFullscreenVideoMode();
+            }
+        } catch (err) {
+            console.error('Error creating offer:', err);
+            showNotification('Error', 'Failed to start call', 'error');
+            updateStatus('Call failed', 'error');
+        }
+    } else {
+        // For text chat, initialize the chat
+        initTextChat();
+        updateStatus(`In text chat (${appState.roomId})`, 'connected');
+        showNotification('Chat Started', `Created chat room: ${appState.roomId}`, 'success');
+        document.getElementById('endTextChat').style.display = 'inline-flex';
+        // Enter fullscreen for text mode
+        enterFullscreenTextMode();
+    }
+}
+
+async function joinRoom(mode) {
+    appState.roomId = document.getElementById(`${mode}-room-id`).value.trim();
+    appState.currentMode = mode;
+    
+    if (!appState.roomId) {
+        showNotification('Error', 'Please enter a room ID', 'error');
+        return;
+    }
+    
+    try {
+        if (mode === 'theater') {
+            // Show theater controls
+            domRefs.theaterContainer.style.display = 'block';
+            document.getElementById('endTheaterSession').style.display = 'inline-flex';
+            document.getElementById('copyTheaterLink').style.display = 'inline-flex';
+            
+            // Initialize signaling
+            initTheaterSignaling();
+            
+            updateStatus(`Joined theater session (${appState.roomId})`, 'connected');
+            showNotification('Theater Joined', `Joined theater room: ${appState.roomId}`, 'success');
+        } else if (mode !== 'text') {
+            const mediaInitialized = await initMedia(mode);
+            if (!mediaInitialized) return;
+            
+            const peerCreated = createPeerConnection();
+            if (!peerCreated) return;
+            
+            if (mode === 'video') {
+                document.getElementById('videoSpinner').style.display = 'block';
+                document.getElementById('videoRemoteVideoContainer').style.display = 'block';
+            }
+            
+            appState.isInitiator = false;
+            initSignaling();
+            
+            updateStatus(`Joining ${mode} room...`, 'connecting');
+            showNotification('Joining Room', `Connecting to room: ${appState.roomId}`);
+            
+            // Enter fullscreen for video mode
+            if (mode === 'video') {
+                enterFullscreenVideoMode();
+            }
+        } else {
+            // Initialize text chat
+            initTextChat();
+            updateStatus(`Joined text chat (${appState.roomId})`, 'connected');
+            showNotification('Chat Joined', `Joined chat room: ${appState.roomId}`, 'success');
+            document.getElementById('endTextChat').style.display = 'inline-flex';
+            document.getElementById('copyTextLink').style.display = 'inline-flex';
+            // Enter fullscreen for text mode
+            enterFullscreenTextMode();
+        }
+    } catch (err) {
+        console.error('Error joining room:', err);
+        showNotification('Connection Error', 'Failed to join room: ' + err.message, 'error');
+        updateStatus('Join room failed', 'error');
+    }
+}
+
+// ========== THEATER MODE FUNCTIONS ========== //
+function loadMedia() {
+    const url = domRefs.mediaUrl.value.trim();
+    if (!url) {
+        showNotification('Error', 'Please enter a media URL', 'error');
+        return;
+    }
+    
+    // Store the URL in state
+    appState.theaterMediaUrl = url;
+    
+    // Send to other participants
+    if (appState.signalingRef) {
+        sendTheaterMessage({
+            type: 'media',
+            url: url
+        });
+    }
+    
+    // Update player
+    updateMediaPlayer(url);
+}
+
+function updateMediaPlayer(url) {
+    let embedUrl = url;
+    
+    // Handle YouTube URLs
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        const videoId = getYouTubeId(url);
+        if (videoId) {
+            embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
+        }
+    }
+    // Handle Vimeo URLs
+    else if (url.includes('vimeo.com')) {
+        const videoId = getVimeoId(url);
+        if (videoId) {
+            embedUrl = `https://player.vimeo.com/video/${videoId}?autoplay=1`;
+        }
+    }
+    
+    // Update the player
+    domRefs.mediaPlayer.src = embedUrl;
+    appState.isMediaPlaying = true;
+    updatePlayPauseButton();
+}
+
+function getYouTubeId(url) {
+    const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[7].length === 11) ? match[7] : null;
+}
+
+function getVimeoId(url) {
+    const regExp = /^.*(vimeo\.com\/)((channels\/[A-z]+\/)|(groups\/[A-z]+\/videos\/))?([0-9]+)/;
+    const match = url.match(regExp);
+    return match ? match[5] : null;
+}
+
+function togglePlayPause() {
+    appState.isMediaPlaying = !appState.isMediaPlaying;
+    updatePlayPauseButton();
+    
+    // Send command to other participants
+    if (appState.signalingRef) {
+        sendTheaterMessage({
+            type: 'playback',
+            playing: appState.isMediaPlaying
+        });
+    }
+}
+
+function updatePlayPauseButton() {
+    const icon = appState.isMediaPlaying ? 
+        '<i class="fas fa-pause"></i>' : 
+        '<i class="fas fa-play"></i>';
+    domRefs.playPauseBtn.innerHTML = icon + ' ' + (appState.isMediaPlaying ? 'Pause' : 'Play');
+}
+
+function seekMedia(seconds) {
+    // This would normally control the player, but since we're using iframes,
+    // we can't directly control external players. In a real implementation, 
+    // we would need to use the respective player APIs.
+    
+    // For demo purposes, we'll show a notification
+    const action = seconds > 0 ? 'Forward' : 'Rewind';
+    showNotification('Seek', `${action} ${Math.abs(seconds)} seconds`);
+    
+    // Send command to other participants
+    if (appState.signalingRef) {
+        sendTheaterMessage({
+            type: 'seek',
+            seconds: seconds
+        });
+    }
+}
+
+function toggleTheaterAudio() {
+    appState.theaterAudioEnabled = !appState.theaterAudioEnabled;
+    
+    // Update button
+    const icon = appState.theaterAudioEnabled ? 
+        '<i class="fas fa-microphone"></i>' : 
+        '<i class="fas fa-microphone-slash"></i>';
+    domRefs.theaterAudioToggle.innerHTML = icon;
+    
+    // In a real implementation, this would toggle the audio stream
+    showNotification('Microphone', `Microphone ${appState.theaterAudioEnabled ? 'enabled' : 'disabled'}`);
+}
+
+function sendTheaterMessage(message) {
+    if (!appState.roomId) return;
+    const dbRef = firebase.database().ref(`theaterRooms/${appState.roomId}/messages`);
+    dbRef.push(JSON.stringify(message));
+}
+
+function sendTheaterChatMessage() {
+    const input = domRefs.theaterMessage;
+    const message = input.value.trim();
+    
+    if (!message) {
+        showNotification('Error', 'Please enter a message', 'error');
+        return;
+    }
+    
+    if (!appState.roomId) {
+        showNotification('Error', 'No room connected', 'error');
+        return;
+    }
+    
+    try {
+        const messageData = {
+            text: message,
+            userId: appState.userId,
+            userName: appState.userName,
+            timestamp: Date.now()
+        };
+        
+        const dbRef = firebase.database().ref(`theaterRooms/${appState.roomId}/chatMessages`);
+        dbRef.push(messageData);
+        input.value = '';
+        
+    } catch (error) {
+        console.error('Error sending theater message:', error);
+        showNotification('Error', `Failed to send message: ${error.message}`, 'error');
+    }
+}
+
+function sendTheaterTypingStatus(isTyping) {
+    if (!appState.roomId) return;
+    
+    const typingRef = firebase.database().ref(
+        `theaterRooms/${appState.roomId}/typing/${appState.userId}`
+    );
+    typingRef.set(isTyping);
+}
+
+function initTheaterSignaling() {
+    if (appState.signalingRef) {
+        appState.signalingRef.off('child_added');
+    }
+    
+    appState.signalingRef = firebase.database().ref(`theaterRooms/${appState.roomId}/messages`);
+    
+    appState.signalingRef.on('child_added', snapshot => {
+        const message = JSON.parse(snapshot.val());
+        
+        switch (message.type) {
+            case 'media':
+                appState.theaterMediaUrl = message.url;
+                domRefs.mediaUrl.value = message.url;
+                updateMediaPlayer(message.url);
+                break;
+            case 'playback':
+                appState.isMediaPlaying = message.playing;
+                updatePlayPauseButton();
+                break;
+            case 'seek':
+                seekMedia(message.seconds);
+                break;
+        }
+    });
+
+    // Initialize chat
+    initTheaterChat();
+}
+
+function initTheaterChat() {
+    if (!appState.roomId) return;
+    
+    const chatRef = firebase.database().ref(`theaterRooms/${appState.roomId}/chatMessages`);
+    
+    // Clear existing messages
+    domRefs.theaterChat.innerHTML = '<div class="typing-indicator" id="theaterTypingIndicator"><i class="fas fa-circle"></i><i class="fas fa-circle"></i><i class="fas fa-circle"></i></div>';
+    domRefs.theaterTypingIndicator = document.getElementById('theaterTypingIndicator');
+    
+    // Listen for new messages
+    chatRef.on('child_added', snapshot => {
+        const message = snapshot.val();
+        if (message) {
+            addMessageToTheaterChat(message);
+            
+            // Play notification sound for remote messages
+            if (message.userId !== appState.userId) {
+                playNotificationSound();
+            }
+        }
+    });
+    
+    // Listen for typing status updates
+    const typingRef = firebase.database().ref(`theaterRooms/${appState.roomId}/typing`);
+    typingRef.on('value', snapshot => {
+        const typingData = snapshot.val();
+        if (!typingData) return;
+        
+        let someoneTyping = false;
+        for (const userId in typingData) {
+            if (userId !== appState.userId && typingData[userId]) {
+                someoneTyping = true;
+                break;
+            }
+        }
+        
+        domRefs.theaterTypingIndicator.style.display = someoneTyping ? 'block' : 'none';
+    });
+}
+
+function addMessageToTheaterChat(message) {
+    const chat = domRefs.theaterChat;
+    
+    const messageElement = document.createElement('div');
+    const isCurrentUser = message.userId === appState.userId;
+    const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const userClass = isCurrentUser ? 'user2' : 'user1';
+    
+    messageElement.className = `chat-message ${userClass}`;
+    messageElement.innerHTML = `
+        <strong>${escapeHtml(message.userName)}</strong>
+        <div>${escapeHtml(message.text)}</div>
+        <span class="message-time">${time}</span>
+    `;
+    
+    chat.appendChild(messageElement);
+    chat.scrollTop = chat.scrollHeight;
+    domRefs.theaterTypingIndicator.style.order = '1';
+}
+
+// ========== TEXT CHAT FUNCTIONALITY ========== //
+function initTextChat() {
+    if (!appState.roomId) {
+        showNotification('Error', 'Room ID is not set', 'error');
+        return;
+    }
+
+    // Clean up previous chat reference
+    if (appState.textChatRef) {
+        appState.textChatRef.off('child_added');
+        appState.textChatRef.off('value');
+    }
+    
+    if (appState.participantsRef) {
+        appState.participantsRef.off();
+    }
+    
+    // Create the correct reference path
+    appState.textChatRef = firebase.database().ref(`rooms/${appState.roomId}/textMessages`);
+    console.log(`Initializing text chat for room: ${appState.roomId}`);
+    
+    // Clear existing messages
+    const chatContainer = document.getElementById('textChat');
+    chatContainer.innerHTML = '<div class="typing-indicator" id="typingIndicator"><i class="fas fa-circle"></i><i class="fas fa-circle"></i><i class="fas fa-circle"></i></div>';
+    domRefs.typingIndicator = document.getElementById('typingIndicator');
+    
+    // Initialize the textMessages node if it doesn't exist
+    appState.textChatRef.once('value').then(snapshot => {
+        if (!snapshot.exists()) {
+            console.log('Creating textMessages node for room: ', appState.roomId);
+            appState.textChatRef.set({
+                messages: {},
+                typing: {},
+                participants: {}
+            }).then(() => {
+                console.log('textMessages node created successfully');
             }).catch(error => {
-                console.error('Error checking textMessages node: ', error);
+                console.error('Error creating textMessages node: ', error);
             });
-            
-            // Listen for new messages
-            appState.textChatRef.child('messages').on('child_added', snapshot => {
-                const message = snapshot.val();
-                console.log('New message received: ', message);
-                if (message) {
-                    addMessageToChat(message);
-                    
-                    // Play notification sound for remote messages
-                    if (message.userId !== appState.userId) {
-                        playNotificationSound();
-                    }
-                }
-            });
-            
-            // Listen for typing status updates
-            appState.textChatRef.child('typing').on('value', snapshot => {
-                const typingData = snapshot.val();
-                if (!typingData) return;
-                
-                let someoneTyping = false;
-                for (const userId in typingData) {
-                    if (userId !== appState.userId && typingData[userId]) {
-                        someoneTyping = true;
-                        break;
-                    }
-                }
-                
-                domRefs.typingIndicator.style.display = someoneTyping ? 'block' : 'none';
-            });
-            
-            // Track participants in the chat room
-            appState.participantsRef = firebase.database().ref(`rooms/${appState.roomId}/participants`);
-            
-            // Set current user as a participant
-            appState.participantsRef.child(appState.userId).set({
-                name: appState.userName,
-                joined: Date.now()
-            });
-            
-            // Remove participant when they disconnect
-            appState.participantsRef.child(appState.userId).onDisconnect().remove();
-            
-            // Listen for new participants joining
-            appState.participantsRef.on('child_added', snapshot => {
-                const participant = snapshot.val();
-                if (snapshot.key !== appState.userId) {
-                    // This is a new participant that's not the current user
-                    const joinTime = new Date(participant.joined).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    
-                    // Create system message
-                    const systemMessage = {
-                        text: `${participant.name} joined the chat`,
-                        userId: 'system',
-                        userName: 'System',
-                        timestamp: Date.now(),
-                        isSystem: true
-                    };
-                    
-                    // Add to chat
-                    addMessageToChat(systemMessage);
-                    
-                    // Play notification sound
-                    playNotificationSound();
-                    
-                    // Show notification
-                    showNotification('New Participant', `${participant.name} joined the chat`, 'success');
-                }
-            });
-            
-            // Listen for participants leaving
-            appState.participantsRef.on('child_removed', snapshot => {
-                const participant = snapshot.val();
-                if (snapshot.key !== appState.userId) {
-                    // This is a participant leaving who is not the current user
-                    const leaveTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    
-                    // Create system message
-                    const systemMessage = {
-                        text: `${participant.name} left the chat`,
-                        userId: 'system',
-                        userName: 'System',
-                        timestamp: Date.now(),
-                        isSystem: true
-                    };
-                    
-                    // Add to chat
-                    addMessageToChat(systemMessage);
-                    
-                    // Play notification sound
-                    playNotificationSound();
-                    
-                    // Show notification
-                    showNotification('Participant Left', `${participant.name} left the chat`, 'success');
-                    
-                    // Reset UI after delay
-                    setTimeout(() => {
-                        hangup('text');
-                        resetUI('text');
-                    }, 1000);
-                }
-            });
-
-            appState.textChatInitialized = true;
-            console.log('Text chat initialized successfully');
         }
-
-        function playNotificationSound() {
-            if (document.getElementById('notification-sound-toggle').checked) {
-                try {
-                    const notificationSound = document.getElementById('notificationSound');
-                    notificationSound.currentTime = 0;
-                    notificationSound.play().catch(e => {
-                        console.log('Audio play prevented:', e);
-                    });
-                } catch (e) {
-                    console.error('Error playing notification sound:', e);
-                }
+    }).catch(error => {
+        console.error('Error checking textMessages node: ', error);
+    });
+    
+    // Listen for new messages
+    appState.textChatRef.child('messages').on('child_added', snapshot => {
+        const message = snapshot.val();
+        console.log('New message received: ', message);
+        if (message) {
+            addMessageToChat(message);
+            
+            // Play notification sound for remote messages
+            if (message.userId !== appState.userId) {
+                playNotificationSound();
             }
         }
-
-        function addMessageToChat(message) {
-            const chat = document.getElementById('textChat');
-            
-            if (message.isSystem) {
-                // Create system notification element
-                const systemElement = document.createElement('div');
-                systemElement.className = 'system-message';
-                systemElement.textContent = message.text;
-                chat.appendChild(systemElement);
-            } else {
-                // Existing message display logic
-                const messageElement = document.createElement('div');
-                const isCurrentUser = message.userId === appState.userId;
-                const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                const userClass = isCurrentUser ? 'user2' : 'user1';
-                
-                messageElement.className = `chat-message ${userClass}`;
-                messageElement.innerHTML = `
-                    <strong>${escapeHtml(message.userName)}</strong>
-                    <div>${escapeHtml(message.text)}</div>
-                    <span class="message-time">${time}</span>
-                `;
-                
-                chat.appendChild(messageElement);
-            }
-            
-            chat.scrollTop = chat.scrollHeight;
-            domRefs.typingIndicator.style.order = '1';
-        }
-
-        function escapeHtml(unsafe) {
-            return unsafe
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
-
-        async function sendChatMessage() {
-            const input = document.getElementById('textMessage');
-            const message = input.value.trim();
-            
-            if (!message) {
-                showNotification('Error', 'Please enter a message', 'error');
-                return;
-            }
-            
-            if (!appState.roomId) {
-                showNotification('Error', 'No room connected', 'error');
-                return;
-            }
-            
-            if (!appState.textChatInitialized) {
-                showNotification('Error', 'Chat not initialized. Please join a room first.', 'error');
-                return;
-            }
-            
-            try {
-                const messageData = {
-                    text: message,
-                    userId: appState.userId,
-                    userName: appState.userName,
-                    timestamp: Date.now()
-                };
-                
-                // Use the correct path
-                const dbRef = firebase.database().ref(`rooms/${appState.roomId}/textMessages/messages`);
-                await dbRef.push(messageData);
-                input.value = '';
-                console.log('Message sent successfully');
-                
-            } catch (error) {
-                console.error('Error sending message:', error);
-                showNotification('Error', `Failed to send message: ${error.message}`, 'error');
+    });
+    
+    // Listen for typing status updates
+    appState.textChatRef.child('typing').on('value', snapshot => {
+        const typingData = snapshot.val();
+        if (!typingData) return;
+        
+        let someoneTyping = false;
+        for (const userId in typingData) {
+            if (userId !== appState.userId && typingData[userId]) {
+                someoneTyping = true;
+                break;
             }
         }
-
-        function sendTypingStatus(isTyping) {
-            if (!appState.roomId || !appState.textChatInitialized) return;
+        
+        domRefs.typingIndicator.style.display = someoneTyping ? 'block' : 'none';
+    });
+    
+    // Track participants in the chat room
+    appState.participantsRef = firebase.database().ref(`rooms/${appState.roomId}/participants`);
+    
+    // Set current user as a participant
+    appState.participantsRef.child(appState.userId).set({
+        name: appState.userName,
+        joined: Date.now()
+    });
+    
+    // Remove participant when they disconnect
+    appState.participantsRef.child(appState.userId).onDisconnect().remove();
+    
+    // Listen for new participants joining
+    appState.participantsRef.on('child_added', snapshot => {
+        const participant = snapshot.val();
+        if (snapshot.key !== appState.userId) {
+            // This is a new participant that's not the current user
+            const joinTime = new Date(participant.joined).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
-            const typingRef = firebase.database().ref(
-                `rooms/${appState.roomId}/textMessages/typing/${appState.userId}`
-            );
-            typingRef.set(isTyping);
-        }
-
-        // ========== CALL CONTROLS ========== //
-        function hangup(mode) {
-            if (mode === 'theater') {
-                // Hide theater controls
-                domRefs.theaterContainer.style.display = 'none';
-                document.getElementById('endTheaterSession').style.display = 'none';
-                document.getElementById('copyTheaterLink').style.display = 'none';
-                
-                // Reset media player
-                domRefs.mediaPlayer.src = '';
-                domRefs.mediaUrl.value = '';
-                
-                if (appState.signalingRef) {
-                    appState.signalingRef.off('child_added');
-                    appState.signalingRef = null;
-                }
-                
-                updateStatus('Ready to connect', 'disconnected');
-                showNotification('Disconnected', 'Theater session ended');
-            } else if (mode !== 'text') {
-                if (appState.peerConnection) {
-                    appState.peerConnection.close();
-                    appState.peerConnection = null;
-                }
-                
-                if (appState.localStream) {
-                    appState.localStream.getTracks().forEach(track => track.stop());
-                    appState.localStream = null;
-                }
-                
-                if (appState.remoteStream) {
-                    appState.remoteStream.getTracks().forEach(track => track.stop());
-                    appState.remoteStream = null;
-                }
-                
-                if (mode === 'video') {
-                    document.getElementById('video-remote-video').srcObject = null;
-                    document.getElementById('video-local-video').srcObject = null;
-                    document.getElementById('videoSpinner').style.display = 'none';
-                    document.getElementById('switchCameraBtn').style.display = 'none';
-                    document.getElementById('switchCameraBtnNormal').style.display = 'none';
-                    
-                    // Exit fullscreen for video mode
-                    if (appState.isFullscreen) {
-                        exitFullscreenVideoMode();
-                    }
-                } else {
-                    domRefs.remoteAudio.srcObject = null;
-                }
-                
-                stopTimer();
-                document.getElementById(`${mode}Controls`).style.display = 'none';
-                
-                if (appState.roomId) {
-                    sendMessage({ type: 'bye' });
-                }
-            } else {
-                // For text chat, just clean up
-                if (appState.textChatRef) {
-                    appState.textChatRef.off('child_added');
-                    appState.textChatRef.off('value');
-                    appState.textChatRef = null;
-                }
-                
-                if (appState.participantsRef) {
-                    // Remove current user from participants
-                    appState.participantsRef.child(appState.userId).remove();
-                    // Remove listeners
-                    appState.participantsRef.off();
-                    appState.participantsRef = null;
-                }
-                
-                appState.textChatInitialized = false;
-                
-                // Clear chat messages
-                const chatContainer = document.getElementById('textChat');
-                chatContainer.innerHTML = '';
-                document.getElementById('endTextChat').style.display = 'none';
-                
-                // Exit fullscreen text mode if active
-                if (appState.isFullscreen) {
-                    exitFullscreenTextMode();
-                }
-            }
+            // Create system message
+            const systemMessage = {
+                text: `${participant.name} joined the chat`,
+                userId: 'system',
+                userName: 'System',
+                timestamp: Date.now(),
+                isSystem: true
+            };
             
-            document.getElementById(`copy${mode.charAt(0).toUpperCase() + mode.slice(1)}Link`).style.display = 'none';
+            // Add to chat
+            addMessageToChat(systemMessage);
             
-            updateStatus('Ready to connect', 'disconnected');
-            showNotification('Disconnected', `${mode} session ended`);
-            
-            if (appState.signalingRef) {
-                appState.signalingRef.off('child_added');
-                appState.signalingRef = null;
-            }
-            
-            appState.isStarted = false;
-            appState.roomId = null;
-        }
-
-        function resetUI(mode) {
-            // Clear room ID
-            document.getElementById(`${mode}-room-id`).value = '';
-            
-            // Reset call timer
-            stopTimer();
-            
-            // Reset visual elements
-            if (mode === 'audio') {
-                // Reset audio controls
-                document.getElementById('audioControls').style.display = 'none';
-            }
-            else if (mode === 'video') {
-                // Hide video controls
-                document.getElementById('videoControls').style.display = 'none';
-                document.getElementById('switchCameraBtn').style.display = 'none';
-                
-                // Reset video elements
-                document.getElementById('video-remote-video').srcObject = null;
-                document.getElementById('video-local-video').srcObject = null;
-                document.getElementById('videoSpinner').style.display = 'none';
-                document.getElementById('videoRemoteVideoContainer').style.display = 'none';
-                
-                // Show placeholder again
-                document.querySelector('#video-call-section .placeholder-animation').style.display = 'flex';
-            }
-            else if (mode === 'text') {
-                // Clear chat messages
-                document.getElementById('textChat').innerHTML = '';
-                document.getElementById('textMessage').value = '';
-                
-                // Hide chat container
-                document.querySelector('#text-chat-section .text-chat-container').style.display = 'none';
-                
-                // Show placeholder again
-                document.querySelector('#text-chat-section .placeholder-animation').style.display = 'flex';
-            }
-            else if (mode === 'theater') {
-                // Clear media player and URL
-                domRefs.mediaPlayer.src = '';
-                domRefs.mediaUrl.value = '';
-                domRefs.theaterChat.innerHTML = '';
-                domRefs.theaterMessage.value = '';
-                
-                // Hide theater container
-                document.getElementById('theaterContainer').style.display = 'none';
-                
-                // Show placeholder again
-                document.querySelector('#theater-section .placeholder-animation').style.display = 'flex';
-            }
-            
-            // Show sidebar again
-            showSidebar();
+            // Play notification sound
+            playNotificationSound();
             
             // Show notification
-            showNotification('Session Ended', 'Returned to initial state', 'success');
+            showNotification('New Participant', `${participant.name} joined the chat`, 'success');
         }
+    });
+    
+    // Listen for participants leaving
+    appState.participantsRef.on('child_removed', snapshot => {
+        const participant = snapshot.val();
+        if (snapshot.key !== appState.userId) {
+            // This is a participant leaving who is not the current user
+            const leaveTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            // Create system message
+            const systemMessage = {
+                text: `${participant.name} left the chat`,
+                userId: 'system',
+                userName: 'System',
+                timestamp: Date.now(),
+                isSystem: true
+            };
+            
+            // Add to chat
+            addMessageToChat(systemMessage);
+            
+            // Play notification sound
+            playNotificationSound();
+            
+            // Show notification
+            showNotification('Participant Left', `${participant.name} left the chat`, 'success');
+            
+            // Reset UI after delay
+            setTimeout(() => {
+                hangup('text');
+                resetUI('text');
+            }, 1000);
+        }
+    });
 
-        function toggleVideo() {
-            if (appState.localStream) {
-                const videoTrack = appState.localStream.getVideoTracks()[0];
-                if (videoTrack) {
-                    videoTrack.enabled = !videoTrack.enabled;
-                    appState.isCameraEnabled = videoTrack.enabled;
-                    
-                    // Update button
-                    const button = document.getElementById('videoVideoToggle');
-                    const icon = videoTrack.enabled ? 
-                        '<i class="fas fa-video"></i>' : 
-                        '<i class="fas fa-video-slash"></i>';
-                    button.innerHTML = icon;
-                }
-            }
-        }
+    appState.textChatInitialized = true;
+    console.log('Text chat initialized successfully');
+}
 
-        function toggleAudio(mode) {
-            if (appState.localStream) {
-                const audioTrack = appState.localStream.getAudioTracks()[0];
-                if (audioTrack) {
-                    audioTrack.enabled = !audioTrack.enabled;
-                    
-                    // Update button
-                    const button = document.getElementById(`${mode}AudioToggle`);
-                    const icon = audioTrack.enabled ? 
-                        '<i class="fas fa-microphone"></i>' : 
-                        '<i class="fas fa-microphone-slash"></i>';
-                    button.innerHTML = icon;
-                }
-            }
-        }
-
-        // ========== FULLSCREEN VIDEO MODE ========== //
-        function enterFullscreenVideoMode() {
-            document.body.classList.add('fullscreen-video-mode');
-            domRefs.topControlsContainer.style.display = 'flex';
-            appState.isFullscreen = true;
-            
-            // Hide mobile menu toggle in fullscreen
-            document.getElementById('mobileMenuToggle').style.display = 'none';
-            
-            // Adjust video elements for fullscreen
-            const remoteVideo = document.getElementById('video-remote-video');
-            const localVideo = document.getElementById('video-local-video');
-            
-            if (remoteVideo) {
-                remoteVideo.style.objectFit = 'cover';
-            }
-            
-            if (localVideo) {
-                localVideo.style.width = '120px';
-                localVideo.style.height = '90px';
-                localVideo.style.bottom = '100px';
-                localVideo.style.right = '20px';
-            }
-            
-            // Hide spinner if visible
-            document.getElementById('videoSpinner').style.display = 'none';
-            
-            // Hide room controls
-            document.getElementById('video-room-id').style.display = 'none';
-            document.getElementById('generateVideoRoom').style.display = 'none';
-            document.getElementById('joinVideoRoom').style.display = 'none';
-            document.getElementById('copyVideoLink').style.display = 'none';
-            
-            // Hide placeholder animation
-            document.querySelector('#video-call-section .placeholder-animation').style.display = 'none';
-        }
-        
-        function exitFullscreenVideoMode() {
-            document.body.classList.remove('fullscreen-video-mode');
-            domRefs.topControlsContainer.style.display = 'none';
-            appState.isFullscreen = false;
-            
-            // Show mobile menu toggle if on mobile
-            if (window.innerWidth <= 900) {
-                document.getElementById('mobileMenuToggle').style.display = 'flex';
-            }
-            
-            // Reset video elements
-            const remoteVideo = document.getElementById('video-remote-video');
-            const localVideo = document.getElementById('video-local-video');
-            
-            if (remoteVideo) {
-                remoteVideo.style.objectFit = 'cover';
-            }
-            
-            if (localVideo) {
-                localVideo.style.width = '80px';
-                localVideo.style.height = '60px';
-                localVideo.style.bottom = '12px';
-                localVideo.style.right = '12px';
-            }
-            
-            // Show room controls
-            document.getElementById('video-room-id').style.display = 'block';
-            document.getElementById('generateVideoRoom').style.display = 'inline-flex';
-            document.getElementById('joinVideoRoom').style.display = 'inline-flex';
-            document.getElementById('copyVideoLink').style.display = 'inline-flex';
-        }
-        
-        // ========== FULLSCREEN TEXT MODE ========== //
-        function enterFullscreenTextMode() {
-            document.body.classList.add('fullscreen-text-mode');
-            domRefs.textControls.style.display = 'flex';
-            appState.isFullscreen = true;
-            
-            // Hide mobile menu toggle in fullscreen
-            document.getElementById('mobileMenuToggle').style.display = 'none';
-            
-            // Hide the fullscreen toggle button
-            document.getElementById('textFullscreenToggle').style.display = 'none';
-            
-            // Expand the chat container
-            const chatContainer = document.getElementById('textChat');
-            chatContainer.style.height = 'calc(100vh - 120px)';
-            
-            // Hide room controls
-            document.getElementById('text-room-id').style.display = 'none';
-            document.getElementById('generateTextRoom').style.display = 'none';
-            document.getElementById('joinTextRoom').style.display = 'none';
-            document.getElementById('copyTextLink').style.display = 'none';
-            document.getElementById('endTextChat').style.display = 'none';
-        }
-        
-        function exitFullscreenTextMode() {
-            document.body.classList.remove('fullscreen-text-mode');
-            domRefs.textControls.style.display = 'none';
-            appState.isFullscreen = false;
-            
-            // Show mobile menu toggle if on mobile
-            if (window.innerWidth <= 900) {
-                document.getElementById('mobileMenuToggle').style.display = 'flex';
-            }
-            
-            // Show the fullscreen toggle button
-            document.getElementById('textFullscreenToggle').style.display = 'block';
-            
-            // Reset chat container height
-            const chatContainer = document.getElementById('textChat');
-            chatContainer.style.height = '180px';
-            
-            // Show room controls
-            document.getElementById('text-room-id').style.display = 'block';
-            document.getElementById('generateTextRoom').style.display = 'inline-flex';
-            document.getElementById('joinTextRoom').style.display = 'inline-flex';
-            document.getElementById('copyTextLink').style.display = 'inline-flex';
-            document.getElementById('endTextChat').style.display = 'inline-flex';
-        }
-        
-        function handleOrientationChange() {
-            if (appState.isFullscreen) {
-                // Small delay to allow orientation to complete
-                setTimeout(() => {
-                    if (appState.currentMode === 'video') {
-                        // Force video element resize
-                        const remoteVideo = document.getElementById('video-remote-video');
-                        if (remoteVideo) {
-                            remoteVideo.style.height = 'auto';
-                            setTimeout(() => {
-                                remoteVideo.style.height = '100%';
-                            }, 50);
-                        }
-                    }
-                    else if (appState.currentMode === 'text-chat') {
-                        // Adjust chat container height
-                        const chatContainer = document.getElementById('textChat');
-                        if (chatContainer) {
-                            chatContainer.style.height = 'calc(100vh - 120px)';
-                        }
-                    }
-                }, 300);
-            }
-        }
-
-        // ========== UTILITY FUNCTIONS ========== //
-        function copyLink(mode) {
-            const baseUrl = window.location.origin + window.location.pathname;
-            const roomLink = `${baseUrl}?room=${appState.roomId}&mode=${mode}`;
-            
-            navigator.clipboard.writeText(roomLink).then(() => {
-                showNotification('Copied', 'Room link copied to clipboard', 'success');
-            }).catch(err => {
-                console.error('Copy failed:', err);
-                showNotification('Error', 'Failed to copy link', 'error');
+function playNotificationSound() {
+    if (document.getElementById('notification-sound-toggle').checked) {
+        try {
+            const notificationSound = document.getElementById('notificationSound');
+            notificationSound.currentTime = 0;
+            notificationSound.play().catch(e => {
+                console.log('Audio play prevented:', e);
             });
+        } catch (e) {
+            console.error('Error playing notification sound:', e);
         }
+    }
+}
 
-        function saveSettings() {
-            localStorage.setItem('notifications', 
-                document.getElementById('notifications-toggle').checked);
-            localStorage.setItem('notificationSound', 
-                document.getElementById('notification-sound-toggle').checked);
+function addMessageToChat(message) {
+    const chat = document.getElementById('textChat');
+    
+    if (message.isSystem) {
+        // Create system notification element
+        const systemElement = document.createElement('div');
+        systemElement.className = 'system-message';
+        systemElement.textContent = message.text;
+        chat.appendChild(systemElement);
+    } else {
+        // Existing message display logic
+        const messageElement = document.createElement('div');
+        const isCurrentUser = message.userId === appState.userId;
+        const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const userClass = isCurrentUser ? 'user2' : 'user1';
+        
+        messageElement.className = `chat-message ${userClass}`;
+        
+        // ALWAYS include the timestamp in the HTML
+        messageElement.innerHTML = `
+            <strong>${escapeHtml(message.userName)}</strong>
+            <div>${escapeHtml(message.text)}</div>
+            <span class="message-time">${time}</span>
+        `;
+        
+        chat.appendChild(messageElement);
+    }
+    
+    chat.scrollTop = chat.scrollHeight;
+    domRefs.typingIndicator.style.order = '1';
+    
+    // ADD THIS - Hide timestamps in fullscreen mode
+    updateTimestampVisibility();
+}
+// Add this new function to hide/show timestamps based on fullscreen state
+function updateTimestampVisibility() {
+    const isFullscreen = document.body.classList.contains('fullscreen-text-mode');
+    const timestamps = document.querySelectorAll('.message-time');
+    
+    timestamps.forEach(timestamp => {
+        timestamp.style.display = isFullscreen ? 'none' : 'block';
+    });
+}
+
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+async function sendChatMessage() {
+    const input = document.getElementById('textMessage');
+    const message = input.value.trim();
+    
+    if (!message) {
+        showNotification('Error', 'Please enter a message', 'error');
+        return;
+    }
+    
+    if (!appState.roomId) {
+        showNotification('Error', 'No room connected', 'error');
+        return;
+    }
+    
+    if (!appState.textChatInitialized) {
+        showNotification('Error', 'Chat not initialized. Please join a room first.', 'error');
+        return;
+    }
+    
+    try {
+        const messageData = {
+            text: message,
+            userId: appState.userId,
+            userName: appState.userName,
+            timestamp: Date.now()
+        };
+        
+        // Use the correct path
+        const dbRef = firebase.database().ref(`rooms/${appState.roomId}/textMessages/messages`);
+        await dbRef.push(messageData);
+        input.value = '';
+        console.log('Message sent successfully');
+        
+    } catch (error) {
+        console.error('Error sending message:', error);
+        showNotification('Error', `Failed to send message: ${error.message}`, 'error');
+    }
+}
+
+function sendTypingStatus(isTyping) {
+    if (!appState.roomId || !appState.textChatInitialized) return;
+    
+    const typingRef = firebase.database().ref(
+        `rooms/${appState.roomId}/textMessages/typing/${appState.userId}`
+    );
+    typingRef.set(isTyping);
+}
+
+// ========== CALL CONTROLS ========== //
+function hangup(mode) {
+    if (mode === 'theater') {
+        // Hide theater controls
+        domRefs.theaterContainer.style.display = 'none';
+        document.getElementById('endTheaterSession').style.display = 'none';
+        document.getElementById('copyTheaterLink').style.display = 'none';
+        
+        // Reset media player
+        domRefs.mediaPlayer.src = '';
+        domRefs.mediaUrl.value = '';
+        
+        if (appState.signalingRef) {
+            appState.signalingRef.off('child_added');
+            appState.signalingRef = null;
         }
         
-        function adjustForMobile() {
-            if (window.innerWidth <= 900) {
-                // Mobile adjustments
-                document.getElementById('mobileMenuToggle').style.display = 'flex';
-                document.getElementById('desktopMenuToggle').style.display = 'none';
-                document.getElementById('sidebar').classList.remove('active');
-                document.body.classList.remove('sidebar-open');
-            } else {
-                // Desktop adjustments
-                document.getElementById('mobileMenuToggle').style.display = 'none';
-                document.getElementById('desktopMenuToggle').style.display = 'flex';
-                document.getElementById('sidebar').style.display = 'flex';
-                
-                // Show sidebar by default on desktop
-                document.getElementById('appContainer').classList.remove('sidebar-hidden');
+        updateStatus('Ready to connect', 'disconnected');
+        showNotification('Disconnected', 'Theater session ended');
+    } else if (mode !== 'text') {
+        if (appState.peerConnection) {
+            appState.peerConnection.close();
+            appState.peerConnection = null;
+        }
+        
+        if (appState.localStream) {
+            appState.localStream.getTracks().forEach(track => track.stop());
+            appState.localStream = null;
+        }
+        
+        if (appState.remoteStream) {
+            appState.remoteStream.getTracks().forEach(track => track.stop());
+            appState.remoteStream = null;
+        }
+        
+        if (mode === 'video') {
+            document.getElementById('video-remote-video').srcObject = null;
+            document.getElementById('video-local-video').srcObject = null;
+            document.getElementById('videoSpinner').style.display = 'none';
+            document.getElementById('switchCameraBtn').style.display = 'none';
+            document.getElementById('switchCameraBtnNormal').style.display = 'none';
+            
+            // Exit fullscreen for video mode
+            if (appState.isFullscreen) {
+                exitFullscreenVideoMode();
             }
+        } else {
+            domRefs.remoteAudio.srcObject = null;
         }
         
-        // Run on resize
-        window.addEventListener('resize', adjustForMobile);
-    </script>
+        stopTimer();
+        document.getElementById(`${mode}Controls`).style.display = 'none';
+        
+        if (appState.roomId) {
+            sendMessage({ type: 'bye' });
+        }
+    } else {
+        // For text chat, just clean up
+        if (appState.textChatRef) {
+            appState.textChatRef.off('child_added');
+            appState.textChatRef.off('value');
+            appState.textChatRef = null;
+        }
+        
+        if (appState.participantsRef) {
+            // Remove current user from participants
+            appState.participantsRef.child(appState.userId).remove();
+            // Remove listeners
+            appState.participantsRef.off();
+            appState.participantsRef = null;
+        }
+        
+        appState.textChatInitialized = false;
+        
+        // Clear chat messages and hide both hangup buttons
+        const chatContainer = document.getElementById('textChat');
+        chatContainer.innerHTML = '';
+        document.getElementById('endTextChat').style.display = 'none';
+        document.getElementById('endTextChatFullscreen').style.display = 'none';
+        
+        // Exit fullscreen text mode if active
+        if (appState.isFullscreen) {
+            exitFullscreenTextMode();
+        }
+    }
+    
+    document.getElementById(`copy${mode.charAt(0).toUpperCase() + mode.slice(1)}Link`).style.display = 'none';
+    
+    updateStatus('Ready to connect', 'disconnected');
+    showNotification('Disconnected', `${mode} session ended`);
+    
+    if (appState.signalingRef) {
+        appState.signalingRef.off('child_added');
+        appState.signalingRef = null;
+    }
+    
+    appState.isStarted = false;
+    appState.roomId = null;
+}
+
+function resetUI(mode) {
+    // Clear room ID
+    document.getElementById(`${mode}-room-id`).value = '';
+    
+    // Reset call timer
+    stopTimer();
+    
+    // Reset visual elements
+    if (mode === 'audio') {
+        // Reset audio controls
+        document.getElementById('audioControls').style.display = 'none';
+    }
+    else if (mode === 'video') {
+        // Hide video controls
+        document.getElementById('videoControls').style.display = 'none';
+        document.getElementById('switchCameraBtn').style.display = 'none';
+        
+        // Reset video elements
+        document.getElementById('video-remote-video').srcObject = null;
+        document.getElementById('video-local-video').srcObject = null;
+        document.getElementById('videoSpinner').style.display = 'none';
+        document.getElementById('videoRemoteVideoContainer').style.display = 'none';
+        
+        // Show placeholder again
+        document.querySelector('#video-call-section .placeholder-animation').style.display = 'flex';
+    }
+    else if (mode === 'text') {
+        // Clear chat messages
+        document.getElementById('textChat').innerHTML = '';
+        document.getElementById('textMessage').value = '';
+        
+        // Hide chat container
+        document.querySelector('#text-chat-section .text-chat-container').style.display = 'none';
+        
+        // Ensure both hangup buttons are hidden
+        document.getElementById('endTextChat').style.display = 'none';
+        document.getElementById('endTextChatFullscreen').style.display = 'none';
+        
+        // Show placeholder again
+        document.querySelector('#text-chat-section .placeholder-animation').style.display = 'flex';
+    }
+    else if (mode === 'theater') {
+        // Clear media player and URL
+        domRefs.mediaPlayer.src = '';
+        domRefs.mediaUrl.value = '';
+        domRefs.theaterChat.innerHTML = '';
+        domRefs.theaterMessage.value = '';
+        
+        // Hide theater container
+        document.getElementById('theaterContainer').style.display = 'none';
+        
+        // Show placeholder again
+        document.querySelector('#theater-section .placeholder-animation').style.display = 'flex';
+    }
+    
+    // Show sidebar again
+    showSidebar();
+    
+    // Show notification
+    showNotification('Session Ended', 'Returned to initial state', 'success');
+}
+
+function toggleVideo() {
+    if (appState.localStream) {
+        const videoTrack = appState.localStream.getVideoTracks()[0];
+        if (videoTrack) {
+            videoTrack.enabled = !videoTrack.enabled;
+            appState.isCameraEnabled = videoTrack.enabled;
+            
+            // Update button
+            const button = document.getElementById('videoVideoToggle');
+            const icon = videoTrack.enabled ? 
+                '<i class="fas fa-video"></i>' : 
+                '<i class="fas fa-video-slash"></i>';
+            button.innerHTML = icon;
+        }
+    }
+}
+
+function toggleAudio(mode) {
+    if (appState.localStream) {
+        const audioTrack = appState.localStream.getAudioTracks()[0];
+        if (audioTrack) {
+            audioTrack.enabled = !audioTrack.enabled;
+            
+            // Update button
+            const button = document.getElementById(`${mode}AudioToggle`);
+            const icon = audioTrack.enabled ? 
+                '<i class="fas fa-microphone"></i>' : 
+                '<i class="fas fa-microphone-slash"></i>';
+            button.innerHTML = icon;
+        }
+    }
+}
+
+// ========== FULLSCREEN VIDEO MODE ========== //
+function enterFullscreenVideoMode() {
+    document.body.classList.add('fullscreen-video-mode');
+    domRefs.topControlsContainer.style.display = 'flex';
+    appState.isFullscreen = true;
+    
+    // Hide mobile menu toggle in fullscreen
+    document.getElementById('mobileMenuToggle').style.display = 'none';
+    
+    // Adjust video elements for fullscreen
+    const remoteVideo = document.getElementById('video-remote-video');
+    const localVideo = document.getElementById('video-local-video');
+    
+    if (remoteVideo) {
+        remoteVideo.style.objectFit = 'cover';
+    }
+    
+    if (localVideo) {
+        localVideo.style.width = '120px';
+        localVideo.style.height = '90px';
+        localVideo.style.bottom = '100px';
+        localVideo.style.right = '20px';
+    }
+    
+    // Hide spinner if visible
+    document.getElementById('videoSpinner').style.display = 'none';
+    
+    // Hide room controls
+    document.getElementById('video-room-id').style.display = 'none';
+    document.getElementById('generateVideoRoom').style.display = 'none';
+    document.getElementById('joinVideoRoom').style.display = 'none';
+    document.getElementById('copyVideoLink').style.display = 'none';
+    
+    // Hide placeholder animation
+    document.querySelector('#video-call-section .placeholder-animation').style.display = 'none';
+}
+
+function exitFullscreenVideoMode() {
+    document.body.classList.remove('fullscreen-video-mode');
+    domRefs.topControlsContainer.style.display = 'none';
+    appState.isFullscreen = false;
+    
+    // Show mobile menu toggle if on mobile
+    if (window.innerWidth <= 900) {
+        document.getElementById('mobileMenuToggle').style.display = 'flex';
+    }
+    
+    // Reset video elements
+    const remoteVideo = document.getElementById('video-remote-video');
+    const localVideo = document.getElementById('video-local-video');
+    
+    if (remoteVideo) {
+        remoteVideo.style.objectFit = 'cover';
+    }
+    
+    if (localVideo) {
+        localVideo.style.width = '80px';
+        localVideo.style.height = '60px';
+        localVideo.style.bottom = '12px';
+        localVideo.style.right = '12px';
+    }
+    
+    // Show room controls
+    document.getElementById('video-room-id').style.display = 'block';
+    document.getElementById('generateVideoRoom').style.display = 'inline-flex';
+    document.getElementById('joinVideoRoom').style.display = 'inline-flex';
+    document.getElementById('copyVideoLink').style.display = 'inline-flex';
+}
+
+// ========== FULLSCREEN TEXT MODE ========== //
+function enterFullscreenTextMode() {
+    document.body.classList.add('fullscreen-text-mode');
+    domRefs.textControls.style.display = 'flex';
+    appState.isFullscreen = true;
+    updateTimestampVisibility();
+    
+    // Hide mobile menu toggle in fullscreen
+    document.getElementById('mobileMenuToggle').style.display = 'none';
+    
+    // Show the chat container
+    document.querySelector('.text-chat-container').style.display = 'flex';
+    
+    // Expand the chat container
+    const chatContainer = document.getElementById('textChat');
+    chatContainer.style.height = 'calc(100vh - 180px)';
+    
+    // Hide room controls
+    document.getElementById('text-room-id').style.display = 'none';
+    document.getElementById('generateTextRoom').style.display = 'none';
+    document.getElementById('joinTextRoom').style.display = 'none';
+    document.getElementById('copyTextLink').style.display = 'none';
+    document.getElementById('endTextChat').style.display = 'none';
+    
+    // ADD THIS LINE - Show fullscreen hangup button
+    document.getElementById('endTextChatFullscreen').style.display = 'inline-flex'; // FIX
+    
+    // Hide placeholder
+    document.querySelector('#text-chat-section .placeholder-animation').style.display = 'none';
+}
+
+function exitFullscreenTextMode() {
+    document.body.classList.remove('fullscreen-text-mode');
+    domRefs.textControls.style.display = 'none';
+    appState.isFullscreen = false;
+    
+    
+    // Show mobile menu toggle if on mobile
+    if (window.innerWidth <= 900) {
+        document.getElementById('mobileMenuToggle').style.display = 'flex';
+    }
+    
+    // Show the fullscreen toggle button
+    document.getElementById('textFullscreenToggle').style.display = 'block';
+    
+    // Reset chat container height
+    const chatContainer = document.getElementById('textChat');
+    chatContainer.style.height = '180px';
+    
+    // Show room controls
+    document.getElementById('text-room-id').style.display = 'block';
+    document.getElementById('generateTextRoom').style.display = 'inline-flex';
+    document.getElementById('joinTextRoom').style.display = 'inline-flex';
+    document.getElementById('copyTextLink').style.display = 'inline-flex';
+    document.getElementById('endTextChat').style.display = 'inline-flex';
+    
+    // Hide the fullscreen hangup button
+    document.getElementById('endTextChatFullscreen').style.display = 'none';
+    
+    // Show placeholder again
+    document.querySelector('#text-chat-section .placeholder-animation').style.display = 'flex';
+}
+
+function handleOrientationChange() {
+    if (appState.isFullscreen) {
+        // Small delay to allow orientation to complete
+        setTimeout(() => {
+            if (appState.currentMode === 'video') {
+                // Force video element resize
+                const remoteVideo = document.getElementById('video-remote-video');
+                if (remoteVideo) {
+                    remoteVideo.style.height = 'auto';
+                    setTimeout(() => {
+                        remoteVideo.style.height = '100%';
+                    }, 50);
+                }
+            }
+            else if (appState.currentMode === 'text-chat') {
+                // Adjust chat container height
+                const chatContainer = document.getElementById('textChat');
+                if (chatContainer) {
+                    chatContainer.style.height = 'calc(100vh - 180px)';
+                }
+            }
+        }, 300);
+    }
+}
+
+// ========== UTILITY FUNCTIONS ========== //
+function copyLink(mode) {
+    const baseUrl = window.location.origin + window.location.pathname;
+    const roomLink = `${baseUrl}?room=${appState.roomId}&mode=${mode}`;
+    
+    navigator.clipboard.writeText(roomLink).then(() => {
+        showNotification('Copied', 'Room link copied to clipboard', 'success');
+    }).catch(err => {
+        console.error('Copy failed:', err);
+        showNotification('Error', 'Failed to copy link', 'error');
+    });
+}
+
+function saveSettings() {
+    localStorage.setItem('notifications', 
+        document.getElementById('notifications-toggle').checked);
+    localStorage.setItem('notificationSound', 
+        document.getElementById('notification-sound-toggle').checked);
+}
+
+function adjustForMobile() {
+    if (window.innerWidth <= 900) {
+        // Mobile adjustments
+        document.getElementById('mobileMenuToggle').style.display = 'flex';
+        document.getElementById('desktopMenuToggle').style.display = 'none';
+        document.getElementById('sidebar').classList.remove('active');
+        document.body.classList.remove('sidebar-open');
+    } else {
+        // Desktop adjustments
+        document.getElementById('mobileMenuToggle').style.display = 'none';
+        document.getElementById('desktopMenuToggle').style.display = 'flex';
+        document.getElementById('sidebar').style.display = 'flex';
+        
+        // Show sidebar by default on desktop
+        document.getElementById('appContainer').classList.remove('sidebar-hidden');
+    }
+}
+// Run on resize
+window.addEventListener('resize', adjustForMobile);
+</script>
 </body>
 </html>
