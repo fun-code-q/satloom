@@ -1239,53 +1239,116 @@
         display: none !important;
     }
     
-    /* Theater Modal */
-.theater-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
+/* Fullscreen theater mode */
+        .fullscreen-theater-mode {
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+        }
 
-.theater-modal .modal-content {
-    background: var(--card-bg);
-    padding: 25px;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 500px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
+        .fullscreen-theater-mode .app-container {
+            grid-template-columns: 0 1fr;
+            gap: 0;
+            max-width: 100%;
+            padding: 0;
+            margin: 0;
+            height: 100vh;
+        }
 
-.theater-modal h3 {
-    margin-top: 0;
-    margin-bottom: 20px;
-    color: var(--text-color);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
+        .fullscreen-theater-mode .sidebar {
+            display: none;
+        }
 
-.theater-modal .input-group {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-}
+        .fullscreen-theater-mode .main-content {
+            max-height: 100vh;
+            padding: 0;
+            margin: 0;
+        }
 
-.theater-modal .input-group input {
-    flex: 1;
-}
+        .fullscreen-theater-mode #theater-section {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10000;
+            background: #000;
+        }
 
-.modal-buttons {
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-}
+        .fullscreen-theater-mode #theater-section .card {
+            border-radius: 0;
+            height: 100%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            margin: 0;
+            background: transparent;
+            box-shadow: none;
+            backdrop-filter: none;
+        }
+
+        .fullscreen-theater-mode #theaterContainer {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .fullscreen-theater-mode #mediaPlayer {
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
+            object-fit: contain;
+            margin: 0;
+            padding: 0;
+        }
+
+        .fullscreen-theater-mode .call-controls {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            justify-content: center;
+            z-index: 10001;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px;
+            border-radius: 8px;
+            display: flex;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .fullscreen-theater-mode .call-controls:hover {
+            opacity: 1;
+        }
+
+        .fullscreen-theater-mode .theater-timer {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10001;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        /* Ensure controls are compact in fullscreen */
+        .fullscreen-theater-mode .call-controls .control-btn {
+            width: 36px;
+            height: 36px;
+            font-size: 14px;
+        }
+
+        .fullscreen-theater-mode .call-controls input[type="range"] {
+            width: 100px;
+        }
 
     </style>
 </head>
@@ -1536,68 +1599,86 @@
         <div class="notification-content"></div>
     </div>
             
-    <!-- Theater Section -->
-<div class="section" id="theater-section">
-    <div class="card">
-        <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <i class="fas fa-film"></i> Theater
+   <!-- Theater Section -->
+    <div class="section" id="theater-section">
+        <div class="card">
+            <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <i class="fas fa-film"></i> Theater
+                </div>
+                <div class="call-timer theater-timer" id="theaterTimer">00:00</div>
             </div>
-            <div class="call-timer" id="theaterTimer">00:00</div>
-        </div>
-        
-        <div class="input-group">
-            <input type="text" id="theater-room-id" class="input-styled" placeholder="Enter Room ID">
-        </div>
-        
-        <div class="call-controls">
-            <!-- Updated button with new ID and text -->
-            <button class="btn" id="createTheaterRoom">
-                <i class="fas fa-network-wired"></i> Create Room
-            </button>
-            <button class="btn btn-secondary" id="joinTheaterRoom">
-                <i class="fas fa-sign-in-alt"></i> Join Room
-            </button>
-            <button class="copy-btn" id="copyTheaterLink" style="display: none; margin-left: 8px;">
-                <i class="fas fa-copy"></i>
-            </button>
-            <button class="control-btn end" id="endTheaterSession" style="display: none; margin-left: 8px;">
-                <i class="fas fa-phone-slash"></i>
-            </button>
-        </div>
-        
-        <div class="theater-placeholder">
-            <div class="clapperboard">
-                <div class="clapper-top"></div>
-                <div class="clapper-bottom"></div>
+            
+            <div class="input-group">
+                <input type="text" id="theater-room-id" class="input-styled" placeholder="Enter Room ID">
             </div>
-        </div>
-        
-        <!-- Updated Theater Modal -->
-        <div class="theater-modal" id="theaterModal" style="display: none;">
-            <div class="modal-content">
-                <h3><i class="fas fa-video"></i> Create Video Room</h3>
-                <div class="input-group">
-                    <!-- Updated placeholder text -->
-                    <input type="text" id="theaterVideoUrl" class="input-styled" 
-                           placeholder="Paste YouTube, Vimeo, Dailymotion, or direct video URL">
-                    <!-- Updated button text and icon -->
-                    <button class="btn" id="theaterLoadBtn">
-                        <i class="fas fa-network-wired"></i> Create Room
+            
+            <div class="call-controls">
+                <button class="btn" id="createTheaterRoom">
+                    <i class="fas fa-network-wired"></i> Create Room
+                </button>
+                <button class="btn btn-secondary" id="joinTheaterRoom">
+                    <i class="fas fa-sign-in-alt"></i> Join Room
+                </button>
+                <button class="copy-btn" id="copyTheaterLink" style="display: none; margin-left: 8px;">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <button class="control-btn end" id="endTheaterSession" style="display: none; margin-left: 8px;">
+                    <i class="fas fa-phone-slash"></i>
+                </button>
+            </div>
+            
+            <div class="theater-placeholder">
+                <div class="clapperboard">
+                    <div class="clapper-top"></div>
+                    <div class="clapper-bottom"></div>
+                </div>
+            </div>
+            
+            <!-- Theater Video Container -->
+            <div id="theaterContainer" style="display: none;">
+                <video id="mediaPlayer" autoplay playsinline style="width: 100%; border-radius: 8px;"></video>
+                <div class="call-controls">
+                    <button class="control-btn" id="playPauseBtn">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <input type="range" id="theaterSeekBar" min="0" max="100" value="0" class="input-styled">
+                    <button class="control-btn" id="theaterMuteBtn">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                    <input type="range" id="theaterVolumeBar" min="0" max="1" step="0.01" value="1" class="input-styled">
+                    <button class="control-btn" id="theaterFullscreenBtn">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                    <button class="control-btn" id="exitTheaterFullscreenBtn" style="display: none;">
+                        <i class="fas fa-compress"></i>
                     </button>
                 </div>
-                <div class="modal-buttons" id="modalButtons" style="display: none;">
-                    <button class="btn btn-secondary" id="theaterModalCancel">
-                        <i class="fas fa-times"></i> Cancel
-                    </button>
-                    <button class="btn" id="theaterModalCopy">
-                        <i class="fas fa-copy"></i> Copy Room Link
-                    </button>
+            </div>
+            
+            <!-- Theater Modal -->
+            <div class="theater-modal" id="theaterModal" style="display: none;">
+                <div class="modal-content">
+                    <h3><i class="fas fa-video"></i> Create Video Room</h3>
+                    <div class="input-group">
+                        <input type="text" id="theaterVideoUrl" class="input-styled" 
+                               placeholder="Paste YouTube, Vimeo, Dailymotion, or direct video URL">
+                        <button class="btn" id="theaterLoadBtn">
+                            <i class="fas fa-network-wired"></i> Create Room
+                        </button>
+                    </div>
+                    <div class="modal-buttons" id="modalButtons" style="display: none;">
+                        <button class="btn btn-secondary" id="theaterModalCancel">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button class="btn" id="theaterModalCopy">
+                            <i class="fas fa-copy"></i> Copy Room Link
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
             
             <!-- Settings Section -->
             <div class="section" id="settings-section">
@@ -1696,50 +1777,45 @@
     
     // ========== DOM ELEMENT REFERENCES ========== //
     const domRefs = {
-        notification: document.getElementById('globalNotification'),
-        notificationTitle: document.getElementById('notificationTitle'),
-        notificationMessage: document.getElementById('notificationMessage'),
-        connectionStatus: document.getElementById('connectionStatus'),
-        statusText: document.getElementById('statusText'),
-        audioCallTimer: document.getElementById('audioCallTimer'),
-        videoCallTimer: document.getElementById('videoCallTimer'),
-        textChatTimer: document.getElementById('textChatTimer'),
-        theaterTimer: document.getElementById('theaterTimer'),
-        sections: {
-            'audio-call': document.getElementById('audio-call-section'),
-            'video-call': document.getElementById('video-call-section'),
-            'text-chat': document.getElementById('text-chat-section'),
-            'theater': document.getElementById('theater-section'),
-            'settings': document.getElementById('settings-section'),
-            'about': document.getElementById('about-section')
-        },
-        remoteAudio: document.getElementById('remoteAudio'),
-        switchCameraBtn: document.getElementById('switchCameraBtn'),
-        switchCameraBtnNormal: document.getElementById('switchCameraBtnNormal'),
-        themeToggleSetting: document.getElementById('themeToggleSetting'),
-        endTextChat: document.getElementById('endTextChat'),
-        endTextChatFullscreen: document.getElementById('endTextChatFullscreen'),
-        textChat: document.getElementById('textChat'),
-        typingIndicator: document.getElementById('typingIndicator'),
-        notificationSound: document.getElementById('notificationSound'),
-        appContainer: document.getElementById('appContainer'),
-        topControlsContainer: document.getElementById('topControlsContainer'),
-        textControls: document.getElementById('textControls'),
-        theaterContainer: document.getElementById('theaterContainer'),
-        mediaPlayer: document.getElementById('mediaPlayer'),
-        theaterChat: document.getElementById('theaterChat'),
-        theaterMessage: document.getElementById('theaterMessage'),
-        sendTheaterMessage: document.getElementById('sendTheaterMessage'),
-        theaterTypingIndicator: document.getElementById('theaterTypingIndicator'),
-        theaterPlayPauseBtn: document.getElementById('playPauseBtn'),
-        theaterSeekBar: document.getElementById('theaterSeekBar'),
-        theaterVolumeBar: document.getElementById('theaterVolumeBar'),
-        theaterMuteBtn: document.getElementById('theaterMuteBtn'),
-        theaterFullscreenBtn: document.getElementById('theaterFullscreenBtn'),
-        exitTheaterFullscreenBtn: document.getElementById('exitTheaterFullscreenBtn'),
-        theaterMediaUrlInput: document.getElementById('theaterMediaUrl'),
-        loadMediaBtn: document.getElementById('loadMediaBtn')
-    };
+    notification: document.getElementById('globalNotification'),
+    notificationTitle: document.getElementById('notificationTitle'),
+    notificationMessage: document.getElementById('notificationMessage'),
+    connectionStatus: document.getElementById('connectionStatus'),
+    statusText: document.getElementById('statusText'),
+    audioCallTimer: document.getElementById('audioCallTimer'),
+    videoCallTimer: document.getElementById('videoCallTimer'),
+    textChatTimer: document.getElementById('textChatTimer'),
+    theaterTimer: document.getElementById('theaterTimer'),
+    sections: {
+        'audio-call': document.getElementById('audio-call-section'),
+        'video-call': document.getElementById('video-call-section'),
+        'text-chat': document.getElementById('text-chat-section'),
+        'theater': document.getElementById('theater-section'),
+        'settings': document.getElementById('settings-section'),
+        'about': document.getElementById('about-section')
+    },
+    remoteAudio: document.getElementById('remoteAudio'),
+    switchCameraBtn: document.getElementById('switchCameraBtn'),
+    switchCameraBtnNormal: document.getElementById('switchCameraBtnNormal'),
+    themeToggleSetting: document.getElementById('themeToggleSetting'),
+    endTextChat: document.getElementById('endTextChat'),
+    endTextChatFullscreen: document.getElementById('endTextChatFullscreen'),
+    textChat: document.getElementById('textChat'),
+    typingIndicator: document.getElementById('typingIndicator'),
+    notificationSound: document.getElementById('notificationSound'),
+    appContainer: document.getElementById('appContainer'),
+    topControlsContainer: document.getElementById('topControlsContainer'),
+    textControls: document.getElementById('textControls'),
+    theaterContainer: document.getElementById('theaterContainer'),
+    mediaPlayer: document.getElementById('mediaPlayer'),
+    theaterPlayPauseBtn: document.getElementById('playPauseBtn'),
+    theaterSeekBar: document.getElementById('theaterSeekBar'),
+    theaterVolumeBar: document.getElementById('theaterVolumeBar'),
+    theaterMuteBtn: document.getElementById('theaterMuteBtn'),
+    theaterFullscreenBtn: document.getElementById('theaterFullscreenBtn'),
+    exitTheaterFullscreenBtn: document.getElementById('exitTheaterFullscreenBtn'),
+    theaterMediaUrlInput: document.getElementById('theaterVideoUrl')
+};
 
     // ========== UTILITY FUNCTIONS ========== //
     function loadSettings() {
@@ -1916,71 +1992,70 @@
     }
 
     // ========== ROOM MANAGEMENT ========== //
-    async function generateRoom(mode) {
-        try {
-            appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-            appState.currentMode = mode;
-            
-            // Update UI - show copy button
-            document.getElementById(`copy${mode.charAt(0).toUpperCase() + mode.slice(1)}Link`).style.display = 'inline-flex';
-            
-            showNotification('Room Generated', `Room ID: ${appState.roomId}. Share with others.`, 'success');
-            updateStatus(`Room created: ${appState.roomId}`, 'connecting');
-            
-            if (mode === 'theater') {
-                appState.isTheaterLeader = true;
-                initTheaterSignaling();
-                document.getElementById('theaterMediaInput').style.display = 'flex';
-                domRefs.theaterMediaUrlInput.focus();
-                document.getElementById('generateTheaterRoom').style.display = 'none';
-                document.getElementById('endTheaterSession').style.display = 'inline-flex';
-                document.getElementById('copyTheaterLink').style.display = 'inline-flex';
-                updateStatus(`Hosting theater session (${appState.roomId})`, 'connected');
+   async function generateRoom(mode) {
+    try {
+        appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+        appState.currentMode = mode;
+
+        // Update UI - show copy button
+        document.getElementById(`copy${mode.charAt(0).toUpperCase() + mode.slice(1)}Link`).style.display = 'inline-flex';
+
+        showNotification('Room Generated', `Room ID: ${appState.roomId}. Share with others.`, 'success');
+        updateStatus(`Room created: ${appState.roomId}`, 'connecting');
+
+        if (mode === 'theater') {
+            appState.isTheaterLeader = true;
+            // Show the theater modal instead of theaterMediaInput
+            document.getElementById('theaterModal').style.display = 'flex';
+            document.getElementById('theaterVideoUrl').focus();
+            document.getElementById('generateTheaterRoom').style.display = 'none';
+            document.getElementById('endTheaterSession').style.display = 'inline-flex';
+            document.getElementById('copyTheaterLink').style.display = 'inline-flex';
+            // Initialize theater signaling
+            initTheaterSignaling();
+        } else if (mode !== 'text') {
+            const mediaInitialized = await initMedia(mode);
+            if (!mediaInitialized) return;
+
+            const peerCreated = createPeerConnection();
+            if (!peerCreated) return;
+
+            appState.isInitiator = true;
+            initSignaling();
+
+            try {
+                const offer = await appState.peerConnection.createOffer();
+                await appState.peerConnection.setLocalDescription(offer);
+                sendMessage(offer);
+
+                appState.isStarted = true;
                 startTimer();
-            } else if (mode !== 'text') {
-                const mediaInitialized = await initMedia(mode);
-                if (!mediaInitialized) return;
-                
-                const peerCreated = createPeerConnection();
-                if (!peerCreated) return;
-                
-                appState.isInitiator = true;
-                initSignaling();
-                
-                try {
-                    const offer = await appState.peerConnection.createOffer();
-                    await appState.peerConnection.setLocalDescription(offer);
-                    sendMessage(offer);
-                    
-                    appState.isStarted = true;
-                    startTimer();
-                    updateStatus(`In ${mode} call (${appState.roomId})`, 'connected');
-                    showNotification('Call Started', `Connected to room: ${appState.roomId}`, 'success');
-                    
-                    if (mode === 'video') {
-                        enterFullscreenVideoMode();
-                    }
-                } catch (err) {
-                    console.error('Error creating offer:', err);
-                    showNotification('Error', 'Failed to start call', 'error');
-                    updateStatus('Call failed', 'error');
-                    throw err;
+                updateStatus(`In ${mode} call (${appState.roomId})`, 'connected');
+                showNotification('Call Started', `Connected to room: ${appState.roomId}`, 'success');
+
+                if (mode === 'video') {
+                    enterFullscreenVideoMode();
                 }
-            } else {
-                // FIXED: Show text chat UI and initialize
-                document.querySelector('.text-chat-container').style.display = 'flex';
-                document.querySelector('#text-chat-section .placeholder-animation').style.display = 'none';
-                initTextChat();
-                updateStatus(`In text chat (${appState.roomId})`, 'connected');
-                showNotification('Chat Started', `Created chat room: ${appState.roomId}`, 'success');
-                document.getElementById('endTextChat').style.display = 'inline-flex';
-                enterFullscreenTextMode();
+            } catch (err) {
+                console.error('Error creating offer:', err);
+                showNotification('Error', 'Failed to start call', 'error');
+                updateStatus('Call failed', 'error');
+                throw err;
             }
-        } catch (err) {
-            console.error('Error generating room:', err);
-            appState.roomId = null;
-            appState.currentMode = null;
+        } else {
+            document.querySelector('.text-chat-container').style.display = 'flex';
+            document.querySelector('#text-chat-section .placeholder-animation').style.display = 'none';
+            initTextChat();
+            updateStatus(`In text chat (${appState.roomId})`, 'connected');
+            showNotification('Chat Started', `Created chat room: ${appState.roomId}`, 'success');
+            document.getElementById('endTextChat').style.display = 'inline-flex';
+            enterFullscreenTextMode();
         }
+    } catch (err) {
+        console.error('Error generating room:', err);
+        appState.roomId = null;
+        appState.currentMode = null;
+    }
     }
 
     async function joinRoom(mode) {
@@ -3101,6 +3176,52 @@ function exitFullscreenTextMode() {
         window.addEventListener('orientationchange', handleOrientationChange);
         window.addEventListener('resize', adjustForMobile);
     }
+    // Theater controls
+document.getElementById('createTheaterRoom').addEventListener('click', () => {
+    hideSidebar();
+    generateRoom('theater');
+});
+
+document.getElementById('joinTheaterRoom').addEventListener('click', () => {
+    hideSidebar();
+    joinRoom('theater');
+});
+
+document.getElementById('endTheaterSession').addEventListener('click', () => {
+    hangup('theater');
+});
+
+document.getElementById('copyTheaterLink').addEventListener('click', () => copyLink('theater'));
+
+// Add event listener for the modal's Create Room button
+document.getElementById('theaterLoadBtn').addEventListener('click', () => {
+    const videoUrl = document.getElementById('theaterVideoUrl').value.trim();
+    if (!videoUrl) {
+        showNotification('Error', 'Please enter a valid video URL', 'error');
+        return;
+    }
+    // Load the video and start the theater session
+    loadTheaterVideo(videoUrl);
+    // Show modal buttons (Cancel and Copy)
+    document.getElementById('modalButtons').style.display = 'flex';
+    // Hide the modal
+    document.getElementById('theaterModal').style.display = 'none';
+    updateStatus(`Hosting theater session (${appState.roomId})`, 'connected');
+    startTimer();
+});
+
+// Add event listener for the modal's Cancel button
+document.getElementById('theaterModalCancel').addEventListener('click', () => {
+    document.getElementById('theaterModal').style.display = 'none';
+    // Reset the room if canceled
+    hangup('theater');
+});
+
+// Add event listener for the modal's Copy Room Link button
+document.getElementById('theaterModalCopy').addEventListener('click', () => {
+    copyLink('theater');
+    showNotification('Copied', 'Theater room link copied to clipboard', 'success');
+});
 
     // ========== MEDIA TOGGLES ========== //
     function toggleAudio(mode) {
