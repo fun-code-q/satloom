@@ -1554,8 +1554,43 @@ html, body {
 .theater-top-controls {
     z-index: 1001 !important;
 }
+.theater-loading-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid var(--accent-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    z-index: 10;
+    display: none;
+}
+.fullscreen-theater-mode #theater-section {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    background: #000;
+}
 
-    </style>
+.fullscreen-theater-mode .theater-video-container {
+    width: 100%;
+    height: 100%;
+}
+
+.fullscreen-theater-mode .theater-controls-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+</style>
 </head>
 <body class="dark-mode">
     <!-- Desktop menu toggle button -->
@@ -2607,17 +2642,18 @@ function cleanupTheater() {
         clearInterval(theaterState.seekBarUpdateInterval);
         theaterState.seekBarUpdateInterval = null;
     }
+    
     document.getElementById('theaterContainer').style.display = 'none';
     document.getElementById('theaterModal').style.display = 'none';
     document.querySelector('.theater-placeholder').style.display = 'flex';
     document.getElementById('theaterTopControls').style.display = 'none';
     document.getElementById('theaterHangupTop').style.display = 'none';
     document.getElementById('endTheaterSession').style.display = 'none';
+    
     if (appState.isFullscreen) {
         exitTheaterFullscreen();
     }
-    }
-
+}
     // ========== THEATER CONTROL FUNCTIONS ========== //
 function initTheaterControls() {
     // Play/Pause
@@ -3260,10 +3296,8 @@ function validateTheaterUrl() {
 
 function isValidTheaterUrl(url) {
     const patterns = [
-        // YouTube
         /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
         /^(?:https?:\/\/)?(?:www\.)?youtube\.com\/live\/([a-zA-Z0-9_-]+)/,
-        // Direct video
         /\.(mp4|webm|mov|mkv|avi)(\?.*)?$/i,
         /\.(m3u8|mpd)(\?.*)?$/i
     ];
@@ -3283,13 +3317,10 @@ function loadTheaterVideo() {
     const sourceType = detectTheaterSource(url);
     
     // Show loading spinner
-    document.getElementById('theaterLoadingSpinner').style.display = 'block';
+    document.querySelector('.theater-loading-spinner').style.display = 'block';
     document.getElementById('theaterModal').style.display = 'none';
     document.getElementById('theaterContainer').style.display = 'block';
     document.querySelector('.theater-placeholder').style.display = 'none';
-    
-    // Enter full screen mode
-    enterTheaterFullscreen();
     
     // Initialize player based on source type
     if (sourceType === 'youtube') {
@@ -3303,7 +3334,7 @@ function loadTheaterVideo() {
     
     // Initialize theater controls
     initTheaterControls();
-    startTimer();
+    startTimer('theater');
     
     showNotification('Video Loading', `Loading ${sourceType} video...`, 'success');
 }
@@ -3341,9 +3372,9 @@ function loadYouTubeVideo(url) {
 
 function createYouTubePlayer(videoId) {
     const playerElement = document.getElementById('theaterVideoPlayer');
-    playerElement.innerHTML = '';
+    playerElement.innerHTML = '<div id="theater-yt-player"></div>';
     
-    theaterState.player = new YT.Player('theaterVideoPlayer', {
+    theaterState.player = new YT.Player('theater-yt-player', {
         height: '100%',
         width: '100%',
         videoId: videoId,
@@ -3366,11 +3397,15 @@ function createYouTubePlayer(videoId) {
 }
 
 function onTheaterPlayerReady(event) {
-    document.getElementById('theaterLoadingSpinner').style.display = 'none';
+    document.querySelector('.theater-loading-spinner').style.display = 'none';
     theaterState.duration = event.target.getDuration();
     updateTheaterTimeDisplay();
     startTheaterSeekUpdate();
     event.target.setVolume(theaterState.currentVolume * 100);
+    
+    // Initialize controls after player is ready
+    setTimeout(initTheaterControls, 500);
+    
     showNotification('Video Ready', 'The video is ready to play', 'success');
     
     if (theaterState.isTheaterLeader) {
@@ -3384,23 +3419,22 @@ function onTheaterPlayerStateChange(event) {
     switch(event.data) {
         case YT.PlayerState.PLAYING:
             theaterState.isPlaying = true;
-            updateTheaterPlayPauseButton();
+            document.querySelector('.theater-loading-spinner').style.display = 'none';
             break;
         case YT.PlayerState.PAUSED:
             theaterState.isPlaying = false;
-            updateTheaterPlayPauseButton();
             break;
         case YT.PlayerState.ENDED:
             theaterState.isPlaying = false;
-            updateTheaterPlayPauseButton();
             break;
         case YT.PlayerState.BUFFERING:
-            document.getElementById('theaterLoadingSpinner').style.display = 'block';
+            document.querySelector('.theater-loading-spinner').style.display = 'block';
             break;
         case YT.PlayerState.CUED:
-            document.getElementById('theaterLoadingSpinner').style.display = 'none';
+            document.querySelector('.theater-loading-spinner').style.display = 'none';
             break;
     }
+    updateTheaterPlayPauseButton();
     
     if (theaterState.isTheaterLeader) {
         syncTheaterState();
@@ -3408,7 +3442,7 @@ function onTheaterPlayerStateChange(event) {
 }
 
 function onTheaterPlayerError(event) {
-    document.getElementById('theaterLoadingSpinner').style.display = 'none';
+    document.querySelector('.theater-loading-spinner').style.display = 'none';
     showNotification('Error', 'Failed to load video', 'error');
     console.error('YouTube player error:', event.data);
 }
@@ -3424,7 +3458,7 @@ function loadDirectVideo(url) {
     videoElement.style.height = '100%';
     
     videoElement.oncanplay = function() {
-        document.getElementById('theaterLoadingSpinner').style.display = 'none';
+        document.querySelector('.theater-loading-spinner').style.display = 'none';
         theaterState.duration = videoElement.duration;
         updateTheaterTimeDisplay();
         startTheaterSeekUpdate();
@@ -3438,7 +3472,7 @@ function loadDirectVideo(url) {
     };
     
     videoElement.onerror = function() {
-        document.getElementById('theaterLoadingSpinner').style.display = 'none';
+        document.querySelector('.theater-loading-spinner').style.display = 'none';
         showNotification('Error', 'Failed to load video', 'error');
     };
     
@@ -3467,11 +3501,11 @@ function loadDirectVideo(url) {
     };
     
     videoElement.onwaiting = function() {
-        document.getElementById('theaterLoadingSpinner').style.display = 'block';
+        document.querySelector('.theater-loading-spinner').style.display = 'block';
     };
     
     videoElement.onplaying = function() {
-        document.getElementById('theaterLoadingSpinner').style.display = 'none';
+        document.querySelector('.theater-loading-spinner').style.display = 'none';
     };
     
     videoElement.ontimeupdate = function() {
@@ -3484,9 +3518,28 @@ function loadDirectVideo(url) {
 }
 
 function initTheaterControls() {
-    // Hide quality options by default
-    document.getElementById('theaterQualityOptions').style.display = 'none';
+    // Clear existing event listeners by cloning elements
+    const controlIds = [
+        'theaterPlayPauseButton',
+        'theaterBackButton',
+        'theaterForwardButton',
+        'theaterMuteButton',
+        'theaterFullscreenButton',
+        'theaterHangupButton',
+        'theaterHangupTop',
+        'theaterPTTButton',
+        'theaterSeekBar',
+        'theaterVolumeSlider'
+    ];
     
+    controlIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            const clone = element.cloneNode(true);
+            element.parentNode.replaceChild(clone, element);
+        }
+    });
+
     // Play/Pause
     document.getElementById('theaterPlayPauseButton').addEventListener('click', toggleTheaterPlayPause);
     
@@ -3497,24 +3550,7 @@ function initTheaterControls() {
     // Volume
     document.getElementById('theaterMuteButton').addEventListener('click', toggleTheaterMute);
     document.getElementById('theaterVolumeSlider').addEventListener('input', (e) => {
-        theaterState.currentVolume = parseFloat(e.target.value);
-        setTheaterVolume(theaterState.currentVolume);
-        updateTheaterVolumeButton();
-    });
-    
-    // Quality
-    document.getElementById('theaterQualityButton').addEventListener('click', function(e) {
-        e.stopPropagation();
-        const options = document.getElementById('theaterQualityOptions');
-        options.style.display = options.style.display === 'block' ? 'none' : 'block';
-    });
-    
-    document.querySelectorAll('.theater-quality-option').forEach(option => {
-        option.addEventListener('click', () => {
-            const quality = option.getAttribute('data-quality');
-            setTheaterQuality(quality);
-            document.getElementById('theaterQualityOptions').style.display = 'none';
-        });
+        setTheaterVolume(parseFloat(e.target.value));
     });
     
     // Fullscreen
@@ -3540,63 +3576,8 @@ function initTheaterControls() {
         seekTheaterTo(seekTime);
     });
     
-    // Click anywhere else to hide quality options
-    document.addEventListener('click', function() {
-        document.getElementById('theaterQualityOptions').style.display = 'none';
-    });
-}
-
-function initTheaterSync() {
-    if (!appState.roomId) return;
-    
-    theaterState.theaterRef = firebase.database().ref(`rooms/${appState.roomId}/theater`);
-    syncTheaterState();
-    setInterval(syncTheaterState, 5000);
-}
-
-function listenForTheaterSync() {
-    if (!appState.roomId) return;
-    
-    theaterState.theaterRef = firebase.database().ref(`rooms/${appState.roomId}/theater`);
-    
-    theaterState.theaterRef.child('state').on('value', (snapshot) => {
-        const state = snapshot.val();
-        if (!state || theaterState.isTheaterLeader) return;
-        
-        if (state.isPlaying !== theaterState.isPlaying) {
-            if (state.isPlaying) playTheater();
-            else pauseTheater();
-        }
-        
-        if (Math.abs(state.currentTime - theaterState.currentTime) > 2) {
-            seekTheaterTo(state.currentTime);
-        }
-    });
-    
-    theaterState.theaterRef.child('pttOffer').on('value', async (snapshot) => {
-        const offer = snapshot.val();
-        if (!offer || theaterState.isPTTActive || theaterState.isTheaterLeader) return;
-        
-        try {
-            theaterState.pttPeerConnection = new RTCPeerConnection({
-                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-            });
-            
-            theaterState.pttPeerConnection.ontrack = (event) => {
-                if (event.track.kind === 'audio') {
-                    document.getElementById('remoteAudio').srcObject = event.streams[0];
-                }
-            };
-            
-            await theaterState.pttPeerConnection.setRemoteDescription(JSON.parse(offer));
-            const answer = await theaterState.pttPeerConnection.createAnswer();
-            await theaterState.pttPeerConnection.setLocalDescription(answer);
-            
-            theaterState.theaterRef.child('pttAnswer').set(JSON.stringify(answer));
-        } catch (err) {
-            console.error('PTT answer error:', err);
-        }
-    });
+    // Set initial volume
+    document.getElementById('theaterVolumeSlider').value = theaterState.currentVolume;
 }
 
 function toggleTheaterPlayPause() {
@@ -3609,7 +3590,7 @@ function playTheater() {
     
     if (typeof theaterState.player.playVideo === 'function') {
         theaterState.player.playVideo();
-    } else {
+    } else if (theaterState.player.play) {
         theaterState.player.play();
     }
     
@@ -3626,7 +3607,7 @@ function pauseTheater() {
     
     if (typeof theaterState.player.pauseVideo === 'function') {
         theaterState.player.pauseVideo();
-    } else {
+    } else if (theaterState.player.pause) {
         theaterState.player.pause();
     }
     
@@ -3651,7 +3632,7 @@ function seekTheaterTo(time) {
     
     if (typeof theaterState.player.seekTo === 'function') {
         theaterState.player.seekTo(time, true);
-    } else {
+    } else if (theaterState.player.currentTime !== undefined) {
         theaterState.player.currentTime = time;
     }
     
@@ -3668,7 +3649,7 @@ function toggleTheaterMute() {
     
     if (typeof theaterState.player.setVolume === 'function') {
         theaterState.player.setVolume(theaterState.isMuted ? 0 : theaterState.currentVolume * 100);
-    } else {
+    } else if (theaterState.player.muted !== undefined) {
         theaterState.player.muted = theaterState.isMuted;
     }
     
@@ -3680,26 +3661,22 @@ function setTheaterVolume(volume) {
     
     if (typeof theaterState.player.setVolume === 'function') {
         theaterState.player.setVolume(volume * 100);
-    } else {
+    } else if (theaterState.player.volume !== undefined) {
         theaterState.player.volume = volume;
     }
     
     updateTheaterVolumeButton();
 }
 
-function setTheaterQuality(quality) {
-    theaterState.currentQuality = quality;
-    
-    if (typeof theaterState.player.setPlaybackQuality === 'function') {
-        theaterState.player.setPlaybackQuality(quality);
-    }
-    
-    showNotification('Quality Changed', `Video quality set to ${quality}`, 'success');
-}
-
 function toggleTheaterFullscreen() {
-    if (appState.isFullscreen) exitTheaterFullscreen();
-    else enterTheaterFullscreen();
+    const theaterSection = document.getElementById('theater-section');
+    if (!document.fullscreenElement) {
+        theaterSection.requestFullscreen().catch(err => {
+            console.error('Error entering fullscreen:', err);
+        });
+    } else {
+        document.exitFullscreen();
+    }
 }
 
 async function startPTT() {
@@ -3707,7 +3684,6 @@ async function startPTT() {
     
     theaterState.isPTTActive = true;
     document.getElementById('theaterPTTButton').classList.add('active');
-    document.getElementById('theaterControls').style.opacity = '1';
     
     try {
         theaterState.pttAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -3765,7 +3741,7 @@ function updateTheaterSeekBar() {
     
     if (typeof theaterState.player.getCurrentTime === 'function') {
         theaterState.currentTime = theaterState.player.getCurrentTime();
-    } else {
+    } else if (theaterState.player.currentTime !== undefined) {
         theaterState.currentTime = theaterState.player.currentTime;
     }
     
@@ -3782,16 +3758,21 @@ function updateTheaterTimeDisplay() {
     const formatTime = (seconds) => {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
-        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
     
-    document.getElementById('theaterTimeDisplay').textContent = 
-        `${formatTime(theaterState.currentTime)} / ${formatTime(theaterState.duration)}`;
+    const current = formatTime(theaterState.currentTime);
+    const total = formatTime(theaterState.duration);
+    document.getElementById('theaterTimeDisplay').textContent = `${current} / ${total}`;
 }
 
 function updateTheaterPlayPauseButton() {
-    document.getElementById('theaterPlayPauseButton').innerHTML = 
-        theaterState.isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+    const btn = document.getElementById('theaterPlayPauseButton');
+    if (btn) {
+        btn.innerHTML = theaterState.isPlaying ? 
+            '<i class="fas fa-pause"></i>' : 
+            '<i class="fas fa-play"></i>';
+    }
 }
 
 function updateTheaterVolumeButton() {
@@ -3809,6 +3790,56 @@ function updateTheaterVolumeButton() {
     }
 }
 
+function initTheaterSync() {
+    if (!appState.roomId) return;
+    
+    syncTheaterState();
+    setInterval(syncTheaterState, 5000);
+}
+
+function listenForTheaterSync() {
+    if (!appState.roomId) return;
+    
+    theaterState.theaterRef.child('state').on('value', (snapshot) => {
+        const state = snapshot.val();
+        if (!state || theaterState.isTheaterLeader) return;
+        
+        if (state.isPlaying !== theaterState.isPlaying) {
+            if (state.isPlaying) playTheater();
+            else pauseTheater();
+        }
+        
+        if (Math.abs(state.currentTime - theaterState.currentTime) > 2) {
+            seekTheaterTo(state.currentTime);
+        }
+    });
+    
+    theaterState.theaterRef.child('pttOffer').on('value', async (snapshot) => {
+        const offer = snapshot.val();
+        if (!offer || theaterState.isPTTActive || theaterState.isTheaterLeader) return;
+        
+        try {
+            theaterState.pttPeerConnection = new RTCPeerConnection({
+                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+            });
+            
+            theaterState.pttPeerConnection.ontrack = (event) => {
+                if (event.track.kind === 'audio') {
+                    document.getElementById('remoteAudio').srcObject = event.streams[0];
+                }
+            };
+            
+            await theaterState.pttPeerConnection.setRemoteDescription(JSON.parse(offer));
+            const answer = await theaterState.pttPeerConnection.createAnswer();
+            await theaterState.pttPeerConnection.setLocalDescription(answer);
+            
+            theaterState.theaterRef.child('pttAnswer').set(JSON.stringify(answer));
+        } catch (err) {
+            console.error('PTT answer error:', err);
+        }
+    });
+}
+
 function syncTheaterState() {
     if (!theaterState.theaterRef || !appState.roomId) return;
     
@@ -3820,6 +3851,72 @@ function syncTheaterState() {
     
     theaterState.theaterRef.child('state').set(state);
 }
+
+function enterTheaterFullscreen() {
+    const theaterSection = document.getElementById('theater-section');
+    theaterSection.requestFullscreen().catch(err => {
+        console.error('Error entering fullscreen:', err);
+    });
+}
+
+function exitTheaterFullscreen() {
+    if (document.fullscreenElement) {
+        document.exitFullscreen();
+    }
+}
+
+// Fullscreen change handler
+document.addEventListener('fullscreenchange', () => {
+    if (document.fullscreenElement) {
+        document.body.classList.add('fullscreen-theater-mode');
+    } else {
+        document.body.classList.remove('fullscreen-theater-mode');
+    }
+});
+
+// YouTube global functions
+function onYouTubeIframeAPIReady() {
+    console.log('YouTube API ready');
+    // Reinitialize if any YouTube players need to be created
+}
+
+// ========== EVENT LISTENERS SETUP ========== //
+// Add this to your existing setupEventListeners function
+function setupTheaterEventListeners() {
+    // Theater controls
+    document.getElementById('createTheaterRoom').addEventListener('click', () => {
+        hideSidebar();
+        generateRoom('theater');
+    });
+    
+    document.getElementById('joinTheaterRoom').addEventListener('click', () => {
+        hideSidebar();
+        joinRoom('theater');
+    });
+    
+    document.getElementById('endTheaterSession').addEventListener('click', () => hangup('theater'));
+    
+    document.getElementById('copyTheaterLink').addEventListener('click', () => copyLink('theater'));
+    
+    document.getElementById('copyTheaterLinkTop').addEventListener('click', () => copyLink('theater'));
+    
+    document.getElementById('theaterVideoUrl').addEventListener('input', validateTheaterUrl);
+    
+    document.getElementById('theaterLoadBtn').addEventListener('click', loadTheaterVideo);
+    
+    document.getElementById('theaterModalCancel').addEventListener('click', () => {
+        document.getElementById('theaterModal').style.display = 'none';
+        hangup('theater');
+    });
+    
+    document.getElementById('theaterModalCopy').addEventListener('click', () => copyLink('theater'));
+}
+
+// Initialize when your app starts
+document.addEventListener('DOMContentLoaded', function() {
+    setupTheaterEventListeners();
+    // ... other initialization code ...
+});
 
 // ========== ROOM MANAGEMENT ========== //
 async function generateRoom(mode) {
