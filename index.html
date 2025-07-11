@@ -1323,6 +1323,7 @@ html, body {
     height: 200px;
   }
   
+}
   #video-local-video {
     width: 70px;
     height: 52px;
@@ -1368,7 +1369,6 @@ html, body {
     top: 10px;
     right: 10px;
   }
-}
 
 @media (max-width: 480px) {
   .call-controls {
@@ -1467,9 +1467,51 @@ html, body {
     width: 100%;
     height: 100%;
 }
+
 #video-player {
   transition: none !important;
 }
+.text-controls {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    gap: 8px;
+    z-index: 10002;
+    display: none;
+}
+
+.theater-video-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.theater-video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    background: transparent;
+    pointer-events: auto;
+}
+
+/* Make sure the YouTube player doesn't intercept clicks */
+.theater-video-player iframe {
+    pointer-events: none;
+}
+
+/* Ensure your controls are above the overlay */
+.theater-controls-container {
+    z-index: 1001 !important;
+}
+
+.theater-top-controls {
+    z-index: 1001 !important;
+}
+
     </style>
 </head>
 <body class="dark-mode">
@@ -1679,6 +1721,12 @@ html, body {
                         <button class="control-btn end normal-hangup" id="endTextChat" style="display: none; margin-left: 8px;">
                             <i class="fas fa-phone-slash"></i>
                         </button>
+                        <!-- Top right controls for text chat -->
+<div class="text-controls" id="textControls" style="display: none;">
+    <button class="top-control-btn" id="copyTextLinkTop" title="Copy room link">
+        <i class="fas fa-copy"></i>
+    </button>
+</div>
                         <button class="copy-btn" id="copyTextLink" style="display: none; margin-left: 8px;">
                             <i class="fas fa-copy"></i>
                         </button>
@@ -1949,6 +1997,49 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
+// ========== STATE MANAGEMENT ========== //
+const appState = {
+  localStream: null,
+  remoteStream: null,
+  peerConnection: null,
+  roomId: null,
+  isInitiator: false,
+  isStarted: false,
+  timer: null,
+  startTime: null,
+  currentMode: 'audio-call',
+  signalingRef: null,
+  userId: 'user-' + Math.random().toString(36).substr(2, 8),
+  textChatRef: null,
+  textChatInitialized: false,
+  isCameraEnabled: true,
+  currentCamera: 'user',
+  cameraDevices: [],
+  userName: 'User-' + Math.floor(Math.random() * 1000),
+  isTyping: false,
+  typingTimeout: null,
+  participantsRef: null,
+  isFullscreen: false
+};
+
+const theaterState = {
+  player: null,
+  mediaUrl: null,
+  isPlaying: false,
+  isMuted: false,
+  currentVolume: 0.7,
+  currentQuality: 'auto',
+  isPTTActive: false,
+  duration: 0,
+  currentTime: 0,
+  pttAudioStream: null,
+  pttAudioTrack: null,
+  pttPeerConnection: null,
+  theaterRef: null,
+  isTheaterLeader: false,
+  seekBarUpdateInterval: null
+};
+
 // ========== DOM ELEMENT REFERENCES ========== //
 const domRefs = {
   notification: document.getElementById('globalNotification'),
@@ -2003,49 +2094,6 @@ const domRefs = {
   theaterModalCopy: document.getElementById('theaterModalCopy'),
   theaterModalCancel: document.getElementById('theaterModalCancel'),
   copyTheaterLinkTop: document.getElementById('copyTheaterLinkTop')
-};
-
-// ========== STATE MANAGEMENT ========== //
-const appState = {
-  localStream: null,
-  remoteStream: null,
-  peerConnection: null,
-  roomId: null,
-  isInitiator: false,
-  isStarted: false,
-  timer: null,
-  startTime: null,
-  currentMode: 'audio-call',
-  signalingRef: null,
-  userId: 'user-' + Math.random().toString(36).substr(2, 8),
-  textChatRef: null,
-  textChatInitialized: false,
-  isCameraEnabled: true,
-  currentCamera: 'user',
-  cameraDevices: [],
-  userName: 'User-' + Math.floor(Math.random() * 1000),
-  isTyping: false,
-  typingTimeout: null,
-  participantsRef: null,
-  isFullscreen: false
-};
-
-const theaterState = {
-  player: null,
-  mediaUrl: null,
-  isPlaying: false,
-  isMuted: false,
-  currentVolume: 0.7,
-  currentQuality: 'auto',
-  isPTTActive: false,
-  duration: 0,
-  currentTime: 0,
-  pttAudioStream: null,
-  pttAudioTrack: null,
-  pttPeerConnection: null,
-  theaterRef: null,
-  isTheaterLeader: false,
-  seekBarUpdateInterval: null
 };
 
 // ========== UTILITY FUNCTIONS ========== //
@@ -2476,25 +2524,6 @@ function cleanupTheater() {
     if (appState.isFullscreen) {
         exitTheaterFullscreen();
     }
-    
-    // Reset UI
-    document.getElementById('theaterContainer').style.display = 'none';
-    document.getElementById('theaterModal').style.display = 'none';
-    document.querySelector('.theater-placeholder').style.display = 'flex';
-    document.getElementById('theaterTopControls').style.display = 'none';
-    document.getElementById('theaterHangupTop').style.display = 'none';
-    
-    if (appState.isFullscreen) {
-        exitTheaterFullscreen();
-    }
-    
-    // Reset state
-    theaterState.player = null;
-    theaterState.mediaUrl = null;
-    theaterState.isPlaying = false;
-    theaterState.isMuted = false;
-    theaterState.currentQuality = 'auto';
-    theaterState.isPTTActive = false;
 }
 
 function cleanupMediaCall(mode) {
@@ -2648,7 +2677,7 @@ function enterTheaterFullscreen() {
     domRefs.theaterControls.style.opacity = '1';
     document.getElementById('theaterTopControls').style.display = 'flex';
     document.getElementById('theaterHangupTop').style.display = 'flex';
-    document.getElementById('theaterHangupButton').style.display = 'none'; // Add this line
+    document.getElementById('theaterHangupButton').style.display = 'none';
 }
 
 function exitTheaterFullscreen() {
@@ -2658,26 +2687,25 @@ function exitTheaterFullscreen() {
     domRefs.theaterControls.style.opacity = '0';
     document.getElementById('theaterTopControls').style.display = 'none';
     document.getElementById('theaterHangupTop').style.display = 'none';
-    document.getElementById('theaterHangupButton').style.display = 'block'; // Add this line
+    document.getElementById('theaterHangupButton').style.display = 'block';
 }
 
-// Add ESC key handler for exiting fullscreen
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && appState.isFullscreen) {
-        if (appState.currentMode === 'theater') {
-            exitTheaterFullscreen();
-        } else if (appState.currentMode === 'video') {
-            exitFullscreenVideoMode();
-        } else if (appState.currentMode === 'text') {
-            exitFullscreenTextMode();
-        }
+function enforceVideoLayerPriority() {
+  const style = document.createElement('style');
+  style.id = 'fullscreen-fix';
+  style.textContent = `
+    .fullscreen-video-mode .placeholder-animation {
+      display: none !important;
     }
-});
-
-function updateTheaterFullscreenButton() {
-  domRefs.theaterFullscreenButton.innerHTML = 
-    appState.isFullscreen ? '<i class="fas fa-compress"></i>' : '<i class="fas fa-expand"></i>';
+    #videoRemoteVideoContainer {
+      z-index: 1000 !important;
+    }
+  `;
+  document.head.appendChild(style);
 }
+
+// Run this once on page load
+enforceVideoLayerPriority();
 
 // ========== MEDIA TOGGLES ========== //
 function toggleAudio(mode) {
@@ -3655,6 +3683,7 @@ function autoJoinRoom() {
     }
   }
 }
+
 function loadSettings() {
   const savedTheme = localStorage.getItem('theme') || 'dark';
   document.body.className = `${savedTheme}-mode`;
@@ -3825,125 +3854,6 @@ document.addEventListener('DOMContentLoaded', function() {
 function onYouTubeIframeAPIReady() {
   console.log('YouTube API ready');
 }
-// Initialize Firebase and video element
-const roomRef = firebase.database().ref(`rooms/${roomId}/playerState`);
-const videoElement = document.getElementById('video-player');
-let ignoreRemoteUpdates = false;
-let programmaticSeek = false;
-
-// Initialize player state listener
-function initPlayerSync() {
-  // Set up realtime listener
-  roomRef.on('value', handleStateUpdate);
-  
-  // Set up video event listeners
-  videoElement.addEventListener('play', handleLocalPlay);
-  videoElement.addEventListener('pause', handleLocalPause);
-  videoElement.addEventListener('seeked', handleLocalSeek);
-  videoElement.addEventListener('ended', handleVideoEnd);
-}
-
-// Handle remote state updates
-function handleStateUpdate(snapshot) {
-  if (ignoreRemoteUpdates) {
-    ignoreRemoteUpdates = false;
-    return;
-  }
-
-  const state = snapshot.val() || {};
-  
-  // Handle seek operation first
-  if (typeof state.seekTo === 'number') {
-    const timeDiff = Math.abs(videoElement.currentTime - state.seekTo);
-    if (timeDiff > 0.5) {
-      programmaticSeek = true;
-      videoElement.currentTime = state.seekTo;
-    }
-  }
-  
-  // Handle play/pause state
-  if (state.playState === 'playing' && videoElement.paused) {
-    // Optional: Add countdown for better sync
-    const targetTime = state.currentTime + (Date.now() - state.timestamp) / 1000;
-    const timeDiff = targetTime - videoElement.currentTime;
-    
-    if (Math.abs(timeDiff) > 0.5) {
-      programmaticSeek = true;
-      videoElement.currentTime = targetTime;
-    }
-    
-    videoElement.play().catch(console.error);
-  } 
-  else if (state.playState === 'paused' && !videoElement.paused) {
-    videoElement.pause();
-    if (typeof state.currentTime === 'number') {
-      programmaticSeek = true;
-      videoElement.currentTime = state.currentTime;
-    }
-  }
-}
-
-// Local event handlers
-function handleLocalPlay() {
-  updatePlayerState({
-    playState: 'playing',
-    currentTime: videoElement.currentTime
-  });
-}
-
-function handleLocalPause() {
-  updatePlayerState({
-    playState: 'paused',
-    currentTime: videoElement.currentTime
-  });
-}
-
-function handleLocalSeek() {
-  if (programmaticSeek) {
-    programmaticSeek = false;
-    return;
-  }
-  
-  updatePlayerState({
-    seekTo: videoElement.currentTime,
-    currentTime: videoElement.currentTime
-  });
-}
-
-function handleVideoEnd() {
-  updatePlayerState({
-    playState: 'paused',
-    currentTime: 0
-  });
-}
-
-// Update Firebase state
-function updatePlayerState(state) {
-  roomRef.update({
-    playState: state.playState || 'paused',
-    currentTime: state.currentTime || 0,
-    seekTo: state.seekTo || null,
-    timestamp: firebase.database.ServerValue.TIMESTAMP
-  });
-}
-
-// Cleanup when leaving room
-function cleanupPlayerSync() {
-  roomRef.off('value', handleStateUpdate);
-  videoElement.removeEventListener('play', handleLocalPlay);
-  videoElement.removeEventListener('pause', handleLocalPause);
-  videoElement.removeEventListener('seeked', handleLocalSeek);
-  videoElement.removeEventListener('ended', handleVideoEnd);
-}
-
-// Initialize when joining room
-initPlayerSync();
-// Calculate latency (optional)
-const latencyRef = firebase.database().ref('.info/serverTimeOffset');
-latencyRef.on('value', (snap) => {
-  const offset = snap.val() || 0;
-  // Use offset in sync calculations
-});
 </script>
 </body>
 </html>
