@@ -1274,6 +1274,47 @@ html, body {
   100% { transform: rotate(-30deg); }
 }
 
+/* ========== Play Ground animation ========== */
+
+.play-ground-placeholder {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px; /* or whatever height you like */
+    color: #4CAF50; /* game-like green, you can change */
+}
+
+.gamepad-icon {
+    font-size: 80px;
+    animation: bounce 1.5s infinite, colorChange 3s infinite alternate;
+}
+
+/* Bounce animation */
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-25px);
+    }
+    60% {
+        transform: translateY(-15px);
+    }
+}
+
+/* Color-changing animation (optional) */
+@keyframes colorChange {
+    0% {
+        color: #4CAF50; /* green */
+    }
+    50% {
+        color: #2196F3; /* blue */
+    }
+    100% {
+        color: #f44336; /* red */
+    }
+}
+
 /* ========== MEDIA QUERIES ========== */
 @media (max-width: 900px) {
   .app-container {
@@ -1573,6 +1614,11 @@ html, body {
                 <li class="nav-item">
                     <a class="nav-link" data-section="theater">
                         <i class="fas fa-film"></i> Theater
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-section="play-ground">
+                        <i class="fas fa-gamepad"></i> Play Ground
                     </a>
                 </li>
                 <li class="nav-item">
@@ -1897,6 +1943,43 @@ html, body {
                         <button class="top-control-btn" id="copyTheaterLinkTop" title="Copy room link">
                             <i class="fas fa-copy"></i>
                         </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Play Ground Section -->
+            <div class="section" id="play-ground-section">
+                <div class="card">
+                    <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <i class="fas fa-gamepad"></i> Play Ground
+                        </div>
+                        <div class="call-timer play-ground-timer" id="play-ground-Timer">00:00</div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="text" id="play-ground-room-id" class="input-styled" placeholder="Enter Room ID">
+                    </div>
+                    
+                    <div class="call-controls">
+                        <button class="btn" id="createplaygroundRoom">
+                            <i class="fas fa-network-wired"></i> Create Room
+                        </button>
+                        <button class="btn btn-secondary" id="joinplaygroundRoom">
+                            <i class="fas fa-sign-in-alt"></i> Join Room
+                        </button>
+                        <button class="copy-btn" id="copyplaygroundLink" style="display: none; margin-left: 8px;">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button class="control-btn end" id="endplaygroundSession" style="display: none; margin-left: 8px;">
+                            <i class="fas fa-phone-slash"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="play-ground-placeholder">
+                    <div class="gamepad-icon">
+                    <i class="fas fa-gamepad"></i>
+                    </div>
                     </div>
                 </div>
             </div>
