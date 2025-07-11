@@ -1574,8 +1574,6 @@ html, body {
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 10000;
-    background: #000;
 }
 
 .fullscreen-theater-mode .theater-video-container {
@@ -2654,292 +2652,6 @@ function cleanupTheater() {
         exitTheaterFullscreen();
     }
 }
-    // ========== THEATER CONTROL FUNCTIONS ========== //
-function initTheaterControls() {
-    // Play/Pause
-    document.getElementById('theaterPlayPauseButton').addEventListener('click', toggleTheaterPlayPause);
-    
-    // Navigation
-    document.getElementById('theaterBackButton').addEventListener('click', () => seekTheater(-10));
-    document.getElementById('theaterForwardButton').addEventListener('click', () => seekTheater(10));
-    
-    // Volume
-    document.getElementById('theaterMuteButton').addEventListener('click', toggleTheaterMute);
-    document.getElementById('theaterVolumeSlider').addEventListener('input', (e) => {
-        setTheaterVolume(parseFloat(e.target.value));
-    });
-    
-    // Fullscreen
-    document.getElementById('theaterFullscreenButton').addEventListener('click', toggleTheaterFullscreen);
-    
-    // PTT
-    const pttButton = document.getElementById('theaterPTTButton');
-    pttButton.addEventListener('mousedown', startPTT);
-    pttButton.addEventListener('mouseup', stopPTT);
-    pttButton.addEventListener('mouseleave', stopPTT);
-    pttButton.addEventListener('touchstart', startPTT);
-    pttButton.addEventListener('touchend', stopPTT);
-    
-    // Hang up buttons
-    document.getElementById('theaterHangupButton').addEventListener('click', () => hangup('theater'));
-    document.getElementById('theaterHangupTop').addEventListener('click', () => hangup('theater'));
-    
-    // Seek bar
-    document.getElementById('theaterSeekBar').addEventListener('click', (e) => {
-        const rect = e.target.getBoundingClientRect();
-        const percent = (e.clientX - rect.left) / rect.width;
-        const seekTime = percent * theaterState.duration;
-        seekTheaterTo(seekTime);
-    });
-}
-
-function toggleTheaterPlayPause() {
-    if (theaterState.isPlaying) pauseTheater();
-    else playTheater();
-}
-
-function playTheater() {
-    if (!theaterState.player) return;
-    
-    if (typeof theaterState.player.playVideo === 'function') {
-        theaterState.player.playVideo();
-    } else {
-        theaterState.player.play();
-    }
-    
-    theaterState.isPlaying = true;
-    updateTheaterPlayPauseButton();
-}
-
-function pauseTheater() {
-    if (!theaterState.player) return;
-    
-    if (typeof theaterState.player.pauseVideo === 'function') {
-        theaterState.player.pauseVideo();
-    } else {
-        theaterState.player.pause();
-    }
-    
-    theaterState.isPlaying = false;
-    updateTheaterPlayPauseButton();
-}
-
-function seekTheater(seconds) {
-    if (!theaterState.player) return;
-    
-    let newTime = theaterState.currentTime + seconds;
-    newTime = Math.max(0, Math.min(newTime, theaterState.duration));
-    seekTheaterTo(newTime);
-}
-
-function seekTheaterTo(time) {
-    if (!theaterState.player) return;
-    
-    if (typeof theaterState.player.seekTo === 'function') {
-        theaterState.player.seekTo(time, true);
-    } else {
-        theaterState.player.currentTime = time;
-    }
-    
-    theaterState.currentTime = time;
-    updateTheaterSeekBar();
-}
-
-function toggleTheaterMute() {
-    theaterState.isMuted = !theaterState.isMuted;
-    
-    if (typeof theaterState.player.setVolume === 'function') {
-        theaterState.player.setVolume(theaterState.isMuted ? 0 : theaterState.currentVolume * 100);
-    } else {
-        theaterState.player.muted = theaterState.isMuted;
-    }
-    
-    updateTheaterVolumeButton();
-}
-
-function setTheaterVolume(volume) {
-    theaterState.currentVolume = volume;
-    
-    if (typeof theaterState.player.setVolume === 'function') {
-        theaterState.player.setVolume(volume * 100);
-    } else {
-        theaterState.player.volume = volume;
-    }
-    
-    updateTheaterVolumeButton();
-}
-
-function toggleTheaterFullscreen() {
-    if (appState.isFullscreen) exitTheaterFullscreen();
-    else enterTheaterFullscreen();
-}
-
-async function startPTT() {
-    if (theaterState.isPTTActive) return;
-    
-    theaterState.isPTTActive = true;
-    document.getElementById('theaterPTTButton').classList.add('active');
-    
-    try {
-        theaterState.pttAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        
-        if (theaterState.isTheaterLeader) {
-            theaterState.pttPeerConnection = new RTCPeerConnection({
-                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-            });
-            
-            theaterState.pttAudioStream.getTracks().forEach(track => {
-                theaterState.pttPeerConnection.addTrack(track, theaterState.pttAudioStream);
-            });
-            
-            const offer = await theaterState.pttPeerConnection.createOffer();
-            await theaterState.pttPeerConnection.setLocalDescription(offer);
-            
-            if (theaterState.theaterRef) {
-                theaterState.theaterRef.child('pttOffer').set(JSON.stringify(offer));
-            }
-        } else if (theaterState.pttPeerConnection) {
-            const audioTrack = theaterState.pttAudioStream.getAudioTracks()[0];
-            const sender = theaterState.pttPeerConnection.getSenders().find(s => s.track && s.track.kind === 'audio');
-            if (sender) sender.replaceTrack(audioTrack);
-        }
-    } catch (err) {
-        console.error('PTT error:', err);
-        stopPTT();
-    }
-}
-
-function stopPTT() {
-    if (!theaterState.isPTTActive) return;
-    
-    theaterState.isPTTActive = false;
-    document.getElementById('theaterPTTButton').classList.remove('active');
-    
-    if (theaterState.pttAudioStream) {
-        theaterState.pttAudioStream.getTracks().forEach(track => track.stop());
-        theaterState.pttAudioStream = null;
-    }
-    
-    if (!theaterState.isTheaterLeader && theaterState.pttPeerConnection) {
-        theaterState.pttPeerConnection.close();
-        theaterState.pttPeerConnection = null;
-    }
-}
-function initTheaterSync() {
-    if (!appState.roomId) return;
-    
-    syncTheaterState();
-    setInterval(syncTheaterState, 5000);
-}
-
-function listenForTheaterSync() {
-    if (!appState.roomId) return;
-    
-    theaterState.theaterRef.child('state').on('value', (snapshot) => {
-        const state = snapshot.val();
-        if (!state || theaterState.isTheaterLeader) return;
-        
-        if (state.isPlaying !== theaterState.isPlaying) {
-            if (state.isPlaying) playTheater();
-            else pauseTheater();
-        }
-        
-        if (Math.abs(state.currentTime - theaterState.currentTime) > 2) {
-            seekTheaterTo(state.currentTime);
-        }
-    });
-    
-    theaterState.theaterRef.child('pttOffer').on('value', async (snapshot) => {
-        const offer = snapshot.val();
-        if (!offer || theaterState.isPTTActive || theaterState.isTheaterLeader) return;
-        
-        try {
-            theaterState.pttPeerConnection = new RTCPeerConnection({
-                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-            });
-            
-            theaterState.pttPeerConnection.ontrack = (event) => {
-                if (event.track.kind === 'audio') {
-                    document.getElementById('remoteAudio').srcObject = event.streams[0];
-                }
-            };
-            
-            await theaterState.pttPeerConnection.setRemoteDescription(JSON.parse(offer));
-            const answer = await theaterState.pttPeerConnection.createAnswer();
-            await theaterState.pttPeerConnection.setLocalDescription(answer);
-            
-            theaterState.theaterRef.child('pttAnswer').set(JSON.stringify(answer));
-        } catch (err) {
-            console.error('PTT answer error:', err);
-        }
-    });
-}
-
-function syncTheaterState() {
-    if (!theaterState.theaterRef || !appState.roomId) return;
-    
-    const state = {
-        isPlaying: theaterState.isPlaying,
-        currentTime: theaterState.currentTime,
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-    };
-    
-    theaterState.theaterRef.child('state').set(state);
-}
-
-function startTheaterSeekUpdate() {
-    clearInterval(theaterState.seekBarUpdateInterval);
-    theaterState.seekBarUpdateInterval = setInterval(updateTheaterSeekBar, 1000);
-}
-
-function updateTheaterSeekBar() {
-    if (!theaterState.player) return;
-    
-    if (typeof theaterState.player.getCurrentTime === 'function') {
-        theaterState.currentTime = theaterState.player.getCurrentTime();
-    } else {
-        theaterState.currentTime = theaterState.player.currentTime;
-    }
-    
-    if (theaterState.duration > 0) {
-        const percent = (theaterState.currentTime / theaterState.duration) * 100;
-        document.getElementById('theaterSeekBarProgress').style.width = `${percent}%`;
-        document.getElementById('theaterSeekBarHandle').style.left = `${percent}%`;
-    }
-    
-    updateTheaterTimeDisplay();
-}
-
-function updateTheaterTimeDisplay() {
-    const formatTime = (seconds) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-    };
-    
-    document.getElementById('theaterTimeDisplay').textContent = 
-        `${formatTime(theaterState.currentTime)} / ${formatTime(theaterState.duration)}`;
-}
-
-function updateTheaterPlayPauseButton() {
-    document.getElementById('theaterPlayPauseButton').innerHTML = 
-        theaterState.isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
-}
-
-function updateTheaterVolumeButton() {
-    const icon = document.getElementById('theaterMuteButton');
-    if (theaterState.isMuted) {
-        icon.innerHTML = '<i class="fas fa-volume-mute"></i>';
-    } else {
-        if (theaterState.currentVolume > 0.5) {
-            icon.innerHTML = '<i class="fas fa-volume-up"></i>';
-        } else if (theaterState.currentVolume > 0) {
-            icon.innerHTML = '<i class="fas fa-volume-down"></i>';
-        } else {
-            icon.innerHTML = '<i class="fas fa-volume-off"></i>';
-        }
-    }
-}
 
 function cleanupMediaCall(mode) {
   if (appState.peerConnection) {
@@ -3590,7 +3302,7 @@ function playTheater() {
     
     if (typeof theaterState.player.playVideo === 'function') {
         theaterState.player.playVideo();
-    } else if (theaterState.player.play) {
+    } else {
         theaterState.player.play();
     }
     
@@ -3607,7 +3319,7 @@ function pauseTheater() {
     
     if (typeof theaterState.player.pauseVideo === 'function') {
         theaterState.player.pauseVideo();
-    } else if (theaterState.player.pause) {
+    } else {
         theaterState.player.pause();
     }
     
@@ -3632,7 +3344,7 @@ function seekTheaterTo(time) {
     
     if (typeof theaterState.player.seekTo === 'function') {
         theaterState.player.seekTo(time, true);
-    } else if (theaterState.player.currentTime !== undefined) {
+    } else {
         theaterState.player.currentTime = time;
     }
     
@@ -3649,7 +3361,7 @@ function toggleTheaterMute() {
     
     if (typeof theaterState.player.setVolume === 'function') {
         theaterState.player.setVolume(theaterState.isMuted ? 0 : theaterState.currentVolume * 100);
-    } else if (theaterState.player.muted !== undefined) {
+    } else {
         theaterState.player.muted = theaterState.isMuted;
     }
     
@@ -3661,7 +3373,7 @@ function setTheaterVolume(volume) {
     
     if (typeof theaterState.player.setVolume === 'function') {
         theaterState.player.setVolume(volume * 100);
-    } else if (theaterState.player.volume !== undefined) {
+    } else {
         theaterState.player.volume = volume;
     }
     
@@ -3669,14 +3381,8 @@ function setTheaterVolume(volume) {
 }
 
 function toggleTheaterFullscreen() {
-    const theaterSection = document.getElementById('theater-section');
-    if (!document.fullscreenElement) {
-        theaterSection.requestFullscreen().catch(err => {
-            console.error('Error entering fullscreen:', err);
-        });
-    } else {
-        document.exitFullscreen();
-    }
+    if (appState.isFullscreen) exitTheaterFullscreen();
+    else enterTheaterFullscreen();
 }
 
 async function startPTT() {
@@ -3741,7 +3447,7 @@ function updateTheaterSeekBar() {
     
     if (typeof theaterState.player.getCurrentTime === 'function') {
         theaterState.currentTime = theaterState.player.getCurrentTime();
-    } else if (theaterState.player.currentTime !== undefined) {
+    } else {
         theaterState.currentTime = theaterState.player.currentTime;
     }
     
@@ -3852,72 +3558,6 @@ function syncTheaterState() {
     theaterState.theaterRef.child('state').set(state);
 }
 
-function enterTheaterFullscreen() {
-    const theaterSection = document.getElementById('theater-section');
-    theaterSection.requestFullscreen().catch(err => {
-        console.error('Error entering fullscreen:', err);
-    });
-}
-
-function exitTheaterFullscreen() {
-    if (document.fullscreenElement) {
-        document.exitFullscreen();
-    }
-}
-
-// Fullscreen change handler
-document.addEventListener('fullscreenchange', () => {
-    if (document.fullscreenElement) {
-        document.body.classList.add('fullscreen-theater-mode');
-    } else {
-        document.body.classList.remove('fullscreen-theater-mode');
-    }
-});
-
-// YouTube global functions
-function onYouTubeIframeAPIReady() {
-    console.log('YouTube API ready');
-    // Reinitialize if any YouTube players need to be created
-}
-
-// ========== EVENT LISTENERS SETUP ========== //
-// Add this to your existing setupEventListeners function
-function setupTheaterEventListeners() {
-    // Theater controls
-    document.getElementById('createTheaterRoom').addEventListener('click', () => {
-        hideSidebar();
-        generateRoom('theater');
-    });
-    
-    document.getElementById('joinTheaterRoom').addEventListener('click', () => {
-        hideSidebar();
-        joinRoom('theater');
-    });
-    
-    document.getElementById('endTheaterSession').addEventListener('click', () => hangup('theater'));
-    
-    document.getElementById('copyTheaterLink').addEventListener('click', () => copyLink('theater'));
-    
-    document.getElementById('copyTheaterLinkTop').addEventListener('click', () => copyLink('theater'));
-    
-    document.getElementById('theaterVideoUrl').addEventListener('input', validateTheaterUrl);
-    
-    document.getElementById('theaterLoadBtn').addEventListener('click', loadTheaterVideo);
-    
-    document.getElementById('theaterModalCancel').addEventListener('click', () => {
-        document.getElementById('theaterModal').style.display = 'none';
-        hangup('theater');
-    });
-    
-    document.getElementById('theaterModalCopy').addEventListener('click', () => copyLink('theater'));
-}
-
-// Initialize when your app starts
-document.addEventListener('DOMContentLoaded', function() {
-    setupTheaterEventListeners();
-    // ... other initialization code ...
-});
-
 // ========== ROOM MANAGEMENT ========== //
 async function generateRoom(mode) {
   try {
@@ -3937,24 +3577,8 @@ async function generateRoom(mode) {
       domRefs.theaterVideoUrl.focus();
       document.getElementById('endTheaterSession').style.display = 'inline-flex';
       // Initialize Firebase reference
-    theaterState.theaterRef = firebase.database().ref(`rooms/${appState.roomId}/theater`);
-    }
-
-    if (mode === 'theater') {
-    appState.isTheaterLeader = false;
-    theaterState.isTheaterLeader = false;
-    document.getElementById('endTheaterSession').style.display = 'inline-flex';
-    document.getElementById('copyTheaterLink').style.display = 'inline-flex';
-    updateStatus(`Joined theater session (${appState.roomId})`, 'connecting');
-    showNotification('Theater Joined', `Joined theater room: ${appState.roomId}`, 'success');
-    startTimer();
-    
-    // Initialize Firebase reference
-    theaterState.theaterRef = firebase.database().ref(`rooms/${appState.roomId}/theater`);
-    listenForTheaterSync();
-}
-    
-    else if (mode !== 'text') {
+      theaterState.theaterRef = firebase.database().ref(`rooms/${appState.roomId}/theater`);
+    } else if (mode !== 'text') {
       const mediaInitialized = await initMedia(mode);
       if (!mediaInitialized) return;
 
@@ -4012,6 +3636,8 @@ async function joinRoom(mode) {
       updateStatus(`Joined theater session (${appState.roomId})`, 'connecting');
       showNotification('Theater Joined', `Joined theater room: ${appState.roomId}`, 'success');
       startTimer();
+      theaterState.theaterRef = firebase.database().ref(`rooms/${appState.roomId}/theater`);
+      listenForTheaterSync();
     } 
     else if (mode !== 'text') {
       const mediaInitialized = await initMedia(mode);
@@ -4291,32 +3917,32 @@ function setupEventListeners() {
   });
   
   // Theater controls
-document.getElementById('createTheaterRoom').addEventListener('click', () => {
-    hideSidebar();
-    generateRoom('theater');
-});
-
-document.getElementById('joinTheaterRoom').addEventListener('click', () => {
-    hideSidebar();
-    joinRoom('theater');
-});
-
-document.getElementById('endTheaterSession').addEventListener('click', () => hangup('theater'));
-
-document.getElementById('copyTheaterLink').addEventListener('click', () => copyLink('theater'));
-
-document.getElementById('copyTheaterLinkTop').addEventListener('click', () => copyLink('theater'));
-
-domRefs.theaterVideoUrl.addEventListener('input', validateTheaterUrl);
-
-domRefs.theaterLoadBtn.addEventListener('click', loadTheaterVideo);
-
-domRefs.theaterModalCancel.addEventListener('click', () => {
-    domRefs.theaterModal.style.display = 'none';
-    hangup('theater');
-});
-
-domRefs.theaterModalCopy.addEventListener('click', () => copyLink('theater'));
+  document.getElementById('createTheaterRoom').addEventListener('click', () => {
+      hideSidebar();
+      generateRoom('theater');
+  });
+  
+  document.getElementById('joinTheaterRoom').addEventListener('click', () => {
+      hideSidebar();
+      joinRoom('theater');
+  });
+  
+  document.getElementById('endTheaterSession').addEventListener('click', () => hangup('theater'));
+  
+  document.getElementById('copyTheaterLink').addEventListener('click', () => copyLink('theater'));
+  
+  document.getElementById('copyTheaterLinkTop').addEventListener('click', () => copyLink('theater'));
+  
+  document.getElementById('theaterVideoUrl').addEventListener('input', validateTheaterUrl);
+  
+  document.getElementById('theaterLoadBtn').addEventListener('click', loadTheaterVideo);
+  
+  document.getElementById('theaterModalCancel').addEventListener('click', () => {
+      document.getElementById('theaterModal').style.display = 'none';
+      hangup('theater');
+  });
+  
+  document.getElementById('theaterModalCopy').addEventListener('click', () => copyLink('theater'));
   
   // Settings
   document.getElementById('notifications-toggle').addEventListener('change', saveSettings);
