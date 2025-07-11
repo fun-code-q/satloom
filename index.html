@@ -1579,6 +1579,35 @@
         .fullscreen-theater-mode .video-thumbnail {
             height: 100%;
         }
+        
+        /* URL Validation Styles */
+        .url-validation {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: none;
+        }
+        
+        .url-valid {
+            color: var(--success-color);
+        }
+        
+        .url-invalid {
+            color: var(--error-color);
+        }
+        
+        .url-checking {
+            animation: spin 1s linear infinite;
+            color: var(--warning-color);
+        }
+        
+        .video-format-info {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+            display: block;
+        }
 
     </style>
 </head>
@@ -1830,114 +1859,120 @@
     </div>
             
   <!-- Theater Section -->
-    <div class="section" id="theater-section">
-        <div class="card">
-            <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <i class="fas fa-film"></i> Theater
-                </div>
-                <div class="call-timer theater-timer" id="theaterTimer">00:00</div>
-            </div>
-            
-            <div class="input-group">
-                <input type="text" id="theater-room-id" class="input-styled" placeholder="Enter Room ID">
-            </div>
-            
-            <div class="call-controls">
-                <button class="btn" id="createTheaterRoom">
-                    <i class="fas fa-network-wired"></i> Create Room
-                </button>
-                <button class="btn btn-secondary" id="joinTheaterRoom">
-                    <i class="fas fa-sign-in-alt"></i> Join Room
-                </button>
-                <button class="copy-btn" id="copyTheaterLink" style="display: none; margin-left: 8px;">
-                    <i class="fas fa-copy"></i>
-                </button>
-                <button class="control-btn end" id="endTheaterSession" style="display: none; margin-left: 8px;">
-                    <i class="fas fa-phone-slash"></i>
-                </button>
-            </div>
-            
-            <div class="theater-placeholder">
-                <div class="clapperboard">
-                    <div class="clapper-top"></div>
-                    <div class="clapper-bottom"></div>
-                </div>
-            </div>
-            
-            <!-- Theater Video Container -->
-            <div id="theaterContainer" style="display: none;">
-                <!-- Video thumbnail with play button -->
-                <div class="video-thumbnail" id="videoThumbnail">
-                    <i class="fas fa-play"></i>
-                </div>
-                
-                <video id="mediaPlayer" style="width: 100%; border-radius: 8px; display: none;"></video>
-                
-                <div class="theater-controls">
-                    <button class="theater-btn" id="theaterPlayPauseBtn">
-                        <i class="fas fa-play"></i>
-                    </button>
-                    <button class="theater-btn" id="theaterBackwardBtn">
-                        <i class="fas fa-backward"></i>
-                    </button>
-                    <button class="theater-btn" id="theaterForwardBtn">
-                        <i class="fas fa-forward"></i>
-                    </button>
-                    <div class="time-display" id="timeDisplay">00:00 / 00:00</div>
-                    <div class="volume-container">
-                        <button class="theater-btn" id="theaterMuteBtn">
-                            <i class="fas fa-volume-up"></i>
-                        </button>
-                        <input type="range" class="volume-slider" id="theaterVolumeBar" min="0" max="1" step="0.01" value="1">
+            <div class="section" id="theater-section">
+                <div class="card">
+                    <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <i class="fas fa-film"></i> Theater
+                        </div>
+                        <div class="call-timer theater-timer" id="theaterTimer">00:00</div>
                     </div>
-                    <div class="quality-selector">
-                        <button class="quality-btn" id="qualityBtn">
-                            <i class="fas fa-cog"></i> Quality
+                    
+                    <div class="input-group">
+                        <input type="text" id="theater-room-id" class="input-styled" placeholder="Enter Room ID">
+                    </div>
+                    
+                    <div class="call-controls">
+                        <button class="btn" id="createTheaterRoom">
+                            <i class="fas fa-network-wired"></i> Create Room
                         </button>
-                        <div class="quality-options" id="qualityOptions">
-                            <div class="quality-option" data-quality="auto">Auto</div>
-                            <div class="quality-option" data-quality="360">360p</div>
-                            <div class="quality-option" data-quality="480">480p</div>
-                            <div class="quality-option" data-quality="720">720p</div>
-                            <div class="quality-option" data-quality="1080">1080p</div>
+                        <button class="btn btn-secondary" id="joinTheaterRoom">
+                            <i class="fas fa-sign-in-alt"></i> Join Room
+                        </button>
+                        <button class="copy-btn" id="copyTheaterLink" style="display: none; margin-left: 8px;">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button class="control-btn end" id="endTheaterSession" style="display: none; margin-left: 8px;">
+                            <i class="fas fa-phone-slash"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="theater-placeholder">
+                        <div class="clapperboard">
+                            <div class="clapper-top"></div>
+                            <div class="clapper-bottom"></div>
                         </div>
                     </div>
-                    <button class="theater-btn" id="theaterFullscreenBtn">
-                        <i class="fas fa-expand"></i>
-                    </button>
-                    <button class="theater-btn ptt" id="theaterPTTBtn">
-                        <i class="fas fa-microphone"></i>
-                    </button>
-                    <button class="theater-btn end" id="theaterHangupBtn">
-                        <i class="fas fa-phone-slash"></i>
-                    </button>
+                    
+                    <!-- Theater Video Container -->
+                    <div id="theaterContainer" style="display: none;">
+                        <!-- Video thumbnail with play button -->
+                        <div class="video-thumbnail" id="videoThumbnail">
+                            <i class="fas fa-play"></i>
+                        </div>
+                        
+                        <video id="mediaPlayer" style="width: 100%; border-radius: 8px; display: none;"></video>
+                        
+                        <div class="theater-controls">
+                            <button class="theater-btn" id="theaterPlayPauseBtn">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <button class="theater-btn" id="theaterBackwardBtn">
+                                <i class="fas fa-backward"></i>
+                            </button>
+                            <button class="theater-btn" id="theaterForwardBtn">
+                                <i class="fas fa-forward"></i>
+                            </button>
+                            <div class="time-display" id="timeDisplay">00:00 / 00:00</div>
+                            <div class="volume-container">
+                                <button class="theater-btn" id="theaterMuteBtn">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
+                                <input type="range" class="volume-slider" id="theaterVolumeBar" min="0" max="1" step="0.01" value="1">
+                            </div>
+                            <div class="quality-selector">
+                                <button class="quality-btn" id="qualityBtn">
+                                    <i class="fas fa-cog"></i> Quality
+                                </button>
+                                <div class="quality-options" id="qualityOptions">
+                                    <div class="quality-option" data-quality="auto">Auto</div>
+                                    <div class="quality-option" data-quality="360">360p</div>
+                                    <div class="quality-option" data-quality="480">480p</div>
+                                    <div class="quality-option" data-quality="720">720p</div>
+                                    <div class="quality-option" data-quality="1080">1080p</div>
+                                </div>
+                            </div>
+                            <button class="theater-btn" id="theaterFullscreenBtn">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                            <button class="theater-btn ptt" id="theaterPTTBtn">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                            <button class="theater-btn end" id="theaterHangupBtn">
+                                <i class="fas fa-phone-slash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Theater Modal -->
+                    <div class="theater-modal" id="theaterModal" style="display: none;">
+                        <div class="modal-content">
+                            <h3><i class="fas fa-video"></i> Create Video Room</h3>
+                            <div class="input-group">
+                                <div style="position: relative;">
+                                    <input type="text" id="theaterVideoUrl" class="input-styled" 
+                                           placeholder="Paste video URL (YouTube, Vimeo, Dailymotion or direct video)">
+                                    <span class="url-validation" id="urlValidationIcon">
+                                        <i class="fas fa-circle-notch url-checking"></i>
+                                    </span>
+                                </div>
+                                <span class="video-format-info">Supports: YouTube, Vimeo, Dailymotion, MP4, WebM, etc.</span>
+                                <button class="btn" id="theaterLoadBtn">
+                                    <i class="fas fa-network-wired"></i> Load Video
+                                </button>
+                            </div>
+                            <div class="modal-buttons" id="modalButtons" style="display: none;">
+                                <button class="btn btn-secondary" id="theaterModalCancel">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                                <button class="btn" id="theaterModalCopy">
+                                    <i class="fas fa-copy"></i> Copy Room Link
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
-            <!-- Theater Modal -->
-            <div class="theater-modal" id="theaterModal" style="display: none;">
-                <div class="modal-content">
-                    <h3><i class="fas fa-video"></i> Create Video Room</h3>
-                    <div class="input-group">
-                        <input type="text" id="theaterVideoUrl" class="input-styled" 
-                               placeholder="Paste YouTube, Vimeo, Dailymotion, or direct video URL">
-                        <button class="btn" id="theaterLoadBtn">
-                            <i class="fas fa-network-wired"></i> Load Video
-                        </button>
-                    </div>
-                    <div class="modal-buttons" id="modalButtons" style="display: none;">
-                        <button class="btn btn-secondary" id="theaterModalCancel">
-                            <i class="fas fa-times"></i> Cancel
-                        </button>
-                        <button class="btn" id="theaterModalCopy">
-                            <i class="fas fa-copy"></i> Copy Room Link
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
             
             <!-- Settings Section -->
             <div class="section" id="settings-section">
@@ -3435,6 +3470,157 @@ function handleOrientationChange() {
         }, 300);
     }
 }
+ // ========== THEATER VIDEO VALIDATION ========== //
+        function isValidVideoUrl(url) {
+            // YouTube patterns
+            const youtubePatterns = [
+                /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+                /^(?:https?:\/\/)?(?:www\.)?youtube\.com\/live\/([a-zA-Z0-9_-]+)/
+            ];
+            
+            // Vimeo pattern
+            const vimeoPattern = /^(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(\d+)/;
+            
+            // Dailymotion pattern
+            const dailymotionPattern = /^(?:https?:\/\/)?(?:www\.)?dailymotion\.com\/video\/([a-zA-Z0-9]+)/;
+            
+            // Direct video patterns
+            const directVideoPatterns = [
+                /\.(mp4|webm|mov|mkv|avi)(\?.*)?$/i,
+                /\.(m3u8|mpd)(\?.*)?$/i
+            ];
+            
+            // Check against all patterns
+            return youtubePatterns.some(pattern => pattern.test(url)) ||
+                   vimeoPattern.test(url) ||
+                   dailymotionPattern.test(url) ||
+                   directVideoPatterns.some(pattern => pattern.test(url));
+        }
+
+        function detectVideoSource(url) {
+            if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                return 'YouTube';
+            } else if (url.includes('vimeo.com')) {
+                return 'Vimeo';
+            } else if (url.includes('dailymotion.com')) {
+                return 'Dailymotion';
+            } else if (/\.(mp4|webm|mov|mkv|avi)(\?.*)?$/i.test(url)) {
+                return 'Direct Video';
+            } else if (/\.(m3u8|mpd)(\?.*)?$/i.test(url)) {
+                return 'Streaming';
+            } else {
+                return 'Unknown';
+            }
+        }
+
+        function validateVideoUrl(url) {
+            const validationIcon = document.getElementById('urlValidationIcon');
+            
+            if (!url) {
+                validationIcon.style.display = 'none';
+                return;
+            }
+            
+            validationIcon.style.display = 'block';
+            
+            // Simulate validation delay
+            setTimeout(() => {
+                if (isValidVideoUrl(url)) {
+                    validationIcon.innerHTML = '<i class="fas fa-check-circle url-valid"></i>';
+                } else {
+                    validationIcon.innerHTML = '<i class="fas fa-times-circle url-invalid"></i>';
+                }
+            }, 800);
+        }
+
+        // ========== EVENT LISTENERS ========== //
+        document.addEventListener('DOMContentLoaded', function() {
+            // Setup URL validation as user types
+            const videoUrlInput = document.getElementById('theaterVideoUrl');
+            videoUrlInput.addEventListener('input', function() {
+                validateVideoUrl(this.value);
+            });
+            
+            // Handle load video button
+            document.getElementById('theaterLoadBtn').addEventListener('click', function() {
+                const videoUrl = videoUrlInput.value.trim();
+                
+                if (!videoUrl) {
+                    showNotification('Error', 'Please enter a video URL', 'error');
+                    return;
+                }
+                
+                if (!isValidVideoUrl(videoUrl)) {
+                    showNotification('Invalid URL', 'Please enter a valid YouTube, Vimeo, Dailymotion or direct video URL', 'error');
+                    return;
+                }
+                
+                const sourceType = detectVideoSource(videoUrl);
+                showNotification('Video Loading', `Loading ${sourceType} video...`, 'success');
+                
+                // In a real app, you would load the video here
+                // For this demo, we'll simulate loading
+                setTimeout(() => {
+                    document.getElementById('theaterModal').style.display = 'none';
+                    document.getElementById('modalButtons').style.display = 'flex';
+                    updateStatus(`Hosting theater session (${appState.roomId})`, 'connected');
+                    startTimer();
+                    showNotification('Video Loaded', 'The video is ready to play', 'success');
+                }, 1500);
+            });
+            
+            // Other initialization code...
+        });
+
+        // ========== HELPER FUNCTIONS ========== //
+        function showNotification(title, message, type = 'info') {
+            const notification = document.getElementById('globalNotification');
+            const titleElem = document.getElementById('notificationTitle');
+            const messageElem = document.getElementById('notificationMessage');
+            
+            if (!notification || !titleElem || !messageElem) return;
+            
+            notification.style.display = 'flex';
+            titleElem.textContent = title;
+            messageElem.textContent = message;
+            
+            notification.style.backgroundColor = 
+                type === 'error' ? 'rgba(244, 67, 54, 0.8)' :
+                type === 'success' ? 'rgba(76, 175, 80, 0.8)' :
+                'rgba(58, 123, 213, 0.8)';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+        
+        function updateStatus(text, status) {
+            const statusElem = document.getElementById('connectionStatus');
+            if (!statusElem) return;
+            
+            statusElem.textContent = text;
+            statusElem.className = 'status-indicator';
+            
+            if (status === 'connected') {
+                statusElem.classList.add('connected');
+                statusElem.innerHTML = `<i class="fas fa-check-circle"></i> ${text}`;
+            } 
+            else if (status === 'connecting') {
+                statusElem.classList.add('connecting');
+                statusElem.innerHTML = `<i class="fas fa-sync-alt fa-spin"></i> ${text}`;
+            }
+            else if (status === 'error') {
+                statusElem.classList.add('error');
+                statusElem.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${text}`;
+            }
+            else {
+                statusElem.innerHTML = `<i class="fas fa-info-circle"></i> ${text}`;
+            }
+        }
+        
+        function startTimer() {
+            // Timer implementation would go here
+        }
 </script>
 </body>
 </html>
