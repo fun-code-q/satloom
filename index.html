@@ -2549,22 +2549,26 @@ function cleanupMediaCall(mode) {
   if (mode === 'video') {
     const remoteVideo = document.getElementById('video-remote-video');
     const localVideo = document.getElementById('video-local-video');
-    if (remoteVideo) remoteVideo.srcObject = null;
+    if (remoteVideo) {
+      remoteVideo.srcObject = null;
+      remoteVideo.style.display = 'none'; // Add this line
+    }
     if (localVideo) localVideo.srcObject = null;
 
     document.getElementById('videoSpinner').style.display = 'none';
     document.getElementById('switchCameraBtn').style.display = 'none';
     document.getElementById('switchCameraBtnNormal').style.display = 'none';
+    document.getElementById('videoRemoteVideoContainer').style.display = 'none'; // Add this line
+
+    // Reset the placeholder animation
+    document.querySelector('#video-call-section .placeholder-animation').style.display = 'flex';
 
     if (appState.isFullscreen) {
       exitFullscreenVideoMode();
     }
   }
+document.getElementById(`${mode}Controls`).style.display = 'none';
 
-  document.getElementById(`${mode}Controls`).style.display = 'none';
-}
-
-function cleanupTextChat() {
   // Reset UI
   document.querySelector('.text-chat-container').style.display = 'none';
   document.querySelector('#text-chat-section .placeholder-animation').style.display = 'flex';
