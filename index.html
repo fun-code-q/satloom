@@ -1513,93 +1513,8 @@ html, body {
 .theater-top-controls {
     z-index: 1001 !important;
 }
-.typing-indicator {
-  display: none;
-  padding: 8px;
-  margin: 5px 0;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  align-self: flex-start;
-}
 
-.typing-indicator i {
-  display: inline-block;
-  margin: 0 2px;
-  animation: bounce 1.4s infinite ease-in-out;
-}
-
-.typing-indicator i:nth-child(1) { animation-delay: 0s; }
-.typing-indicator i:nth-child(2) { animation-delay: 0.2s; }
-.typing-indicator i:nth-child(3) { animation-delay: 0.4s; }
-
-@keyframes bounce {
-  0%, 60%, 100% { transform: translateY(0); }
-  30% { transform: translateY(-5px); }
-}
-
-/* FIX: Ensure theater container is always properly sized */
-.theater-container-wrapper {
-  position: relative;
-  width: 100%;
-  height: 400px;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #000;
-  margin: 15px 0;
-}
-
-/* FIX: Proper fullscreen video sizing */
-.fullscreen-theater-mode #theaterVideoPlayer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-/* FIX: Improved video loading experience */
-.theater-loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1001;
-}
-
-/* FIX: Better control visibility */
-.theater-controls-container {
-  opacity: 1;
-  transition: opacity 0.3s;
-  background: rgba(0, 0, 0, 0.5);
-}
-
-.theater-controls-container:hover {
-  opacity: 1;
-}
-
-/* FIX: Video player aspect ratio */
-.video-player-container {
-  position: relative;
-  padding-bottom: 56.25%; /* 16:9 aspect ratio */
-  height: 0;
-  overflow: hidden;
-}
-
-.video-player-container iframe,
-.video-player-container video {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-</style>
+    </style>
 </head>
 <body class="dark-mode">
     <!-- Desktop menu toggle button -->
@@ -1884,11 +1799,8 @@ html, body {
                     
                     <!-- Theater Video Container -->
                     <div id="theaterContainer" style="display: none;">
-                        <div class="video-player-container" id="videoPlayerContainer">
-                            <div class="theater-loading-overlay" id="theaterLoadingOverlay">
-                                <div class="spinner"></div>
-                                <div style="margin-top: 15px;">Loading video...</div>
-                            </div>
+                        <div class="theater-video-container">
+                            <div class="theater-loading-spinner" id="theaterLoadingSpinner"></div>
                             <div id="theaterVideoPlayer" class="theater-video-player"></div>
                         </div>
                         
@@ -2183,9 +2095,7 @@ const domRefs = {
   theaterModalButtons: document.getElementById('theaterModalButtons'),
   theaterModalCopy: document.getElementById('theaterModalCopy'),
   theaterModalCancel: document.getElementById('theaterModalCancel'),
-  copyTheaterLinkTop: document.getElementById('copyTheaterLinkTop'),
-  videoPlayerContainer: document.getElementById('videoPlayerContainer'),
-  theaterLoadingOverlay: document.getElementById('theaterLoadingOverlay')
+  copyTheaterLinkTop: document.getElementById('copyTheaterLinkTop')
 };
 
 // ========== UTILITY FUNCTIONS ========== //
@@ -2639,28 +2549,23 @@ function cleanupMediaCall(mode) {
   if (mode === 'video') {
     const remoteVideo = document.getElementById('video-remote-video');
     const localVideo = document.getElementById('video-local-video');
-    if (remoteVideo) {
-      remoteVideo.srcObject = null;
-      remoteVideo.style.display = 'none'; // Add this line
-    }
+    if (remoteVideo) remoteVideo.srcObject = null;
     if (localVideo) localVideo.srcObject = null;
 
     document.getElementById('videoSpinner').style.display = 'none';
     document.getElementById('switchCameraBtn').style.display = 'none';
     document.getElementById('switchCameraBtnNormal').style.display = 'none';
-    document.getElementById('videoRemoteVideoContainer').style.display = 'none'; // Add this line
-
-    // Reset the placeholder animation
-    document.querySelector('#video-call-section .placeholder-animation').style.display = 'flex';
 
     if (appState.isFullscreen) {
       exitFullscreenVideoMode();
     }
   }
-document.getElementById(`${mode}Controls`).style.display = 'none';
+
+  document.getElementById(`${mode}Controls`).style.display = 'none';
+}
 
 function cleanupTextChat() {
-// Reset UI
+  // Reset UI
   document.querySelector('.text-chat-container').style.display = 'none';
   document.querySelector('#text-chat-section .placeholder-animation').style.display = 'flex';
   
@@ -2683,7 +2588,6 @@ function cleanupTextChat() {
   if (chatContainer) chatContainer.innerHTML = '';
   if (messageInput) messageInput.value = '';
   
-  // Reset all hangup buttons
   ['endTextChat', 'endTextChatFullscreen'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
@@ -2692,26 +2596,7 @@ function cleanupTextChat() {
   if (appState.isFullscreen) {
     exitFullscreenTextMode();
   }
-}}
-// Set up typing detection
-  const messageInput = document.getElementById('textMessage');
-  messageInput.addEventListener('input', () => {
-    if (!appState.isTyping) {
-      appState.isTyping = true;
-      appState.typingRef.child(appState.userId).set(true);
-    }
-    
-    // Reset the typing timeout
-    clearTimeout(appState.typingTimeout);
-    appState.typingTimeout = setTimeout(() => {
-      appState.isTyping = false;
-      appState.typingRef.child(appState.userId).set(false);
-    }, 1500);
-  });
-// Add event listener for fullscreen hangup button
-document.getElementById('endTextChatFullscreen').addEventListener('click', () => {
-  hangup('text');
-});
+}
 
 // ========== FULLSCREEN MODES ========== //
 function toggleFullscreenMode(enter, mode) {
@@ -2895,11 +2780,7 @@ function initTextChat() {
     if (message) {
       addMessageToChat(message);
       if (message.userId !== appState.userId) {
-        // Only show notification if not in fullscreen text mode
-        if (!document.body.classList.contains('fullscreen-text-mode')) {
-          showNotification('New Message', `${message.userName}: ${message.text}`);
-          playNotificationSound();
-        }
+        playNotificationSound();
       }
     }
   });
@@ -2950,7 +2831,6 @@ function addMessageToChat(message) {
   domRefs.typingIndicator.style.order = '1';
 }
 
-// Update the sendChatMessage function to ensure notifications work
 async function sendChatMessage() {
   const input = document.getElementById('textMessage');
   const message = input.value.trim();
@@ -2975,38 +2855,11 @@ async function sendChatMessage() {
     
     await appState.textChatRef.push(messageData);
     input.value = '';
-    
-    // Reset typing indicator
-    if (appState.typingRef) {
-      appState.typingRef.child(appState.userId).set(false);
-    }
   } catch (error) {
     console.error('Error sending message:', error);
     showNotification('Error', `Failed to send message: ${error.message}`, 'error');
   }
-  // Listen for typing status updates
-  appState.typingRef.on('value', snapshot => {
-    const typingData = snapshot.val();
-    if (!typingData) {
-      domRefs.typingIndicator.style.display = 'none';
-      return;
-    }
-    
-    let someoneTyping = false;
-    for (const userId in typingData) {
-      if (userId !== appState.userId && typingData[userId]) {
-        someoneTyping = true;
-        break;
-      }
-    }
-    
-    domRefs.typingIndicator.style.display = someoneTyping ? 'block' : 'none';
-    if (someoneTyping) {
-      domRefs.typingIndicator.scrollIntoView({ behavior: 'smooth' });
-    }
-  });
 }
-
 
 // ========== THEATER FUNCTIONS ========== //
 function validateTheaterUrl() {
@@ -3053,9 +2906,13 @@ function loadTheaterVideo() {
     const sourceType = detectTheaterSource(url);
     
     // Show loading spinner
+    document.getElementById('theaterLoadingSpinner').style.display = 'block';
+    document.getElementById('theaterModal').style.display = 'none';
     document.getElementById('theaterContainer').style.display = 'block';
     document.querySelector('.theater-placeholder').style.display = 'none';
-    domRefs.theaterLoadingOverlay.style.display = 'flex';
+    
+    // Enter full screen mode
+    enterTheaterFullscreen();
     
     // Initialize player based on source type
     if (sourceType === 'youtube') {
@@ -3132,15 +2989,12 @@ function createYouTubePlayer(videoId) {
 }
 
 function onTheaterPlayerReady(event) {
-    domRefs.theaterLoadingOverlay.style.display = 'none';
+    document.getElementById('theaterLoadingSpinner').style.display = 'none';
     theaterState.duration = event.target.getDuration();
     updateTheaterTimeDisplay();
     startTheaterSeekUpdate();
     event.target.setVolume(theaterState.currentVolume * 100);
     showNotification('Video Ready', 'The video is ready to play', 'success');
-    
-    // FIX: Enter fullscreen for all participants
-    enterTheaterFullscreen();
     
     if (theaterState.isTheaterLeader) {
         initTheaterSync();
@@ -3164,10 +3018,10 @@ function onTheaterPlayerStateChange(event) {
             updateTheaterPlayPauseButton();
             break;
         case YT.PlayerState.BUFFERING:
-            domRefs.theaterLoadingOverlay.style.display = 'flex';
+            document.getElementById('theaterLoadingSpinner').style.display = 'block';
             break;
         case YT.PlayerState.CUED:
-            domRefs.theaterLoadingOverlay.style.display = 'none';
+            document.getElementById('theaterLoadingSpinner').style.display = 'none';
             break;
     }
     
@@ -3177,7 +3031,7 @@ function onTheaterPlayerStateChange(event) {
 }
 
 function onTheaterPlayerError(event) {
-    domRefs.theaterLoadingOverlay.style.display = 'none';
+    document.getElementById('theaterLoadingSpinner').style.display = 'none';
     showNotification('Error', 'Failed to load video', 'error');
     console.error('YouTube player error:', event.data);
 }
@@ -3193,14 +3047,11 @@ function loadDirectVideo(url) {
     videoElement.style.height = '100%';
     
     videoElement.oncanplay = function() {
-        domRefs.theaterLoadingOverlay.style.display = 'none';
+        document.getElementById('theaterLoadingSpinner').style.display = 'none';
         theaterState.duration = videoElement.duration;
         updateTheaterTimeDisplay();
         startTheaterSeekUpdate();
         showNotification('Video Ready', 'The video is ready to play', 'success');
-        
-        // FIX: Enter fullscreen for all participants
-        enterTheaterFullscreen();
         
         if (theaterState.isTheaterLeader) {
             initTheaterSync();
@@ -3210,7 +3061,7 @@ function loadDirectVideo(url) {
     };
     
     videoElement.onerror = function() {
-        domRefs.theaterLoadingOverlay.style.display = 'none';
+        document.getElementById('theaterLoadingSpinner').style.display = 'none';
         showNotification('Error', 'Failed to load video', 'error');
     };
     
@@ -3239,11 +3090,11 @@ function loadDirectVideo(url) {
     };
     
     videoElement.onwaiting = function() {
-        domRefs.theaterLoadingOverlay.style.display = 'flex';
+        document.getElementById('theaterLoadingSpinner').style.display = 'block';
     };
     
     videoElement.onplaying = function() {
-        domRefs.theaterLoadingOverlay.style.display = 'none';
+        document.getElementById('theaterLoadingSpinner').style.display = 'none';
     };
     
     videoElement.ontimeupdate = function() {
@@ -3670,11 +3521,6 @@ async function joinRoom(mode) {
       updateStatus(`Joined theater session (${appState.roomId})`, 'connecting');
       showNotification('Theater Joined', `Joined theater room: ${appState.roomId}`, 'success');
       startTimer();
-      
-      // FIX: Immediately show theater container
-      document.getElementById('theaterContainer').style.display = 'block';
-      document.querySelector('.theater-placeholder').style.display = 'none';
-      domRefs.theaterLoadingOverlay.style.display = 'flex';
     } 
     else if (mode !== 'text') {
       const mediaInitialized = await initMedia(mode);
