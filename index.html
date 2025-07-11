@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -612,7 +611,6 @@ html, body {
 
 .desktop-menu-toggle:hover {
   transform: scale(1.1);
-  background: rgba(58, 123, 213, 0.2);
 }
 
 .desktop-menu-toggle .close-icon {
@@ -774,45 +772,53 @@ html, body {
 
 /* Theater Fullscreen */
 .fullscreen-theater-mode #theater-section {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 10000;
-  background: #000;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .fullscreen-theater-mode #theater-section .card {
-  border-radius: 0;
-  height: 100%;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-  margin: 0;
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
 }
 
 .fullscreen-theater-mode #theaterContainer {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-  margin: 0;
-  width: 100%;
-  height: 100%;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin: 0;
 }
 
-.fullscreen-theater-mode #mediaPlayer {
-  width: 100%;
-  height: 100%;
-  border-radius: 0;
-  object-fit: contain;
-  margin: 0;
-  padding: 0;
+/* FIX: Make video container relative and player absolute */
+.fullscreen-theater-mode .theater-video-container {
+    flex: 1;
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.fullscreen-theater-mode #theaterVideoPlayer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 /* Top Controls */
@@ -853,21 +859,22 @@ html, body {
 
 /* ========== THEATER CONTROLS ========== */
 .theater-controls-container {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 10px 15px;
-  display: flex;
-  flex-direction: column;
-  z-index: 1000;
-  transition: opacity 0.3s;
-  opacity: 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 10px 15px;
+    z-index: 10001;
+    opacity: 0;
+    transition: opacity 0.3s;
 }
 
 .theater-controls-container:hover {
   opacity: 1;
+}
+.fullscreen-theater-mode .theater-controls-container {
+    opacity: 1;
 }
 
 .theater-main-controls {
@@ -1398,8 +1405,67 @@ html, body {
   }
 }
 
+/* ========== THEATER SPECIFIC STYLES ========== */
 .normal-hangup {
   display: none !important;
+}
+
+.fullscreen-theater-mode #theater-room-id,
+.fullscreen-theater-mode #createTheaterRoom,
+.fullscreen-theater-mode #joinTheaterRoom,
+.fullscreen-theater-mode #copyTheaterLink,
+.fullscreen-theater-mode .theater-placeholder {
+    display: none !important;
+}
+
+.theater-top-controls {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    gap: 8px;
+    z-index: 10002;
+    display: none;
+}
+
+.fullscreen-theater-mode .theater-top-controls {
+    display: flex;
+}
+
+.theater-hangup-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(244, 67, 54, 0.8);
+    border: none;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10002;
+    display: none;
+}
+
+.fullscreen-theater-mode .theater-hangup-btn {
+    display: flex;
+    }
+
+/* Theater container styles */
+.fullscreen-theater-mode #theaterContainer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#theaterVideoPlayer {
+    width: 100%;
+    height: 100%;
 }
     </style>
 </head>
@@ -1588,10 +1654,9 @@ html, body {
                 </div>
             </div>
             
-           <!-- Text Chat Section -->
+            <!-- Text Chat Section -->
             <div class="section" id="text-chat-section">
                 <div class="card">
-                    
                     <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <i class="fas fa-comments"></i> Text Chat
@@ -1609,13 +1674,10 @@ html, body {
                             <i class="fas fa-sign-in-alt"></i> Join Room
                         </button>
                         <button class="control-btn end normal-hangup" id="endTextChat" style="display: none; margin-left: 8px;">
-                        <i class="fas fa-phone-slash"></i>
+                            <i class="fas fa-phone-slash"></i>
                         </button>
                         <button class="copy-btn" id="copyTextLink" style="display: none; margin-left: 8px;">
                             <i class="fas fa-copy"></i>
-                        </button>
-                        <button class="control-btn end" id="endTextChat" style="display: none; margin-left: 8px;">
-                            <i class="fas fa-phone-slash"></i>
                         </button>
                     </div>
                     <div class="placeholder-animation">
@@ -1626,126 +1688,19 @@ html, body {
                         </div>
                     </div>
                     <div class="text-chat-container" style="display: none;">
-    <div id="textChat" class="chat-container">
-        <div class="typing-indicator" id="typingIndicator">
-            <i class="fas fa-circle"></i>
-            <i class="fas fa-circle"></i>
-            <i class="fas fa-circle"></i>
-        </div>
-    </div>
-    <div class="chat-input-container">
-        <input type="text" id="textMessage" class="input-styled" placeholder="Type a message...">
-        <button class="btn" id="sendTextMessage">
-            <i class="fas fa-paper-plane send-icon"></i>
-        </button>
-        <button class="control-btn end" id="endTextChatFullscreen" style="display: none; margin-left: 8px;">
-            <i class="fas fa-phone-slash"></i>
-        </button>
-    </div>
-</div>
-                </div>
-            </div>
-    
-    <div class="notification" id="notification">
-        <div class="notification-content"></div>
-    </div>
-            
-<!-- Theater Section -->
-    <div class="section" id="theater-section">
-        <div class="card">
-            <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <i class="fas fa-film"></i> Theater
-                </div>
-                <div class="call-timer theater-timer" id="theaterTimer">00:00</div>
-            </div>
-            
-            <div class="input-group">
-                <input type="text" id="theater-room-id" class="input-styled" placeholder="Enter Room ID">
-            </div>
-            
-            <div class="call-controls">
-                <button class="btn" id="createTheaterRoom">
-                    <i class="fas fa-network-wired"></i> Create Room
-                </button>
-                <button class="btn btn-secondary" id="joinTheaterRoom">
-                    <i class="fas fa-sign-in-alt"></i> Join Room
-                </button>
-                <button class="copy-btn" id="copyTheaterLink" style="display: none; margin-left: 8px;">
-                    <i class="fas fa-copy"></i>
-                </button>
-                <button class="control-btn end" id="endTheaterSession" style="display: none; margin-left: 8px;">
-                    <i class="fas fa-phone-slash"></i>
-                </button>
-            </div>
-            
-            <div class="theater-placeholder">
-                <div class="clapperboard">
-                    <div class="clapper-top"></div>
-                    <div class="clapper-bottom"></div>
-                </div>
-            </div>
-            
-            <!-- Theater Video Container (hidden by default) -->
-            <div id="theaterContainer" style="display: none;">
-                <div class="theater-video-container">
-                    <div class="theater-loading-spinner" id="theaterLoadingSpinner"></div>
-                    <div id="theaterVideoPlayer" class="theater-video-player"></div>
-                </div>
-                
-                <div class="theater-controls-container" id="theaterControls">
-                    <div class="theater-seek-bar" id="theaterSeekBar">
-                        <div class="theater-seek-bar-progress" id="theaterSeekBarProgress"></div>
-                        <div class="theater-seek-bar-handle" id="theaterSeekBarHandle"></div>
-                    </div>
-                    
-                    <div class="theater-main-controls">
-                        <div class="theater-left-controls">
-                            <button class="theater-btn" id="theaterPTTButton">
-                                <i class="fas fa-microphone"></i>
-                            </button>
-                            <div class="theater-time-display" id="theaterTimeDisplay">00:00 / 00:00</div>
-                        </div>
-                        
-                        <div class="theater-center-controls">
-                            <button class="theater-btn" id="theaterBackButton">
-                                <i class="fas fa-step-backward"></i>
-                            </button>
-                            <button class="theater-btn" id="theaterPlayPauseButton">
-                                <i class="fas fa-play"></i>
-                            </button>
-                            <button class="theater-btn" id="theaterForwardButton">
-                                <i class="fas fa-step-forward"></i>
-                            </button>
-                        </div>
-                        
-                        <div class="theater-right-controls">
-                            <div class="theater-volume-container">
-                                <button class="theater-btn" id="theaterMuteButton">
-                                    <i class="fas fa-volume-up"></i>
-                                </button>
-                                <input type="range" class="theater-volume-slider" id="theaterVolumeSlider" min="0" max="1" step="0.01" value="0.7">
+                        <div id="textChat" class="chat-container">
+                            <div class="typing-indicator" id="typingIndicator">
+                                <i class="fas fa-circle"></i>
+                                <i class="fas fa-circle"></i>
+                                <i class="fas fa-circle"></i>
                             </div>
-                            
-                            <div class="theater-quality-selector">
-                                <button class="theater-btn" id="theaterQualityButton">
-                                    <i class="fas fa-cog"></i>
-                                </button>
-                                <div class="theater-quality-options" id="theaterQualityOptions">
-                                    <div class="theater-quality-option" data-quality="auto">Auto</div>
-                                    <div class="theater-quality-option" data-quality="small">240p</div>
-                                    <div class="theater-quality-option" data-quality="medium">360p</div>
-                                    <div class="theater-quality-option" data-quality="large">480p</div>
-                                    <div class="theater-quality-option" data-quality="hd720">720p</div>
-                                    <div class="theater-quality-option" data-quality="hd1080">1080p</div>
-                                </div>
-                            </div>
-                            
-                            <button class="theater-btn" id="theaterFullscreenButton">
-                                <i class="fas fa-expand"></i>
+                        </div>
+                        <div class="chat-input-container">
+                            <input type="text" id="textMessage" class="input-styled" placeholder="Type a message...">
+                            <button class="btn" id="sendTextMessage">
+                                <i class="fas fa-paper-plane send-icon"></i>
                             </button>
-                            
-                            <button class="theater-btn end" id="theaterHangupButton">
+                            <button class="control-btn end" id="endTextChatFullscreen" style="display: none; margin-left: 8px;">
                                 <i class="fas fa-phone-slash"></i>
                             </button>
                         </div>
@@ -1753,35 +1708,145 @@ html, body {
                 </div>
             </div>
             
-            <!-- Theater Modal for video URL input -->
-            <div class="theater-modal" id="theaterModal" style="display: none;">
-                <div class="theater-modal-content">
-                    <h3 class="theater-modal-title"><i class="fas fa-video"></i> Create Video Room</h3>
-                    <div class="input-group">
-                        <div style="position: relative;">
-                            <input type="text" id="theaterVideoUrl" class="input-styled" 
-                                   placeholder="Paste video URL (YouTube, Vimeo, Dailymotion or direct video)">
-                            <span class="theater-url-validation" id="theaterUrlValidationIcon">
-                                <i class="fas fa-circle-notch theater-url-checking"></i>
-                            </span>
+            <!-- Theater Section -->
+            <div class="section" id="theater-section">
+                <div class="card">
+                    <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <i class="fas fa-film"></i> Theater
                         </div>
-                        <span class="theater-video-format-info">Supports: YouTube, Vimeo, Dailymotion, MP4, WebM, etc.</span>
-                        <button class="btn" id="theaterLoadBtn">
-                            <i class="fas fa-network-wired"></i> Load Video
+                        <div class="call-timer theater-timer" id="theaterTimer">00:00</div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="text" id="theater-room-id" class="input-styled" placeholder="Enter Room ID">
+                    </div>
+                    
+                    <div class="call-controls">
+                        <button class="btn" id="createTheaterRoom">
+                            <i class="fas fa-network-wired"></i> Create Room
+                        </button>
+                        <button class="btn btn-secondary" id="joinTheaterRoom">
+                            <i class="fas fa-sign-in-alt"></i> Join Room
+                        </button>
+                        <button class="copy-btn" id="copyTheaterLink" style="display: none; margin-left: 8px;">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button class="control-btn end" id="endTheaterSession" style="display: none; margin-left: 8px;">
+                            <i class="fas fa-phone-slash"></i>
                         </button>
                     </div>
-                    <div class="theater-modal-buttons" id="theaterModalButtons" style="display: none;">
-                        <button class="btn btn-secondary" id="theaterModalCancel">
-                            <i class="fas fa-times"></i> Cancel
-                        </button>
-                        <button class="btn" id="theaterModalCopy">
-                            <i class="fas fa-copy"></i> Copy Room Link
+                    
+                    <div class="theater-placeholder">
+                        <div class="clapperboard">
+                            <div class="clapper-top"></div>
+                            <div class="clapper-bottom"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Theater Video Container -->
+                    <div id="theaterContainer" style="display: none;">
+                        <div class="theater-video-container">
+                            <div class="theater-loading-spinner" id="theaterLoadingSpinner"></div>
+                            <div id="theaterVideoPlayer" class="theater-video-player"></div>
+                        </div>
+                        
+                        <div class="theater-controls-container" id="theaterControls">
+                            <div class="theater-seek-bar" id="theaterSeekBar">
+                                <div class="theater-seek-bar-progress" id="theaterSeekBarProgress"></div>
+                                <div class="theater-seek-bar-handle" id="theaterSeekBarHandle"></div>
+                            </div>
+                            
+                            <div class="theater-main-controls">
+                                <div class="theater-left-controls">
+                                    <button class="theater-btn" id="theaterPTTButton">
+                                        <i class="fas fa-microphone"></i>
+                                    </button>
+                                    <div class="theater-time-display" id="theaterTimeDisplay">00:00 / 00:00</div>
+                                </div>
+                                
+                                <div class="theater-center-controls">
+                                    <button class="theater-btn" id="theaterBackButton">
+                                        <i class="fas fa-step-backward"></i>
+                                    </button>
+                                    <button class="theater-btn" id="theaterPlayPauseButton">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                    <button class="theater-btn" id="theaterForwardButton">
+                                        <i class="fas fa-step-forward"></i>
+                                    </button>
+                                </div>
+                                
+                                <div class="theater-right-controls">
+                                    <div class="theater-volume-container">
+                                        <button class="theater-btn" id="theaterMuteButton">
+                                            <i class="fas fa-volume-up"></i>
+                                        </button>
+                                        <input type="range" class="theater-volume-slider" id="theaterVolumeSlider" min="0" max="1" step="0.01" value="0.7">
+                                    </div>
+                                    
+                                    <div class="theater-quality-selector">
+                                        <button class="theater-btn" id="theaterQualityButton">
+                                            <i class="fas fa-cog"></i>
+                                        </button>
+                                        <div class="theater-quality-options" id="theaterQualityOptions">
+                                            <div class="theater-quality-option" data-quality="auto">Auto</div>
+                                            <div class="theater-quality-option" data-quality="small">240p</div>
+                                            <div class="theater-quality-option" data-quality="medium">360p</div>
+                                            <div class="theater-quality-option" data-quality="large">480p</div>
+                                            <div class="theater-quality-option" data-quality="hd720">720p</div>
+                                            <div class="theater-quality-option" data-quality="hd1080">1080p</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <button class="theater-btn" id="theaterFullscreenButton">
+                                        <i class="fas fa-expand"></i>
+                                    </button>
+                                    
+                                    <button class="theater-btn end" id="theaterHangupButton">
+                                        <i class="fas fa-phone-slash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Theater Modal for video URL input -->
+                    <div class="theater-modal" id="theaterModal" style="display: none;">
+                        <div class="theater-modal-content">
+                            <h3 class="theater-modal-title"><i class="fas fa-video"></i> Create Video Room</h3>
+                            <div class="input-group">
+                                <div style="position: relative;">
+                                    <input type="text" id="theaterVideoUrl" class="input-styled" 
+                                           placeholder="Paste video URL (YouTube, Vimeo, Dailymotion or direct video)">
+                                    <span class="theater-url-validation" id="theaterUrlValidationIcon">
+                                        <i class="fas fa-circle-notch theater-url-checking"></i>
+                                    </span>
+                                </div>
+                                <span class="theater-video-format-info">Supports: YouTube, Vimeo, Dailymotion, MP4, WebM, etc.</span>
+                                <button class="btn" id="theaterLoadBtn">
+                                    <i class="fas fa-network-wired"></i> Load Video
+                                </button>
+                            </div>
+                            <div class="theater-modal-buttons" id="theaterModalButtons" style="display: none;">
+                                <button class="btn btn-secondary" id="theaterModalCancel">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                                <button class="btn" id="theaterModalCopy">
+                                    <i class="fas fa-copy"></i> Copy Room Link
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Theater top controls -->
+                    <div class="theater-top-controls" id="theaterTopControls">
+                        <button class="top-control-btn" id="copyTheaterLinkTop" title="Copy room link">
+                            <i class="fas fa-copy"></i>
                         </button>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
             
             <!-- Settings Section -->
             <div class="section" id="settings-section">
@@ -1843,23 +1908,30 @@ html, body {
     </div>
     
     <!-- Top right controls for text chat -->
-<div class="text-controls" id="textControls" style="display: none;">
-    <button class="top-control-btn" id="copyTextLinkTop" title="Copy room link">
-        <i class="fas fa-copy"></i>
-    </button>
-</div>
+    <div class="text-controls" id="textControls" style="display: none;">
+        <button class="top-control-btn" id="copyTextLinkTop" title="Copy room link">
+            <i class="fas fa-copy"></i>
+        </button>
+    </div>
     
     <!-- Audio elements -->
     <audio id="remoteAudio" autoplay playsinline></audio>
     <audio id="notificationSound" preload="auto">
         <source src="https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3" type="audio/mpeg">
     </audio>
+    
+    <!-- External scripts -->
     <script src="https://www.youtube.com/iframe_api"></script>
-    <!-- Firebase scripts -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
-    <script>
+    <!-- Theater hangup button (positioned outside main container) -->
+    <button class="theater-hangup-btn" id="theaterHangupTop">
+        <i class="fas fa-phone-slash"></i>
+    </button>
+</body>
+    
+<script>
 // ========== FIREBASE CONFIGURATION ========== //
 const firebaseConfig = {
   apiKey: "AIzaSyDeksN3qPZCmNuoASlEqG38XVmag6ecTh8",
@@ -1915,6 +1987,7 @@ const domRefs = {
   theaterQualityOptions: document.getElementById('theaterQualityOptions'),
   theaterPTTButton: document.getElementById('theaterPTTButton'),
   theaterHangupButton: document.getElementById('theaterHangupButton'),
+  theaterHangupTop: document.getElementById('theaterHangupTop'),
   theaterFullscreenButton: document.getElementById('theaterFullscreenButton'),
   theaterSeekBarProgress: document.getElementById('theaterSeekBarProgress'),
   theaterSeekBarHandle: document.getElementById('theaterSeekBarHandle'),
@@ -1925,7 +1998,8 @@ const domRefs = {
   theaterLoadBtn: document.getElementById('theaterLoadBtn'),
   theaterModalButtons: document.getElementById('theaterModalButtons'),
   theaterModalCopy: document.getElementById('theaterModalCopy'),
-  theaterModalCancel: document.getElementById('theaterModalCancel')
+  theaterModalCancel: document.getElementById('theaterModalCancel'),
+  copyTheaterLinkTop: document.getElementById('copyTheaterLinkTop')
 };
 
 // ========== STATE MANAGEMENT ========== //
@@ -2363,51 +2437,61 @@ function hangup(mode) {
 }
 
 function cleanupTheater() {
-  if (theaterState.player) {
-    if (theaterState.player.stopVideo) {
-      theaterState.player.stopVideo();
-    } else if (theaterState.player.pause) {
-      theaterState.player.pause();
+    if (theaterState.player) {
+        if (typeof theaterState.player.stopVideo === 'function') {
+            theaterState.player.stopVideo();
+        } else if (theaterState.player.pause) {
+            theaterState.player.pause();
+        }
     }
-  }
-  
-  if (theaterState.pttAudioStream) {
-    theaterState.pttAudioStream.getTracks().forEach(track => track.stop());
-    theaterState.pttAudioStream = null;
-  }
-  
-  if (theaterState.pttPeerConnection) {
-    theaterState.pttPeerConnection.close();
-    theaterState.pttPeerConnection = null;
-  }
-  
-  if (theaterState.theaterRef) {
-    theaterState.theaterRef.off();
-    theaterState.theaterRef = null;
-  }
-  
-  if (theaterState.seekBarUpdateInterval) {
-    clearInterval(theaterState.seekBarUpdateInterval);
-    theaterState.seekBarUpdateInterval = null;
-  }
-  
-  // Reset UI
-  domRefs.theaterContainer.style.display = 'none';
-  domRefs.theaterModal.style.display = 'none';
-  document.querySelector('.theater-placeholder').style.display = 'flex';
-  document.getElementById('endTheaterSession').style.display = 'none';
-  
-  if (appState.isFullscreen) {
-    exitTheaterFullscreen();
-  }
-  
-  // Reset state
-  theaterState.player = null;
-  theaterState.mediaUrl = null;
-  theaterState.isPlaying = false;
-  theaterState.isMuted = false;
-  theaterState.currentQuality = 'auto';
-  theaterState.isPTTActive = false;
+    
+    if (theaterState.pttAudioStream) {
+        theaterState.pttAudioStream.getTracks().forEach(track => track.stop());
+        theaterState.pttAudioStream = null;
+    }
+    
+    if (theaterState.pttPeerConnection) {
+        theaterState.pttPeerConnection.close();
+        theaterState.pttPeerConnection = null;
+    }
+    
+    if (theaterState.theaterRef) {
+        theaterState.theaterRef.off();
+        theaterState.theaterRef = null;
+    }
+    
+    if (theaterState.seekBarUpdateInterval) {
+        clearInterval(theaterState.seekBarUpdateInterval);
+        theaterState.seekBarUpdateInterval = null;
+    }
+    document.getElementById('theaterContainer').style.display = 'none';
+    document.getElementById('theaterModal').style.display = 'none';
+    document.querySelector('.theater-placeholder').style.display = 'flex';
+    document.getElementById('theaterTopControls').style.display = 'none';
+    document.getElementById('theaterHangupTop').style.display = 'none';
+    document.getElementById('endTheaterSession').style.display = 'none';
+    if (appState.isFullscreen) {
+        exitTheaterFullscreen();
+    }
+    
+    // Reset UI
+    document.getElementById('theaterContainer').style.display = 'none';
+    document.getElementById('theaterModal').style.display = 'none';
+    document.querySelector('.theater-placeholder').style.display = 'flex';
+    document.getElementById('theaterTopControls').style.display = 'none';
+    document.getElementById('theaterHangupTop').style.display = 'none';
+    
+    if (appState.isFullscreen) {
+        exitTheaterFullscreen();
+    }
+    
+    // Reset state
+    theaterState.player = null;
+    theaterState.mediaUrl = null;
+    theaterState.isPlaying = false;
+    theaterState.isMuted = false;
+    theaterState.currentQuality = 'auto';
+    theaterState.isPTTActive = false;
 }
 
 function cleanupMediaCall(mode) {
@@ -2555,16 +2639,37 @@ function exitFullscreenTextMode() {
 }
 
 function enterTheaterFullscreen() {
-  document.body.classList.add('fullscreen-theater-mode');
-  appState.isFullscreen = true;
-  updateTheaterFullscreenButton();
+    document.body.classList.add('fullscreen-theater-mode');
+    appState.isFullscreen = true;
+    domRefs.theaterFullscreenButton.style.display = 'none';
+    domRefs.theaterControls.style.opacity = '1';
+    document.getElementById('theaterTopControls').style.display = 'flex';
+    document.getElementById('theaterHangupTop').style.display = 'flex';
+    document.getElementById('theaterHangupButton').style.display = 'none'; // Add this line
 }
 
 function exitTheaterFullscreen() {
-  document.body.classList.remove('fullscreen-theater-mode');
-  appState.isFullscreen = false;
-  updateTheaterFullscreenButton();
+    document.body.classList.remove('fullscreen-theater-mode');
+    appState.isFullscreen = false;
+    domRefs.theaterFullscreenButton.style.display = 'block';
+    domRefs.theaterControls.style.opacity = '0';
+    document.getElementById('theaterTopControls').style.display = 'none';
+    document.getElementById('theaterHangupTop').style.display = 'none';
+    document.getElementById('theaterHangupButton').style.display = 'block'; // Add this line
 }
+
+// Add ESC key handler for exiting fullscreen
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && appState.isFullscreen) {
+        if (appState.currentMode === 'theater') {
+            exitTheaterFullscreen();
+        } else if (appState.currentMode === 'video') {
+            exitFullscreenVideoMode();
+        } else if (appState.currentMode === 'text') {
+            exitFullscreenTextMode();
+        }
+    }
+});
 
 function updateTheaterFullscreenButton() {
   domRefs.theaterFullscreenButton.innerHTML = 
@@ -2723,34 +2828,31 @@ async function sendChatMessage() {
   }
 }
 
-  // ========== THEATER FUNCTIONS ========== //
-        function validateTheaterUrl() {
-            const url = domRefs.theaterVideoUrl.value.trim();
-            domRefs.theaterUrlValidationIcon.style.display = 'none';
-            
-            if (!url) return;
-            
-            domRefs.theaterUrlValidationIcon.style.display = 'block';
-            domRefs.theaterUrlValidationIcon.innerHTML = '<i class="fas fa-circle-notch theater-url-checking"></i>';
-            
-            setTimeout(() => {
-                if (isValidTheaterUrl(url)) {
-                    domRefs.theaterUrlValidationIcon.innerHTML = '<i class="fas fa-check-circle theater-url-valid"></i>';
-                } else {
-                    domRefs.theaterUrlValidationIcon.innerHTML = '<i class="fas fa-times-circle theater-url-invalid"></i>';
-                }
-            }, 800);
+// ========== THEATER FUNCTIONS ========== //
+function validateTheaterUrl() {
+    const url = document.getElementById('theaterVideoUrl').value.trim();
+    const validationIcon = document.getElementById('theaterUrlValidationIcon');
+    validationIcon.style.display = 'none';
+    
+    if (!url) return;
+    
+    validationIcon.style.display = 'block';
+    validationIcon.innerHTML = '<i class="fas fa-circle-notch theater-url-checking"></i>';
+    
+    setTimeout(() => {
+        if (isValidTheaterUrl(url)) {
+            validationIcon.innerHTML = '<i class="fas fa-check-circle theater-url-valid"></i>';
+        } else {
+            validationIcon.innerHTML = '<i class="fas fa-times-circle theater-url-invalid"></i>';
         }
+    }, 800);
+}
 
-      function isValidTheaterUrl(url) {
+function isValidTheaterUrl(url) {
     const patterns = [
         // YouTube
         /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
         /^(?:https?:\/\/)?(?:www\.)?youtube\.com\/live\/([a-zA-Z0-9_-]+)/,
-        // Vimeo
-        /^(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(\d+)/,
-        // Dailymotion
-        /^(?:https?:\/\/)?(?:www\.)?dailymotion\.com\/video\/([a-zA-Z0-9]+)/,
         // Direct video
         /\.(mp4|webm|mov|mkv|avi)(\?.*)?$/i,
         /\.(m3u8|mpd)(\?.*)?$/i
@@ -2759,7 +2861,7 @@ async function sendChatMessage() {
     return patterns.some(pattern => pattern.test(url));
 }
 
-       function loadTheaterVideo() {
+function loadTheaterVideo() {
     const url = document.getElementById('theaterVideoUrl').value.trim();
     
     if (!url || !isValidTheaterUrl(url)) {
@@ -2774,18 +2876,16 @@ async function sendChatMessage() {
     document.getElementById('theaterLoadingSpinner').style.display = 'block';
     document.getElementById('theaterModal').style.display = 'none';
     document.getElementById('theaterContainer').style.display = 'block';
-    
-    // Hide placeholder
     document.querySelector('.theater-placeholder').style.display = 'none';
+    
+    // Enter full screen mode
+    enterTheaterFullscreen();
     
     // Initialize player based on source type
     if (sourceType === 'youtube') {
         loadYouTubeVideo(url);
     } else if (sourceType === 'direct') {
         loadDirectVideo(url);
-    } else {
-        showNotification('Error', 'Unsupported video source', 'error');
-        return;
     }
     
     // Show modal buttons
@@ -2798,16 +2898,14 @@ async function sendChatMessage() {
     showNotification('Video Loading', `Loading ${sourceType} video...`, 'success');
 }
 
-        function detectTheaterSource(url) {
-            if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
-            if (url.includes('vimeo.com')) return 'vimeo';
-            if (url.includes('dailymotion.com')) return 'dailymotion';
-            if (/\.(mp4|webm|mov|mkv|avi)(\?.*)?$/i.test(url)) return 'direct';
-            if (/\.(m3u8|mpd)(\?.*)?$/i.test(url)) return 'stream';
-            return 'unknown';
-        }
+function detectTheaterSource(url) {
+    if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
+    if (/\.(mp4|webm|mov|mkv|avi)(\?.*)?$/i.test(url)) return 'direct';
+    if (/\.(m3u8|mpd)(\?.*)?$/i.test(url)) return 'stream';
+    return 'unknown';
+}
 
-       function loadYouTubeVideo(url) {
+function loadYouTubeVideo(url) {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
     const videoId = (match && match[2].length === 11) ? match[2] : null;
@@ -2831,7 +2929,7 @@ async function sendChatMessage() {
     }
 }
 
-        function createYouTubePlayer(videoId) {
+function createYouTubePlayer(videoId) {
     const playerElement = document.getElementById('theaterVideoPlayer');
     playerElement.innerHTML = '';
     
@@ -2857,57 +2955,55 @@ async function sendChatMessage() {
     });
 }
 
-        function onTheaterPlayerReady(event) {
-            domRefs.theaterLoadingSpinner.style.display = 'none';
-            theaterState.duration = event.target.getDuration();
-            updateTheaterTimeDisplay();
-            startTheaterSeekUpdate();
-            event.target.setVolume(theaterState.currentVolume * 100);
-            showNotification('Video Ready', 'The video is ready to play', 'success');
-            
-            // Initialize theater sync if leader
-            if (theaterState.isTheaterLeader) {
-                initTheaterSync();
-            } else {
-                listenForTheaterSync();
-            }
-        }
+function onTheaterPlayerReady(event) {
+    document.getElementById('theaterLoadingSpinner').style.display = 'none';
+    theaterState.duration = event.target.getDuration();
+    updateTheaterTimeDisplay();
+    startTheaterSeekUpdate();
+    event.target.setVolume(theaterState.currentVolume * 100);
+    showNotification('Video Ready', 'The video is ready to play', 'success');
+    
+    if (theaterState.isTheaterLeader) {
+        initTheaterSync();
+    } else {
+        listenForTheaterSync();
+    }
+}
 
-        function onTheaterPlayerStateChange(event) {
-            switch(event.data) {
-                case YT.PlayerState.PLAYING:
-                    theaterState.isPlaying = true;
-                    updateTheaterPlayPauseButton();
-                    break;
-                case YT.PlayerState.PAUSED:
-                    theaterState.isPlaying = false;
-                    updateTheaterPlayPauseButton();
-                    break;
-                case YT.PlayerState.ENDED:
-                    theaterState.isPlaying = false;
-                    updateTheaterPlayPauseButton();
-                    break;
-                case YT.PlayerState.BUFFERING:
-                    domRefs.theaterLoadingSpinner.style.display = 'block';
-                    break;
-                case YT.PlayerState.CUED:
-                    domRefs.theaterLoadingSpinner.style.display = 'none';
-                    break;
-            }
-            
-            // Sync state if leader
-            if (theaterState.isTheaterLeader) {
-                syncTheaterState();
-            }
-        }
+function onTheaterPlayerStateChange(event) {
+    switch(event.data) {
+        case YT.PlayerState.PLAYING:
+            theaterState.isPlaying = true;
+            updateTheaterPlayPauseButton();
+            break;
+        case YT.PlayerState.PAUSED:
+            theaterState.isPlaying = false;
+            updateTheaterPlayPauseButton();
+            break;
+        case YT.PlayerState.ENDED:
+            theaterState.isPlaying = false;
+            updateTheaterPlayPauseButton();
+            break;
+        case YT.PlayerState.BUFFERING:
+            document.getElementById('theaterLoadingSpinner').style.display = 'block';
+            break;
+        case YT.PlayerState.CUED:
+            document.getElementById('theaterLoadingSpinner').style.display = 'none';
+            break;
+    }
+    
+    if (theaterState.isTheaterLeader) {
+        syncTheaterState();
+    }
+}
 
-        function onTheaterPlayerError(event) {
-            domRefs.theaterLoadingSpinner.style.display = 'none';
-            showNotification('Error', 'Failed to load video', 'error');
-            console.error('YouTube player error:', event.data);
-        }
+function onTheaterPlayerError(event) {
+    document.getElementById('theaterLoadingSpinner').style.display = 'none';
+    showNotification('Error', 'Failed to load video', 'error');
+    console.error('YouTube player error:', event.data);
+}
 
-       function loadDirectVideo(url) {
+function loadDirectVideo(url) {
     const playerElement = document.getElementById('theaterVideoPlayer');
     playerElement.innerHTML = '';
     
@@ -2977,395 +3073,343 @@ async function sendChatMessage() {
     theaterState.player = videoElement;
 }
 
-        function initTheaterControls() {
-            // Play/Pause
-            domRefs.theaterPlayPauseButton.addEventListener('click', toggleTheaterPlayPause);
-            
-            // Navigation
-            domRefs.theaterBackButton.addEventListener('click', () => seekTheater(-10));
-            domRefs.theaterForwardButton.addEventListener('click', () => seekTheater(10));
-            
-            // Volume
-            domRefs.theaterMuteButton.addEventListener('click', toggleTheaterMute);
-            domRefs.theaterVolumeSlider.addEventListener('input', (e) => {
-                theaterState.currentVolume = parseFloat(e.target.value);
-                setTheaterVolume(theaterState.currentVolume);
-                updateTheaterVolumeButton();
+function initTheaterControls() {
+    // Hide quality options by default
+    document.getElementById('theaterQualityOptions').style.display = 'none';
+    
+    // Play/Pause
+    document.getElementById('theaterPlayPauseButton').addEventListener('click', toggleTheaterPlayPause);
+    
+    // Navigation
+    document.getElementById('theaterBackButton').addEventListener('click', () => seekTheater(-10));
+    document.getElementById('theaterForwardButton').addEventListener('click', () => seekTheater(10));
+    
+    // Volume
+    document.getElementById('theaterMuteButton').addEventListener('click', toggleTheaterMute);
+    document.getElementById('theaterVolumeSlider').addEventListener('input', (e) => {
+        theaterState.currentVolume = parseFloat(e.target.value);
+        setTheaterVolume(theaterState.currentVolume);
+        updateTheaterVolumeButton();
+    });
+    
+    // Quality
+    document.getElementById('theaterQualityButton').addEventListener('click', function(e) {
+        e.stopPropagation();
+        const options = document.getElementById('theaterQualityOptions');
+        options.style.display = options.style.display === 'block' ? 'none' : 'block';
+    });
+    
+    document.querySelectorAll('.theater-quality-option').forEach(option => {
+        option.addEventListener('click', () => {
+            const quality = option.getAttribute('data-quality');
+            setTheaterQuality(quality);
+            document.getElementById('theaterQualityOptions').style.display = 'none';
+        });
+    });
+    
+    // Fullscreen
+    document.getElementById('theaterFullscreenButton').addEventListener('click', toggleTheaterFullscreen);
+    
+    // PTT
+    const pttButton = document.getElementById('theaterPTTButton');
+    pttButton.addEventListener('mousedown', startPTT);
+    pttButton.addEventListener('mouseup', stopPTT);
+    pttButton.addEventListener('mouseleave', stopPTT);
+    pttButton.addEventListener('touchstart', startPTT);
+    pttButton.addEventListener('touchend', stopPTT);
+    
+    // Hang up buttons
+    document.getElementById('theaterHangupButton').addEventListener('click', () => hangup('theater'));
+    document.getElementById('theaterHangupTop').addEventListener('click', () => hangup('theater'));
+    
+    // Seek bar
+    document.getElementById('theaterSeekBar').addEventListener('click', (e) => {
+        const rect = e.target.getBoundingClientRect();
+        const percent = (e.clientX - rect.left) / rect.width;
+        const seekTime = percent * theaterState.duration;
+        seekTheaterTo(seekTime);
+    });
+    
+    // Click anywhere else to hide quality options
+    document.addEventListener('click', function() {
+        document.getElementById('theaterQualityOptions').style.display = 'none';
+    });
+}
+
+function initTheaterSync() {
+    if (!appState.roomId) return;
+    
+    theaterState.theaterRef = firebase.database().ref(`rooms/${appState.roomId}/theater`);
+    syncTheaterState();
+    setInterval(syncTheaterState, 5000);
+}
+
+function listenForTheaterSync() {
+    if (!appState.roomId) return;
+    
+    theaterState.theaterRef = firebase.database().ref(`rooms/${appState.roomId}/theater`);
+    
+    theaterState.theaterRef.child('state').on('value', (snapshot) => {
+        const state = snapshot.val();
+        if (!state || theaterState.isTheaterLeader) return;
+        
+        if (state.isPlaying !== theaterState.isPlaying) {
+            if (state.isPlaying) playTheater();
+            else pauseTheater();
+        }
+        
+        if (Math.abs(state.currentTime - theaterState.currentTime) > 2) {
+            seekTheaterTo(state.currentTime);
+        }
+    });
+    
+    theaterState.theaterRef.child('pttOffer').on('value', async (snapshot) => {
+        const offer = snapshot.val();
+        if (!offer || theaterState.isPTTActive || theaterState.isTheaterLeader) return;
+        
+        try {
+            theaterState.pttPeerConnection = new RTCPeerConnection({
+                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
             });
             
-            // Quality
-            domRefs.theaterQualityButton.addEventListener('click', toggleQualityMenu);
-            document.querySelectorAll('.theater-quality-option').forEach(option => {
-                option.addEventListener('click', () => {
-                    const quality = option.getAttribute('data-quality');
-                    setTheaterQuality(quality);
-                    domRefs.theaterQualityOptions.style.display = 'none';
-                });
-            });
-            
-            // Fullscreen
-            domRefs.theaterFullscreenButton.addEventListener('click', toggleTheaterFullscreen);
-            
-            // PTT
-            domRefs.theaterPTTButton.addEventListener('mousedown', startPTT);
-            domRefs.theaterPTTButton.addEventListener('mouseup', stopPTT);
-            domRefs.theaterPTTButton.addEventListener('mouseleave', stopPTT);
-            domRefs.theaterPTTButton.addEventListener('touchstart', startPTT);
-            domRefs.theaterPTTButton.addEventListener('touchend', stopPTT);
-            
-            // Hang up
-            domRefs.theaterHangupButton.addEventListener('click', () => hangup('theater'));
-            
-            // Seek bar
-            domRefs.theaterSeekBar.addEventListener('click', (e) => {
-                const rect = domRefs.theaterSeekBar.getBoundingClientRect();
-                const percent = (e.clientX - rect.left) / rect.width;
-                const seekTime = percent * theaterState.duration;
-                seekTheaterTo(seekTime);
-            });
-            
-            // Show controls when mouse moves
-            document.addEventListener('mousemove', () => {
-                domRefs.theaterControls.style.opacity = '1';
-                setTimeout(() => {
-                    if (!theaterState.isPTTActive) {
-                        domRefs.theaterControls.style.opacity = '0';
-                    }
-                }, 3000);
-            });
-        }
-
-        function initTheaterSync() {
-            if (!appState.roomId) return;
-            
-            theaterState.theaterRef = firebase.database().ref(`rooms/${appState.roomId}/theater`);
-            
-            // Sync initial state
-            syncTheaterState();
-            
-            // Set up periodic sync
-            setInterval(syncTheaterState, 5000);
-        }
-
-        function listenForTheaterSync() {
-            if (!appState.roomId) return;
-            
-            theaterState.theaterRef = firebase.database().ref(`rooms/${appState.roomId}/theater`);
-            
-            theaterState.theaterRef.child('state').on('value', (snapshot) => {
-                const state = snapshot.val();
-                if (!state || theaterState.isTheaterLeader) return;
-                
-                // Sync play/pause state
-                if (state.isPlaying !== theaterState.isPlaying) {
-                    if (state.isPlaying) {
-                        playTheater();
-                    } else {
-                        pauseTheater();
-                    }
+            theaterState.pttPeerConnection.ontrack = (event) => {
+                if (event.track.kind === 'audio') {
+                    document.getElementById('remoteAudio').srcObject = event.streams[0];
                 }
-                
-                // Sync seek position (with small tolerance to avoid constant seeking)
-                if (Math.abs(state.currentTime - theaterState.currentTime) > 2) {
-                    seekTheaterTo(state.currentTime);
-                }
-            });
-            
-            theaterState.theaterRef.child('pttOffer').on('value', async (snapshot) => {
-                const offer = snapshot.val();
-                if (!offer || theaterState.isPTTActive || !theaterState.isTheaterLeader) return;
-                
-                try {
-                    theaterState.pttPeerConnection = new RTCPeerConnection({
-                        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-                    });
-                    
-                    theaterState.pttPeerConnection.ontrack = (event) => {
-                        if (event.track.kind === 'audio') {
-                            domRefs.remoteAudio.srcObject = event.streams[0];
-                        }
-                    };
-                    
-                    await theaterState.pttPeerConnection.setRemoteDescription(JSON.parse(offer));
-                    const answer = await theaterState.pttPeerConnection.createAnswer();
-                    await theaterState.pttPeerConnection.setLocalDescription(answer);
-                    
-                    theaterState.theaterRef.child('pttAnswer').set(JSON.stringify(answer));
-                } catch (err) {
-                    console.error('PTT answer error:', err);
-                }
-            });
-        }
-
-        function toggleTheaterPlayPause() {
-            if (theaterState.isPlaying) {
-                pauseTheater();
-            } else {
-                playTheater();
-            }
-        }
-
-        function playTheater() {
-            if (!theaterState.player) return;
-            
-            if (typeof theaterState.player.playVideo === 'function') {
-                theaterState.player.playVideo();
-            } else {
-                theaterState.player.play();
-            }
-            
-            theaterState.isPlaying = true;
-            updateTheaterPlayPauseButton();
-            
-            if (theaterState.isTheaterLeader) {
-                syncTheaterState();
-            }
-        }
-
-        function pauseTheater() {
-            if (!theaterState.player) return;
-            
-            if (typeof theaterState.player.pauseVideo === 'function') {
-                theaterState.player.pauseVideo();
-            } else {
-                theaterState.player.pause();
-            }
-            
-            theaterState.isPlaying = false;
-            updateTheaterPlayPauseButton();
-            
-            if (theaterState.isTheaterLeader) {
-                syncTheaterState();
-            }
-        }
-
-        function seekTheater(seconds) {
-            if (!theaterState.player) return;
-            
-            let newTime = theaterState.currentTime + seconds;
-            if (newTime < 0) newTime = 0;
-            if (newTime > theaterState.duration) newTime = theaterState.duration;
-            
-            seekTheaterTo(newTime);
-        }
-
-        function seekTheaterTo(time) {
-            if (!theaterState.player) return;
-            
-            if (typeof theaterState.player.seekTo === 'function') {
-                theaterState.player.seekTo(time, true);
-            } else {
-                theaterState.player.currentTime = time;
-            }
-            
-            theaterState.currentTime = time;
-            updateTheaterSeekBar();
-            
-            if (theaterState.isTheaterLeader) {
-                syncTheaterState();
-            }
-        }
-
-        function toggleTheaterMute() {
-            theaterState.isMuted = !theaterState.isMuted;
-            
-            if (typeof theaterState.player.setVolume === 'function') {
-                if (theaterState.isMuted) {
-                    theaterState.player.setVolume(0);
-                } else {
-                    theaterState.player.setVolume(theaterState.currentVolume * 100);
-                }
-            } else {
-                theaterState.player.muted = theaterState.isMuted;
-            }
-            
-            updateTheaterVolumeButton();
-        }
-
-        function setTheaterVolume(volume) {
-            theaterState.currentVolume = volume;
-            
-            if (typeof theaterState.player.setVolume === 'function') {
-                theaterState.player.setVolume(volume * 100);
-            } else {
-                theaterState.player.volume = volume;
-            }
-            
-            updateTheaterVolumeButton();
-        }
-
-        function setTheaterQuality(quality) {
-            theaterState.currentQuality = quality;
-            
-            if (typeof theaterState.player.setPlaybackQuality === 'function') {
-                theaterState.player.setPlaybackQuality(quality);
-            }
-            
-            showNotification('Quality Changed', `Video quality set to ${quality}`, 'success');
-        }
-
-        function toggleQualityMenu() {
-            domRefs.theaterQualityOptions.style.display = 
-                domRefs.theaterQualityOptions.style.display === 'block' ? 'none' : 'block';
-        }
-
-        function toggleTheaterFullscreen() {
-            if (appState.isFullscreen) {
-                exitTheaterFullscreen();
-            } else {
-                enterTheaterFullscreen();
-            }
-        }
-
-        async function startPTT() {
-            if (theaterState.isPTTActive) return;
-            
-            theaterState.isPTTActive = true;
-            domRefs.theaterPTTButton.classList.add('active');
-            domRefs.theaterControls.style.opacity = '1';
-            
-            try {
-                theaterState.pttAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                
-                if (theaterState.isTheaterLeader) {
-                    // Leader creates offer
-                    theaterState.pttPeerConnection = new RTCPeerConnection({
-                        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-                    });
-                    
-                    theaterState.pttAudioStream.getTracks().forEach(track => {
-                        theaterState.pttPeerConnection.addTrack(track, theaterState.pttAudioStream);
-                    });
-                    
-                    const offer = await theaterState.pttPeerConnection.createOffer();
-                    await theaterState.pttPeerConnection.setLocalDescription(offer);
-                    
-                    if (theaterState.theaterRef) {
-                        theaterState.theaterRef.child('pttOffer').set(JSON.stringify(offer));
-                    }
-                    
-                    theaterState.theaterRef.child('pttAnswer').on('value', async (snapshot) => {
-                        const answer = snapshot.val();
-                        if (answer && theaterState.pttPeerConnection) {
-                            await theaterState.pttPeerConnection.setRemoteDescription(JSON.parse(answer));
-                        }
-                    });
-                } else {
-                    // Participant creates answer
-                    if (!theaterState.pttPeerConnection) return;
-                    
-                    const audioTrack = theaterState.pttAudioStream.getAudioTracks()[0];
-                    const sender = theaterState.pttPeerConnection.getSenders().find(s => s.track && s.track.kind === 'audio');
-                    if (sender) {
-                        sender.replaceTrack(audioTrack);
-                    }
-                }
-                
-            } catch (err) {
-                console.error('PTT error:', err);
-                showNotification('PTT Error', 'Failed to initialize push-to-talk', 'error');
-                stopPTT();
-            }
-        }
-
-        function stopPTT() {
-            if (!theaterState.isPTTActive) return;
-            
-            theaterState.isPTTActive = false;
-            domRefs.theaterPTTButton.classList.remove('active');
-            
-            if (theaterState.pttAudioStream) {
-                theaterState.pttAudioStream.getTracks().forEach(track => track.stop());
-                theaterState.pttAudioStream = null;
-            }
-            
-            if (!theaterState.isTheaterLeader && theaterState.pttPeerConnection) {
-                theaterState.pttPeerConnection.close();
-                theaterState.pttPeerConnection = null;
-            }
-        }
-
-        function startTheaterSeekUpdate() {
-            clearInterval(theaterState.seekBarUpdateInterval);
-            theaterState.seekBarUpdateInterval = setInterval(updateTheaterSeekBar, 1000);
-        }
-
-        function updateTheaterSeekBar() {
-            if (!theaterState.player) return;
-            
-            if (typeof theaterState.player.getCurrentTime === 'function') {
-                theaterState.currentTime = theaterState.player.getCurrentTime();
-            } else {
-                theaterState.currentTime = theaterState.player.currentTime;
-            }
-            
-            if (theaterState.duration > 0) {
-                const percent = (theaterState.currentTime / theaterState.duration) * 100;
-                domRefs.theaterSeekBarProgress.style.width = `${percent}%`;
-                domRefs.theaterSeekBarHandle.style.left = `${percent}%`;
-            }
-            
-            updateTheaterTimeDisplay();
-        }
-
-        function updateTheaterTimeDisplay() {
-            const currentMinutes = Math.floor(theaterState.currentTime / 60);
-            const currentSeconds = Math.floor(theaterState.currentTime % 60);
-            const durationMinutes = Math.floor(theaterState.duration / 60);
-            const durationSeconds = Math.floor(theaterState.duration % 60);
-            
-            domRefs.theaterTimeDisplay.textContent = 
-                `${currentMinutes}:${currentSeconds < 10 ? '0' : ''}${currentSeconds} / ` +
-                `${durationMinutes}:${durationSeconds < 10 ? '0' : ''}${durationSeconds}`;
-        }
-
-        function updateTheaterPlayPauseButton() {
-            domRefs.theaterPlayPauseButton.innerHTML = 
-                theaterState.isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
-        }
-
-        function updateTheaterVolumeButton() {
-            if (theaterState.isMuted) {
-                domRefs.theaterMuteButton.innerHTML = '<i class="fas fa-volume-mute"></i>';
-            } else {
-                if (theaterState.currentVolume > 0.5) {
-                    domRefs.theaterMuteButton.innerHTML = '<i class="fas fa-volume-up"></i>';
-                } else if (theaterState.currentVolume > 0) {
-                    domRefs.theaterMuteButton.innerHTML = '<i class="fas fa-volume-down"></i>';
-                } else {
-                    domRefs.theaterMuteButton.innerHTML = '<i class="fas fa-volume-off"></i>';
-                }
-            }
-        }
-
-        function syncTheaterState() {
-            if (!theaterState.theaterRef || !appState.roomId) return;
-            
-            const state = {
-                isPlaying: theaterState.isPlaying,
-                currentTime: theaterState.currentTime,
-                timestamp: Date.now()
             };
             
-            theaterState.theaterRef.child('state').set(state);
+            await theaterState.pttPeerConnection.setRemoteDescription(JSON.parse(offer));
+            const answer = await theaterState.pttPeerConnection.createAnswer();
+            await theaterState.pttPeerConnection.setLocalDescription(answer);
+            
+            theaterState.theaterRef.child('pttAnswer').set(JSON.stringify(answer));
+        } catch (err) {
+            console.error('PTT answer error:', err);
         }
+    });
+}
 
-        function enterTheaterFullscreen() {
-            document.body.classList.add('fullscreen-theater-mode');
-            appState.isFullscreen = true;
-            updateTheaterFullscreenButton();
-        }
+function toggleTheaterPlayPause() {
+    if (theaterState.isPlaying) pauseTheater();
+    else playTheater();
+}
 
-        function exitTheaterFullscreen() {
-            document.body.classList.remove('fullscreen-theater-mode');
-            appState.isFullscreen = false;
-            updateTheaterFullscreenButton();
-        }
+function playTheater() {
+    if (!theaterState.player) return;
+    
+    if (typeof theaterState.player.playVideo === 'function') {
+        theaterState.player.playVideo();
+    } else {
+        theaterState.player.play();
+    }
+    
+    theaterState.isPlaying = true;
+    updateTheaterPlayPauseButton();
+    
+    if (theaterState.isTheaterLeader) {
+        syncTheaterState();
+    }
+}
 
-        function updateTheaterFullscreenButton() {
-            domRefs.theaterFullscreenButton.innerHTML = 
-                appState.isFullscreen ? '<i class="fas fa-compress"></i>' : '<i class="fas fa-expand"></i>';
+function pauseTheater() {
+    if (!theaterState.player) return;
+    
+    if (typeof theaterState.player.pauseVideo === 'function') {
+        theaterState.player.pauseVideo();
+    } else {
+        theaterState.player.pause();
+    }
+    
+    theaterState.isPlaying = false;
+    updateTheaterPlayPauseButton();
+    
+    if (theaterState.isTheaterLeader) {
+        syncTheaterState();
+    }
+}
+
+function seekTheater(seconds) {
+    if (!theaterState.player) return;
+    
+    let newTime = theaterState.currentTime + seconds;
+    newTime = Math.max(0, Math.min(newTime, theaterState.duration));
+    seekTheaterTo(newTime);
+}
+
+function seekTheaterTo(time) {
+    if (!theaterState.player) return;
+    
+    if (typeof theaterState.player.seekTo === 'function') {
+        theaterState.player.seekTo(time, true);
+    } else {
+        theaterState.player.currentTime = time;
+    }
+    
+    theaterState.currentTime = time;
+    updateTheaterSeekBar();
+    
+    if (theaterState.isTheaterLeader) {
+        syncTheaterState();
+    }
+}
+
+function toggleTheaterMute() {
+    theaterState.isMuted = !theaterState.isMuted;
+    
+    if (typeof theaterState.player.setVolume === 'function') {
+        theaterState.player.setVolume(theaterState.isMuted ? 0 : theaterState.currentVolume * 100);
+    } else {
+        theaterState.player.muted = theaterState.isMuted;
+    }
+    
+    updateTheaterVolumeButton();
+}
+
+function setTheaterVolume(volume) {
+    theaterState.currentVolume = volume;
+    
+    if (typeof theaterState.player.setVolume === 'function') {
+        theaterState.player.setVolume(volume * 100);
+    } else {
+        theaterState.player.volume = volume;
+    }
+    
+    updateTheaterVolumeButton();
+}
+
+function setTheaterQuality(quality) {
+    theaterState.currentQuality = quality;
+    
+    if (typeof theaterState.player.setPlaybackQuality === 'function') {
+        theaterState.player.setPlaybackQuality(quality);
+    }
+    
+    showNotification('Quality Changed', `Video quality set to ${quality}`, 'success');
+}
+
+function toggleTheaterFullscreen() {
+    if (appState.isFullscreen) exitTheaterFullscreen();
+    else enterTheaterFullscreen();
+}
+
+async function startPTT() {
+    if (theaterState.isPTTActive) return;
+    
+    theaterState.isPTTActive = true;
+    document.getElementById('theaterPTTButton').classList.add('active');
+    document.getElementById('theaterControls').style.opacity = '1';
+    
+    try {
+        theaterState.pttAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        if (theaterState.isTheaterLeader) {
+            theaterState.pttPeerConnection = new RTCPeerConnection({
+                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+            });
+            
+            theaterState.pttAudioStream.getTracks().forEach(track => {
+                theaterState.pttPeerConnection.addTrack(track, theaterState.pttAudioStream);
+            });
+            
+            const offer = await theaterState.pttPeerConnection.createOffer();
+            await theaterState.pttPeerConnection.setLocalDescription(offer);
+            
+            if (theaterState.theaterRef) {
+                theaterState.theaterRef.child('pttOffer').set(JSON.stringify(offer));
+            }
+        } else if (theaterState.pttPeerConnection) {
+            const audioTrack = theaterState.pttAudioStream.getAudioTracks()[0];
+            const sender = theaterState.pttPeerConnection.getSenders().find(s => s.track && s.track.kind === 'audio');
+            if (sender) sender.replaceTrack(audioTrack);
         }
+    } catch (err) {
+        console.error('PTT error:', err);
+        stopPTT();
+    }
+}
+
+function stopPTT() {
+    if (!theaterState.isPTTActive) return;
+    
+    theaterState.isPTTActive = false;
+    document.getElementById('theaterPTTButton').classList.remove('active');
+    
+    if (theaterState.pttAudioStream) {
+        theaterState.pttAudioStream.getTracks().forEach(track => track.stop());
+        theaterState.pttAudioStream = null;
+    }
+    
+    if (!theaterState.isTheaterLeader && theaterState.pttPeerConnection) {
+        theaterState.pttPeerConnection.close();
+        theaterState.pttPeerConnection = null;
+    }
+}
+
+function startTheaterSeekUpdate() {
+    clearInterval(theaterState.seekBarUpdateInterval);
+    theaterState.seekBarUpdateInterval = setInterval(updateTheaterSeekBar, 1000);
+}
+
+function updateTheaterSeekBar() {
+    if (!theaterState.player) return;
+    
+    if (typeof theaterState.player.getCurrentTime === 'function') {
+        theaterState.currentTime = theaterState.player.getCurrentTime();
+    } else {
+        theaterState.currentTime = theaterState.player.currentTime;
+    }
+    
+    if (theaterState.duration > 0) {
+        const percent = (theaterState.currentTime / theaterState.duration) * 100;
+        document.getElementById('theaterSeekBarProgress').style.width = `${percent}%`;
+        document.getElementById('theaterSeekBarHandle').style.left = `${percent}%`;
+    }
+    
+    updateTheaterTimeDisplay();
+}
+
+function updateTheaterTimeDisplay() {
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    };
+    
+    document.getElementById('theaterTimeDisplay').textContent = 
+        `${formatTime(theaterState.currentTime)} / ${formatTime(theaterState.duration)}`;
+}
+
+function updateTheaterPlayPauseButton() {
+    document.getElementById('theaterPlayPauseButton').innerHTML = 
+        theaterState.isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+}
+
+function updateTheaterVolumeButton() {
+    const icon = document.getElementById('theaterMuteButton');
+    if (theaterState.isMuted) {
+        icon.innerHTML = '<i class="fas fa-volume-mute"></i>';
+    } else {
+        if (theaterState.currentVolume > 0.5) {
+            icon.innerHTML = '<i class="fas fa-volume-up"></i>';
+        } else if (theaterState.currentVolume > 0) {
+            icon.innerHTML = '<i class="fas fa-volume-down"></i>';
+        } else {
+            icon.innerHTML = '<i class="fas fa-volume-off"></i>';
+        }
+    }
+}
+
+function syncTheaterState() {
+    if (!theaterState.theaterRef || !appState.roomId) return;
+    
+    const state = {
+        isPlaying: theaterState.isPlaying,
+        currentTime: theaterState.currentTime,
+        timestamp: Date.now()
+    };
+    
+    theaterState.theaterRef.child('state').set(state);
+}
 
 // ========== ROOM MANAGEMENT ========== //
 async function generateRoom(mode) {
@@ -3608,7 +3652,6 @@ function autoJoinRoom() {
     }
   }
 }
-
 function loadSettings() {
   const savedTheme = localStorage.getItem('theme') || 'dark';
   document.body.className = `${savedTheme}-mode`;
@@ -3697,6 +3740,7 @@ function setupEventListeners() {
   document.getElementById('videoVideoToggle').addEventListener('click', toggleVideo);
   document.getElementById('videoAudioToggle').addEventListener('click', () => toggleAudio('video'));
   document.getElementById('copyVideoLink').addEventListener('click', () => copyLink('video'));
+  document.getElementById('copyVideoLinkTop').addEventListener('click', () => copyLink('video'));
   domRefs.switchCameraBtn.addEventListener('click', switchCamera);
   domRefs.switchCameraBtnNormal.addEventListener('click', switchCamera);
   
@@ -3711,6 +3755,7 @@ function setupEventListeners() {
   });
   document.getElementById('sendTextMessage').addEventListener('click', sendChatMessage);
   document.getElementById('copyTextLink').addEventListener('click', () => copyLink('text'));
+  document.getElementById('copyTextLinkTop').addEventListener('click', () => copyLink('text'));
   document.getElementById('endTextChat').addEventListener('click', () => hangup('text'));
   document.getElementById('endTextChatFullscreen').addEventListener('click', () => hangup('text'));
   document.getElementById('textMessage').addEventListener('keypress', (e) => {
@@ -3719,10 +3764,6 @@ function setupEventListeners() {
       sendChatMessage();
     }
   });
-  
-  // Fullscreen controls
-  document.getElementById('copyTextLinkTop').addEventListener('click', () => copyLink('text'));
-  document.getElementById('copyVideoLinkTop').addEventListener('click', () => copyLink('video'));
   
   // Theater controls
   document.getElementById('createTheaterRoom').addEventListener('click', () => {
@@ -3738,11 +3779,15 @@ function setupEventListeners() {
   domRefs.theaterVideoUrl.addEventListener('input', validateTheaterUrl);
   domRefs.theaterLoadBtn.addEventListener('click', loadTheaterVideo);
   domRefs.theaterModalCancel.addEventListener('click', () => {
-  domRefs.theaterModal.style.display = 'none';
+    domRefs.theaterModal.style.display = 'none';
     hangup('theater');
   });
   domRefs.theaterModalCopy.addEventListener('click', () => copyLink('theater'));
-  document.getElementById('theaterLoadBtn').addEventListener('click', loadTheaterVideo);
+  domRefs.copyTheaterLinkTop.addEventListener('click', () => copyLink('theater'));
+  
+  // Settings
+  document.getElementById('notifications-toggle').addEventListener('change', saveSettings);
+  document.getElementById('notification-sound-toggle').addEventListener('change', saveSettings);
   
   // Global events
   document.addEventListener('keydown', function(event) {
