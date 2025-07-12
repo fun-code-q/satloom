@@ -3,12 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - Audio Call Fixed</title>
+    <title>SatLoom - Audio Call</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="dark-mode">
     <button class="desktop-menu-toggle" id="desktopMenuToggle">
+        <i class="fas fa-bars menu-icon"></i>
+        <i class="fas fa-times close-icon"></i>
+    </button>
+    
+    <button class="mobile-menu-toggle" id="mobileMenuToggle">
         <i class="fas fa-bars"></i>
     </button>
     
@@ -75,9 +80,6 @@
                         <div class="call-timer" id="audioCallTimer">00:00</div>
                     </div>
                     
-                    
-
-                    
                     <div class="input-group">
                         <input type="text" id="audio-room-id" class="input-styled" placeholder="Enter Room ID">
                     </div>
@@ -90,11 +92,11 @@
                             <i class="fas fa-sign-in-alt"></i> Join Room
                         </button>
                         <div class="room-info" id="roomInfo" style="display: none;">
-                    <div class="room-id" style="display: none;"><span id="displayRoomId"></span></div>
-                    <button class="copy-btn" id="copyAudioLink">
-                    <i class="fas fa-copy"></i>
-                    </button>
-                    </div>
+                            <div class="room-id"><span id="displayRoomId" style="display: none;"></span></div>
+                            <button class="copy-btn" id="copyAudioLink">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="placeholder-animation">
@@ -177,7 +179,10 @@
             audioCallTimer: document.getElementById('audioCallTimer'),
             remoteAudio: document.getElementById('remoteAudio'),
             notificationSound: document.getElementById('notificationSound'),
-            appContainer: document.getElementById('appContainer')
+            appContainer: document.getElementById('appContainer'),
+            sidebar: document.getElementById('sidebar'),
+            desktopMenuToggle: document.getElementById('desktopMenuToggle'),
+            mobileMenuToggle: document.getElementById('mobileMenuToggle')
         };
 
         // UI Elements
@@ -248,6 +253,57 @@
             appState.startTime = null;
             timerDisplay.textContent = '00:00';
             timerDisplay.style.display = 'none';
+        }
+
+        function hideSidebar() {
+            if (window.innerWidth > 900) {
+                domRefs.appContainer.classList.add('sidebar-hidden');
+                document.body.classList.remove('sidebar-open');
+                const menuIcon = domRefs.desktopMenuToggle.querySelector('.menu-icon');
+                const closeIcon = domRefs.desktopMenuToggle.querySelector('.close-icon');
+                if (menuIcon && closeIcon) {
+                    menuIcon.style.display = 'block';
+                    closeIcon.style.display = 'none';
+                }
+            } else {
+                domRefs.sidebar.classList.remove('active');
+            }
+        }
+
+        function showSidebar() {
+            if (window.innerWidth > 900) {
+                domRefs.appContainer.classList.remove('sidebar-hidden');
+                document.body.classList.add('sidebar-open');
+                const menuIcon = domRefs.desktopMenuToggle.querySelector('.menu-icon');
+                const closeIcon = domRefs.desktopMenuToggle.querySelector('.close-icon');
+                if (menuIcon && closeIcon) {
+                    menuIcon.style.display = 'none';
+                    closeIcon.style.display = 'block';
+                }
+            } else {
+                domRefs.sidebar.classList.add('active');
+            }
+        }
+
+        function adjustForMobile() {
+            if (window.innerWidth <= 900) {
+                domRefs.mobileMenuToggle.style.display = 'flex';
+                domRefs.desktopMenuToggle.style.display = 'none';
+                domRefs.sidebar.classList.remove('active');
+                document.body.classList.remove('sidebar-open');
+            } else {
+                domRefs.mobileMenuToggle.style.display = 'none';
+                domRefs.desktopMenuToggle.style.display = 'flex';
+                domRefs.sidebar.style.display = 'flex';
+                domRefs.appContainer.classList.remove('sidebar-hidden');
+            }
+            // Set active state for navigation
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.parentElement.classList.remove('active');
+                if (link.getAttribute('href') === 'index.html') {
+                    link.parentElement.classList.add('active');
+                }
+            });
         }
 
         // Core functionality
@@ -335,7 +391,7 @@
             } 
             else if (state === 'disconnected' || state === 'failed') {
                 playNotificationSound();
-                hangup('audio');
+                hangup();
             }
         }
 
@@ -388,7 +444,7 @@
                         break;
                     case 'bye':
                         if (appState.isStarted) {
-                            hangup('audio');
+                            hangup();
                         }
                         break;
                 }
@@ -427,6 +483,9 @@
         // Hang up functionality
         function hangup() {
             if (!appState.roomId) return;
+
+            // Send bye message to other peer
+            sendMessage({ type: 'bye' });
 
             // Reset timer and status
             stopTimer();
@@ -467,6 +526,7 @@
             
             // Reset room ID input
             roomIdInput.value = '';
+            displayRoomId.textContent = '';
             
             // Play notification sound
             const now = Date.now();
@@ -478,6 +538,10 @@
             // Reset state
             appState.isStarted = false;
             appState.roomId = null;
+            appState.isInitiator = false;
+
+            // Show sidebar
+            showSidebar();
         }
 
         // Toggle microphone
@@ -520,7 +584,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             const roomIdFromUrl = urlParams.get('room');
             if (roomIdFromUrl) {
-                roomIdInput.value = roomIdFromId;
+                roomIdInput.value = roomIdFromUrl; // Fixed typo: roomIdFromId -> roomIdFromUrl
                 const mode = urlParams.get('mode');
                 if (mode === 'audio') {
                     setTimeout(() => {
@@ -561,6 +625,9 @@
                 updateStatus(`In audio call (${appState.roomId})`, 'connected');
                 playNotificationSound();
 
+                // Hide sidebar
+                hideSidebar();
+
             } catch (err) {
                 console.error('Error generating room:', err);
                 updateStatus('Room creation failed', 'error');
@@ -590,6 +657,14 @@
                 updateStatus(`Joining audio room...`, 'connecting');
                 playNotificationSound();
                 
+                // Update UI
+                displayRoomId.textContent = appState.roomId;
+                copyBtn.style.display = 'inline-flex';
+                roomInfo.style.display = 'flex';
+
+                // Hide sidebar
+                hideSidebar();
+
             } catch (err) {
                 console.error('Error joining room:', err);
                 updateStatus('Join room failed', 'error');
@@ -598,20 +673,44 @@
         }
 
         // Event Listeners
-        generateBtn.addEventListener('click', generateRoom);
-        joinBtn.addEventListener('click', joinRoom);
-        endBtn.addEventListener('click', hangup);
-        muteBtn.addEventListener('click', toggleMicrophone);
-        copyBtn.addEventListener('click', copyRoomLink);
-        
-        // Sidebar toggle for mobile
-        document.getElementById('desktopMenuToggle').addEventListener('click', () => {
-            document.getElementById('sidebar').classList.toggle('active');
+        document.addEventListener('DOMContentLoaded', function() {
+            generateBtn.addEventListener('click', generateRoom);
+            joinBtn.addEventListener('click', joinRoom);
+            endBtn.addEventListener('click', hangup);
+            muteBtn.addEventListener('click', toggleMicrophone);
+            copyBtn.addEventListener('click', copyRoomLink);
+            
+            // Sidebar toggle for desktop
+            domRefs.desktopMenuToggle.addEventListener('click', function() {
+                domRefs.appContainer.classList.toggle('sidebar-hidden');
+                document.body.classList.toggle('sidebar-open');
+                const menuIcon = domRefs.desktopMenuToggle.querySelector('.menu-icon');
+                const closeIcon = domRefs.desktopMenuToggle.querySelector('.close-icon');
+                if (menuIcon && closeIcon) {
+                    if (domRefs.appContainer.classList.contains('sidebar-hidden')) {
+                        menuIcon.style.display = 'block';
+                        closeIcon.style.display = 'none';
+                    } else {
+                        menuIcon.style.display = 'none';
+                        closeIcon.style.display = 'block';
+                    }
+                }
+                console.log('Desktop menu toggled. Sidebar hidden:', domRefs.appContainer.classList.contains('sidebar-hidden'));
+            });
+            
+            // Sidebar toggle for mobile
+            domRefs.mobileMenuToggle.addEventListener('click', function() {
+                domRefs.sidebar.classList.toggle('active');
+                console.log('Mobile menu toggled. Sidebar active:', domRefs.sidebar.classList.contains('active'));
+            });
+
+            // Responsive adjustments
+            adjustForMobile();
+            window.addEventListener('resize', adjustForMobile);
+
+            // Initialize
+            checkUrlForRoomId();
         });
-        
-        // Initialize
-        checkUrlForRoomId();
-        
     </script>
 </body>
 </html>
