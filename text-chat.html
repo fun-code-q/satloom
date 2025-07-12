@@ -13,6 +13,52 @@
     align-items: center;
     margin-bottom: 20px;
 }
+/* Custom supercopy button - aligned to left */
+.supercopy {
+    position: fixed;
+    right: 20px;
+    top: 15%;
+    transform: translateY(-50%);
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    display: flex;
+}
+
+.supercopy:hover {
+    transform: translateY(-50%) scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.supercopy:active {
+    transform: translateY(-50%) scale(0.98);
+}
+
+.supercopy i {
+    font-size: 16px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+.app-footer {
+    text-align: center;
+    padding: 10px 0;
+    color: var(--text-color);
+}
 
 /* Control Buttons */
 .control-btn {
@@ -239,12 +285,15 @@
                     </div>
                 </div>
             </div>
-            
-            <div class="app-footer">
+
+             <div class="app-footer">
                 <div>SatLoom v1.8.0 | Powered by SatLoom Developers</div>
             </div>
         </div>
     </div>
+    
+    <!-- Custom positioned copy button -->
+    
     
     <div class="fullscreen-chat" id="fullscreenChat" style="display: none;">
         <div class="chat-header">
@@ -252,15 +301,15 @@
                 <i class="fas fa-comments"></i> Text Chat
             </div>
             <div class="chat-controls">
-                <span id="displayRoomIdFullscreen"></span>
-                <button class="copy-btn" id="copyTextLink">
-                    <i class="fas fa-copy"></i>
-                </button>
+                <span id="displayRoomIdFullscreen" style="display: none;"></span>
                 <div class="participant-count" style="display: none;">
                     <i class="fas fa-user-friends" style="display: none;"></i>
                     <span id="participantCountFullscreen" style="display: none;"></span>
                 </div>
             </div>
+            <button class="supercopy" id="copyTextLink">
+            <i class="fas fa-copy"></i>
+            </button>
         </div>
         <div id="textChat" class="chat-container">
             <div class="typing-indicator" id="typingIndicator">
