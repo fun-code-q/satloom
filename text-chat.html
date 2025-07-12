@@ -85,7 +85,13 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: var(--background-color);
+    /* Background image properties */
+    background-image: url('https://cdn.svgator.com/images/2022/06/use-svg-as-background-image-particle-strokes.svg'); /* <-- replace with your image path */
+    background-size: cover; /* Makes the image cover the whole area */
+    background-position: center; /* Centers the image */
+    background-repeat: no-repeat; /* Avoid repeating */
+    background-color: black; /* Fallback color if image doesn’t load */
+
     display: flex;
     flex-direction: column;
     z-index: 999;
