@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About SatLoom - Communication Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-mode">
+    <button class="desktop-menu-toggle" id="desktopMenuToggle">
+        <i class="fas fa-bars menu-icon"></i>
+        <i class="fas fa-times close-icon"></i>
+    </button>
+    
+    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+    
+    <div class="app-container" id="appContainer">
+        <div class="sidebar" id="sidebar">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-satellite-dish"></i>
+                </div>
+                <div class="logo-text">SatLoom</div>
+            </div>
+            
+            <div class="status-indicator" id="connectionStatus">
+                <i class="fas fa-signal"></i> <span id="statusText">Settings</span>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a class="nav-link" href="index.html">
+                        <i class="fas fa-phone"></i> Audio Call
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="video-call.html">
+                        <i class="fas fa-video"></i> Video Call
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="text-chat.html">
+                        <i class="fas fa-comments"></i> Text Chat
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="theater.html">
+                        <i class="fas fa-film"></i> Movie Theater
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="play-ground.html">
+                        <i class="fas fa-gamepad"></i> Play Ground
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="settings.html">
+                        <i class="fas fa-cog"></i> Settings
+                    </a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="about.html">
+                        <i class="fas fa-info-circle"></i> About
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <div class="section active" id="about-section">
+                <div class="card">
+                    <div class="about-header">
+                        <h1><i class="fas fa-info-circle"></i>  About SatLoom </h1>
+                    </div>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <h3>End-to-End Encryption</h3>
+                            <p>All communications are encrypted to ensure your conversations remain private and secure.</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-bolt"></i>
+                            </div>
+                            <h3>Low-Latency</h3>
+                            <p>Optimized for real-time communication with minimal delay, even on slower networks.</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-mobile-alt"></i>
+                            </div>
+                            <h3>Cross-Platform</h3>
+                            <p>Access SatLoom from any device - desktop, tablet, or mobile phone.</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-code"></i>
+                            </div>
+                            <h3>Open Source</h3>
+                            <p>Transparent codebase that anyone can inspect, audit, and contribute to.</p>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+                
+                <div class="app-footer">
+                    <div>SatLoom v1.8.0 | Powered by SatLoom Developers</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+   <script>
+        // Menu toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const desktopMenuToggle = document.getElementById('desktopMenuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const appContainer = document.getElementById('appContainer');
+            
+            // Mobile menu toggle
+            mobileMenuToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('active');
+            });
+            
+            // Desktop menu toggle
+            desktopMenuToggle.addEventListener('click', function() {
+                appContainer.classList.toggle('sidebar-hidden');
+                document.body.classList.toggle('sidebar-open');
+                
+                // Toggle menu icon
+                const menuIcon = document.querySelector('.menu-icon');
+                const closeIcon = document.querySelector('.close-icon');
+                
+                if (appContainer.classList.contains('sidebar-hidden')) {
+                    menuIcon.style.display = 'block';
+                    closeIcon.style.display = 'none';
+                } else {
+                    menuIcon.style.display = 'none';
+                    closeIcon.style.display = 'block';
+                }
+            });
+            
+            // Adjust for mobile view
+            function adjustForMobile() {
+                if (window.innerWidth <= 900) {
+                    mobileMenuToggle.style.display = 'flex';
+                    desktopMenuToggle.style.display = 'none';
+                    sidebar.classList.remove('active');
+                    document.body.classList.remove('sidebar-open');
+                } else {
+                    mobileMenuToggle.style.display = 'none';
+                    desktopMenuToggle.style.display = 'flex';
+                    sidebar.style.display = 'flex';
+                    appContainer.classList.remove('sidebar-hidden');
+                }
+            }
+            
+            // Initial adjustment
+            adjustForMobile();
+            
+            // Adjust on window resize
+            window.addEventListener('resize', adjustForMobile);
+        });
+    </script>
+</body>
+</html>
