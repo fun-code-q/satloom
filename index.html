@@ -3,1626 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - Communication Platform</title>
+    <title>SatLoom - Audio Call Fixed</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        /* ========== VARIABLES ========== */
-:root {
-  --primary-color: #3a7bd5;
-  --secondary-color: #00d2ff;
-  --accent-color: #00bfff;
-  --dark-bg: #0a1929;
-  --card-bg: rgba(7, 25, 43, 0.8);
-  --text-primary: #ffffff;
-  --text-secondary: #b8c5d9;
-  --success-color: #4CAF50;
-  --warning-color: #ff9800;
-  --error-color: #f44336;
-}
-
-.light-mode {
-  --primary-color: #1e90ff;
-  --secondary-color: #00bfff;
-  --accent-color: #3a7bd5;
-  --dark-bg: #f0f0f0;
-  --card-bg: rgba(255, 255, 255, 0.9);
-  --text-primary: #333;
-  --text-secondary: #666;
-}
-
-/* ========== BASE STYLES ========== */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-body {
-  background: linear-gradient(-45deg, var(--dark-bg), #203a43, #1c2b3a, #2c3e50);
-  background-size: 400% 400%;
-  animation: gradient 15s ease infinite;
-  color: var(--text-primary);
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 10px;
-  transition: background 0.5s ease;
-  overflow: hidden;
-}
-
-html, body {
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  width: 100%;
-  height: 100%;
-}
-
-/* ========== LAYOUT ========== */
-.app-container {
-  max-width: 1200px;
-  width: 100%;
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 15px;
-  padding: 15px;
-  transition: all 0.3s ease;
-  margin: 0 auto;
-}
-
-.app-container.sidebar-hidden {
-  grid-template-columns: 0 1fr;
-  gap: 0;
-}
-
-.app-container.sidebar-hidden .sidebar {
-  padding: 0;
-  margin: 0;
-  border: none;
-  opacity: 0;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-}
-
-.main-content {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  overflow: auto;
-  max-height: calc(100vh - 30px);
-  overflow: hidden;
-}
-
-/* ========== SIDEBAR ========== */
-.sidebar {
-  background: var(--card-bg);
-  border-radius: 16px;
-  padding: 15px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  animation: fadeIn 0.5s ease;
-  transition: all 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  height: auto;
-  overflow: hidden;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.logo-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 10px;
-  animation: pulse 2s infinite;
-  box-shadow: 0 0 0 0 rgba(58, 123, 213, 0.7);
-}
-
-.logo-text {
-  font-size: 22px;
-  font-weight: 700;
-  background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.nav-menu {
-  list-style: none;
-  margin-top: 15px;
-}
-
-.nav-item {
-  margin-bottom: 8px;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-.nav-item.active {
-  transform: scale(1.02);
-  box-shadow: 0 4px 15px rgba(58, 123, 213, 0.3);
-}
-
-.nav-link {
-  display: flex;
-  align-items: center;
-  padding: 10px 12px;
-  color: var(--text-secondary);
-  text-decoration: none;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.nav-link:hover, .nav-link.active {
-  background: rgba(58, 123, 213, 0.15);
-  color: var(--text-primary);
-}
-
-.nav-link i {
-  margin-right: 8px;
-  width: 18px;
-  text-align: center;
-  font-size: 16px;
-}
-
-/* ========== CONTENT SECTIONS ========== */
-.section {
-  display: none;
-  overflow: hidden;
-}
-
-.section.active {
-  display: block;
-  animation: fadeIn 0.3s ease;
-}
-
-.card {
-  background: var(--card-bg);
-  border-radius: 16px;
-  padding: 20px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  width: 100%;
-  position: relative;
-}
-
-.section-title {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  color: var(--accent-color);
-}
-
-.section-title i {
-  margin-right: 8px;
-  font-size: 16px;
-}
-
-/* ========== FORM ELEMENTS ========== */
-.input-group {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 12px;
-  gap: 10px;
-}
-
-.input-styled {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 10px 12px;
-  color: var(--text-primary);
-  border-radius: 8px;
-  width: 100%;
-  outline: none;
-  transition: all 0.3s ease;
-  font-size: 14px;
-}
-
-.input-styled:focus {
-  border-color: var(--accent-color);
-  background: rgba(255, 255, 255, 0.15);
-}
-
-.btn {
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  margin: 4px;
-  font-size: 14px;
-  white-space: nowrap;
-}
-
-.btn i {
-  margin-right: 8px;
-}
-
-.btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(58, 123, 213, 0.4);
-}
-
-.btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-}
-
-.copy-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  color: var(--text-primary);
-  border-radius: 8px;
-  padding: 6px 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 12px;
-  transition: all 0.2s ease;
-}
-
-.copy-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-/* ========== CALL CONTROLS ========== */
-.call-controls {
-  display: flex;
-  justify-content: center;
-  margin-top: 15px;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-
-.control-btn {
-  width: 45px;
-  height: 45px;
-  border-radius: 50%;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 5px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: white;
-  font-size: 16px;
-}
-
-.control-btn:not(.end) {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.control-btn.end {
-  background: linear-gradient(135deg, #e53935, #f44336);
-}
-
-.call-timer {
-  font-size: 20px;
-  text-align: center;
-  margin: 12px 0;
-  color: var(--accent-color);
-}
-
-/* ========== NOTIFICATIONS & STATUS ========== */
-.notification {
-  position: fixed;
-  top: 15px;
-  right: 15px;
-  background: var(--card-bg);
-  border-radius: 8px;
-  padding: 12px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  display: flex;
-  align-items: center;
-  max-width: 280px;
-  z-index: 1000;
-  backdrop-filter: blur(10px);
-  display: none;
-}
-
-.status-indicator {
-  padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  font-size: 13px;
-  margin-bottom: 15px;
-  display: flex;
-  align-items: center;
-}
-
-.status-indicator i {
-  margin-right: 6px;
-  font-size: 14px;
-}
-
-.status-indicator.connected {
-  background: rgba(76, 175, 80, 0.15);
-  color: #4CAF50;
-}
-
-.status-indicator.connecting {
-  background: rgba(255, 152, 0, 0.15);
-  color: #FF9800;
-}
-
-.status-indicator.error {
-  background: rgba(244, 67, 54, 0.15);
-  color: #F44336;
-}
-
-/* ========== CHAT INTERFACE ========== */
-.chat-container {
-  height: 180px;
-  overflow-y: auto;
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  padding: 8px;
-  margin-bottom: 8px;
-  display: flex;
-  flex-direction: column;
-}
-
-.chat-message {
-  margin: 6px 0;
-  padding: 6px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  max-width: 85%;
-  align-self: flex-start;
-  animation: fadeIn 0.3s ease;
-  font-size: 13px;
-}
-
-.chat-message.user1 {
-  background: rgba(58, 123, 213, 0.25);
-  align-self: flex-start;
-}
-
-.chat-message.user2 {
-  background: rgba(76, 175, 80, 0.25);
-  align-self: flex-end;
-}
-
-.chat-message strong {
-  color: var(--accent-color);
-  font-size: 0.85em;
-}
-
-.chat-message .message-time {
-  font-size: 0.65em;
-  color: var(--text-secondary);
-  margin-top: 3px;
-  display: block;
-  text-align: right;
-}
-
-.chat-input-container {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.chat-input-container .input-styled {
-  flex: 1;
-}
-
-.chat-input-container .btn {
-  padding: 10px 15px;
-}
-
-.typing-indicator {
-  display: none;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 6px 10px;
-  margin: 4px 0;
-  font-size: 11px;
-  color: var(--text-secondary);
-  align-self: flex-start;
-}
-
-/* ========== VIDEO ELEMENTS ========== */
-#videoRemoteVideoContainer {
-  position: relative;
-  width: 100%;
-  height: 300px;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #000;
-  margin: 15px 0;
-  display: none;
-}
-
-#video-remote-video {
-  width: 100%;
-  height: 100%;
-  object-fit: contain; /* Changed from cover to contain to show full video */
-  transform: scale(0.9); /* Slightly zoom out to show more visuals */
-}
-
-#video-local-video {
-  position: absolute;
-  width: 80px;
-  height: 60px;
-  bottom: 12px;
-  right: 12px;
-  border-radius: 8px;
-  border: 2px solid white;
-  box-shadow: 0 0 10px rgba(0,0,0,0.5);
-  z-index: 10;
-  transform: scaleX(-1);
-}
-
-.switch-camera-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 20;
-  transition: all 0.2s ease;
-  display: none;
-  font-size: 14px;
-}
-
-.switch-camera-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
-}
-
-.spinner {
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  border-left-color: var(--accent-color);
-  border-radius: 50%;
-  width: 35px;
-  height: 35px;
-  animation: spin 1s linear infinite;
-  margin: 15px auto;
-  display: none;
-}
-
-/* ========== SETTINGS ========== */
-.setting-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: 14px;
-}
-
-.setting-item:last-child {
-  border-bottom: none;
-}
-
-.setting-item label {
-  color: var(--text-secondary);
-}
-
-/* ========== ANIMATIONS ========== */
-@keyframes gradient {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes pulse {
-  0%, 100% { 
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(58, 123, 213, 0.7);
-  }
-  70% { 
-    transform: scale(1);
-    box-shadow: 0 0 0 10px rgba(58, 123, 213, 0);
-  }
-  100% { 
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(58, 123, 213, 0);
-  }
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* ========== FOOTER ========== */
-.app-footer {
-  text-align: center;
-  color: var(--text-secondary);
-  font-size: 12px;
-  padding: 15px 0 5px;
-  margin-top: auto;
-  width: 100%;
-}
-
-/* ========== MENU TOGGLES ========== */
-.mobile-menu-toggle {
-  display: none;
-  position: fixed;
-  top: 15px;
-  right: 15px;
-  background: var(--card-bg);
-  border: none;
-  color: var(--text-primary);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  z-index: 1000;
-  justify-content: center;
-  align-items: center;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-}
-
-.desktop-menu-toggle {
-  position: fixed;
-  top: 15px;
-  right: 15px;
-  background: var(--card-bg);
-  border: none;
-  color: var(--text-primary);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  z-index: 1000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.desktop-menu-toggle:hover {
-  transform: scale(1.1);
-}
-
-.desktop-menu-toggle .close-icon {
-  display: none;
-}
-
-.sidebar-open .desktop-menu-toggle .menu-icon {
-  display: none;
-}
-
-.sidebar-open .desktop-menu-toggle .close-icon {
-  display: block;
-}
-
-/* ========== FULLSCREEN MODES ========== */
-.fullscreen-mode {
-  overflow: hidden;
-}
-
-.fullscreen-mode .app-container {
-  grid-template-columns: 0 1fr;
-  gap: 0;
-  max-width: 100%;
-  padding: 0;
-  margin: 0;
-  height: 100vh;
-}
-
-.fullscreen-mode .sidebar {
-  display: none;
-}
-
-.fullscreen-mode .main-content {
-  max-height: 100vh;
-  padding: 0;
-}
-
-/* Video Call Fullscreen */
-.fullscreen-video-mode #video-call-section {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 10000;
-  background: var(--dark-bg);
-}
-
-.fullscreen-video-mode #video-call-section .card {
-  border-radius: 0;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-}
-
-.fullscreen-video-mode #videoRemoteVideoContainer {
-  flex: 1;
-  height: auto;
-  border-radius: 0;
-  margin: 0;
-  display: flex;
-  position: relative;
-}
-
-.fullscreen-video-mode #video-remote-video {
-  border-radius: 0;
-    width: 100%;
-  height: 100%;
-  object-fit: contain; /* Ensure full video is visible in fullscreen */
-  transform: scale(0.9); /* Maintain slight zoom-out effect */
-}
-
-.fullscreen-video-mode .call-controls {
-  position: absolute;
-  bottom: 20px;
-  left: 0;
-  right: 0;
-  justify-content: center;
-  z-index: 10001;
-}
-
-.fullscreen-video-mode .call-timer {
-  position: absolute;
-  top: 0px;
-  left: 90%;
-  transform: translateX(-50%);
-  z-index: 10001;
-  color: var(--accent-color);
-  font-size: 20px;
-  background: rgba(7, 25, 43, 0.6);
-  padding: 8px 16px;
-  border-radius: 20px;
-  backdrop-filter: blur(5px);
-  text-align: center;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  display: none;
-}
-
-.fullscreen-video-mode #video-local-video {
-  width: 160px;
-  height: 120px;
-  bottom: 100px;
-  right: 20px;
-  z-index: 10001;
-  position: absolute;
-  border-radius: 8px;
-  border: 2px solid white;
-  box-shadow: 0 0 10px rgba(0,0,0,0.5);
-  transform: scaleX(-1);
-}
-
-.fullscreen-video-mode .switch-camera-btn {
-  top: 20px;
-  right: 20px;
-}
-
-/* Text Chat Fullscreen */
-.fullscreen-text-mode #text-chat-section {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 10000;
-  background: var(--dark-bg);
-}
-
-.fullscreen-text-mode #text-chat-section .card {
-  border-radius: 0;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-}
-
-.fullscreen-text-mode .text-chat-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  height: 100%;
-}
-
-.fullscreen-text-mode .text-chat-container .chat-container {
-  flex: 1;
-  height: auto;
-  border-radius: 0;
-  margin: 0;
-  background: rgba(0, 0, 0, 0.2);
-}
-
-.fullscreen-text-mode .text-chat-container .chat-input-container {
-  margin-top: 15px;
-  padding: 0;
-}
-
-/* Theater Fullscreen */
-.fullscreen-theater-mode #theater-section {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 10000;
-    background: #000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.fullscreen-theater-mode #theater-section .card {
-    width: 100%;
-    height: 100%;
-    border-radius: 0;
-    padding: 0;
-    margin: 0;
-    background: transparent;
-    box-shadow: none;
-    backdrop-filter: none;
-}
-
-.fullscreen-theater-mode #theaterContainer {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    padding: 0;
-    margin: 0;
-}
-
-/* FIX: Make video container relative and player absolute */
-.fullscreen-theater-mode .theater-video-container {
-    flex: 1;
-    position: relative;
-    width: 100%;
-    height: 100%;
-}
-
-.fullscreen-theater-mode #theaterVideoPlayer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-/* Top Controls */
-.top-controls-container {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  display: flex;
-  gap: 8px;
-  z-index: 10002;
-  display: none;
-}
-
-.fullscreen-video-mode .top-controls-container,
-.fullscreen-text-mode .text-controls {
-  display: flex;
-}
-
-.top-control-btn, .text-controls button {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: white;
-  font-size: 16px;
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.top-control-btn:hover, .text-controls button:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
-}
-
-/* ========== THEATER CONTROLS ========== */
-.theater-controls-container {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(0, 0, 0, 0.7);
-    padding: 10px 15px;
-    z-index: 10001;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-.theater-controls-container:hover {
-  opacity: 1;
-}
-.fullscreen-theater-mode .theater-controls-container {
-    opacity: 1;
-}
-
-.theater-main-controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.theater-left-controls,
-.theater-center-controls,
-.theater-right-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.theater-time-display {
-  font-size: 14px;
-  color: white;
-  min-width: 100px;
-  text-align: center;
-}
-
-.theater-seek-bar {
-  flex-grow: 1;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
-  margin: 0 10px;
-  cursor: pointer;
-  position: relative;
-}
-
-.theater-seek-bar-progress {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  background: var(--accent-color);
-  border-radius: 2px;
-  width: 0%;
-}
-
-.theater-seek-bar-handle {
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 12px;
-  height: 12px;
-  background: white;
-  border-radius: 50%;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.theater-seek-bar:hover .theater-seek-bar-handle {
-  opacity: 1;
-}
-
-.theater-volume-container {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.theater-volume-slider {
-  width: 80px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
-  cursor: pointer;
-  transition: width 0.2s;
-}
-
-.theater-volume-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
-  background: white;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.theater-btn {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-  border: none;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 16px;
-}
-
-.theater-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: scale(1.1);
-}
-
-.theater-btn.ptt {
-  width: 50px;
-  height: 50px;
-  background: rgba(58, 123, 213, 0.3);
-}
-
-.theater-btn.ptt.active {
-  background: rgba(76, 175, 80, 0.7);
-  box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
-}
-
-.theater-btn.end {
-  background: linear-gradient(135deg, #e53935, #f44336);
-}
-
-/* ========== THEATER MODAL ========== */
-.theater-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 10000;
-  backdrop-filter: blur(5px);
-}
-
-.theater-modal-content {
-  background: var(--card-bg);
-  border-radius: 16px;
-  padding: 25px;
-  width: 90%;
-  max-width: 500px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-
-.theater-modal-title {
-  margin-bottom: 15px;
-  color: var(--accent-color);
-  display: flex;
-  align-items: center;
-}
-
-.theater-modal-title i {
-  margin-right: 10px;
-}
-
-.theater-modal-buttons {
-  display: flex;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-/* URL Validation */
-.url-validation, .theater-url-validation {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: none;
-}
-
-.url-valid, .theater-url-valid {
-  color: var(--success-color);
-}
-
-.url-invalid, .theater-url-invalid {
-  color: var(--error-color);
-}
-
-.url-checking, .theater-url-checking {
-  animation: spin 1s linear infinite;
-  color: var(--warning-color);
-}
-
-.video-format-info, .theater-video-format-info {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: 5px;
-  display: block;
-}
-
-/* ========== PLACEHOLDER ANIMATIONS ========== */
-.placeholder-animation {
-  height: 120px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 20px 0;
-  position: relative;
-}
-
-/* Audio animation */
-.audio-placeholder {
-  width: 100%;
-  height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.audio-visualizer-bars {
-  display: flex;
-  align-items: flex-end;
-  height: 100%;
-  gap: 6px;
-}
-
-.audio-visualizer-bar {
-  width: 8px;
-  background: linear-gradient(to top, var(--accent-color), var(--primary-color));
-  border-radius: 4px;
-  animation: audioWave 1.2s infinite ease-in-out;
-}
-
-.audio-visualizer-bar:nth-child(1) { animation-delay: 0s; height: 20px; }
-.audio-visualizer-bar:nth-child(2) { animation-delay: 0.1s; height: 40px; }
-.audio-visualizer-bar:nth-child(3) { animation-delay: 0.2s; height: 60px; }
-.audio-visualizer-bar:nth-child(4) { animation-delay: 0.3s; height: 80px; }
-.audio-visualizer-bar:nth-child(5) { animation-delay: 0.4s; height: 100px; }
-.audio-visualizer-bar:nth-child(6) { animation-delay: 0.5s; height: 80px; }
-.audio-visualizer-bar:nth-child(7) { animation-delay: 0.6s; height: 60px; }
-.audio-visualizer-bar:nth-child(8) { animation-delay: 0.7s; height: 40px; }
-.audio-visualizer-bar:nth-child(9) { animation-delay: 0.8s; height: 20px; }
-
-@keyframes audioWave {
-  0%, 100% { transform: scaleY(0.4); }
-  50% { transform: scaleY(1); }
-}
-
-/* Video animation */
-.video-placeholder {
-  width: 160px;
-  height: 100px;
-  border-radius: 8px;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.video-icon {
-  font-size: 40px;
-  color: var(--accent-color);
-  position: relative;
-  z-index: 2;
-}
-
-.video-placeholder::before,
-.video-placeholder::after {
-  content: '';
-  position: absolute;
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: var(--accent-color);
-  opacity: 0.2;
-  z-index: 1;
-  animation: videoPulse 2s infinite;
-}
-
-.video-placeholder::after {
-  animation-delay: 1s;
-}
-
-@keyframes videoPulse {
-  0% {
-    transform: scale(0.8);
-    opacity: 0.4;
-  }
-  70% {
-    transform: scale(1.5);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1.5);
-    opacity: 0;
-  }
-}
-
-/* Text chat animation */
-.chat-placeholder {
-  width: 100%;
-  height: 100px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.chat-bubble {
-  width: 180px;
-  height: 30px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 15px;
-  position: relative;
-  opacity: 0;
-  transform: translateY(10px);
-  border: 2px solid var(--accent-color);
-}
-
-.chat-bubble:nth-child(1) {
-  animation: bubbleAppear 2s infinite ease;
-  animation-delay: 0.2s;
-  margin-right: 40px;
-}
-
-.chat-bubble:nth-child(2) {
-  animation: bubbleAppear 2s infinite ease;
-  animation-delay: 0.8s;
-  margin-left: 40px;
-}
-
-.chat-bubble:nth-child(3) {
-  animation: bubbleAppear 2s infinite ease;
-  animation-delay: 1.4s;
-  margin-right: 20px;
-}
-
-@keyframes bubbleAppear {
-  0% { opacity: 0; transform: translateY(10px); }
-  30% { opacity: 1; transform: translateY(0); }
-  70% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-10px); }
-}
-
-/* Theater animation */
-.theater-placeholder {
-  width: 160px;
-  height: 100px;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: visible;
-  margin: 40px auto;
-}
-
-.clapperboard {
-  position: relative;
-  width: 80px;
-  height: 60px;
-}
-
-.clapper-top {
-  position: absolute;
-  width: 80px;
-  height: 20px;
-  background: repeating-linear-gradient(
-    45deg,
-    rgba(255, 255, 255, 0.05),
-    rgba(255, 255, 255, 0.05) 10px,
-    var(--accent-color) 10px,
-    var(--accent-color) 20px
-  );
-  border-radius: 2px;
-  top: 0;
-  left: 0;
-  transform-origin: left bottom;
-  animation: clap 1.5s infinite alternate;
-}
-
-.clapper-bottom {
-  position: absolute;
-  width: 80px;
-  height: 40px;
-  background: var(--accent-color);
-  border-radius: 4px;
-  bottom: 0;
-  left: 0;
-}
-
-.clapper-bottom::after {
-  content: "";
-  position: absolute;
-  width: 70%;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.05);
-  top: 12px;
-  left: 15%;
-  border-radius: 2px;
-}
-
-@keyframes clap {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(-30deg); }
-}
-
-/* ========== Play Ground animation ========== */
-
-.play-ground-placeholder {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 200px; /* or whatever height you like */
-    color: #4CAF50; /* game-like green, you can change */
-}
-
-.gamepad-icon {
-    font-size: 80px;
-    animation: bounce 1.5s infinite, colorChange 3s infinite alternate;
-}
-
-/* Bounce animation */
-@keyframes bounce {
-    0%, 20%, 50%, 80%, 100% {
-        transform: translateY(0);
-    }
-    40% {
-        transform: translateY(-25px);
-    }
-    60% {
-        transform: translateY(-15px);
-    }
-}
-
-/* Color-changing animation (optional) */
-@keyframes colorChange {
-    0% {
-        color: #4CAF50; /* green */
-    }
-    50% {
-        color: #2196F3; /* blue */
-    }
-    100% {
-        color: #f44336; /* red */
-    }
-}
-
-/* ========== MEDIA QUERIES ========== */
-@media (max-width: 900px) {
-  .app-container {
-    grid-template-columns: 1fr;
-    padding: 10px;
-    gap: 10px;
-  }
-  
-  .app-container.sidebar-hidden {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-  
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 280px;
-    height: 100%;
-    z-index: 900;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
-    display: none;
-    max-height: 100vh;
-  }
-  
-  .sidebar.active {
-    transform: translateX(0);
-    display: flex;
-  }
-  
-  .mobile-menu-toggle {
-    display: flex;
-  }
-  
-  .desktop-menu-toggle {
-    display: none;
-  }
-  
-  .main-content {
-    max-height: calc(100vh - 20px);
-  }
-  
-  .card {
-    padding: 15px;
-  }
-  
-  #videoRemoteVideoContainer {
-    height: 200px;
-  }
-  
-}
-  #video-local-video {
-    width: 70px;
-    height: 52px;
-  }
-  
-  .input-group {
-    flex-direction: column;
-  }
-  
-  .btn {
-    padding: 8px 12px;
-    font-size: 13px;
-  }
-  
-  #copyTextLink {
-    margin-left: auto !important;
-  }
-  
-  /* Fullscreen adjustments */
-  .fullscreen-video-mode .call-controls {
-    bottom: 10px;
-  }
-  
-  .fullscreen-video-mode #video-local-video {
-    width: 100px;
-    height: 75px;
-    bottom: 80px;
-    right: 10px;
-  }
-  
-  .top-controls-container {
-    top: 10px;
-    right: 10px;
-  }
-  
-  .top-control-btn {
-    width: 36px;
-    height: 36px;
-    font-size: 14px;
-  }
-  
-  .fullscreen-text-mode .text-controls {
-    top: 10px;
-    right: 10px;
-  }
-
-@media (max-width: 480px) {
-  .call-controls {
-    gap: 3px;
-  }
-  
-  .control-btn {
-    width: 40px;
-    height: 40px;
-    font-size: 14px;
-  }
-  
-  .section-title {
-    font-size: 16px;
-  }
-  
-  .share-link {
-    font-size: 12px;
-  }
-  
-  .typing-indicator {
-    position: sticky;
-    bottom: 0;
-    margin-top: 8px;
-    align-self: flex-start;
-  }
-  
-  .send-icon {
-    font-size: 16px;
-  }
-  
-  .chat-container {
-    height: 150px;
-  }
-}
-
-/* ========== THEATER SPECIFIC STYLES ========== */
-.normal-hangup {
-  display: none !important;
-}
-
-.fullscreen-theater-mode #theater-room-id,
-.fullscreen-theater-mode #createTheaterRoom,
-.fullscreen-theater-mode #joinTheaterRoom,
-.fullscreen-theater-mode #copyTheaterLink,
-.fullscreen-theater-mode .theater-placeholder {
-    display: none !important;
-}
-
-.theater-top-controls {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    display: flex;
-    gap: 8px;
-    z-index: 10002;
-    display: none;
-}
-
-.fullscreen-theater-mode .theater-top-controls {
-    display: flex;
-}
-
-.theater-hangup-btn {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: rgba(244, 67, 54, 0.8);
-    border: none;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 10002;
-    display: none;
-}
-
-.fullscreen-theater-mode .theater-hangup-btn {
-    display: flex;
-    }
-
-/* Theater container styles */
-.fullscreen-theater-mode #theaterContainer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-}
-
-#theaterVideoPlayer {
-    width: 100%;
-    height: 100%;
-}
-
-#video-player {
-  transition: none !important;
-}
-.text-controls {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    display: flex;
-    gap: 8px;
-    z-index: 10002;
-    display: none;
-}
-
-.theater-video-container {
-    position: relative;
-    width: 100%;
-    height: 100%;
-}
-
-.theater-video-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1000;
-    background: transparent;
-    pointer-events: auto;
-}
-
-/* Make sure the YouTube player doesn't intercept clicks */
-.theater-video-player iframe {
-    pointer-events: none;
-}
-
-/* Ensure your controls are above the overlay */
-.theater-controls-container {
-    z-index: 1001 !important;
-}
-
-.theater-top-controls {
-    z-index: 1001 !important;
-}
-.theater-loading-spinner {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    border: 4px solid rgba(255, 255, 255, 0.3);
-    border-top: 4px solid var(--accent-color);
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-    z-index: 10;
-    display: none;
-}
-.fullscreen-theater-mode #theater-section {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-}
-
-.fullscreen-theater-mode .theater-video-container {
-    width: 100%;
-    height: 100%;
-}
-
-.fullscreen-theater-mode .theater-controls-container {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-}
-/* Add this to ensure video container hides after hangup */
-        #videoRemoteVideoContainer.hidden {
-            display: none !important;
-        }
-        
-        /* Ensure placeholder shows after hangup */
-        .placeholder-animation.hidden {
-            display: none;
-        }
-
-</style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body class="dark-mode">
-    <!-- Desktop menu toggle button -->
     <button class="desktop-menu-toggle" id="desktopMenuToggle">
-        <i class="fas fa-bars menu-icon"></i>
-        <i class="fas fa-times close-icon"></i>
-    </button>
-    
-    <!-- Mobile menu toggle button -->
-    <button class="mobile-menu-toggle" id="mobileMenuToggle">
         <i class="fas fa-bars"></i>
     </button>
     
-    <!-- Global notification -->
-    <div class="notification" id="globalNotification">
-        <i class="notification-icon fas fa-info-circle"></i>
-        <div class="notification-content">
-            <div class="notification-title" id="notificationTitle"></div>
-            <div class="notification-message" id="notificationMessage"></div>
-        </div>
-    </div>
-    
-    <!-- Main application container -->
     <div class="app-container" id="appContainer">
-        <!-- Sidebar navigation -->
         <div class="sidebar" id="sidebar">
             <div class="logo">
                 <div class="logo-icon">
@@ -1631,52 +21,49 @@ html, body {
                 <div class="logo-text">SatLoom</div>
             </div>
             
-            <!-- Connection status indicator -->
             <div class="status-indicator" id="connectionStatus">
-                <i class="fas fa-signal"></i> <span id="statusText">Ready to connect</span>
+                <i class="fas fa-signal"></i> <span id="statusText">Ready to Connect</span>
             </div>
             
-            <!-- Navigation menu -->
             <ul class="nav-menu">
                 <li class="nav-item active">
-                    <a class="nav-link" data-section="audio-call">
+                    <a class="nav-link" href="index.html" data-section="audio-call">
                         <i class="fas fa-phone"></i> Audio Call
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-section="video-call">
+                    <a class="nav-link" href="video-call.html" data-section="video-call">
                         <i class="fas fa-video"></i> Video Call
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-section="text-chat">
+                    <a class="nav-link" href="text-chat.html" data-section="text-chat">
                         <i class="fas fa-comments"></i> Text Chat
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-section="theater">
-                        <i class="fas fa-film"></i> Theater
+                    <a class="nav-link" href="theater.html" data-section="theater">
+                        <i class="fas fa-film"></i> Movie Theater
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-section="play-ground">
+                    <a class="nav-link" href="play-ground.html" data-section="playground">
                         <i class="fas fa-gamepad"></i> Play Ground
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-section="settings">
+                    <a class="nav-link" href="settings.html" data-section="settings">
                         <i class="fas fa-cog"></i> Settings
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-section="about">
+                    <a class="nav-link" href="about.html" data-section="about">
                         <i class="fas fa-info-circle"></i> About
                     </a>
                 </li>
             </ul>
         </div>
         
-        <!-- Main content area -->
         <div class="main-content">
             <!-- Audio Call Section -->
             <div class="section active" id="audio-call-section">
@@ -1687,6 +74,9 @@ html, body {
                         </div>
                         <div class="call-timer" id="audioCallTimer">00:00</div>
                     </div>
+                    
+                    
+
                     
                     <div class="input-group">
                         <input type="text" id="audio-room-id" class="input-styled" placeholder="Enter Room ID">
@@ -1699,9 +89,12 @@ html, body {
                         <button class="btn btn-secondary" id="joinAudioRoom">
                             <i class="fas fa-sign-in-alt"></i> Join Room
                         </button>
-                        <button class="copy-btn" id="copyAudioLink" style="display: none; margin-left: 8px;">
-                            <i class="fas fa-copy"></i>
-                        </button>
+                        <div class="room-info" id="roomInfo" style="display: none;">
+                    <div class="room-id" style="display: none;"><span id="displayRoomId"></span></div>
+                    <button class="copy-btn" id="copyAudioLink">
+                    <i class="fas fa-copy"></i>
+                    </button>
+                    </div>
                     </div>
                     
                     <div class="placeholder-animation">
@@ -1731,2299 +124,494 @@ html, body {
                 </div>
             </div>
             
-            <!-- Video Call Section -->
-            <div class="section" id="video-call-section">
-                <div class="card">
-                    <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <i class="fas fa-video"></i> Video Call
-                        </div>
-                        <div class="call-timer" id="videoCallTimer">00:00</div>
-                    </div>
-                    
-                    <div class="input-group">
-                        <input type="text" id="video-room-id" class="input-styled" placeholder="Enter Room ID">
-                    </div>
-                    
-                    <div class="call-controls">
-                        <button class="btn" id="generateVideoRoom">
-                            <i class="fas fa-network-wired"></i> Create Room
-                        </button>
-                        <button class="btn btn-secondary" id="joinVideoRoom">
-                            <i class="fas fa-sign-in-alt"></i> Join Room
-                        </button>
-                        <button class="copy-btn" id="copyVideoLink" style="display: none; margin-left: 8px;">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="placeholder-animation">
-                        <div class="video-placeholder">
-                            <i class="fas fa-video video-icon"></i>
-                        </div>
-                    </div>
-                    
-                    <div id="videoRemoteVideoContainer">
-                        <video id="video-remote-video" autoplay playsinline></video>
-                        <video id="video-local-video" autoplay playsinline muted></video>
-                        <div class="spinner" id="videoSpinner"></div>
-                        <button class="switch-camera-btn" id="switchCameraBtn" title="Switch Camera">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="call-controls bottom-controls" id="videoControls" style="display: none;">
-                        <button class="control-btn" id="switchCameraBtnNormal">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
-                        <button class="control-btn" id="videoVideoToggle">
-                            <i class="fas fa-video"></i>
-                        </button>
-                        <button class="control-btn" id="videoAudioToggle">
-                            <i class="fas fa-microphone"></i>
-                        </button>
-                        <button class="control-btn end" id="endVideoCall">
-                            <i class="fas fa-phone-slash"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Text Chat Section -->
-            <div class="section" id="text-chat-section">
-                <div class="card">
-                    <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <i class="fas fa-comments"></i> Text Chat
-                        </div>
-                        <div class="call-timer" id="textChatTimer">00:00</div>
-                    </div>
-                    <div class="input-group">
-                        <input type="text" id="text-room-id" class="input-styled" placeholder="Enter Room ID">
-                    </div>
-                    <div class="call-controls">
-                        <button class="btn" id="generateTextRoom">
-                            <i class="fas fa-network-wired"></i> Create Room
-                        </button>
-                        <button class="btn btn-secondary" id="joinTextRoom">
-                            <i class="fas fa-sign-in-alt"></i> Join Room
-                        </button>
-                        <button class="control-btn end normal-hangup" id="endTextChat" style="display: none; margin-left: 8px;">
-                            <i class="fas fa-phone-slash"></i>
-                        </button>
-                        <!-- Top right controls for text chat -->
-<div class="text-controls" id="textControls" style="display: none;">
-    <button class="top-control-btn" id="copyTextLinkTop" title="Copy room link">
-        <i class="fas fa-copy"></i>
-    </button>
-</div>
-                        <button class="copy-btn" id="copyTextLink" style="display: none; margin-left: 8px;">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                    </div>
-                    <div class="placeholder-animation">
-                        <div class="chat-placeholder">
-                            <div class="chat-bubble"></div>
-                            <div class="chat-bubble"></div>
-                            <div class="chat-bubble"></div>
-                        </div>
-                    </div>
-                    <div class="text-chat-container" style="display: none;">
-                        <div id="textChat" class="chat-container">
-                            <div class="typing-indicator" id="typingIndicator">
-                                <i class="fas fa-circle"></i>
-                                <i class="fas fa-circle"></i>
-                                <i class="fas fa-circle"></i>
-                            </div>
-                        </div>
-                        <div class="chat-input-container">
-                            <input type="text" id="textMessage" class="input-styled" placeholder="Type a message...">
-                            <button class="btn" id="sendTextMessage">
-                                <i class="fas fa-paper-plane send-icon"></i>
-                            </button>
-                            <button class="control-btn end" id="endTextChatFullscreen" style="display: none; margin-left: 8px;">
-                                <i class="fas fa-phone-slash"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Theater Section -->
-            <div class="section" id="theater-section">
-                <div class="card">
-                    <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <i class="fas fa-film"></i> Theater
-                        </div>
-                        <div class="call-timer theater-timer" id="theaterTimer">00:00</div>
-                    </div>
-                    
-                    <div class="input-group">
-                        <input type="text" id="theater-room-id" class="input-styled" placeholder="Enter Room ID">
-                    </div>
-                    
-                    <div class="call-controls">
-                        <button class="btn" id="createTheaterRoom">
-                            <i class="fas fa-network-wired"></i> Create Room
-                        </button>
-                        <button class="btn btn-secondary" id="joinTheaterRoom">
-                            <i class="fas fa-sign-in-alt"></i> Join Room
-                        </button>
-                        <button class="copy-btn" id="copyTheaterLink" style="display: none; margin-left: 8px;">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                        <button class="control-btn end" id="endTheaterSession" style="display: none; margin-left: 8px;">
-                            <i class="fas fa-phone-slash"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="theater-placeholder">
-                        <div class="clapperboard">
-                            <div class="clapper-top"></div>
-                            <div class="clapper-bottom"></div>
-                        </div>
-                    </div>
-                    
-                    <!-- Theater Video Container -->
-                    <div id="theaterContainer" style="display: none;">
-                        <div class="theater-video-container">
-                            <div class="theater-loading-spinner" id="theaterLoadingSpinner"></div>
-                            <div id="theaterVideoPlayer" class="theater-video-player"></div>
-                        </div>
-                        
-                        <div class="theater-controls-container" id="theaterControls">
-                            <div class="theater-seek-bar" id="theaterSeekBar">
-                                <div class="theater-seek-bar-progress" id="theaterSeekBarProgress"></div>
-                                <div class="theater-seek-bar-handle" id="theaterSeekBarHandle"></div>
-                            </div>
-                            
-                            <div class="theater-main-controls">
-                                <div class="theater-left-controls">
-                                    <button class="theater-btn" id="theaterPTTButton">
-                                        <i class="fas fa-microphone"></i>
-                                    </button>
-                                    <div class="theater-time-display" id="theaterTimeDisplay">00:00 / 00:00</div>
-                                </div>
-                                
-                                <div class="theater-center-controls">
-                                    <button class="theater-btn" id="theaterBackButton">
-                                        <i class="fas fa-step-backward"></i>
-                                    </button>
-                                    <button class="theater-btn" id="theaterPlayPauseButton">
-                                        <i class="fas fa-play"></i>
-                                    </button>
-                                    <button class="theater-btn" id="theaterForwardButton">
-                                        <i class="fas fa-step-forward"></i>
-                                    </button>
-                                </div>
-                                
-                                <div class="theater-right-controls">
-                                    <div class="theater-volume-container">
-                                        <button class="theater-btn" id="theaterMuteButton">
-                                            <i class="fas fa-volume-up"></i>
-                                        </button>
-                                        <input type="range" class="theater-volume-slider" id="theaterVolumeSlider" min="0" max="1" step="0.01" value="0.7">
-                                    </div>
-                                    
-                                    <div class="theater-quality-selector">
-                                        <button class="theater-btn" id="theaterQualityButton">
-                                            <i class="fas fa-cog"></i>
-                                        </button>
-                                        <div class="theater-quality-options" id="theaterQualityOptions">
-                                            <div class="theater-quality-option" data-quality="auto">Auto</div>
-                                            <div class="theater-quality-option" data-quality="small">240p</div>
-                                            <div class="theater-quality-option" data-quality="medium">360p</div>
-                                            <div class="theater-quality-option" data-quality="large">480p</div>
-                                            <div class="theater-quality-option" data-quality="hd720">720p</div>
-                                            <div class="theater-quality-option" data-quality="hd1080">1080p</div>
-                                        </div>
-                                    </div>
-                                    
-                                    <button class="theater-btn" id="theaterFullscreenButton">
-                                        <i class="fas fa-expand"></i>
-                                    </button>
-                                    
-                                    <button class="theater-btn end" id="theaterHangupButton">
-                                        <i class="fas fa-phone-slash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Theater Modal for video URL input -->
-                    <div class="theater-modal" id="theaterModal" style="display: none;">
-                        <div class="theater-modal-content">
-                            <h3 class="theater-modal-title"><i class="fas fa-video"></i> Create Video Room</h3>
-                            <div class="input-group">
-                                <div style="position: relative;">
-                                    <input type="text" id="theaterVideoUrl" class="input-styled" 
-                                           placeholder="Paste video URL (YouTube, Vimeo, Dailymotion or direct video)">
-                                    <span class="theater-url-validation" id="theaterUrlValidationIcon">
-                                        <i class="fas fa-circle-notch theater-url-checking"></i>
-                                    </span>
-                                </div>
-                                <span class="theater-video-format-info">Supports: YouTube, Vimeo, Dailymotion, MP4, WebM, etc.</span>
-                                <button class="btn" id="theaterLoadBtn">
-                                    <i class="fas fa-network-wired"></i> Load Video
-                                </button>
-                            </div>
-                            <div class="theater-modal-buttons" id="theaterModalButtons" style="display: none;">
-                                <button class="btn btn-secondary" id="theaterModalCancel">
-                                    <i class="fas fa-times"></i> Cancel
-                                </button>
-                                <button class="btn" id="theaterModalCopy">
-                                    <i class="fas fa-copy"></i> Copy Room Link
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Theater top controls -->
-                    <div class="theater-top-controls" id="theaterTopControls">
-                        <button class="top-control-btn" id="copyTheaterLinkTop" title="Copy room link">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Play Ground Section -->
-            <div class="section" id="play-ground-section">
-                <div class="card">
-                    <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <i class="fas fa-gamepad"></i> Play Ground
-                        </div>
-                        <div class="call-timer play-ground-timer" id="play-ground-Timer">00:00</div>
-                    </div>
-                    
-                    <div class="input-group">
-                        <input type="text" id="play-ground-room-id" class="input-styled" placeholder="Enter Room ID">
-                    </div>
-                    
-                    <div class="call-controls">
-                        <button class="btn" id="createplaygroundRoom">
-                            <i class="fas fa-network-wired"></i> Create Room
-                        </button>
-                        <button class="btn btn-secondary" id="joinplaygroundRoom">
-                            <i class="fas fa-sign-in-alt"></i> Join Room
-                        </button>
-                        <button class="copy-btn" id="copyplaygroundLink" style="display: none; margin-left: 8px;">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                        <button class="control-btn end" id="endplaygroundSession" style="display: none; margin-left: 8px;">
-                            <i class="fas fa-phone-slash"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="play-ground-placeholder">
-                    <div class="gamepad-icon">
-                    <i class="fas fa-gamepad"></i>
-                    </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Settings Section -->
-            <div class="section" id="settings-section">
-                <div class="card">
-                    <div class="section-title">
-                        <i class="fas fa-cog"></i> Settings
-                    </div>
-                    
-                    <div class="settings-list">
-                        <div class="setting-item">
-                            <label>Theme:</label>
-                            <button id="themeToggleSetting" class="btn">
-                                <i class="fas fa-moon"></i> Switch to Light
-                            </button>
-                        </div>
-                        <div class="setting-item">
-                            <label>Notifications:</label>
-                            <input type="checkbox" id="notifications-toggle" checked>
-                        </div>
-                        <div class="setting-item">
-                            <label>Notification Sound:</label>
-                            <input type="checkbox" id="notification-sound-toggle" checked>
-                        </div>
-                        <div class="setting-item">
-                            <label>Debug Mode:</label>
-                            <input type="checkbox" id="debug-mode-toggle">
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-          <!-- About Section -->
-<div class="section" id="about-section">
-    <div class="card">
-        <div class="section-title">
-            <i class="fas fa-info-circle"></i> About
-        </div>
-        
-        <div class="about-content">
-            <p>
-                <strong>Open-source:</strong> Designed to provide secure, encrypted communication for everyone.
-            </p>
-            <p>
-                <strong>Version:</strong> 1.8.0
-            </p>
-            <p>
-                <strong>Developed by:</strong> <a target="_blank">SatLoom Developers</a>
-            </p>
-        </div>
-    </div>
-</div>
-
-            
-            <!-- Footer -->
             <div class="app-footer">
                 <div>SatLoom v1.8.0 | Powered by SatLoom Developers</div>
             </div>
         </div>
     </div>
     
-    <!-- Top right controls for video calls -->
-    <div class="top-controls-container" id="topControlsContainer">
-        <button class="top-control-btn" id="copyVideoLinkTop" title="Copy room link">
-            <i class="fas fa-copy"></i>
-        </button>
-    </div>
-    
-    <!-- Top right controls for text chat -->
-    <div class="text-controls" id="textControls" style="display: none;">
-        <button class="top-control-btn" id="copyTextLinkTop" title="Copy room link">
-            <i class="fas fa-copy"></i>
-        </button>
-    </div>
-    
-    <!-- Audio elements -->
     <audio id="remoteAudio" autoplay playsinline></audio>
     <audio id="notificationSound" preload="auto">
         <source src="https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3" type="audio/mpeg">
     </audio>
     
-    <!-- External scripts -->
-    <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    
-    <!-- Theater hangup button (positioned outside main container) -->
-    <button class="theater-hangup-btn" id="theaterHangupTop">
-        <i class="fas fa-phone-slash"></i>
-    </button>
-</body>
-    
-<script>
-// ========== FIREBASE CONFIGURATION ========== //
-const firebaseConfig = {
-  apiKey: "AIzaSyDeksN3qPZCmNuoASlEqG38XVmag6ecTh8",
-  authDomain: "satloom-rtc.firebaseapp.com",
-  databaseURL: "https://satloom-rtc-default-rtdb.firebaseio.com",
-  projectId: "satloom-rtc",
-  storageBucket: "satloom-rtc.appspot.com",
-  messagingSenderId: "273627860564",
-  appId: "1:273627860564:web:c326b1bb6ffcb32fb0e7c1"
-};
-
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-
-// ========== STATE MANAGEMENT ========== //
-const appState = {
-  localStream: null,
-  remoteStream: null,
-  peerConnection: null,
-  roomId: null,
-  isInitiator: false,
-  isStarted: false,
-  timer: null,
-  startTime: null,
-  currentMode: 'audio-call',
-  signalingRef: null,
-  userId: 'user-' + Math.random().toString(36).substr(2, 8),
-  textChatRef: null,
-  textChatInitialized: false,
-  isCameraEnabled: true,
-  currentCamera: 'user',
-  cameraDevices: [],
-  userName: 'User-' + Math.floor(Math.random() * 1000),
-  isTyping: false,
-  typingTimeout: null,
-  participantsRef: null,
-  isFullscreen: false
-};
-
-const theaterState = {
-  player: null,
-  mediaUrl: null,
-  isPlaying: false,
-  isMuted: false,
-  currentVolume: 0.7,
-  currentQuality: 'auto',
-  isPTTActive: false,
-  duration: 0,
-  currentTime: 0,
-  pttAudioStream: null,
-  pttAudioTrack: null,
-  pttPeerConnection: null,
-  theaterRef: null,
-  isTheaterLeader: false,
-  seekBarUpdateInterval: null
-};
-
-// ========== DOM ELEMENT REFERENCES ========== //
-const domRefs = {
-  notification: document.getElementById('globalNotification'),
-  notificationTitle: document.getElementById('notificationTitle'),
-  notificationMessage: document.getElementById('notificationMessage'),
-  connectionStatus: document.getElementById('connectionStatus'),
-  statusText: document.getElementById('statusText'),
-  audioCallTimer: document.getElementById('audioCallTimer'),
-  videoCallTimer: document.getElementById('videoCallTimer'),
-  textChatTimer: document.getElementById('textChatTimer'),
-  theaterTimer: document.getElementById('theaterTimer'),
-  sections: {
-    'audio-call': document.getElementById('audio-call-section'),
-    'video-call': document.getElementById('video-call-section'),
-    'text-chat': document.getElementById('text-chat-section'),
-    'theater': document.getElementById('theater-section'),
-    'settings': document.getElementById('settings-section'),
-    'about': document.getElementById('about-section')
-  },
-  remoteAudio: document.getElementById('remoteAudio'),
-  switchCameraBtn: document.getElementById('switchCameraBtn'),
-  switchCameraBtnNormal: document.getElementById('switchCameraBtnNormal'),
-  themeToggleSetting: document.getElementById('themeToggleSetting'),
-  textChat: document.getElementById('textChat'),
-  typingIndicator: document.getElementById('typingIndicator'),
-  notificationSound: document.getElementById('notificationSound'),
-  appContainer: document.getElementById('appContainer'),
-  topControlsContainer: document.getElementById('topControlsContainer'),
-  textControls: document.getElementById('textControls'),
-  theaterContainer: document.getElementById('theaterContainer'),
-  theaterVideoPlayer: document.getElementById('theaterVideoPlayer'),
-  theaterControls: document.getElementById('theaterControls'),
-  theaterPlayPauseButton: document.getElementById('theaterPlayPauseButton'),
-  theaterBackButton: document.getElementById('theaterBackButton'),
-  theaterForwardButton: document.getElementById('theaterForwardButton'),
-  theaterMuteButton: document.getElementById('theaterMuteButton'),
-  theaterVolumeSlider: document.getElementById('theaterVolumeSlider'),
-  theaterQualityButton: document.getElementById('theaterQualityButton'),
-  theaterQualityOptions: document.getElementById('theaterQualityOptions'),
-  theaterPTTButton: document.getElementById('theaterPTTButton'),
-  theaterHangupButton: document.getElementById('theaterHangupButton'),
-  theaterHangupTop: document.getElementById('theaterHangupTop'),
-  theaterFullscreenButton: document.getElementById('theaterFullscreenButton'),
-  theaterSeekBarProgress: document.getElementById('theaterSeekBarProgress'),
-  theaterSeekBarHandle: document.getElementById('theaterSeekBarHandle'),
-  theaterTimeDisplay: document.getElementById('theaterTimeDisplay'),
-  theaterModal: document.getElementById('theaterModal'),
-  theaterVideoUrl: document.getElementById('theaterVideoUrl'),
-  theaterUrlValidationIcon: document.getElementById('theaterUrlValidationIcon'),
-  theaterLoadBtn: document.getElementById('theaterLoadBtn'),
-  theaterModalButtons: document.getElementById('theaterModalButtons'),
-  theaterModalCopy: document.getElementById('theaterModalCopy'),
-  theaterModalCancel: document.getElementById('theaterModalCancel'),
-  copyTheaterLinkTop: document.getElementById('copyTheaterLinkTop')
-};
-
-// ========== UTILITY FUNCTIONS ========== //
-function escapeHtml(unsafe) {
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-function playNotificationSound() {
-  if (document.getElementById('notification-sound-toggle').checked) {
-    try {
-      domRefs.notificationSound.currentTime = 0;
-      domRefs.notificationSound.play().catch(e => {
-        console.log('Audio play prevented:', e);
-      });
-    } catch (e) {
-      console.error('Error playing notification sound:', e);
-    }
-  }
-}
-
-function showNotification(title, message, type = 'info') {
-  if (!document.getElementById('notifications-toggle').checked) return;
-  
-  domRefs.notification.style.display = 'flex';
-  domRefs.notificationTitle.textContent = title;
-  domRefs.notificationMessage.textContent = message;
-  
-  domRefs.notification.style.backgroundColor = 
-    type === 'error' ? 'rgba(244, 67, 54, 0.8)' :
-    type === 'success' ? 'rgba(76, 175, 80, 0.8)' :
-    'rgba(58, 123, 213, 0.8)';
-  
-  setTimeout(() => {
-    domRefs.notification.style.display = 'none';
-  }, 3000);
-}
-
-function updateStatus(text, status) {
-  const statusElem = domRefs.connectionStatus;
-  statusElem.className = 'status-indicator';
-  
-  if (status === 'connected') {
-    statusElem.classList.add('connected');
-    statusElem.innerHTML = `<i class="fas fa-check-circle"></i> ${text}`;
-  } 
-  else if (status === 'connecting') {
-    statusElem.classList.add('connecting');
-    statusElem.innerHTML = `<i class="fas fa-sync-alt fa-spin"></i> ${text}`;
-  }
-  else if (status === 'error') {
-    statusElem.classList.add('error');
-    statusElem.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${text}`;
-  }
-  else {
-    statusElem.innerHTML = `<i class="fas fa-info-circle"></i> ${text}`;
-  }
-}
-
-function startTimer() {
-  appState.startTime = Date.now();
-  clearInterval(appState.timer);
-  appState.timer = setInterval(() => {
-    const elapsedTime = Math.floor((Date.now() - appState.startTime) / 1000);
-    const minutes = Math.floor(elapsedTime / 60).toString().padStart(2, '0');
-    const seconds = (elapsedTime % 60).toString().padStart(2, '0');
-    
-    const timerElement = document.getElementById(`${appState.currentMode.replace('-', '')}Timer`);
-    if (timerElement) timerElement.textContent = `${minutes}:${seconds}`;
-  }, 1000);
-}
-
-function stopTimer() {
-  clearInterval(appState.timer);
-  appState.timer = null;
-  appState.startTime = null;
-  
-  // Reset all timers
-  ['audio', 'video', 'text', 'theater'].forEach(mode => {
-    const timerElement = document.getElementById(`${mode}Timer`);
-    if (timerElement) timerElement.textContent = '00:00';
-  });
-}
-
-// ========== CORE FUNCTIONALITY ========== //
-async function initMedia(mode) {
-  try {
-    const constraints = mode === 'video' ? 
-      { video: { facingMode: appState.currentCamera }, audio: true } : { audio: true };
-    
-    appState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
-    
-    if (mode === 'video') {
-      document.getElementById('video-local-video').srcObject = appState.localStream;
-      document.getElementById('videoControls').style.display = 'flex';
-      appState.isCameraEnabled = true;
-      
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      appState.cameraDevices = devices.filter(device => device.kind === 'videoinput');
-      if (appState.cameraDevices.length > 1) {
-        domRefs.switchCameraBtn.style.display = 'block';
-        domRefs.switchCameraBtnNormal.style.display = 'block';
-      }
-    } else {
-      document.getElementById('audioControls').style.display = 'flex';
-    }
-    
-    return true;
-  } catch (err) {
-    console.error('Media access error:', err);
-    showNotification('Media Error', 
-      `Could not access ${mode === 'video' ? 'camera/microphone' : 'microphone'}. 
-      Please check permissions.`, 'error');
-    updateStatus('Media access error', 'error');
-    return false;
-  }
-}
-
-async function switchCamera() {
-  try {
-    appState.currentCamera = appState.currentCamera === 'user' ? 'environment' : 'user';
-    
-    const newStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: appState.currentCamera },
-      audio: true
-    });
-    
-    appState.localStream.getTracks().forEach(track => track.stop());
-    appState.localStream = newStream;
-    document.getElementById('video-local-video').srcObject = appState.localStream;
-    
-    if (appState.peerConnection) {
-      const videoTrack = appState.localStream.getVideoTracks()[0];
-      const audioTrack = appState.localStream.getAudioTracks()[0];
-      const videoSender = appState.peerConnection.getSenders().find(
-        s => s.track && s.track.kind === 'video'
-      );
-      const audioSender = appState.peerConnection.getSenders().find(
-        s => s.track && s.track.kind === 'audio'
-      );
-      
-      if (videoSender && videoTrack) {
-        videoSender.replaceTrack(videoTrack);
-      }
-      
-      if (audioSender && audioTrack) {
-        audioSender.replaceTrack(audioTrack);
-      }
-    }
-    
-    showNotification('Camera Switched', `Now using ${appState.currentCamera === 'user' ? 'front' : 'rear'} camera`, 'success');
-  } catch (err) {
-    console.error('Camera switch error:', err);
-    showNotification('Camera Error', 'Failed to switch camera', 'error');
-    updateStatus('Camera switch failed', 'error');
-  }
-}
-
-function createPeerConnection(type = 'default') {
-  try {
-    const pcConfig = {
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' },
-        {
-          urls: 'turn:openrelay.metered.ca:80',
-          username: 'openrelayproject',
-          credential: 'openrelayproject'
-        }
-      ]
-    };
-    
-    const pc = type === 'theater-audio' ? 
-      new RTCPeerConnection(pcConfig) : 
-      (appState.peerConnection = new RTCPeerConnection(pcConfig));
-    
-    if (type === 'theater-audio') {
-      theaterState.pttPeerConnection = pc;
-    }
-    
-    if (appState.localStream && type !== 'theater-audio') {
-      appState.localStream.getTracks().forEach(track => {
-        pc.addTrack(track, appState.localStream);
-      });
-    }
-    
-    pc.ontrack = (event) => {
-      if (type === 'theater-audio') {
-        if (event.track.kind === 'audio') {
-          domRefs.remoteAudio.srcObject = event.streams[0];
-        }
-      } else {
-        handleRemoteStream(event);
-      }
-    };
-    
-    pc.onicecandidate = handleICECandidate;
-    pc.oniceconnectionstatechange = handleICEConnectionStateChange;
-    pc.onconnectionstatechange = handleConnectionStateChange;
-    pc.onsignalingstatechange = handleSignalingStateChange;
-    
-    if (type !== 'theater-audio') {
-      appState.remoteStream = new MediaStream();
-      
-      if (appState.currentMode === 'video') {
-        document.getElementById('video-remote-video').srcObject = appState.remoteStream;
-      } else {
-        domRefs.remoteAudio.srcObject = appState.remoteStream;
-      }
-    }
-    
-    return true;
-  } catch (err) {
-    console.error('Peer connection error:', err);
-    showNotification('Connection Error', 
-      `Failed to create peer connection: ${err.message}`, 'error');
-    updateStatus('Connection failed', 'error');
-    return false;
-  }
-}
-
-function handleRemoteStream(event) {
-  if (!appState.remoteStream) {
-    appState.remoteStream = new MediaStream();
-  }
-  
-  appState.remoteStream.addTrack(event.track);
-  
-  if (appState.currentMode === 'video' && event.track.kind === 'video') {
-    document.getElementById('videoSpinner').style.display = 'none';
-  }
-}
-
-function handleICECandidate(event) {
-  if (event.candidate && appState.signalingRef) {
-    sendMessage({
-      type: 'candidate',
-      candidate: event.candidate.candidate,
-      sdpMid: event.candidate.sdpMid,
-      sdpMLineIndex: event.candidate.sdpMLineIndex
-    });
-  }
-}
-
-function handleICEConnectionStateChange() {
-  if (!appState.peerConnection) return;
-  const state = appState.peerConnection.iceConnectionState;
-  
-  if (state === 'connected' || state === 'completed') {
-    updateStatus(`In ${appState.currentMode} call (${appState.roomId})`, 'connected');
-    playNotificationSound();
-    showNotification('Connected', 'Peer has joined the call', 'success');
-  } 
-  else if (state === 'disconnected' || state === 'failed') {
-    playNotificationSound();
-    showNotification('Disconnected', 'Peer has left the call', 'success');
-    hangup(appState.currentMode);
-  }
-}
-
-function handleConnectionStateChange() {
-  if (!appState.peerConnection) return;
-  console.log('Connection state changed to:', appState.peerConnection.connectionState);
-}
-
-function handleSignalingStateChange() {
-  if (!appState.peerConnection) return;
-  console.log('Signaling state changed to:', appState.peerConnection.signalingState);
-}
-
-function initSignaling() {
-  if (appState.signalingRef) {
-    appState.signalingRef.off('child_added');
-  }
-  
-  appState.signalingRef = firebase.database().ref(`rooms/${appState.roomId}/messages`);
-  
-  appState.signalingRef.on('child_added', snapshot => {
-    const message = JSON.parse(snapshot.val());
-    
-    if (!appState.peerConnection) {
-      if (!createPeerConnection()) return;
-    }
-    
-    switch (message.type) {
-      case 'offer':
-        if (!appState.isInitiator && !appState.isStarted) {
-          handleOffer(message);
-        }
-        break;
-      case 'answer':
-        if (appState.isStarted) {
-          appState.peerConnection.setRemoteDescription(
-            new RTCSessionDescription(message));
-        }
-        break;
-      case 'candidate':
-        if (appState.isStarted && appState.peerConnection.remoteDescription) {
-          const candidate = new RTCIceCandidate({
-            candidate: message.candidate,
-            sdpMid: message.sdpMid,
-            sdpMLineIndex: message.sdpMLineIndex
-          });
-          appState.peerConnection.addIceCandidate(candidate)
-            .catch(e => console.error('Error adding ICE candidate:', e));
-        }
-        break;
-      case 'bye':
-        if (appState.isStarted) {
-          hangup(appState.currentMode);
-        }
-        break;
-    }
-  });
-}
-
-async function handleOffer(offer) {
-  try {
-    if (!appState.peerConnection) {
-      if (!createPeerConnection()) return;
-    }
-    
-    await appState.peerConnection.setRemoteDescription(
-      new RTCSessionDescription(offer));
-    
-    const answer = await appState.peerConnection.createAnswer();
-    await appState.peerConnection.setLocalDescription(answer);
-    
-    sendMessage(answer);
-    appState.isStarted = true;
-    startTimer();
-    updateStatus(`In ${appState.currentMode} call (${appState.roomId})`, 'connected');
-    
-    if (appState.currentMode === 'video') {
-      document.getElementById('videoSpinner').style.display = 'none';
-    }
-  } catch (err) {
-    console.error('Error handling offer:', err);
-    showNotification('Error', 'Failed to handle offer', 'error');
-    updateStatus('Offer handling failed', 'error');
-  }
-}
-
-function sendMessage(message) {
-  if (!appState.roomId) return;
-  const dbRef = firebase.database().ref(`rooms/${appState.roomId}/messages`);
-  dbRef.push(JSON.stringify(message));
-}
-
-// ========== HANG UP FUNCTIONALITY ========== //
-function hangup(mode) {
-  if (!mode || !appState.roomId) return;
-
-  // Reset timer and status
-  stopTimer();
-  updateStatus('Ready to connect', 'disconnected');
-
-  // Common cleanup
-  if (appState.signalingRef) {
-    appState.signalingRef.off('child_added');
-    appState.signalingRef = null;
-  }
-
-  // Mode-specific cleanup
-  switch (mode) {
-    case 'theater':
-      cleanupTheater();
-      break;
-    case 'video':
-    case 'audio':
-      cleanupMediaCall(mode);
-      break;
-    case 'text':
-      cleanupTextChat();
-      break;
-  }
-
-    // Reset UI - IMPORTANT FIX: Reset placeholders and containers
-    resetUIAfterHangup(mode);
-
-    // Reset global state
-    appState.isStarted = false;
-    appState.roomId = null;
-    appState.currentMode = null;
-}
-// ========== NEW FUNCTION: RESET UI AFTER HANGUP ========== //
-function resetUIAfterHangup(mode) {
-    // Show placeholder and hide video container
-    const placeholder = document.querySelector(`#${mode}-section .placeholder-animation`);
-    if (placeholder) {
-        placeholder.classList.remove('hidden');
-    }
-    
-    if (mode === 'video') {
-        const videoContainer = document.getElementById('videoRemoteVideoContainer');
-        if (videoContainer) {
-            videoContainer.classList.add('hidden');
-        }
-    }
-    
-    // Reset copy buttons
-    const copyButtonId = `copy${mode.charAt(0).toUpperCase() + mode.slice(1)}Link`;
-    const copyButton = document.getElementById(copyButtonId);
-    if (copyButton) copyButton.style.display = 'none';
-    
-    // Reset controls
-    const controlsId = `${mode}Controls`;
-    const controls = document.getElementById(controlsId);
-    if (controls) controls.style.display = 'none';
-    
-    // Reset room ID input
-    const roomInput = document.getElementById(`${mode}-room-id`);
-    if (roomInput) roomInput.value = '';
-}
-
-
-function cleanupTheater() {
-    if (theaterState.player) {
-        if (typeof theaterState.player.stopVideo === 'function') {
-            theaterState.player.stopVideo();
-        } else if (theaterState.player.pause) {
-            theaterState.player.pause();
-        }
-    }
-    
-    if (theaterState.pttAudioStream) {
-        theaterState.pttAudioStream.getTracks().forEach(track => track.stop());
-        theaterState.pttAudioStream = null;
-    }
-    
-    if (theaterState.pttPeerConnection) {
-        theaterState.pttPeerConnection.close();
-        theaterState.pttPeerConnection = null;
-    }
-    
-    if (theaterState.theaterRef) {
-        theaterState.theaterRef.off();
-        theaterState.theaterRef = null;
-    }
-    
-    if (theaterState.seekBarUpdateInterval) {
-        clearInterval(theaterState.seekBarUpdateInterval);
-        theaterState.seekBarUpdateInterval = null;
-    }
-    
-    document.getElementById('theaterContainer').style.display = 'none';
-    document.getElementById('theaterModal').style.display = 'none';
-    document.querySelector('.theater-placeholder').style.display = 'flex';
-    document.getElementById('theaterTopControls').style.display = 'none';
-    document.getElementById('theaterHangupTop').style.display = 'none';
-    document.getElementById('endTheaterSession').style.display = 'none';
-    
-    if (appState.isFullscreen) {
-        exitTheaterFullscreen();
-    }
-}
-
-function cleanupMediaCall(mode) {
-  if (appState.peerConnection) {
-    appState.peerConnection.close();
-    appState.peerConnection = null;
-  }
-
-  if (appState.localStream) {
-    appState.localStream.getTracks().forEach(track => track.stop());
-    appState.localStream = null;
-  }
-
-  if (appState.remoteStream) {
-    appState.remoteStream.getTracks().forEach(track => track.stop());
-    appState.remoteStream = null;
-  }
-
-  domRefs.remoteAudio.srcObject = null;
-
-  if (mode === 'video') {
-    const remoteVideo = document.getElementById('video-remote-video');
-    const localVideo = document.getElementById('video-local-video');
-    if (remoteVideo) remoteVideo.srcObject = null;
-    if (localVideo) localVideo.srcObject = null;
-
-    document.getElementById('videoSpinner').style.display = 'none';
-    document.getElementById('switchCameraBtn').style.display = 'none';
-    document.getElementById('switchCameraBtnNormal').style.display = 'none';
-
-    if (appState.isFullscreen) {
-      exitFullscreenVideoMode();
-    }
-  }
-
-  document.getElementById(`${mode}Controls`).style.display = 'none';
-}
-
-function cleanupTextChat() {
-  // Reset UI
-  document.querySelector('.text-chat-container').style.display = 'none';
-  document.querySelector('#text-chat-section .placeholder-animation').style.display = 'flex';
-  
-  if (appState.textChatRef) {
-    appState.textChatRef.off('child_added');
-    appState.textChatRef.off('value');
-    appState.textChatRef = null;
-  }
-
-  if (appState.participantsRef) {
-    appState.participantsRef.child(appState.userId).remove();
-    appState.participantsRef.off();
-    appState.participantsRef = null;
-  }
-
-  appState.textChatInitialized = false;
-
-  const chatContainer = document.getElementById('textChat');
-  const messageInput = document.getElementById('textMessage');
-  if (chatContainer) chatContainer.innerHTML = '';
-  if (messageInput) messageInput.value = '';
-  
-  ['endTextChat', 'endTextChatFullscreen'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
-
-  if (appState.isFullscreen) {
-    exitFullscreenTextMode();
-  }
-}
-
-// ========== FULLSCREEN MODES ========== //
-function toggleFullscreenMode(enter, mode) {
-  const fullscreenClass = `fullscreen-${mode}-mode`;
-  
-  if (enter) {
-    document.body.classList.add(fullscreenClass);
-    appState.isFullscreen = true;
-    
-    if (mode === 'video') {
-      domRefs.topControlsContainer.style.display = 'flex';
-      document.getElementById('video-local-video').style.width = '120px';
-      document.getElementById('video-local-video').style.height = '90px';
-    } else if (mode === 'text') {
-      domRefs.textControls.style.display = 'flex';
-      const chatContainer = document.getElementById('textChat');
-      if (chatContainer) chatContainer.style.height = 'calc(100vh - 180px)';
-    }
-    
-    // Hide UI elements
-    document.getElementById(`${mode}-room-id`).style.display = 'none';
-    document.getElementById(`generate${mode.charAt(0).toUpperCase() + mode.slice(1)}Room`).style.display = 'none';
-    document.getElementById(`join${mode.charAt(0).toUpperCase() + mode.slice(1)}Room`).style.display = 'none';
-    document.getElementById(`copy${mode.charAt(0).toUpperCase() + mode.slice(1)}Link`).style.display = 'none';
-    
-    if (mode === 'text') {
-      document.getElementById('endTextChat').style.display = 'none';
-      document.getElementById('endTextChatFullscreen').style.display = 'inline-flex';
-      document.getElementById('textChatTimer').style.display = 'none';
-    }
-    
-  } else {
-    document.body.classList.remove(fullscreenClass);
-    appState.isFullscreen = false;
-    
-    if (mode === 'video') {
-      domRefs.topControlsContainer.style.display = 'none';
-      document.getElementById('video-local-video').style.width = '80px';
-      document.getElementById('video-local-video').style.height = '60px';
-    } else if (mode === 'text') {
-      domRefs.textControls.style.display = 'none';
-      const chatContainer = document.getElementById('textChat');
-      if (chatContainer) chatContainer.style.height = '180px';
-    }
-    
-    // Show UI elements
-    document.getElementById(`${mode}-room-id`).style.display = 'block';
-    document.getElementById(`generate${mode.charAt(0).toUpperCase() + mode.slice(1)}Room`).style.display = 'inline-flex';
-    document.getElementById(`join${mode.charAt(0).toUpperCase() + mode.slice(1)}Room`).style.display = 'inline-flex';
-    document.getElementById(`copy${mode.charAt(0).toUpperCase() + mode.slice(1)}Link`).style.display = 'inline-flex';
-    
-    if (mode === 'text') {
-      document.getElementById('endTextChat').style.display = 'inline-flex';
-      document.getElementById('endTextChatFullscreen').style.display = 'none';
-      document.getElementById('textChatTimer').style.display = 'block';
-    }
-  }
-}
-
-function enterFullscreenVideoMode() {
-  toggleFullscreenMode(true, 'video');
-}
-
-function exitFullscreenVideoMode() {
-  toggleFullscreenMode(false, 'video');
-}
-
-function enterFullscreenTextMode() {
-  toggleFullscreenMode(true, 'text');
-}
-
-function exitFullscreenTextMode() {
-  toggleFullscreenMode(false, 'text');
-}
-
-function enterTheaterFullscreen() {
-    document.body.classList.add('fullscreen-theater-mode');
-    appState.isFullscreen = true;
-    domRefs.theaterFullscreenButton.style.display = 'none';
-    domRefs.theaterControls.style.opacity = '1';
-    document.getElementById('theaterTopControls').style.display = 'flex';
-    document.getElementById('theaterHangupTop').style.display = 'flex';
-    document.getElementById('theaterHangupButton').style.display = 'none';
-}
-
-function exitTheaterFullscreen() {
-    document.body.classList.remove('fullscreen-theater-mode');
-    appState.isFullscreen = false;
-    domRefs.theaterFullscreenButton.style.display = 'block';
-    domRefs.theaterControls.style.opacity = '0';
-    document.getElementById('theaterTopControls').style.display = 'none';
-    document.getElementById('theaterHangupTop').style.display = 'none';
-    document.getElementById('theaterHangupButton').style.display = 'block';
-}
-
-function enforceVideoLayerPriority() {
-  const style = document.createElement('style');
-  style.id = 'fullscreen-fix';
-  style.textContent = `
-    .fullscreen-video-mode .placeholder-animation {
-      display: none !important;
-    }
-    #videoRemoteVideoContainer {
-      z-index: 1000 !important;
-    }
-  `;
-  document.head.appendChild(style);
-}
-
-// Run this once on page load
-enforceVideoLayerPriority();
-
-// ========== MEDIA TOGGLES ========== //
-function toggleAudio(mode) {
-  if (!appState.localStream) return;
-  
-  const audioTracks = appState.localStream.getAudioTracks();
-  if (audioTracks.length > 0) {
-    const enabled = !audioTracks[0].enabled;
-    audioTracks[0].enabled = enabled;
-    
-    const button = document.getElementById(`${mode}AudioToggle`);
-    if (button) {
-      button.classList.toggle('muted', !enabled);
-      showNotification(enabled ? 'Microphone On' : 'Microphone Off', 
-        `Your microphone is now ${enabled ? 'enabled' : 'muted'}`);
-    }
-  }
-}
-
-function toggleVideo() {
-  if (!appState.localStream) return;
-  
-  const videoTracks = appState.localStream.getVideoTracks();
-  if (videoTracks.length > 0) {
-    const enabled = !videoTracks[0].enabled;
-    videoTracks[0].enabled = enabled;
-    appState.isCameraEnabled = enabled;
-    
-    const button = document.getElementById('videoVideoToggle');
-    if (button) {
-      button.classList.toggle('muted', !enabled);
-      showNotification(enabled ? 'Camera On' : 'Camera Off', 
-        `Your camera is now ${enabled ? 'enabled' : 'disabled'}`);
-    }
-  }
-}
-
-// ========== TEXT CHAT FUNCTIONS ========== //
-function initTextChat() {
-  if (!appState.roomId) {
-    showNotification('Error', 'Room ID is not set', 'error');
-    return;
-  }
-
-  // Clean up previous chat reference
-  if (appState.textChatRef) {
-    appState.textChatRef.off('child_added');
-    appState.textChatRef.off('value');
-  }
-  
-  if (appState.participantsRef) {
-    appState.participantsRef.off();
-  }
-  
-  // Initialize Firebase references
-  appState.textChatRef = firebase.database().ref(`rooms/${appState.roomId}/textMessages/messages`);
-  const typingRef = firebase.database().ref(`rooms/${appState.roomId}/textMessages/typing`);
-  appState.participantsRef = firebase.database().ref(`rooms/${appState.roomId}/participants`);
-  
-  // Clear existing messages
-  domRefs.textChat.innerHTML = '<div class="typing-indicator" id="typingIndicator"><i class="fas fa-circle"></i><i class="fas fa-circle"></i><i class="fas fa-circle"></i></div>';
-  domRefs.typingIndicator = document.getElementById('typingIndicator');
-  
-  // Show the chat container
-  document.querySelector('.text-chat-container').style.display = 'flex';
-  
-  // Listen for new messages
-  appState.textChatRef.on('child_added', snapshot => {
-    const message = snapshot.val();
-    if (message) {
-      addMessageToChat(message);
-      if (message.userId !== appState.userId) {
-        playNotificationSound();
-      }
-    }
-  });
-  
-  // Listen for typing status updates
-  typingRef.on('value', snapshot => {
-    const typingData = snapshot.val();
-    if (!typingData) return;
-    
-    let someoneTyping = false;
-    for (const userId in typingData) {
-      if (userId !== appState.userId && typingData[userId]) {
-        someoneTyping = true;
-        break;
-      }
-    }
-    
-    domRefs.typingIndicator.style.display = someoneTyping ? 'block' : 'none';
-  });
-  
-  // Track participants
-  appState.participantsRef.child(appState.userId).set({
-    name: appState.userName,
-    joined: Date.now()
-  });
-  
-  appState.participantsRef.child(appState.userId).onDisconnect().remove();
-  
-  appState.textChatInitialized = true;
-}
-
-function addMessageToChat(message) {
-  const chat = domRefs.textChat;
-  const isCurrentUser = message.userId === appState.userId;
-  const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const userClass = isCurrentUser ? 'user2' : 'user1';
-  
-  const messageElement = document.createElement('div');
-  messageElement.className = `chat-message ${userClass}`;
-  messageElement.innerHTML = `
-    <strong>${escapeHtml(message.userName)}</strong>
-    <div>${escapeHtml(message.text)}</div>
-    <span class="message-time">${time}</span>
-  `;
-  
-  chat.appendChild(messageElement);
-  chat.scrollTop = chat.scrollHeight;
-  domRefs.typingIndicator.style.order = '1';
-}
-
-async function sendChatMessage() {
-  const input = document.getElementById('textMessage');
-  const message = input.value.trim();
-  
-  if (!message) {
-    showNotification('Error', 'Please enter a message', 'error');
-    return;
-  }
-  
-  if (!appState.roomId || !appState.textChatInitialized) {
-    showNotification('Error', 'Chat not initialized', 'error');
-    return;
-  }
-  
-  try {
-    const messageData = {
-      text: message,
-      userId: appState.userId,
-      userName: appState.userName,
-      timestamp: Date.now()
-    };
-    
-    await appState.textChatRef.push(messageData);
-    input.value = '';
-  } catch (error) {
-    console.error('Error sending message:', error);
-    showNotification('Error', `Failed to send message: ${error.message}`, 'error');
-  }
-}
-
-// ========== THEATER FUNCTIONS ========== //
-function validateTheaterUrl() {
-    const url = document.getElementById('theaterVideoUrl').value.trim();
-    const validationIcon = document.getElementById('theaterUrlValidationIcon');
-    validationIcon.style.display = 'none';
-    
-    if (!url) return;
-    
-    validationIcon.style.display = 'block';
-    validationIcon.innerHTML = '<i class="fas fa-circle-notch theater-url-checking"></i>';
-    
-    setTimeout(() => {
-        if (isValidTheaterUrl(url)) {
-            validationIcon.innerHTML = '<i class="fas fa-check-circle theater-url-valid"></i>';
-        } else {
-            validationIcon.innerHTML = '<i class="fas fa-times-circle theater-url-invalid"></i>';
-        }
-    }, 800);
-}
-
-function isValidTheaterUrl(url) {
-    const patterns = [
-        /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
-        /^(?:https?:\/\/)?(?:www\.)?youtube\.com\/live\/([a-zA-Z0-9_-]+)/,
-        /\.(mp4|webm|mov|mkv|avi)(\?.*)?$/i,
-        /\.(m3u8|mpd)(\?.*)?$/i
-    ];
-    
-    return patterns.some(pattern => pattern.test(url));
-}
-
-function loadTheaterVideo() {
-    const url = document.getElementById('theaterVideoUrl').value.trim();
-    
-    if (!url || !isValidTheaterUrl(url)) {
-        showNotification('Error', 'Please enter a valid video URL', 'error');
-        return;
-    }
-    
-    theaterState.mediaUrl = url;
-    const sourceType = detectTheaterSource(url);
-    
-    // Show loading spinner
-    document.querySelector('.theater-loading-spinner').style.display = 'block';
-    document.getElementById('theaterModal').style.display = 'none';
-    document.getElementById('theaterContainer').style.display = 'block';
-    document.querySelector('.theater-placeholder').style.display = 'none';
-    
-    // Initialize player based on source type
-    if (sourceType === 'youtube') {
-        loadYouTubeVideo(url);
-    } else if (sourceType === 'direct') {
-        loadDirectVideo(url);
-    }
-    
-    // Show modal buttons
-    document.getElementById('theaterModalButtons').style.display = 'flex';
-    
-    // Initialize theater controls
-    initTheaterControls();
-    startTimer('theater');
-    
-    showNotification('Video Loading', `Loading ${sourceType} video...`, 'success');
-}
-
-function detectTheaterSource(url) {
-    if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
-    if (/\.(mp4|webm|mov|mkv|avi)(\?.*)?$/i.test(url)) return 'direct';
-    if (/\.(m3u8|mpd)(\?.*)?$/i.test(url)) return 'stream';
-    return 'unknown';
-}
-
-function loadYouTubeVideo(url) {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    const videoId = (match && match[2].length === 11) ? match[2] : null;
-    
-    if (!videoId) {
-        showNotification('Error', 'Invalid YouTube URL', 'error');
-        return;
-    }
-    
-    if (!window.YT) {
-        const tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        const firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-        
-        window.onYouTubeIframeAPIReady = function() {
-            createYouTubePlayer(videoId);
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script>
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDeksN3qPZCmNuoASlEqG38XVmag6ecTh8",
+            authDomain: "satloom-rtc.firebaseapp.com",
+            databaseURL: "https://satloom-rtc-default-rtdb.firebaseio.com",
+            projectId: "satloom-rtc",
+            storageBucket: "satloom-rtc.appspot.com",
+            messagingSenderId: "273627860564",
+            appId: "1:273627860564:web:c326b1bb6ffcb32fb0e7c1"
         };
-    } else {
-        createYouTubePlayer(videoId);
-    }
-}
-
-function createYouTubePlayer(videoId) {
-    const playerElement = document.getElementById('theaterVideoPlayer');
-    playerElement.innerHTML = '<div id="theater-yt-player"></div>';
-    
-    theaterState.player = new YT.Player('theater-yt-player', {
-        height: '100%',
-        width: '100%',
-        videoId: videoId,
-        playerVars: {
-            'autoplay': 0,
-            'controls': 0,
-            'disablekb': 1,
-            'enablejsapi': 1,
-            'fs': 0,
-            'modestbranding': 1,
-            'playsinline': 1,
-            'rel': 0
-        },
-        events: {
-            'onReady': onTheaterPlayerReady,
-            'onStateChange': onTheaterPlayerStateChange,
-            'onError': onTheaterPlayerError
-        }
-    });
-}
-
-function onTheaterPlayerReady(event) {
-    document.querySelector('.theater-loading-spinner').style.display = 'none';
-    theaterState.duration = event.target.getDuration();
-    updateTheaterTimeDisplay();
-    startTheaterSeekUpdate();
-    event.target.setVolume(theaterState.currentVolume * 100);
-    
-    // Initialize controls after player is ready
-    setTimeout(initTheaterControls, 500);
-    
-    showNotification('Video Ready', 'The video is ready to play', 'success');
-    
-    if (theaterState.isTheaterLeader) {
-        initTheaterSync();
-    } else {
-        listenForTheaterSync();
-    }
-}
-
-function onTheaterPlayerStateChange(event) {
-    switch(event.data) {
-        case YT.PlayerState.PLAYING:
-            theaterState.isPlaying = true;
-            document.querySelector('.theater-loading-spinner').style.display = 'none';
-            break;
-        case YT.PlayerState.PAUSED:
-            theaterState.isPlaying = false;
-            break;
-        case YT.PlayerState.ENDED:
-            theaterState.isPlaying = false;
-            break;
-        case YT.PlayerState.BUFFERING:
-            document.querySelector('.theater-loading-spinner').style.display = 'block';
-            break;
-        case YT.PlayerState.CUED:
-            document.querySelector('.theater-loading-spinner').style.display = 'none';
-            break;
-    }
-    updateTheaterPlayPauseButton();
-    
-    if (theaterState.isTheaterLeader) {
-        syncTheaterState();
-    }
-}
-
-function onTheaterPlayerError(event) {
-    document.querySelector('.theater-loading-spinner').style.display = 'none';
-    showNotification('Error', 'Failed to load video', 'error');
-    console.error('YouTube player error:', event.data);
-}
-
-function loadDirectVideo(url) {
-    const playerElement = document.getElementById('theaterVideoPlayer');
-    playerElement.innerHTML = '';
-    
-    const videoElement = document.createElement('video');
-    videoElement.src = url;
-    videoElement.controls = false;
-    videoElement.style.width = '100%';
-    videoElement.style.height = '100%';
-    
-    videoElement.oncanplay = function() {
-        document.querySelector('.theater-loading-spinner').style.display = 'none';
-        theaterState.duration = videoElement.duration;
-        updateTheaterTimeDisplay();
-        startTheaterSeekUpdate();
-        showNotification('Video Ready', 'The video is ready to play', 'success');
         
-        if (theaterState.isTheaterLeader) {
-            initTheaterSync();
-        } else {
-            listenForTheaterSync();
-        }
-    };
-    
-    videoElement.onerror = function() {
-        document.querySelector('.theater-loading-spinner').style.display = 'none';
-        showNotification('Error', 'Failed to load video', 'error');
-    };
-    
-    videoElement.onplay = function() {
-        theaterState.isPlaying = true;
-        updateTheaterPlayPauseButton();
-        if (theaterState.isTheaterLeader) {
-            syncTheaterState();
-        }
-    };
-    
-    videoElement.onpause = function() {
-        theaterState.isPlaying = false;
-        updateTheaterPlayPauseButton();
-        if (theaterState.isTheaterLeader) {
-            syncTheaterState();
-        }
-    };
-    
-    videoElement.onended = function() {
-        theaterState.isPlaying = false;
-        updateTheaterPlayPauseButton();
-        if (theaterState.isTheaterLeader) {
-            syncTheaterState();
-        }
-    };
-    
-    videoElement.onwaiting = function() {
-        document.querySelector('.theater-loading-spinner').style.display = 'block';
-    };
-    
-    videoElement.onplaying = function() {
-        document.querySelector('.theater-loading-spinner').style.display = 'none';
-    };
-    
-    videoElement.ontimeupdate = function() {
-        theaterState.currentTime = videoElement.currentTime;
-        updateTheaterSeekBar();
-    };
-    
-    playerElement.appendChild(videoElement);
-    theaterState.player = videoElement;
-}
-
-function initTheaterControls() {
-    // Clear existing event listeners by cloning elements
-    const controlIds = [
-        'theaterPlayPauseButton',
-        'theaterBackButton',
-        'theaterForwardButton',
-        'theaterMuteButton',
-        'theaterFullscreenButton',
-        'theaterHangupButton',
-        'theaterHangupTop',
-        'theaterPTTButton',
-        'theaterSeekBar',
-        'theaterVolumeSlider'
-    ];
-    
-    controlIds.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            const clone = element.cloneNode(true);
-            element.parentNode.replaceChild(clone, element);
-        }
-    });
-
-    // Play/Pause
-    document.getElementById('theaterPlayPauseButton').addEventListener('click', toggleTheaterPlayPause);
-    
-    // Navigation
-    document.getElementById('theaterBackButton').addEventListener('click', () => seekTheater(-10));
-    document.getElementById('theaterForwardButton').addEventListener('click', () => seekTheater(10));
-    
-    // Volume
-    document.getElementById('theaterMuteButton').addEventListener('click', toggleTheaterMute);
-    document.getElementById('theaterVolumeSlider').addEventListener('input', (e) => {
-        setTheaterVolume(parseFloat(e.target.value));
-    });
-    
-    // Fullscreen
-    document.getElementById('theaterFullscreenButton').addEventListener('click', toggleTheaterFullscreen);
-    
-    // PTT
-    const pttButton = document.getElementById('theaterPTTButton');
-    pttButton.addEventListener('mousedown', startPTT);
-    pttButton.addEventListener('mouseup', stopPTT);
-    pttButton.addEventListener('mouseleave', stopPTT);
-    pttButton.addEventListener('touchstart', startPTT);
-    pttButton.addEventListener('touchend', stopPTT);
-    
-    // Hang up buttons
-    document.getElementById('theaterHangupButton').addEventListener('click', () => hangup('theater'));
-    document.getElementById('theaterHangupTop').addEventListener('click', () => hangup('theater'));
-    
-    // Seek bar
-    document.getElementById('theaterSeekBar').addEventListener('click', (e) => {
-        const rect = e.target.getBoundingClientRect();
-        const percent = (e.clientX - rect.left) / rect.width;
-        const seekTime = percent * theaterState.duration;
-        seekTheaterTo(seekTime);
-    });
-    
-    // Set initial volume
-    document.getElementById('theaterVolumeSlider').value = theaterState.currentVolume;
-}
-
-function toggleTheaterPlayPause() {
-    if (theaterState.isPlaying) pauseTheater();
-    else playTheater();
-}
-
-function playTheater() {
-    if (!theaterState.player) return;
-    
-    if (typeof theaterState.player.playVideo === 'function') {
-        theaterState.player.playVideo();
-    } else {
-        theaterState.player.play();
-    }
-    
-    theaterState.isPlaying = true;
-    updateTheaterPlayPauseButton();
-    
-    if (theaterState.isTheaterLeader) {
-        syncTheaterState();
-    }
-}
-
-function pauseTheater() {
-    if (!theaterState.player) return;
-    
-    if (typeof theaterState.player.pauseVideo === 'function') {
-        theaterState.player.pauseVideo();
-    } else {
-        theaterState.player.pause();
-    }
-    
-    theaterState.isPlaying = false;
-    updateTheaterPlayPauseButton();
-    
-    if (theaterState.isTheaterLeader) {
-        syncTheaterState();
-    }
-}
-
-function seekTheater(seconds) {
-    if (!theaterState.player) return;
-    
-    let newTime = theaterState.currentTime + seconds;
-    newTime = Math.max(0, Math.min(newTime, theaterState.duration));
-    seekTheaterTo(newTime);
-}
-
-function seekTheaterTo(time) {
-    if (!theaterState.player) return;
-    
-    if (typeof theaterState.player.seekTo === 'function') {
-        theaterState.player.seekTo(time, true);
-    } else {
-        theaterState.player.currentTime = time;
-    }
-    
-    theaterState.currentTime = time;
-    updateTheaterSeekBar();
-    
-    if (theaterState.isTheaterLeader) {
-        syncTheaterState();
-    }
-}
-
-function toggleTheaterMute() {
-    theaterState.isMuted = !theaterState.isMuted;
-    
-    if (typeof theaterState.player.setVolume === 'function') {
-        theaterState.player.setVolume(theaterState.isMuted ? 0 : theaterState.currentVolume * 100);
-    } else {
-        theaterState.player.muted = theaterState.isMuted;
-    }
-    
-    updateTheaterVolumeButton();
-}
-
-function setTheaterVolume(volume) {
-    theaterState.currentVolume = volume;
-    
-    if (typeof theaterState.player.setVolume === 'function') {
-        theaterState.player.setVolume(volume * 100);
-    } else {
-        theaterState.player.volume = volume;
-    }
-    
-    updateTheaterVolumeButton();
-}
-
-function toggleTheaterFullscreen() {
-    if (appState.isFullscreen) exitTheaterFullscreen();
-    else enterTheaterFullscreen();
-}
-
-async function startPTT() {
-    if (theaterState.isPTTActive) return;
-    
-    theaterState.isPTTActive = true;
-    document.getElementById('theaterPTTButton').classList.add('active');
-    
-    try {
-        theaterState.pttAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
         
-        if (theaterState.isTheaterLeader) {
-            theaterState.pttPeerConnection = new RTCPeerConnection({
-                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-            });
-            
-            theaterState.pttAudioStream.getTracks().forEach(track => {
-                theaterState.pttPeerConnection.addTrack(track, theaterState.pttAudioStream);
-            });
-            
-            const offer = await theaterState.pttPeerConnection.createOffer();
-            await theaterState.pttPeerConnection.setLocalDescription(offer);
-            
-            if (theaterState.theaterRef) {
-                theaterState.theaterRef.child('pttOffer').set(JSON.stringify(offer));
+        // State management
+        const appState = {
+            localStream: null,
+            remoteStream: null,
+            peerConnection: null,
+            roomId: null,
+            isInitiator: false,
+            isStarted: false,
+            timer: null,
+            startTime: null,
+            currentMode: 'audio-call',
+            signalingRef: null,
+            userId: 'user-' + Math.random().toString(36).substr(2, 8),
+            isMuted: false,
+            lastNotificationTime: 0
+        };
+
+        // DOM references
+        const domRefs = {
+            connectionStatus: document.getElementById('connectionStatus'),
+            statusText: document.getElementById('statusText'),
+            audioCallTimer: document.getElementById('audioCallTimer'),
+            remoteAudio: document.getElementById('remoteAudio'),
+            notificationSound: document.getElementById('notificationSound'),
+            appContainer: document.getElementById('appContainer')
+        };
+
+        // UI Elements
+        const generateBtn = document.getElementById('generateAudioRoom');
+        const joinBtn = document.getElementById('joinAudioRoom');
+        const endBtn = document.getElementById('endAudioCall');
+        const muteBtn = document.getElementById('audioAudioToggle');
+        const copyBtn = document.getElementById('copyAudioLink');
+        const roomIdInput = document.getElementById('audio-room-id');
+        const audioControls = document.getElementById('audioControls');
+        const roomInfo = document.getElementById('roomInfo');
+        const displayRoomId = document.getElementById('displayRoomId');
+        const statusIndicator = document.getElementById('connectionStatus');
+        const timerDisplay = document.getElementById('audioCallTimer');
+
+        // Utility functions
+        function playNotificationSound() {
+            try {
+                domRefs.notificationSound.currentTime = 0;
+                domRefs.notificationSound.play().catch(e => {
+                    console.log('Audio play prevented:', e);
+                });
+            } catch (e) {
+                console.error('Error playing notification sound:', e);
             }
-        } else if (theaterState.pttPeerConnection) {
-            const audioTrack = theaterState.pttAudioStream.getAudioTracks()[0];
-            const sender = theaterState.pttPeerConnection.getSenders().find(s => s.track && s.track.kind === 'audio');
-            if (sender) sender.replaceTrack(audioTrack);
         }
-    } catch (err) {
-        console.error('PTT error:', err);
-        stopPTT();
-    }
-}
 
-function stopPTT() {
-    if (!theaterState.isPTTActive) return;
-    
-    theaterState.isPTTActive = false;
-    document.getElementById('theaterPTTButton').classList.remove('active');
-    
-    if (theaterState.pttAudioStream) {
-        theaterState.pttAudioStream.getTracks().forEach(track => track.stop());
-        theaterState.pttAudioStream = null;
-    }
-    
-    if (!theaterState.isTheaterLeader && theaterState.pttPeerConnection) {
-        theaterState.pttPeerConnection.close();
-        theaterState.pttPeerConnection = null;
-    }
-}
-
-function startTheaterSeekUpdate() {
-    clearInterval(theaterState.seekBarUpdateInterval);
-    theaterState.seekBarUpdateInterval = setInterval(updateTheaterSeekBar, 1000);
-}
-
-function updateTheaterSeekBar() {
-    if (!theaterState.player) return;
-    
-    if (typeof theaterState.player.getCurrentTime === 'function') {
-        theaterState.currentTime = theaterState.player.getCurrentTime();
-    } else {
-        theaterState.currentTime = theaterState.player.currentTime;
-    }
-    
-    if (theaterState.duration > 0) {
-        const percent = (theaterState.currentTime / theaterState.duration) * 100;
-        document.getElementById('theaterSeekBarProgress').style.width = `${percent}%`;
-        document.getElementById('theaterSeekBarHandle').style.left = `${percent}%`;
-    }
-    
-    updateTheaterTimeDisplay();
-}
-
-function updateTheaterTimeDisplay() {
-    const formatTime = (seconds) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    };
-    
-    const current = formatTime(theaterState.currentTime);
-    const total = formatTime(theaterState.duration);
-    document.getElementById('theaterTimeDisplay').textContent = `${current} / ${total}`;
-}
-
-function updateTheaterPlayPauseButton() {
-    const btn = document.getElementById('theaterPlayPauseButton');
-    if (btn) {
-        btn.innerHTML = theaterState.isPlaying ? 
-            '<i class="fas fa-pause"></i>' : 
-            '<i class="fas fa-play"></i>';
-    }
-}
-
-function updateTheaterVolumeButton() {
-    const icon = document.getElementById('theaterMuteButton');
-    if (theaterState.isMuted) {
-        icon.innerHTML = '<i class="fas fa-volume-mute"></i>';
-    } else {
-        if (theaterState.currentVolume > 0.5) {
-            icon.innerHTML = '<i class="fas fa-volume-up"></i>';
-        } else if (theaterState.currentVolume > 0) {
-            icon.innerHTML = '<i class="fas fa-volume-down"></i>';
-        } else {
-            icon.innerHTML = '<i class="fas fa-volume-off"></i>';
-        }
-    }
-}
-
-function initTheaterSync() {
-    if (!appState.roomId) return;
-    
-    syncTheaterState();
-    setInterval(syncTheaterState, 5000);
-}
-
-function listenForTheaterSync() {
-    if (!appState.roomId) return;
-    
-    theaterState.theaterRef.child('state').on('value', (snapshot) => {
-        const state = snapshot.val();
-        if (!state || theaterState.isTheaterLeader) return;
-        
-        if (state.isPlaying !== theaterState.isPlaying) {
-            if (state.isPlaying) playTheater();
-            else pauseTheater();
-        }
-        
-        if (Math.abs(state.currentTime - theaterState.currentTime) > 2) {
-            seekTheaterTo(state.currentTime);
-        }
-    });
-    
-    theaterState.theaterRef.child('pttOffer').on('value', async (snapshot) => {
-        const offer = snapshot.val();
-        if (!offer || theaterState.isPTTActive || theaterState.isTheaterLeader) return;
-        
-        try {
-            theaterState.pttPeerConnection = new RTCPeerConnection({
-                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-            });
+        function updateStatus(text, status) {
+            const statusElem = domRefs.connectionStatus;
+            statusElem.className = 'status-indicator';
             
-            theaterState.pttPeerConnection.ontrack = (event) => {
-                if (event.track.kind === 'audio') {
-                    document.getElementById('remoteAudio').srcObject = event.streams[0];
+            if (status === 'connected') {
+                statusElem.classList.add('connected');
+                statusElem.innerHTML = `<i class="fas fa-check-circle"></i> ${text}`;
+            } 
+            else if (status === 'connecting') {
+                statusElem.classList.add('connecting');
+                statusElem.innerHTML = `<i class="fas fa-sync-alt fa-spin"></i> ${text}`;
+            }
+            else if (status === 'error') {
+                statusElem.classList.add('error');
+                statusElem.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${text}`;
+            }
+            else {
+                statusElem.innerHTML = `<i class="fas fa-info-circle"></i> ${text}`;
+            }
+        }
+
+        function startTimer() {
+            appState.startTime = Date.now();
+            clearInterval(appState.timer);
+            
+            timerDisplay.style.display = 'block';
+            timerDisplay.textContent = '00:00';
+            
+            appState.timer = setInterval(() => {
+                const elapsedTime = Math.floor((Date.now() - appState.startTime) / 1000);
+                const minutes = Math.floor(elapsedTime / 60).toString().padStart(2, '0');
+                const seconds = (elapsedTime % 60).toString().padStart(2, '0');
+                
+                timerDisplay.textContent = `${minutes}:${seconds}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(appState.timer);
+            appState.timer = null;
+            appState.startTime = null;
+            timerDisplay.textContent = '00:00';
+            timerDisplay.style.display = 'none';
+        }
+
+        // Core functionality
+        async function initMedia() {
+            try {
+                appState.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                document.getElementById('audioControls').style.display = 'flex';
+                return true;
+            } catch (err) {
+                console.error('Media access error:', err);
+                updateStatus('Microphone access error', 'error');
+                return false;
+            }
+        }
+
+        function createPeerConnection() {
+            try {
+                const pcConfig = {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' },
+                        {
+                            urls: 'turn:openrelay.metered.ca:80',
+                            username: 'openrelayproject',
+                            credential: 'openrelayproject'
+                        }
+                    ]
+                };
+                
+                appState.peerConnection = new RTCPeerConnection(pcConfig);
+                
+                if (appState.localStream) {
+                    appState.localStream.getTracks().forEach(track => {
+                        appState.peerConnection.addTrack(track, appState.localStream);
+                    });
                 }
-            };
+                
+                appState.peerConnection.ontrack = (event) => {
+                    handleRemoteStream(event);
+                };
+                
+                appState.peerConnection.onicecandidate = handleICECandidate;
+                appState.peerConnection.oniceconnectionstatechange = handleICEConnectionStateChange;
+                appState.peerConnection.onconnectionstatechange = handleConnectionStateChange;
+                appState.peerConnection.onsignalingstatechange = handleSignalingStateChange;
+                
+                appState.remoteStream = new MediaStream();
+                domRefs.remoteAudio.srcObject = appState.remoteStream;
+                
+                return true;
+            } catch (err) {
+                console.error('Peer connection error:', err);
+                updateStatus('Connection failed', 'error');
+                return false;
+            }
+        }
+
+        function handleRemoteStream(event) {
+            if (!appState.remoteStream) {
+                appState.remoteStream = new MediaStream();
+            }
             
-            await theaterState.pttPeerConnection.setRemoteDescription(JSON.parse(offer));
-            const answer = await theaterState.pttPeerConnection.createAnswer();
-            await theaterState.pttPeerConnection.setLocalDescription(answer);
+            appState.remoteStream.addTrack(event.track);
+        }
+
+        function handleICECandidate(event) {
+            if (event.candidate && appState.signalingRef) {
+                sendMessage({
+                    type: 'candidate',
+                    candidate: event.candidate.candidate,
+                    sdpMid: event.candidate.sdpMid,
+                    sdpMLineIndex: event.candidate.sdpMLineIndex
+                });
+            }
+        }
+
+        function handleICEConnectionStateChange() {
+            if (!appState.peerConnection) return;
+            const state = appState.peerConnection.iceConnectionState;
             
-            theaterState.theaterRef.child('pttAnswer').set(JSON.stringify(answer));
-        } catch (err) {
-            console.error('PTT answer error:', err);
+            if (state === 'connected' || state === 'completed') {
+                updateStatus(`In audio call (${appState.roomId})`, 'connected');
+                playNotificationSound();
+            } 
+            else if (state === 'disconnected' || state === 'failed') {
+                playNotificationSound();
+                hangup('audio');
+            }
         }
-    });
-}
 
-function syncTheaterState() {
-    if (!theaterState.theaterRef || !appState.roomId) return;
-    
-    const state = {
-        isPlaying: theaterState.isPlaying,
-        currentTime: theaterState.currentTime,
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-    };
-    
-    theaterState.theaterRef.child('state').set(state);
-}
-
-// ========== ROOM MANAGEMENT ========== //
-async function generateRoom(mode) {
-  try {
-    appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    appState.currentMode = mode;
-    appState.isInitiator = true;
-
-    // Update UI
-    document.getElementById(`copy${mode.charAt(0).toUpperCase() + mode.slice(1)}Link`).style.display = 'inline-flex';
-    showNotification('Room Generated', `Room ID: ${appState.roomId}. Share with others.`, 'success');
-    updateStatus(`Room created: ${appState.roomId}`, 'connecting');
-
-    if (mode === 'theater') {
-      appState.isTheaterLeader = true;
-      theaterState.isTheaterLeader = true;
-      domRefs.theaterModal.style.display = 'flex';
-      domRefs.theaterVideoUrl.focus();
-      document.getElementById('endTheaterSession').style.display = 'inline-flex';
-      // Initialize Firebase reference
-      theaterState.theaterRef = firebase.database().ref(`rooms/${appState.roomId}/theater`);
-    } else if (mode !== 'text') {
-      const mediaInitialized = await initMedia(mode);
-      if (!mediaInitialized) return;
-
-      const peerCreated = createPeerConnection();
-      if (!peerCreated) return;
-
-      initSignaling();
-
-      const offer = await appState.peerConnection.createOffer();
-      await appState.peerConnection.setLocalDescription(offer);
-      sendMessage(offer);
-
-      appState.isStarted = true;
-      startTimer();
-      updateStatus(`In ${mode} call (${appState.roomId})`, 'connected');
-      showNotification('Call Started', `Connected to room: ${appState.roomId}`, 'success');
-
-      if (mode === 'video') {
-        enterFullscreenVideoMode();
-      }
-    } 
-    else {
-      document.querySelector('.text-chat-container').style.display = 'flex';
-      document.querySelector('#text-chat-section .placeholder-animation').style.display = 'none';
-      initTextChat();
-      updateStatus(`In text chat (${appState.roomId})`, 'connected');
-      showNotification('Chat Started', `Created chat room: ${appState.roomId}`, 'success');
-      document.getElementById('endTextChat').style.display = 'inline-flex';
-      enterFullscreenTextMode();
-    }
-  } catch (err) {
-    console.error('Error generating room:', err);
-    showNotification('Error', 'Failed to create room', 'error');
-    updateStatus('Room creation failed', 'error');
-    appState.roomId = null;
-    appState.currentMode = null;
-  }
-}
-
-async function joinRoom(mode) {
-  try {
-    appState.roomId = document.getElementById(`${mode}-room-id`).value.trim();
-    appState.currentMode = mode;
-    
-    if (!appState.roomId) {
-      showNotification('Error', 'Please enter a room ID', 'error');
-      return;
-    }
-    
-    if (mode === 'theater') {
-      appState.isTheaterLeader = false;
-      theaterState.isTheaterLeader = false;
-      document.getElementById('endTheaterSession').style.display = 'inline-flex';
-      document.getElementById('copyTheaterLink').style.display = 'inline-flex';
-      updateStatus(`Joined theater session (${appState.roomId})`, 'connecting');
-      showNotification('Theater Joined', `Joined theater room: ${appState.roomId}`, 'success');
-      startTimer();
-      theaterState.theaterRef = firebase.database().ref(`rooms/${appState.roomId}/theater`);
-      listenForTheaterSync();
-    } 
-    else if (mode !== 'text') {
-      const mediaInitialized = await initMedia(mode);
-      if (!mediaInitialized) return;
-      
-      const peerCreated = createPeerConnection();
-      if (!peerCreated) return;
-      
-      if (mode === 'video') {
-        document.getElementById('videoSpinner').style.display = 'block';
-        document.getElementById('videoRemoteVideoContainer').style.display = 'block';
-      }
-      
-      appState.isInitiator = false;
-      initSignaling();
-      
-      updateStatus(`Joining ${mode} room...`, 'connecting');
-      showNotification('Joining Room', `Connecting to room: ${appState.roomId}`);
-      
-      if (mode === 'video') {
-        enterFullscreenVideoMode();
-      }
-    } 
-    else {
-      document.querySelector('.text-chat-container').style.display = 'flex';
-      document.querySelector('#text-chat-section .placeholder-animation').style.display = 'none';
-      initTextChat();
-      updateStatus(`Joined text chat (${appState.roomId})`, 'connected');
-      showNotification('Chat Joined', `Joined chat room: ${appState.roomId}`, 'success');
-      document.getElementById('endTextChat').style.display = 'inline-flex';
-      document.getElementById('copyTextLink').style.display = 'inline-flex';
-      enterFullscreenTextMode();
-    }
-  } catch (err) {
-    console.error('Error joining room:', err);
-    showNotification('Connection Error', 'Failed to join room', 'error');
-    updateStatus('Join room failed', 'error');
-    appState.roomId = null;
-    appState.currentMode = null;
-  }
-}
-
-// ========== UI HELPERS ========== //
-function copyLink(mode) {
-  const baseUrl = window.location.origin + window.location.pathname;
-  const roomLink = `${baseUrl}?room=${appState.roomId}&mode=${mode}`;
-  
-  navigator.clipboard.writeText(roomLink).then(() => {
-    showNotification('Copied', 'Room link copied to clipboard', 'success');
-  }).catch(err => {
-    console.error('Copy failed:', err);
-    showNotification('Error', 'Failed to copy link', 'error');
-  });
-}
-
-function toggleTheme() {
-  const isDark = document.body.classList.contains('dark-mode');
-  document.body.classList.toggle('dark-mode', !isDark);
-  document.body.classList.toggle('light-mode', isDark);
-  
-  const newTheme = isDark ? 'light' : 'dark';
-  localStorage.setItem('theme', newTheme);
-  updateThemeButton(newTheme);
-}
-
-function updateThemeButton(theme) {
-  domRefs.themeToggleSetting.innerHTML = 
-    theme === 'dark' ? '<i class="fas fa-moon"></i> Switch to Light' : '<i class="fas fa-sun"></i> Switch to Dark';
-}
-
-function switchToSection(sectionId) {
-  document.querySelectorAll('.nav-item').forEach(item => 
-    item.classList.remove('active'));
-  const navLink = document.querySelector(`.nav-link[data-section="${sectionId}"]`);
-  if (navLink) {
-    navLink.parentElement.classList.add('active');
-  }
-  
-  document.querySelectorAll('.section').forEach(section => 
-    section.classList.remove('active'));
-  const section = document.getElementById(`${sectionId}-section`);
-  if (section) {
-    section.classList.add('active');
-  }
-  
-  appState.currentMode = sectionId;
-}
-
-function hideSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  const appContainer = document.getElementById('appContainer');
-  
-  if (window.innerWidth > 900) {
-    appContainer.classList.add('sidebar-hidden');
-    document.body.classList.remove('sidebar-open');
-  } else {
-    sidebar.classList.remove('active');
-  }
-}
-
-function showSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  const appContainer = document.getElementById('appContainer');
-  
-  if (window.innerWidth > 900) {
-    appContainer.classList.remove('sidebar-hidden');
-    document.body.classList.add('sidebar-open');
-  } else {
-    sidebar.classList.add('active');
-  }
-}
-
-function handleOrientationChange() {
-  if (appState.isFullscreen) {
-    setTimeout(() => {
-      if (appState.currentMode === 'video') {
-        const remoteVideo = document.getElementById('video-remote-video');
-        if (remoteVideo) {
-          remoteVideo.style.height = 'auto';
-          setTimeout(() => {
-            remoteVideo.style.height = '100%';
-          }, 50);
+        function handleConnectionStateChange() {
+            if (!appState.peerConnection) return;
+            console.log('Connection state changed to:', appState.peerConnection.connectionState);
         }
-      }
-      else if (appState.currentMode === 'text-chat') {
-        const chatContainer = document.getElementById('textChat');
-        if (chatContainer) {
-          chatContainer.style.height = 'calc(100vh - 180px)';
+
+        function handleSignalingStateChange() {
+            if (!appState.peerConnection) return;
+            console.log('Signaling state changed to:', appState.peerConnection.signalingState);
         }
-      }
-    }, 300);
-  }
-}
 
-function autoJoinRoom() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const roomParam = urlParams.get('room');
-  const modeParam = urlParams.get('mode');
-  
-  if (roomParam && modeParam) {
-    const sectionMap = {
-      'audio': 'audio-call',
-      'video': 'video-call',
-      'text': 'text-chat',
-      'theater': 'theater'
-    };
-    const sectionId = sectionMap[modeParam];
-    
-    if (sectionId) {
-      switchToSection(sectionId);
-      
-      const inputId = `${modeParam}-room-id`;
-      const input = document.getElementById(inputId);
-      if (input) {
-        input.value = roomParam;
-      }
-      
-      setTimeout(() => {
-        hideSidebar();
-        joinRoom(modeParam);
-      }, 500);
-    }
-  }
-}
+        function initSignaling() {
+            if (appState.signalingRef) {
+                appState.signalingRef.off('child_added');
+            }
+            
+            appState.signalingRef = database.ref(`rooms/${appState.roomId}/messages`);
+            
+            appState.signalingRef.on('child_added', snapshot => {
+                const message = JSON.parse(snapshot.val());
+                
+                if (!appState.peerConnection) {
+                    if (!createPeerConnection()) return;
+                }
+                
+                switch (message.type) {
+                    case 'offer':
+                        if (!appState.isInitiator && !appState.isStarted) {
+                            handleOffer(message);
+                        }
+                        break;
+                    case 'answer':
+                        if (appState.isStarted) {
+                            appState.peerConnection.setRemoteDescription(
+                                new RTCSessionDescription(message));
+                        }
+                        break;
+                    case 'candidate':
+                        if (appState.isStarted && appState.peerConnection.remoteDescription) {
+                            const candidate = new RTCIceCandidate({
+                                candidate: message.candidate,
+                                sdpMid: message.sdpMid,
+                                sdpMLineIndex: message.sdpMLineIndex
+                            });
+                            appState.peerConnection.addIceCandidate(candidate)
+                                .catch(e => console.error('Error adding ICE candidate:', e));
+                        }
+                        break;
+                    case 'bye':
+                        if (appState.isStarted) {
+                            hangup('audio');
+                        }
+                        break;
+                }
+            });
+        }
 
-function loadSettings() {
-  const savedTheme = localStorage.getItem('theme') || 'dark';
-  document.body.className = `${savedTheme}-mode`;
-  updateThemeButton(savedTheme);
-  
-  document.getElementById('notifications-toggle').checked = 
-    localStorage.getItem('notifications') !== 'false';
-  document.getElementById('notification-sound-toggle').checked = 
-    localStorage.getItem('notificationSound') !== 'false';
-}
+        async function handleOffer(offer) {
+            try {
+                if (!appState.peerConnection) {
+                    if (!createPeerConnection()) return;
+                }
+                
+                await appState.peerConnection.setRemoteDescription(
+                    new RTCSessionDescription(offer));
+                
+                const answer = await appState.peerConnection.createAnswer();
+                await appState.peerConnection.setLocalDescription(answer);
+                
+                sendMessage(answer);
+                appState.isStarted = true;
+                startTimer();
+                updateStatus(`In audio call (${appState.roomId})`, 'connected');
+                playNotificationSound();
+            } catch (err) {
+                console.error('Error handling offer:', err);
+                updateStatus('Offer handling failed', 'error');
+            }
+        }
 
-function saveSettings() {
-  localStorage.setItem('notifications', 
-    document.getElementById('notifications-toggle').checked);
-  localStorage.setItem('notificationSound', 
-    document.getElementById('notification-sound-toggle').checked);
-}
+        function sendMessage(message) {
+            if (!appState.roomId) return;
+            const dbRef = database.ref(`rooms/${appState.roomId}/messages`);
+            dbRef.push(JSON.stringify(message));
+        }
 
-function adjustForMobile() {
-  if (window.innerWidth <= 900) {
-    document.getElementById('mobileMenuToggle').style.display = 'flex';
-    document.getElementById('desktopMenuToggle').style.display = 'none';
-    document.getElementById('sidebar').classList.remove('active');
-    document.body.classList.remove('sidebar-open');
-  } else {
-    document.getElementById('mobileMenuToggle').style.display = 'none';
-    document.getElementById('desktopMenuToggle').style.display = 'flex';
-    document.getElementById('sidebar').style.display = 'flex';
-    document.getElementById('appContainer').classList.remove('sidebar-hidden');
-  }
-}
+        // Hang up functionality
+        function hangup() {
+            if (!appState.roomId) return;
 
-// ========== EVENT LISTENERS ========== //
-function setupEventListeners() {
-  // Menu toggles
-  document.getElementById('mobileMenuToggle').addEventListener('click', function() {
-    document.getElementById('sidebar').classList.toggle('active');
-  });
-  
-  document.getElementById('desktopMenuToggle').addEventListener('click', function() {
-    const isFullscreen = document.body.classList.contains('fullscreen-video-mode') || 
-                         document.body.classList.contains('fullscreen-text-mode');
-    
-    if (isFullscreen) {
-      document.getElementById('sidebar').classList.toggle('active');
-    } else {
-      document.getElementById('appContainer').classList.toggle('sidebar-hidden');
-      document.body.classList.toggle('sidebar-open');
-    }
-  });
+            // Reset timer and status
+            stopTimer();
+            updateStatus('Ready to connect', 'disconnected');
 
-  // Navigation
-  document.querySelectorAll('.nav-link').forEach(link => {
-    link.addEventListener('click', function(event) {
-      event.preventDefault();
-      switchToSection(this.getAttribute('data-section'));
-    });
-  });
-  
-  // Theme toggle
-  domRefs.themeToggleSetting.addEventListener('click', toggleTheme);
-  
-  // Audio call controls
-  document.getElementById('generateAudioRoom').addEventListener('click', () => {
-    hideSidebar();
-    generateRoom('audio');
-  });
-  document.getElementById('joinAudioRoom').addEventListener('click', () => {
-    hideSidebar();
-    joinRoom('audio');
-  });
-  document.getElementById('endAudioCall').addEventListener('click', () => hangup('audio'));
-  document.getElementById('audioAudioToggle').addEventListener('click', () => toggleAudio('audio'));
-  document.getElementById('copyAudioLink').addEventListener('click', () => copyLink('audio'));
-  
-  // Video call controls
-  document.getElementById('generateVideoRoom').addEventListener('click', () => {
-    hideSidebar();
-    generateRoom('video');
-  });
-  document.getElementById('joinVideoRoom').addEventListener('click', () => {
-    hideSidebar();
-    joinRoom('video');
-  });
-  document.getElementById('endVideoCall').addEventListener('click', () => hangup('video'));
-  document.getElementById('videoVideoToggle').addEventListener('click', toggleVideo);
-  document.getElementById('videoAudioToggle').addEventListener('click', () => toggleAudio('video'));
-  document.getElementById('copyVideoLink').addEventListener('click', () => copyLink('video'));
-  document.getElementById('copyVideoLinkTop').addEventListener('click', () => copyLink('video'));
-  domRefs.switchCameraBtn.addEventListener('click', switchCamera);
-  domRefs.switchCameraBtnNormal.addEventListener('click', switchCamera);
-  
-  // Text chat controls
-  document.getElementById('generateTextRoom').addEventListener('click', () => {
-    hideSidebar();
-    generateRoom('text');
-  });
-  document.getElementById('joinTextRoom').addEventListener('click', () => {
-    hideSidebar();
-    joinRoom('text');
-  });
-  document.getElementById('sendTextMessage').addEventListener('click', sendChatMessage);
-  document.getElementById('copyTextLink').addEventListener('click', () => copyLink('text'));
-  document.getElementById('copyTextLinkTop').addEventListener('click', () => copyLink('text'));
-  document.getElementById('endTextChat').addEventListener('click', () => hangup('text'));
-  document.getElementById('endTextChatFullscreen').addEventListener('click', () => hangup('text'));
-  document.getElementById('textMessage').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      sendChatMessage();
-    }
-  });
-  
-  // Theater controls
-  document.getElementById('createTheaterRoom').addEventListener('click', () => {
-      hideSidebar();
-      generateRoom('theater');
-  });
-  
-  document.getElementById('joinTheaterRoom').addEventListener('click', () => {
-      hideSidebar();
-      joinRoom('theater');
-  });
-  
-  document.getElementById('endTheaterSession').addEventListener('click', () => hangup('theater'));
-  
-  document.getElementById('copyTheaterLink').addEventListener('click', () => copyLink('theater'));
-  
-  document.getElementById('copyTheaterLinkTop').addEventListener('click', () => copyLink('theater'));
-  
-  document.getElementById('theaterVideoUrl').addEventListener('input', validateTheaterUrl);
-  
-  document.getElementById('theaterLoadBtn').addEventListener('click', loadTheaterVideo);
-  
-  document.getElementById('theaterModalCancel').addEventListener('click', () => {
-      document.getElementById('theaterModal').style.display = 'none';
-      hangup('theater');
-  });
-  
-  document.getElementById('theaterModalCopy').addEventListener('click', () => copyLink('theater'));
-  
-  // Settings
-  document.getElementById('notifications-toggle').addEventListener('change', saveSettings);
-  document.getElementById('notification-sound-toggle').addEventListener('change', saveSettings);
-  
-  // Global events
-  document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape' && appState.isFullscreen) {
-      if (appState.currentMode === 'video') {
-        exitFullscreenVideoMode();
-      } else if (appState.currentMode === 'text-chat') {
-        exitFullscreenTextMode();
-      } else if (appState.currentMode === 'theater') {
-        exitTheaterFullscreen();
-      }
-    }
-  });
-  
-  window.addEventListener('orientationchange', handleOrientationChange);
-  window.addEventListener('resize', adjustForMobile);
-}
+            // Cleanup signaling
+            if (appState.signalingRef) {
+                appState.signalingRef.off('child_added');
+                appState.signalingRef = null;
+            }
 
-// ========== INITIALIZATION ========== //
-document.addEventListener('DOMContentLoaded', function() {
-  setupEventListeners();
-  loadSettings();
-  autoJoinRoom();
-  adjustForMobile();
-  
-  // Hide end chat buttons initially
-  document.getElementById('endTextChat').style.display = 'none';
-  document.getElementById('endTextChatFullscreen').style.display = 'none';
-});
+            // Cleanup peer connection
+            if (appState.peerConnection) {
+                appState.peerConnection.close();
+                appState.peerConnection = null;
+            }
 
-// YouTube API callback
-function onYouTubePlayerReady(event) {
-    console.log('YouTube player ready');
-    theaterState.player = event.target;
-    onTheaterPlayerReady(event);
-}
+            // Cleanup media streams
+            if (appState.localStream) {
+                appState.localStream.getTracks().forEach(track => track.stop());
+                appState.localStream = null;
+            }
 
-function onYouTubePlayerStateChange(event) {
-    onTheaterPlayerStateChange(event);
-}
-</script>
+            if (appState.remoteStream) {
+                appState.remoteStream.getTracks().forEach(track => track.stop());
+                appState.remoteStream = null;
+            }
+
+            domRefs.remoteAudio.srcObject = null;
+
+            // Reset UI
+            document.querySelector('.audio-placeholder').style.display = 'flex';
+            audioControls.style.display = 'none';
+            roomInfo.style.display = 'none';
+            
+            // Reset copy button
+            copyBtn.style.display = 'none';
+            
+            // Reset room ID input
+            roomIdInput.value = '';
+            
+            // Play notification sound
+            const now = Date.now();
+            if (now - appState.lastNotificationTime > 1000) {
+                playNotificationSound();
+                appState.lastNotificationTime = now;
+            }
+
+            // Reset state
+            appState.isStarted = false;
+            appState.roomId = null;
+        }
+
+        // Toggle microphone
+        function toggleMicrophone() {
+            if (!appState.localStream) return;
+            
+            const audioTracks = appState.localStream.getAudioTracks();
+            if (audioTracks.length > 0) {
+                const enabled = !audioTracks[0].enabled;
+                audioTracks[0].enabled = enabled;
+                appState.isMuted = !enabled;
+                
+                muteBtn.classList.toggle('muted', !enabled);
+                muteBtn.innerHTML = enabled ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
+            }
+        }
+
+        // Copy room link to clipboard
+        function copyRoomLink() {
+            if (!appState.roomId) return;
+            
+            const roomLink = `${window.location.origin}${window.location.pathname}?room=${appState.roomId}&mode=audio`;
+            
+            navigator.clipboard.writeText(roomLink).then(() => {
+                // Show temporary feedback
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalText;
+                }, 2000);
+                playNotificationSound();
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
+
+        // Check for room ID in URL
+        function checkUrlForRoomId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomIdFromUrl = urlParams.get('room');
+            if (roomIdFromUrl) {
+                roomIdInput.value = roomIdFromId;
+                const mode = urlParams.get('mode');
+                if (mode === 'audio') {
+                    setTimeout(() => {
+                        joinRoom();
+                    }, 500);
+                }
+            }
+        }
+
+        // Room management
+        async function generateRoom() {
+            try {
+                appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+                appState.currentMode = 'audio';
+                appState.isInitiator = true;
+
+                // Update UI
+                displayRoomId.textContent = appState.roomId;
+                copyBtn.style.display = 'inline-flex';
+                roomInfo.style.display = 'flex';
+                updateStatus(`Room created: ${appState.roomId}`, 'connecting');
+                playNotificationSound();
+
+                const mediaInitialized = await initMedia();
+                if (!mediaInitialized) return;
+
+                const peerCreated = createPeerConnection();
+                if (!peerCreated) return;
+
+                initSignaling();
+
+                const offer = await appState.peerConnection.createOffer();
+                await appState.peerConnection.setLocalDescription(offer);
+                sendMessage(offer);
+
+                appState.isStarted = true;
+                startTimer();
+                updateStatus(`In audio call (${appState.roomId})`, 'connected');
+                playNotificationSound();
+
+            } catch (err) {
+                console.error('Error generating room:', err);
+                updateStatus('Room creation failed', 'error');
+                appState.roomId = null;
+            }
+        }
+
+        async function joinRoom() {
+            try {
+                appState.roomId = roomIdInput.value.trim();
+                appState.currentMode = 'audio';
+                
+                if (!appState.roomId) {
+                    updateStatus('Please enter a room ID', 'error');
+                    return;
+                }
+                
+                const mediaInitialized = await initMedia();
+                if (!mediaInitialized) return;
+                
+                const peerCreated = createPeerConnection();
+                if (!peerCreated) return;
+                
+                appState.isInitiator = false;
+                initSignaling();
+                
+                updateStatus(`Joining audio room...`, 'connecting');
+                playNotificationSound();
+                
+            } catch (err) {
+                console.error('Error joining room:', err);
+                updateStatus('Join room failed', 'error');
+                appState.roomId = null;
+            }
+        }
+
+        // Event Listeners
+        generateBtn.addEventListener('click', generateRoom);
+        joinBtn.addEventListener('click', joinRoom);
+        endBtn.addEventListener('click', hangup);
+        muteBtn.addEventListener('click', toggleMicrophone);
+        copyBtn.addEventListener('click', copyRoomLink);
+        
+        // Sidebar toggle for mobile
+        document.getElementById('desktopMenuToggle').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('active');
+        });
+        
+        // Initialize
+        checkUrlForRoomId();
+        
+    </script>
 </body>
 </html>
