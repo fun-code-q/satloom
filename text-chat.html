@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SatLoom - Text Chat</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+.room-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+/* Control Buttons */
+.control-btn {
+    padding: 10px;
+    background-color: var(--primary-color);
+    color: var(--text-color);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.control-btn.end {
+    background-color: var(--error-color);
+}
+
+.control-btn.muted {
+    background-color: var(--secondary-color);
+}
+
+/* Fullscreen Chat */
+.fullscreen-chat {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--background-color);
+    display: flex;
+    flex-direction: column;
+    z-index: 999;
+}
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: var(--card-background);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.chat-title {
+    font-size: 20px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.chat-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.chat-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background-color: var(--background-color);
+}
+
+.chat-message {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    max-width: 70%;
+}
+
+.chat-message.user1 {
+    background-color: var(--primary-color);
+    color: var(--text-color);
+    margin-left: auto;
+}
+
+.chat-message.user2 {
+    background-color: var(--input-background);
+    color: var(--text-color);
+    margin-right: auto;
+}
+
+.message-time {
+    font-size: 12px;
+    color: var(--placeholder-color);
+    margin-top: 5px;
+    display: block;
+}
+
+.typing-indicator {
+    display: none;
+    padding: 10px;
+    color: var(--placeholder-color);
+}
+
+.typing-indicator i {
+    margin-right: 5px;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    50% { opacity: 0.5; }
+}
+
+.chat-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 20px;
+    background-color: var(--card-background);
+    border-top: 1px solid var(--border-color);
+}
+
+.chat-footer .input-styled {
+    flex: 1;
+}
+
+ </style>
+</head>
+<body class="dark-mode">
+    <button class="desktop-menu-toggle" id="desktopMenuToggle">
+        <i class="fas fa-bars menu-icon"></i>
+        <i class="fas fa-times close-icon"></i>
+    </button>
+    
+    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+    
+    <div class="notification" id="globalNotification">
+        <i class="notification-icon fas fa-info-circle"></i>
+        <div class="notification-content">
+            <div class="notification-title" id="notificationTitle"></div>
+            <div class="notification-message" id="notificationMessage"></div>
+        </div>
+    </div>
+    
+    <div class="app-container" id="appContainer">
+        <div class="sidebar" id="sidebar">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-satellite-dish"></i>
+                </div>
+                <div class="logo-text">SatLoom</div>
+            </div>
+            
+            <div class="status-indicator" id="connectionStatus">
+                <i class="fas fa-signal"></i> <span id="statusText">Ready to connect</span>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a class="nav-link" href="index.html">
+                        <i class="fas fa-phone"></i> Audio Call
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="video-call.html">
+                        <i class="fas fa-video"></i> Video Call
+                    </a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="text-chat.html">
+                        <i class="fas fa-comments"></i> Text Chat
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="theater.html">
+                        <i class="fas fa-film"></i> Movie Theater
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="play-ground.html">
+                        <i class="fas fa-gamepad"></i> Play Ground
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="settings.html">
+                        <i class="fas fa-cog"></i> Settings
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="about.html">
+                        <i class="fas fa-info-circle"></i> About
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="main-content">
+            <!-- Text Chat Section -->
+            <div class="section active" id="text-chat-section">
+                <div class="card">
+                    <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <i class="fas fa-comments"></i> Text Chat
+                        </div>
+                        <div class="call-timer" id="textChatTimer">00:00</div>
+                    </div>
+                    <div class="room-info">
+                        <div class="room-id"><span id="displayRoomId" style="display: none;"></span></div>
+                        <div class="participant-count" style="display: none;">
+                            <i class="fas fa-user-friends" style="display: none;"></i>
+                            <span id="participantCount" style="display: none;"></span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="text-room-id" class="input-styled" placeholder="Enter Room ID">
+                    </div>
+                    <div class="call-controls">
+                        <button class="btn" id="generateTextRoom">
+                            <i class="fas fa-network-wired"></i> Create Room
+                        </button>
+                        <button class="btn btn-secondary" id="joinTextRoom">
+                            <i class="fas fa-sign-in-alt"></i> Join Room
+                        </button>
+                    </div>
+                    
+                    <div class="placeholder-animation">
+                        <div class="chat-placeholder">
+                            <div class="chat-bubble"></div>
+                            <div class="chat-bubble"></div>
+                            <div class="chat-bubble"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="app-footer">
+                <div>SatLoom v1.8.0 | Powered by SatLoom Developers</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="fullscreen-chat" id="fullscreenChat" style="display: none;">
+        <div class="chat-header">
+            <div class="chat-title">
+                <i class="fas fa-comments"></i> Text Chat
+            </div>
+            <div class="chat-controls">
+                <span id="displayRoomIdFullscreen"></span>
+                <button class="copy-btn" id="copyTextLink">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <div class="participant-count" style="display: none;">
+                    <i class="fas fa-user-friends" style="display: none;"></i>
+                    <span id="participantCountFullscreen" style="display: none;"></span>
+                </div>
+            </div>
+        </div>
+        <div id="textChat" class="chat-container">
+            <div class="typing-indicator" id="typingIndicator">
+                <i class="fas fa-circle"></i>
+                <i class="fas fa-circle"></i>
+                <i class="fas fa-circle"></i>
+                <span>Someone is typing...</span>
+            </div>
+        </div>
+        <div class="chat-footer">
+            <input type="text" id="textMessage" class="input-styled" placeholder="Type a message...">
+            <button class="btn" id="sendTextMessage">
+                <i class="fas fa-paper-plane send-icon"></i>
+            </button>
+            <button class="control-btn end" id="endTextChat">
+                <i class="fas fa-phone-slash"></i>
+            </button>
+        </div>
+    </div>
+    
+    <audio id="notificationSound" preload="auto">
+        <source src="https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3" type="audio/mpeg">
+    </audio>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDeksN3qPZCmNuoASlEqG38XVmag6ecTh8",
+            authDomain: "satloom-rtc.firebaseapp.com",
+            databaseURL: "https://satloom-rtc-default-rtdb.firebaseio.com",
+            projectId: "satloom-rtc",
+            storageBucket: "satloom-rtc.appspot.com",
+            messagingSenderId: "273627860564",
+            appId: "1:273627860564:web:c326b1bb6ffcb32fb0e7c1"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Text Chat State
+        const textState = {
+            roomId: null,
+            userId: 'user-' + Math.random().toString(36).substr(2, 8),
+            userName: 'User-' + Math.floor(Math.random() * 1000),
+            textChatRef: null,
+            typingRef: null,
+            participantsRef: null,
+            terminationRef: null,
+            timer: null,
+            startTime: null,
+            isTyping: false,
+            typingTimeout: null,
+            participants: [],
+            lastNotificationTime: 0
+        };
+
+        // DOM References
+        const domRefs = {
+            textRoomId: document.getElementById('text-room-id'),
+            displayRoomId: document.getElementById('displayRoomId'),
+            displayRoomIdFullscreen: document.getElementById('displayRoomIdFullscreen'),
+            participantCount: document.getElementById('participantCount'),
+            participantCountFullscreen: document.getElementById('participantCountFullscreen'),
+            textChat: document.getElementById('textChat'),
+            textMessage: document.getElementById('textMessage'),
+            generateTextRoom: document.getElementById('generateTextRoom'),
+            joinTextRoom: document.getElementById('joinTextRoom'),
+            endTextChat: document.getElementById('endTextChat'),
+            copyTextLink: document.getElementById('copyTextLink'),
+            sendTextMessage: document.getElementById('sendTextMessage'),
+            typingIndicator: document.getElementById('typingIndicator'),
+            notification: document.getElementById('globalNotification'),
+            notificationTitle: document.getElementById('notificationTitle'),
+            notificationMessage: document.getElementById('notificationMessage'),
+            connectionStatus: document.getElementById('connectionStatus'),
+            textChatTimer: document.getElementById('textChatTimer'),
+            textChatSection: document.getElementById('text-chat-section'),
+            fullscreenChat: document.getElementById('fullscreenChat')
+        };
+
+        // Utility functions
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function playNotificationSound() {
+            try {
+                const audio = document.getElementById('notificationSound');
+                audio.currentTime = 0;
+                audio.play().catch(e => {
+                    console.log('Audio play prevented:', e);
+                });
+            } catch (e) {
+                console.error('Error playing notification sound:', e);
+            }
+        }
+
+        function showNotification(title, message, type = 'info') {
+            const now = Date.now();
+            if (now - textState.lastNotificationTime > 1000) {
+                playNotificationSound();
+                textState.lastNotificationTime = now;
+            }
+            domRefs.notification.style.display = 'flex';
+            domRefs.notificationTitle.textContent = title;
+            domRefs.notificationMessage.textContent = message;
+            domRefs.notification.className = 'notification';
+            domRefs.notification.style.backgroundColor = 
+                type === 'error' ? 'rgba(244, 67, 54, 0.8)' :
+                type === 'success' ? 'rgba(76, 175, 80, 0.8)' :
+                'rgba(58, 123, 213, 0.8)';
+            setTimeout(() => {
+                domRefs.notification.style.display = 'none';
+            }, 3000);
+        }
+
+        function updateStatus(text, status) {
+            domRefs.connectionStatus.className = 'status-indicator';
+            if (status === 'connected') {
+                domRefs.connectionStatus.classList.add('connected');
+                domRefs.connectionStatus.innerHTML = `<i class="fas fa-check-circle"></i> ${text}`;
+            } else if (status === 'connecting') {
+                domRefs.connectionStatus.classList.add('connecting');
+                domRefs.connectionStatus.innerHTML = `<i class="fas fa-sync-alt fa-spin"></i> ${text}`;
+            } else if (status === 'error') {
+                domRefs.connectionStatus.classList.add('error');
+                domRefs.connectionStatus.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${text}`;
+            } else {
+                domRefs.connectionStatus.innerHTML = `<i class="fas fa-info-circle"></i> ${text}`;
+            }
+        }
+
+        function startTimer() {
+            textState.startTime = Date.now();
+            clearInterval(textState.timer);
+            domRefs.textChatTimer.style.display = 'block';
+            domRefs.textChatTimer.textContent = '00:00';
+            textState.timer = setInterval(() => {
+                const elapsedTime = Math.floor((Date.now() - textState.startTime) / 1000);
+                const minutes = Math.floor(elapsedTime / 60).toString().padStart(2, '0');
+                const seconds = (elapsedTime % 60).toString().padStart(2, '0');
+                domRefs.textChatTimer.textContent = `${minutes}:${seconds}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(textState.timer);
+            textState.timer = null;
+            textState.startTime = null;
+            domRefs.textChatTimer.textContent = '00:00';
+            domRefs.textChatTimer.style.display = 'none';
+        }
+
+        // Text Chat Functions
+        function initTextChat() {
+            if (!textState.roomId) {
+                showNotification('Error', 'Room ID is not set', 'error');
+                return;
+            }
+
+            // Initialize Firebase references
+            textState.textChatRef = database.ref(`rooms/${textState.roomId}/textMessages/messages`);
+            textState.typingRef = database.ref(`rooms/${textState.roomId}/textMessages/typing`);
+            textState.participantsRef = database.ref(`rooms/${textState.roomId}/participants`);
+            textState.terminationRef = database.ref(`rooms/${textState.roomId}/status`);
+
+            // Show fullscreen chat
+            document.querySelector('.placeholder-animation').style.display = 'none';
+            domRefs.textChatSection.style.display = 'none';
+            domRefs.fullscreenChat.style.display = 'flex';
+            domRefs.displayRoomIdFullscreen.textContent = textState.roomId;
+            domRefs.participantCount.style.display = 'inline';
+            domRefs.participantCountFullscreen.style.display = 'inline';
+            domRefs.participantCount.parentElement.querySelector('i').style.display = 'inline';
+            domRefs.participantCountFullscreen.parentElement.querySelector('i').style.display = 'inline';
+
+            // Clear existing messages
+            domRefs.textChat.innerHTML = '<div class="typing-indicator" id="typingIndicator"><i class="fas fa-circle"></i><i class="fas fa-circle"></i><i class="fas fa-circle"></i> <span>Someone is typing...</span></div>';
+
+            // Listen for new messages
+            textState.textChatRef.on('child_added', snapshot => {
+                const message = snapshot.val();
+                if (message) {
+                    addMessageToChat(message);
+                    if (message.userId !== textState.userId) {
+                        showNotification('New Message', `${message.userName}: ${message.text}`, 'info');
+                    }
+                }
+            });
+
+            // Listen for typing status updates
+            textState.typingRef.on('value', snapshot => {
+                const typingData = snapshot.val();
+                if (!typingData) {
+                    domRefs.typingIndicator.style.display = 'none';
+                    return;
+                }
+                let someoneTyping = false;
+                for (const userId in typingData) {
+                    if (userId !== textState.userId && typingData[userId]) {
+                        someoneTyping = true;
+                        break;
+                    }
+                }
+                domRefs.typingIndicator.style.display = someoneTyping ? 'block' : 'none';
+            });
+
+            // Track participants
+            textState.participantsRef.child(textState.userId).set({
+                userId: textState.userId,
+                name: textState.userName,
+                joined: Date.now()
+            });
+
+            textState.participantsRef.child(textState.userId).onDisconnect().remove();
+
+            // Update participant count
+            textState.participantsRef.on('value', snapshot => {
+                const participants = snapshot.val();
+                const count = participants ? Object.keys(participants).length : 1;
+                domRefs.participantCount.textContent = `${count} participant${count !== 1 ? 's' : ''}`;
+                domRefs.participantCountFullscreen.textContent = `${count} participant${count !== 1 ? 's' : ''}`;
+                textState.participants = participants ? Object.values(participants) : [];
+            });
+
+            textState.participantsRef.on('child_added', snapshot => {
+                const participant = snapshot.val();
+                if (participant.userId !== textState.userId) {
+                    showNotification('Participant Joined', `${participant.name} joined the chat`, 'success');
+                }
+            });
+
+            textState.participantsRef.on('child_removed', snapshot => {
+                const participant = snapshot.val();
+                if (participant.userId !== textState.userId) {
+                    showNotification('Participant Left', `${participant.name} left the chat`, 'error');
+                }
+            });
+
+            // Listen for room termination
+            textState.terminationRef.on('value', snapshot => {
+                const status = snapshot.val();
+                if (status && status.terminated) {
+                    showNotification('Chat Ended', 'The room has been closed', 'error');
+                    cleanupTextChat();
+                }
+            });
+        }
+
+        function addMessageToChat(message) {
+            const isCurrentUser = message.userId === textState.userId;
+            const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const userClass = isCurrentUser ? 'user2' : 'user1';
+
+            const messageElement = document.createElement('div');
+            messageElement.className = `chat-message ${userClass}`;
+            messageElement.innerHTML = `
+                <strong>${escapeHtml(message.userName)}</strong>
+                <div>${escapeHtml(message.text)}</div>
+                <span class="message-time">${time}</span>
+            `;
+
+            domRefs.textChat.appendChild(messageElement);
+            domRefs.textChat.scrollTop = domRefs.textChat.scrollHeight;
+        }
+
+        async function sendChatMessage() {
+            const message = domRefs.textMessage.value.trim();
+            if (!message) {
+                showNotification('Error', 'Please enter a message', 'error');
+                return;
+            }
+            if (!textState.roomId || !textState.textChatRef) {
+                showNotification('Error', 'Chat not initialized', 'error');
+                return;
+            }
+            try {
+                const messageData = {
+                    text: message,
+                    userId: textState.userId,
+                    userName: textState.userName,
+                    timestamp: Date.now()
+                };
+                await textState.textChatRef.push(messageData);
+                domRefs.textMessage.value = '';
+                if (textState.isTyping) {
+                    textState.isTyping = false;
+                    textState.typingRef.child(textState.userId).set(false);
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showNotification('Error', `Failed to send message: ${error.message}`, 'error');
+            }
+        }
+
+        function handleTyping() {
+            if (!textState.roomId || !textState.typingRef) return;
+            if (domRefs.textMessage.value.trim() !== '') {
+                if (!textState.isTyping) {
+                    textState.isTyping = true;
+                    textState.typingRef.child(textState.userId).set(true);
+                }
+                clearTimeout(textState.typingTimeout);
+                textState.typingTimeout = setTimeout(() => {
+                    textState.isTyping = false;
+                    textState.typingRef.child(textState.userId).set(false);
+                }, 2000);
+            } else {
+                if (textState.isTyping) {
+                    textState.isTyping = false;
+                    textState.typingRef.child(textState.userId).set(false);
+                }
+            }
+        }
+
+        async function cleanupTextChat() {
+            // Terminate room for all participants
+            if (textState.roomId && textState.terminationRef) {
+                await textState.terminationRef.set({ terminated: true });
+                await database.ref(`rooms/${textState.roomId}`).remove();
+            }
+
+            // Reset UI
+            document.querySelector('.placeholder-animation').style.display = 'flex';
+            domRefs.textChatSection.style.display = 'block';
+            domRefs.fullscreenChat.style.display = 'none';
+            if (textState.textChatRef) {
+                textState.textChatRef.off('child_added');
+                textState.textChatRef = null;
+            }
+            if (textState.typingRef) {
+                textState.typingRef.off('value');
+                textState.typingRef.child(textState.userId).set(false);
+                textState.typingRef = null;
+            }
+            if (textState.participantsRef) {
+                textState.participantsRef.off();
+                textState.participantsRef.child(textState.userId).remove();
+                textState.participantsRef = null;
+            }
+            if (textState.terminationRef) {
+                textState.terminationRef.off('value');
+                textState.terminationRef = null;
+            }
+            domRefs.textChat.innerHTML = '<div class="typing-indicator" id="typingIndicator"><i class="fas fa-circle"></i><i class="fas fa-circle"></i><i class="fas fa-circle"></i> <span>Someone is typing...</span></div>';
+            domRefs.textMessage.value = '';
+            domRefs.textRoomId.value = '';
+            domRefs.displayRoomId.textContent = '';
+            domRefs.displayRoomIdFullscreen.textContent = '';
+            domRefs.participantCount.textContent = '1 participant';
+            domRefs.participantCountFullscreen.textContent = '1 participant';
+            domRefs.participantCount.style.display = 'inline';
+            domRefs.participantCountFullscreen.style.display = 'inline';
+            domRefs.participantCount.parentElement.querySelector('i').style.display = 'inline';
+            domRefs.participantCountFullscreen.parentElement.querySelector('i').style.display = 'inline';
+            textState.participants = [];
+            textState.roomId = null;
+            stopTimer();
+            updateStatus('Ready to connect', 'disconnected');
+            showSidebar();
+        }
+
+        async function generateRoom() {
+            try {
+                textState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+                domRefs.textRoomId.value = textState.roomId;
+                domRefs.displayRoomId.textContent = textState.roomId;
+                await database.ref(`rooms/${textState.roomId}`).set({
+                    created: Date.now(),
+                    participants: {
+                        [textState.userId]: {
+                            userId: textState.userId,
+                            name: textState.userName,
+                            joined: Date.now()
+                        }
+                    },
+                    status: { terminated: false }
+                });
+                showNotification('Room Generated', `Room ID: ${textState.roomId}. Share with others.`, 'success');
+                updateStatus(`Room created: ${textState.roomId}`, 'connecting');
+                hideSidebar();
+                initTextChat();
+                startTimer();
+                updateStatus(`In text chat (${textState.roomId})`, 'connected');
+            } catch (err) {
+                console.error('Error generating room:', err);
+                showNotification('Error', `Failed to create room: ${err.message}`, 'error');
+                updateStatus('Room creation failed', 'error');
+                textState.roomId = null;
+                domRefs.textRoomId.value = '';
+                domRefs.displayRoomId.textContent = '';
+                domRefs.displayRoomIdFullscreen.textContent = '';
+            }
+        }
+
+        async function joinRoom() {
+            try {
+                textState.roomId = domRefs.textRoomId.value.trim();
+                if (!textState.roomId) {
+                    showNotification('Error', 'Please enter a room ID', 'error');
+                    return;
+                }
+                const roomRef = database.ref(`rooms/${textState.roomId}`);
+                const snapshot = await roomRef.once('value');
+                if (!snapshot.exists()) {
+                    showNotification('Error', 'Room does not exist', 'error');
+                    updateStatus('Room does not exist', 'error');
+                    return;
+                }
+                if (snapshot.val().status && snapshot.val().status.terminated) {
+                    showNotification('Error', 'Room has been closed', 'error');
+                    updateStatus('Room closed', 'error');
+                    return;
+                }
+                await roomRef.child('participants').child(textState.userId).set({
+                    userId: textState.userId,
+                    name: textState.userName,
+                    joined: Date.now()
+                });
+                domRefs.displayRoomId.textContent = textState.roomId;
+                showNotification('Chat Joined', `Joined chat room: ${textState.roomId}`, 'success');
+                updateStatus(`Joined text chat (${textState.roomId})`, 'connecting');
+                hideSidebar();
+                initTextChat();
+                startTimer();
+                updateStatus(`In text chat (${textState.roomId})`, 'connected');
+            } catch (err) {
+                console.error('Error joining room:', err);
+                showNotification('Error', `Failed to join room: ${err.message}`, 'error');
+                updateStatus('Join room failed', 'error');
+                textState.roomId = null;
+                domRefs.textRoomId.value = '';
+                domRefs.displayRoomId.textContent = '';
+                domRefs.displayRoomIdFullscreen.textContent = '';
+            }
+        }
+
+        function copyLink() {
+            const baseUrl = window.location.origin + window.location.pathname;
+            const roomLink = `${baseUrl}?room=${textState.roomId}&mode=text`;
+            navigator.clipboard.writeText(roomLink).then(() => {
+                showNotification('Copied', 'Room link copied to clipboard', 'success');
+            }).catch(err => {
+                console.error('Copy failed:', err);
+                showNotification('Error', `Failed to copy link: ${err.message}`, 'error');
+            });
+        }
+
+        function hideSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const appContainer = document.getElementById('appContainer');
+            if (window.innerWidth > 900) {
+                appContainer.classList.add('sidebar-hidden');
+                document.body.classList.remove('sidebar-open');
+                const menuIcon = document.querySelector('.menu-icon');
+                const closeIcon = document.querySelector('.close-icon');
+                if (menuIcon && closeIcon) {
+                    menuIcon.style.display = 'block';
+                    closeIcon.style.display = 'none';
+                }
+            } else {
+                sidebar.classList.remove('active');
+            }
+        }
+
+        function showSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const appContainer = document.getElementById('appContainer');
+            if (window.innerWidth > 900) {
+                appContainer.classList.remove('sidebar-hidden');
+                document.body.classList.add('sidebar-open');
+                const menuIcon = document.querySelector('.menu-icon');
+                const closeIcon = document.querySelector('.close-icon');
+                if (menuIcon && closeIcon) {
+                    menuIcon.style.display = 'none';
+                    closeIcon.style.display = 'block';
+                }
+            } else {
+                sidebar.classList.add('active');
+            }
+        }
+
+        function adjustForMobile() {
+            if (window.innerWidth <= 900) {
+                document.getElementById('mobileMenuToggle').style.display = 'flex';
+                document.getElementById('desktopMenuToggle').style.display = 'none';
+                document.getElementById('sidebar').classList.remove('active');
+                document.body.classList.remove('sidebar-open');
+            } else {
+                document.getElementById('mobileMenuToggle').style.display = 'none';
+                document.getElementById('desktopMenuToggle').style.display = 'flex';
+                document.getElementById('sidebar').style.display = 'flex';
+                document.getElementById('appContainer').classList.remove('sidebar-hidden');
+            }
+            // Set active state for navigation
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.parentElement.classList.remove('active');
+                if (link.getAttribute('href') === 'text-chat.html') {
+                    link.parentElement.classList.add('active');
+                }
+            });
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('mobileMenuToggle').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('active');
+                console.log('Mobile menu toggled. Sidebar active:', document.getElementById('sidebar').classList.contains('active'));
+            });
+            
+            document.getElementById('desktopMenuToggle').addEventListener('click', function() {
+                const appContainer = document.getElementById('appContainer');
+                appContainer.classList.toggle('sidebar-hidden');
+                document.body.classList.toggle('sidebar-open');
+                const menuIcon = document.querySelector('.menu-icon');
+                const closeIcon = document.querySelector('.close-icon');
+                if (menuIcon && closeIcon) {
+                    if (appContainer.classList.contains('sidebar-hidden')) {
+                        menuIcon.style.display = 'block';
+                        closeIcon.style.display = 'none';
+                    } else {
+                        menuIcon.style.display = 'none';
+                        closeIcon.style.display = 'block';
+                    }
+                }
+                console.log('Desktop menu toggled. Sidebar hidden:', appContainer.classList.contains('sidebar-hidden'));
+            });
+
+            domRefs.generateTextRoom.addEventListener('click', generateRoom);
+            domRefs.joinTextRoom.addEventListener('click', joinRoom);
+            domRefs.sendTextMessage.addEventListener('click', sendChatMessage);
+            domRefs.copyTextLink.addEventListener('click', copyLink);
+            domRefs.endTextChat.addEventListener('click', () => {
+                cleanupTextChat();
+                showNotification('Chat Ended', 'You closed the chat room', 'success');
+            });
+            domRefs.textMessage.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    sendChatMessage();
+                }
+            });
+            domRefs.textMessage.addEventListener('input', handleTyping);
+
+            adjustForMobile();
+            window.addEventListener('resize', adjustForMobile);
+
+            // Auto-join room from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomIdFromUrl = urlParams.get('room');
+            if (roomIdFromUrl) {
+                domRefs.textRoomId.value = roomIdFromUrl;
+                joinRoom();
+            }
+        });
+    </script>
+</body>
+</html>
