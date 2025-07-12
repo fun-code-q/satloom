@@ -1587,6 +1587,15 @@ html, body {
     left: 0;
     right: 0;
 }
+/* Add this to ensure video container hides after hangup */
+        #videoRemoteVideoContainer.hidden {
+            display: none !important;
+        }
+        
+        /* Ensure placeholder shows after hangup */
+        .placeholder-animation.hidden {
+            display: none;
+        }
 
 </style>
 </head>
@@ -2601,16 +2610,44 @@ function hangup(mode) {
       break;
   }
 
-  // Reset UI
-  const copyButtonId = `copy${mode.charAt(0).toUpperCase() + mode.slice(1)}Link`;
-  const copyButton = document.getElementById(copyButtonId);
-  if (copyButton) copyButton.style.display = 'none';
+    // Reset UI - IMPORTANT FIX: Reset placeholders and containers
+    resetUIAfterHangup(mode);
 
-  // Reset global state
-  appState.isStarted = false;
-  appState.roomId = null;
-  appState.currentMode = null;
+    // Reset global state
+    appState.isStarted = false;
+    appState.roomId = null;
+    appState.currentMode = null;
 }
+// ========== NEW FUNCTION: RESET UI AFTER HANGUP ========== //
+function resetUIAfterHangup(mode) {
+    // Show placeholder and hide video container
+    const placeholder = document.querySelector(`#${mode}-section .placeholder-animation`);
+    if (placeholder) {
+        placeholder.classList.remove('hidden');
+    }
+    
+    if (mode === 'video') {
+        const videoContainer = document.getElementById('videoRemoteVideoContainer');
+        if (videoContainer) {
+            videoContainer.classList.add('hidden');
+        }
+    }
+    
+    // Reset copy buttons
+    const copyButtonId = `copy${mode.charAt(0).toUpperCase() + mode.slice(1)}Link`;
+    const copyButton = document.getElementById(copyButtonId);
+    if (copyButton) copyButton.style.display = 'none';
+    
+    // Reset controls
+    const controlsId = `${mode}Controls`;
+    const controls = document.getElementById(controlsId);
+    if (controls) controls.style.display = 'none';
+    
+    // Reset room ID input
+    const roomInput = document.getElementById(`${mode}-room-id`);
+    if (roomInput) roomInput.value = '';
+}
+
 
 function cleanupTheater() {
     if (theaterState.player) {
