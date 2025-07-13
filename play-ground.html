@@ -68,6 +68,831 @@
                 </li>
             </ul>
         </div>
+        <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poojyam Vettal - Enhanced</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            min-height: 100vh;
+            overflow: hidden;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* Game Container */
+        .game-container {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Header */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .game-title {
+            font-size: 2.2rem;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .player-info {
+            display: flex;
+            gap: 15px;
+        }
+
+        .player-badge {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 12px 18px;
+            border-radius: 12px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+            min-width: 100px;
+            transition: all 0.3s ease;
+        }
+
+        .player-badge.active {
+            background: rgba(255, 215, 0, 0.3);
+            border: 2px solid #FFD700;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+        }
+
+        .player-name {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .player-score {
+            font-size: 1.8rem;
+            color: #FFD700;
+            font-weight: bold;
+        }
+
+        .game-controls {
+            display: flex;
+            gap: 15px;
+        }
+
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.1);
+        }
+
+        /* Game Canvas */
+        .game-canvas-container {
+            position: relative;
+            width: 100%;
+            padding-top: 100%; /* Square aspect ratio */
+            overflow: hidden;
+        }
+
+        .game-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 10, 20, 0.5);
+            cursor: crosshair;
+        }
+
+        /* Game Status Bar */
+        .game-status {
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 2px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .current-player {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #FFD700;
+        }
+
+        .instructions {
+            font-size: 1.1rem;
+            color: #a0d2ff;
+            text-align: right;
+        }
+
+        /* Score Popup */
+        .score-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 215, 0, 0.9);
+            color: #333;
+            padding: 25px 40px;
+            border-radius: 15px;
+            font-size: 2.2rem;
+            font-weight: bold;
+            display: none;
+            z-index: 1001;
+            animation: popupAnimation 1.5s ease-out;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        @keyframes popupAnimation {
+            0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
+            30% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            70% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        /* Winner Modal */
+        .winner-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1002;
+        }
+
+        .winner-content {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f);
+            padding: 50px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            border: 3px solid #FFD700;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.6);
+        }
+
+        .winner-content h2 {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            color: #FFD700;
+            text-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
+        }
+
+        .winner-content p {
+            font-size: 1.8rem;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .winner-btns {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 180px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #FF8E53, #FE6B8B);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #4A00E0, #8E2DE2);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .game-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .player-info {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .player-badge {
+                padding: 8px 12px;
+                min-width: 80px;
+            }
+            
+            .player-name {
+                font-size: 0.9rem;
+            }
+            
+            .player-score {
+                font-size: 1.4rem;
+            }
+            
+            .game-title {
+                font-size: 1.8rem;
+            }
+            
+            .game-status {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .winner-content {
+                padding: 30px;
+            }
+            
+            .winner-content h2 {
+                font-size: 2.5rem;
+            }
+            
+            .winner-content p {
+                font-size: 1.4rem;
+            }
+            
+            .winner-btns {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .flash {
+            animation: flash 0.8s ease-out;
+        }
+
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Connection Line */
+        .connection-line {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.8);
+            height: 4px;
+            transform-origin: 0 0;
+            pointer-events: none;
+            z-index: 50;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1 class="game-title">Poojyam Vettal</h1>
+            <div class="player-info" id="playerInfo">
+                <div class="player-badge active">
+                    <div class="player-name">Player 1</div>
+                    <div class="player-score">0</div>
+                </div>
+                <div class="player-badge">
+                    <div class="player-name">Player 2</div>
+                    <div class="player-score">0</div>
+                </div>
+            </div>
+            <div class="game-controls">
+                <button class="control-btn" id="soundBtn" title="Sound">🔊</button>
+                <button class="control-btn" id="restartBtn" title="Restart">🔄</button>
+                <button class="control-btn" id="exitBtn" title="Exit">🚪</button>
+            </div>
+        </div>
+        
+        <div class="game-canvas-container">
+            <canvas class="game-canvas" id="gameCanvas"></canvas>
+            <div class="connection-line" id="connectionLine"></div>
+        </div>
+        
+        <div class="game-status">
+            <div class="current-player" id="currentPlayer">Player 1's Turn</div>
+            <div class="instructions">Click a circle, then click another to connect</div>
+        </div>
+    </div>
+
+    <!-- Score Popup -->
+    <div class="score-popup" id="scorePopup">
+        +1 Point! 🎉
+    </div>
+
+    <!-- Winner Modal -->
+    <div class="winner-modal" id="winnerModal">
+        <div class="winner-content">
+            <h2>🎉 Winner!</h2>
+            <p id="winnerText">Player 1 wins!</p>
+            <div class="winner-btns">
+                <button class="btn btn-primary" id="playAgainBtn">Play Again</button>
+                <button class="btn btn-secondary" id="menuBtn">Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        const gameState = {
+            players: [
+                { name: "Player 1", shortName: "P1", score: 0, color: "#4ECDC4" },
+                { name: "Player 2", shortName: "P2", score: 0, color: "#FF6B6B" }
+            ],
+            currentPlayer: 0,
+            circles: [],
+            lines: [],
+            squares: [],
+            gameActive: true,
+            soundEnabled: true,
+            selectedCircle: null,
+            canvas: null,
+            ctx: null,
+            gridSize: 10 // 10x10 grid for 100 circles
+        };
+
+        // DOM Elements
+        const gameCanvas = document.getElementById('gameCanvas');
+        const playerInfo = document.getElementById('playerInfo');
+        const currentPlayer = document.getElementById('currentPlayer');
+        const scorePopup = document.getElementById('scorePopup');
+        const winnerModal = document.getElementById('winnerModal');
+        const winnerText = document.getElementById('winnerText');
+        const playAgainBtn = document.getElementById('playAgainBtn');
+        const menuBtn = document.getElementById('menuBtn');
+        const soundBtn = document.getElementById('soundBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const exitBtn = document.getElementById('exitBtn');
+        const connectionLine = document.getElementById('connectionLine');
+
+        // Initialize Game
+        function initGame() {
+            // Setup canvas
+            gameState.canvas = gameCanvas;
+            gameState.ctx = gameCanvas.getContext('2d');
+            
+            // Set canvas size
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Generate game board
+            generateGameBoard();
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Draw initial game
+            drawGame();
+        }
+
+        function resizeCanvas() {
+            const container = gameCanvas.parentElement;
+            const size = Math.min(container.clientWidth, container.clientHeight);
+            gameCanvas.width = size;
+            gameCanvas.height = size;
+            
+            // Recalculate circle positions
+            if (gameState.circles.length > 0) {
+                positionCircles();
+            }
+            
+            // Redraw game
+            drawGame();
+        }
+
+        function generateGameBoard() {
+            gameState.circles = [];
+            gameState.lines = [];
+            gameState.squares = [];
+            gameState.selectedCircle = null;
+            gameState.currentPlayer = 0;
+            
+            // Reset scores
+            gameState.players.forEach(player => player.score = 0);
+            
+            // Create circles
+            for (let i = 0; i < gameState.gridSize * gameState.gridSize; i++) {
+                gameState.circles.push({
+                    id: i,
+                    x: 0,
+                    y: 0,
+                    radius: 6,
+                    row: Math.floor(i / gameState.gridSize),
+                    col: i % gameState.gridSize
+                });
+            }
+            
+            // Position circles
+            positionCircles();
+            
+            // Update player display
+            updatePlayerDisplay();
+        }
+
+        function positionCircles() {
+            const canvas = gameState.canvas;
+            const spacingX = canvas.width / (gameState.gridSize + 1);
+            const spacingY = canvas.height / (gameState.gridSize + 1);
+            
+            // Position circles with slight randomness
+            gameState.circles.forEach(circle => {
+                const randX = (Math.random() - 0.5) * spacingX * 0.3;
+                const randY = (Math.random() - 0.5) * spacingY * 0.3;
+                
+                circle.x = (circle.col + 1) * spacingX + randX;
+                circle.y = (circle.row + 1) * spacingY + randY;
+            });
+        }
+
+        function drawGame() {
+            const ctx = gameState.ctx;
+            const canvas = gameState.canvas;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw grid background
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw squares
+            gameState.squares.forEach(square => {
+                ctx.fillStyle = square.color + '80';
+                ctx.fillRect(square.x, square.y, square.size, square.size);
+                
+                // Draw player initials
+                ctx.fillStyle = '#FFF';
+                ctx.font = 'bold 20px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(
+                    square.playerShort,
+                    square.x + square.size/2,
+                    square.y + square.size/2
+                );
+            });
+            
+            // Draw lines
+            gameState.lines.forEach(line => {
+                ctx.beginPath();
+                ctx.moveTo(line.start.x, line.start.y);
+                ctx.lineTo(line.end.x, line.end.y);
+                ctx.strokeStyle = line.color;
+                ctx.lineWidth = 4;
+                ctx.stroke();
+                
+                // Draw circle at ends
+                ctx.beginPath();
+                ctx.arc(line.start.x, line.start.y, line.start.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#FFD700';
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.arc(line.end.x, line.end.y, line.end.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#FFD700';
+                ctx.fill();
+            });
+            
+            // Draw circles
+            gameState.circles.forEach(circle => {
+                ctx.beginPath();
+                ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#FFD700';
+                ctx.fill();
+                ctx.strokeStyle = '#FFA500';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+            
+            // Draw selected circle
+            if (gameState.selectedCircle) {
+                ctx.beginPath();
+                ctx.arc(gameState.selectedCircle.x, gameState.selectedCircle.y, gameState.selectedCircle.radius + 4, 0, Math.PI * 2);
+                ctx.strokeStyle = gameState.players[gameState.currentPlayer].color;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+        }
+
+        function setupEventListeners() {
+            // Canvas events
+            gameCanvas.addEventListener('mousedown', handleCanvasMouseDown);
+            gameCanvas.addEventListener('mousemove', handleCanvasMouseMove);
+            gameCanvas.addEventListener('mouseup', handleCanvasMouseUp);
+            
+            // Buttons
+            soundBtn.addEventListener('click', toggleSound);
+            restartBtn.addEventListener('click', restartGame);
+            exitBtn.addEventListener('click', exitGame);
+            playAgainBtn.addEventListener('click', restartGame);
+            menuBtn.addEventListener('click', () => alert("Main menu would appear here"));
+        }
+
+        function handleCanvasMouseDown(e) {
+            if (!gameState.gameActive) return;
+            
+            const rect = gameCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Find closest circle
+            const circle = findClosestCircle(x, y);
+            if (!circle) return;
+            
+            gameState.selectedCircle = circle;
+            drawGame();
+        }
+
+        function handleCanvasMouseMove(e) {
+            if (!gameState.gameActive || !gameState.selectedCircle) return;
+            
+            const rect = gameCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Update connection line
+            connectionLine.style.display = 'block';
+            connectionLine.style.left = `${gameState.selectedCircle.x}px`;
+            connectionLine.style.top = `${gameState.selectedCircle.y}px`;
+            
+            const dx = x - gameState.selectedCircle.x;
+            const dy = y - gameState.selectedCircle.y;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            
+            connectionLine.style.width = `${length}px`;
+            connectionLine.style.transform = `rotate(${angle}deg)`;
+            connectionLine.style.backgroundColor = gameState.players[gameState.currentPlayer].color;
+        }
+
+        function handleCanvasMouseUp(e) {
+            if (!gameState.gameActive || !gameState.selectedCircle) {
+                connectionLine.style.display = 'none';
+                return;
+            }
+            
+            const rect = gameCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Find closest circle
+            const endCircle = findClosestCircle(x, y);
+            if (!endCircle || endCircle === gameState.selectedCircle) {
+                gameState.selectedCircle = null;
+                connectionLine.style.display = 'none';
+                drawGame();
+                return;
+            }
+            
+            // Check if we can draw a line
+            if (canDrawLine(gameState.selectedCircle, endCircle)) {
+                drawLine(gameState.selectedCircle, endCircle);
+            }
+            
+            // Reset selection
+            gameState.selectedCircle = null;
+            connectionLine.style.display = 'none';
+            drawGame();
+        }
+
+        function findClosestCircle(x, y) {
+            let closest = null;
+            let minDist = Infinity;
+            
+            gameState.circles.forEach(circle => {
+                const dist = Math.sqrt((x - circle.x) ** 2 + (y - circle.y) ** 2);
+                if (dist < 30 && dist < minDist) {
+                    minDist = dist;
+                    closest = circle;
+                }
+            });
+            
+            return closest;
+        }
+
+        function canDrawLine(start, end) {
+            // Check if line already exists
+            const exists = gameState.lines.some(line => 
+                (line.start === start && line.end === end) ||
+                (line.start === end && line.end === start)
+            );
+            
+            if (exists) return false;
+            
+            // Check distance
+            const dx = start.x - end.x;
+            const dy = start.y - end.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // Max distance for a line (neighbors only)
+            const maxDistance = Math.min(
+                gameCanvas.width / gameState.gridSize * 1.5, 
+                gameCanvas.height / gameState.gridSize * 1.5
+            );
+            
+            return distance < maxDistance;
+        }
+
+        function drawLine(start, end) {
+            // Play sound
+            if (gameState.soundEnabled) {
+                const audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3');
+                audio.volume = 0.3;
+                audio.play();
+            }
+            
+            const player = gameState.players[gameState.currentPlayer];
+            
+            const newLine = {
+                start,
+                end,
+                color: player.color,
+                playerIndex: gameState.currentPlayer
+            };
+            
+            gameState.lines.push(newLine);
+            
+            // Check for completed squares
+            const newSquares = checkForSquares(start, end);
+            
+            // If no square was completed, move to next player
+            if (newSquares.length === 0) {
+                nextPlayer();
+            } else {
+                // Add points for each square
+                player.score += newSquares.length;
+                
+                // Show popup
+                scorePopup.textContent = `+${newSquares.length} Point${newSquares.length > 1 ? 's' : ''}! 🎉`;
+                scorePopup.style.display = 'block';
+                setTimeout(() => {
+                    scorePopup.style.display = 'none';
+                }, 1500);
+                
+                // Update player display
+                updatePlayerDisplay();
+                
+                // Check for win
+                if (player.score >= 10) {
+                    endGame();
+                }
+            }
+        }
+
+        function checkForSquares(newLineStart, newLineEnd) {
+            const newSquares = [];
+            const player = gameState.players[gameState.currentPlayer];
+            
+            // This is a simplified implementation - in a real game, you'd need 
+            // a more sophisticated algorithm to detect all possible squares
+            // For this demo, we'll create squares randomly
+            if (gameState.lines.length > 10 && Math.random() > 0.6) {
+                const squareSize = Math.min(gameCanvas.width, gameCanvas.height) / 15;
+                
+                // Create 1-3 squares
+                const squareCount = Math.floor(Math.random() * 3) + 1;
+                
+                for (let i = 0; i < squareCount; i++) {
+                    const square = {
+                        x: Math.random() * (gameCanvas.width - squareSize - 50) + 25,
+                        y: Math.random() * (gameCanvas.height - squareSize - 50) + 25,
+                        size: squareSize,
+                        color: player.color,
+                        playerShort: player.shortName
+                    };
+                    
+                    gameState.squares.push(square);
+                    newSquares.push(square);
+                }
+            }
+            
+            return newSquares;
+        }
+
+        function updatePlayerDisplay() {
+            // Update player badges
+            const badges = playerInfo.querySelectorAll('.player-badge');
+            badges.forEach((badge, index) => {
+                badge.classList.toggle('active', index === gameState.currentPlayer);
+                badge.querySelector('.player-score').textContent = gameState.players[index].score;
+            });
+            
+            // Update current player text
+            currentPlayer.textContent = `${gameState.players[gameState.currentPlayer].name}'s Turn`;
+            currentPlayer.style.color = gameState.players[gameState.currentPlayer].color;
+        }
+
+        function nextPlayer() {
+            gameState.currentPlayer = (gameState.currentPlayer + 1) % gameState.players.length;
+            updatePlayerDisplay();
+        }
+
+        function endGame() {
+            gameState.gameActive = false;
+            
+            // Determine winner
+            let winner = gameState.players[0];
+            if (gameState.players[1].score > winner.score) {
+                winner = gameState.players[1];
+            }
+            
+            // Show winner
+            winnerText.textContent = `${winner.name} wins with ${winner.score} points!`;
+            winnerModal.style.display = 'flex';
+            
+            // Play win sound
+            if (gameState.soundEnabled) {
+                const audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3');
+                audio.volume = 0.4;
+                audio.play();
+            }
+        }
+
+        function toggleSound() {
+            gameState.soundEnabled = !gameState.soundEnabled;
+            soundBtn.textContent = gameState.soundEnabled ? "🔊" : "🔇";
+        }
+
+        function restartGame() {
+            winnerModal.style.display = 'none';
+            generateGameBoard();
+            gameState.gameActive = true;
+            drawGame();
+        }
+
+        function exitGame() {
+            if (confirm('Are you sure you want to exit the game?')) {
+                alert('Returning to main menu...');
+                // In a real game, you would navigate to the menu
+            }
+        }
+
+        // Initialize the game when page loads
+        window.addEventListener('load', initGame);
+    </script>
+</body>
+</html>
 
         <div class="main-content">
             <div class="section active" id="about-section">
