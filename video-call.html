@@ -91,7 +91,7 @@
 .supercopy {
     position: fixed;
     right: 20px;
-    top: 15%;
+    top: 19%;
     transform: translateY(-50%);
     z-index: 1000;
     background: rgba(255, 255, 255, 0.1);
@@ -403,8 +403,13 @@ body.fullscreen-active .mobile-menu-toggle {
             mobileMenuToggle: document.getElementById('mobileMenuToggle'),
             appContainer: document.getElementById('appContainer'),
             copyVideoLink: document.getElementById('copyVideoLink'),
-            fullscreenCopyLink: document.getElementById('fullscreenCopyLink')
-        };
+            fullscreenCopyLink: document.getElementById('fullscreenCopyLink'),
+            fullscreenVideoToggle: document.getElementById('fullscreenVideoToggle'),
+            fullscreenAudioToggle: document.getElementById('fullscreenAudioToggle'),
+            fullscreenEndCall: document.getElementById('fullscreenEndCall'),
+            videoRemoteVideoContainer: document.getElementById('videoRemoteVideoContainer')
+            };
+        
 
         // Utility functions
         function playNotificationSound() {
@@ -1048,60 +1053,61 @@ body.fullscreen-active .mobile-menu-toggle {
             }
         }
 
-        function toggleVideo() {
-            console.log('toggleVideo clicked');
-            try {
-                if (!appState.localStream) return;
-                
-                const videoTracks = appState.localStream.getVideoTracks();
-                if (videoTracks.length > 0) {
-                    const enabled = !videoTracks[0].enabled;
-                    videoTracks[0].enabled = enabled;
-                    appState.isCameraEnabled = enabled;
-                    
-                    const button = domRefs.videoVideoToggle;
-                    const fullscreenButton = domRefs.fullscreenVideoToggle;
-                    if (button) {
-                        button.classList.toggle('muted', !enabled);
-                        fullscreenButton.classList.toggle('muted', !enabled);
-                        button.innerHTML = enabled ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
-                        fullscreenButton.innerHTML = enabled ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
-                        showNotification(enabled ? 'Camera On' : 'Camera Off', 
-                            `Your camera is now ${enabled ? 'enabled' : 'disabled'}`);
-                    }
-                }
-            } catch (err) {
-                console.error('Toggle video error:', err);
-                showNotification('Error', 'Failed to toggle video', 'error');
-            }
-        }
+function toggleVideo() {
+    console.log('toggleVideo clicked');
+    if (!appState.localStream) {
+        console.warn('No local stream available');
+        return;
+    }
+    const videoTracks = appState.localStream.getVideoTracks();
+    if (videoTracks.length === 0) {
+        console.warn('No video tracks found');
+        return;
+    }
 
-        function toggleAudio() {
-            console.log('toggleAudio clicked');
-            try {
-                if (!appState.localStream) return;
-                
-                const audioTracks = appState.localStream.getAudioTracks();
-                if (audioTracks.length > 0) {
-                    const enabled = !audioTracks[0].enabled;
-                    audioTracks[0].enabled = enabled;
-                    
-                    const button = domRefs.videoAudioToggle;
-                    const fullscreenButton = domRefs.fullscreenAudioToggle;
-                    if (button) {
-                        button.classList.toggle('muted', !enabled);
-                        fullscreenButton.classList.toggle('muted', !enabled);
-                        button.innerHTML = enabled ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
-                        fullscreenButton.innerHTML = enabled ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
-                        showNotification(enabled ? 'Microphone On' : 'Microphone Off', 
-                            `Your microphone is now ${enabled ? 'enabled' : 'muted'}`);
-                    }
-                }
-            } catch (err) {
-                console.error('Toggle audio error:', err);
-                showNotification('Error', 'Failed to toggle audio', 'error');
-            }
-        }
+    const enabled = !videoTracks[0].enabled;
+    videoTracks[0].enabled = enabled;
+    appState.isCameraEnabled = enabled;
+
+    // Update button states
+    if (domRefs.videoVideoToggle) {
+        domRefs.videoVideoToggle.innerHTML = enabled ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+        domRefs.videoVideoToggle.classList.toggle('muted', !enabled);
+    }
+    if (domRefs.fullscreenVideoToggle) {
+        domRefs.fullscreenVideoToggle.innerHTML = enabled ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+        domRefs.fullscreenVideoToggle.classList.toggle('muted', !enabled);
+    }
+
+    showNotification(enabled ? 'Camera On' : 'Camera Off', `Your camera is now ${enabled ? 'enabled' : 'disabled'}`);
+}
+
+function toggleAudio() {
+    console.log('toggleAudio clicked');
+    if (!appState.localStream) {
+        console.warn('No local stream available');
+        return;
+    }
+    const audioTracks = appState.localStream.getAudioTracks();
+    if (audioTracks.length === 0) {
+        console.warn('No audio tracks found');
+        return;
+    }
+
+    const enabled = !audioTracks[0].enabled;
+    audioTracks[0].enabled = enabled;
+
+    if (domRefs.videoAudioToggle) {
+        domRefs.videoAudioToggle.innerHTML = enabled ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
+        domRefs.videoAudioToggle.classList.toggle('muted', !enabled);
+    }
+    if (domRefs.fullscreenAudioToggle) {
+        domRefs.fullscreenAudioToggle.innerHTML = enabled ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
+        domRefs.fullscreenAudioToggle.classList.toggle('muted', !enabled);
+    }
+
+    showNotification(enabled ? 'Microphone On' : 'Microphone Off', `Your microphone is now ${enabled ? 'enabled' : 'muted'}`);
+}
 
         // Event listeners
         function setupEventListeners() {
