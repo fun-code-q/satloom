@@ -6,18 +6,13 @@
     <title>SatLoom - Movie Theater with Push-to-Talk</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-    <script src="https://www.youtube.com/iframe_api"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
+      <link rel="stylesheet" href="styles.css">
     <style>
-        .call-controls {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 25px;
-        }
-        
-        .copy-btn {
+       
+
+
+     .copy-btn {
             width: 50px;
             height: 50px;
             border-radius: 50%;
@@ -81,7 +76,7 @@
             width: 60px;
             height: 60px;
             border: 5px solid rgba(255, 255, 255, 0.3);
-            border-top: 5px solid #3b82f6;
+            border-top: 5px solid var(--primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
             display: none;
@@ -117,7 +112,7 @@
         .theater-seek-bar-progress {
             position: absolute;
             height: 100%;
-            background: #3b82f6;
+            background: var(--primary);
             border-radius: 3px;
             width: 0%;
         }
@@ -126,7 +121,7 @@
             position: absolute;
             width: 14px;
             height: 14px;
-            background: #3b82f6;
+            background: var(--primary);
             border-radius: 50%;
             top: 50%;
             transform: translate(-50%, -50%);
@@ -147,6 +142,38 @@
             display: flex;
             align-items: center;
             gap: 15px;
+        }
+        
+        .theater-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 16px;
+        }
+        
+        .theater-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.1);
+        }
+        
+        .theater-btn.ptt.active {
+            background: rgba(76, 175, 80, 0.7);
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+        }
+        
+        .theater-time-display {
+            font-size: 14px;
+            color: white;
+            min-width: 100px;
+            text-align: center;
         }
         
         .theater-volume-container {
@@ -197,7 +224,7 @@
         
         .theater-modal-title {
             margin-bottom: 15px;
-            color: #3b82f6;
+            color: var(--primary);
             display: flex;
             align-items: center;
         }
@@ -211,9 +238,19 @@
         
         .theater-video-format-info {
             font-size: 12px;
-            color: #94a3b8;
+            color: var(--text-muted);
             margin-top: 5px;
             display: block;
+        }
+        
+        .top-controls-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 8px;
+            z-index: 10002;
+            display: none;
         }
         
         .theater-hangup-btn {
@@ -240,9 +277,161 @@
             transform: scale(1.1);
             background: rgba(220, 38, 38, 0.9);
         }
-            
+        
+        .participant-card {
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 200px;
+            margin-bottom: 10px;
+        }
+        
+        .participant-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .participant-name {
+            font-weight: 500;
+        }
+        
+        .participant-status {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        
+        .mic-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+            margin-top: 3px;
+        }
+        
+        .mic-status.active {
+            color: var(--success);
+        }
+        
+        .mic-status i {
+            font-size: 0.7rem;
+        }
+        
+        /* Push to Talk UI */
+        .ptt-container {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 15px;
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .ptt-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .ptt-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .ptt-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--danger);
+            transition: background 0.3s;
+        }
+        
+        .ptt-indicator.active {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+        }
+        
+        .ptt-button {
+            width: 100%;
+            padding: 18px;
+            border-radius: 16px;
+            border: none;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .ptt-button:active {
+            transform: scale(0.98);
+            box-shadow: 0 3px 10px rgba(59, 130, 246, 0.3);
+        }
+        
+        .ptt-button.active {
+            background: linear-gradient(135deg, var(--success), var(--success-dark));
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+        }
+        
+        .ptt-button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .ptt-button:active::after {
+            opacity: 1;
+        }
+        
+        .ptt-help {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+        
+        .audio-visualizer {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            height: 40px;
+            gap: 2px;
+            margin-top: 10px;
+        }
+        
+        .audio-bar {
+            width: 4px;
+            background: var(--primary);
+            border-radius: 2px;
+            transition: height 0.1s;
+        }
+        
+       
+        
         /* Fullscreen styles */
-        .fullscreen-theater-mode #theater-section {
+        .fullscreen-theater-mode {
             position: fixed;
             top: 0;
             left: 0;
@@ -250,25 +439,37 @@
             height: 100%;
             z-index: 10000;
             background: #000;
-        }
-        
-        .fullscreen-theater-mode #theater-section .card {
-            border-radius: 0;
-            height: 100%;
             display: flex;
             flex-direction: column;
+        }
+        
+        .fullscreen-theater-mode .sidebar,
+        .fullscreen-theater-mode .desktop-menu-toggle,
+        .fullscreen-theater-mode .mobile-menu-toggle,
+        .fullscreen-theater-mode .card > *:not(#theaterContainer) {
+            display: none !important;
+        }
+        
+        .fullscreen-theater-mode .card {
+            border-radius: 0;
+            height: 100%;
             padding: 0;
             background: transparent;
             box-shadow: none;
             backdrop-filter: none;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
         }
         
         .fullscreen-theater-mode #theaterContainer {
             flex: 1;
-            display: flex;
+            display: flex !important;
             flex-direction: column;
             padding: 0;
             margin: 0;
+            border-radius: 0;
+            height: 100%;
         }
         
         .fullscreen-theater-mode .theater-video-container {
@@ -284,7 +485,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            object-fit: cover;
         }
         
         .fullscreen-theater-mode .theater-controls-container {
@@ -292,23 +493,19 @@
             bottom: 0;
             left: 0;
             right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            z-index: 100;
+            opacity: 1;
         }
         
         .fullscreen-theater-mode .theater-top-controls {
             display: flex;
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            gap: 10px;
-            z-index: 10001;
         }
         
         .fullscreen-theater-mode .theater-hangup-btn {
             display: flex;
-        }
-        
-        .fullscreen-theater-mode .ptt-button {
-            display: flex;
+            z-index: 101;
         }
         
         /* Video source tabs */
@@ -328,7 +525,7 @@
         }
         
         .source-tab.active {
-            background: linear-gradient(to right, #3b82f6, #6366f1);
+            background: linear-gradient(to right, var(--primary), var(--primary-dark));
             box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
         }
         
@@ -350,7 +547,7 @@
         
         .video-help h4 {
             margin-bottom: 10px;
-            color: #3b82f6;
+            color: var(--primary);
         }
         
         .video-help ul {
@@ -364,7 +561,7 @@
         }
         
         .video-help a {
-            color: #3b82f6;
+            color: var(--primary);
             text-decoration: none;
         }
         
@@ -388,7 +585,7 @@
         .video-error-title {
             font-weight: 600;
             margin-bottom: 8px;
-            color: #ef4444;
+            color: var(--danger);
         }
         
         .video-error-message {
@@ -398,73 +595,46 @@
         
         .direct-url-note {
             font-size: 0.85rem;
-            color: #94a3b8;
+            color: var(--text-muted);
             margin-top: 5px;
             display: block;
         }
         
-        /* Section title spacing */
-        .section-title {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            gap: 20px;
+        /* Animations */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         
-        .call-timer {
-            font-size: 0.9rem;
-            color: #94a3b8;
-        }
-        
-        /* Menu toggle improvements */
-        .desktop-menu-toggle,
-        .mobile-menu-toggle {
-            position: fixed;
-            z-index: 1000;
-            background: rgba(30, 41, 59, 0.95);
-            border: none;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .desktop-menu-toggle:hover,
-        .mobile-menu-toggle:hover {
-            background: rgba(59, 130, 246, 0.8);
-        }
-        
-        .menu-icon,
-        .close-icon {
-            font-size: 1.5rem;
-            color: white;
-        }
-        
-        .sidebar {
-            transition: transform 0.3s ease;
-        }
-        
-        .sidebar.active {
-            transform: translateX(0);
-        }
-        
-        @media (max-width: 900px) {
-            .sidebar {
-                transform: translateX(-100%);
-                position: fixed;
-                top: 0;
-                left: 0;
-                height: 100%;
-                z-index: 999;
-            }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
         
         /* Responsive styles */
+        @media (max-width: 1200px) {
+            .card {
+                margin-left: 20px;
+            }
+            
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .desktop-menu-toggle {
+                display: none;
+            }
+            
+            .mobile-menu-toggle {
+                display: flex;
+            }
+        }
+        
         @media (max-width: 768px) {
             .call-controls {
                 flex-direction: column;
@@ -504,122 +674,31 @@
                 flex: 1;
                 max-width: 150px;
             }
-        }
-        
-        .mic-status {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 0.8rem;
-            margin-top: 3px;
-        }
-
-        .mic-status.active {
-            color: var(--success);
-        }
-
-        .mic-status i {
-            font-size: 0.7rem;
-        }
-
-        .ptt-container {
-            background: var(--bg-card);
-            border-radius: var(--border-radius);
-            padding: 15px;
-            margin-top: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .ptt-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .ptt-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .ptt-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--danger);
-            transition: background 0.3s;
-        }
-
-        .ptt-indicator.active {
-            background: var(--success);
-            box-shadow: 0 0 10px var(--success);
-        }
-
-        .ptt-button {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            border: none;
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
-            position: fixed;
-            bottom: 25px;
-            left: 25px;
-            z-index: 100;
-        }
-
-        .ptt-button.active {
-            background: linear-gradient(135deg, var(--success), var(--success-dark));
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
-        }
-
-        .ptt-button:active {
-            transform: scale(0.98);
-            box-shadow: 0 3px 10px rgba(59, 130, 246, 0.3);
-        }
-
-        .ptt-button::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .ptt-button:active::after {
-            opacity: 1;
-        }
-
-        .ptt-help {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            text-align: center;
+            
+            .fullscreen-theater-mode .theater-main-controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .fullscreen-theater-mode .theater-left-controls,
+            .fullscreen-theater-mode .theater-center-controls,
+            .fullscreen-theater-mode .theater-right-controls {
+                width: auto;
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body class="dark-mode">
     <button class="desktop-menu-toggle" id="desktopMenuToggle">
         <i class="fas fa-bars menu-icon"></i>
-        <i class="fas fa-times close-icon" style="display: none;"></i>
+        <i class="fas fa-times close-icon"></i>
     </button>
-
+    
     <button class="mobile-menu-toggle" id="mobileMenuToggle">
-        <i class="fas fa-bars menu-icon"></i>
-        <i class="fas fa-times close-icon" style="display: none;"></i>
+        <i class="fas fa-bars"></i>
     </button>
-
+    
     <div class="app-container" id="appContainer">
         <div class="sidebar" id="sidebar">
             <div class="logo">
@@ -628,7 +707,7 @@
                 </div>
                 <div class="logo-text">SatLoom</div>
             </div>
-
+            
             <div class="status-indicator" id="connectionStatus">
                 <i class="fas fa-signal"></i> <span id="statusText">Ready to connect</span>
             </div>
@@ -670,7 +749,7 @@
                 </li>
             </ul>
         </div>
-
+        
         <div class="card" id="theater-section">
             <div class="section-title">
                 <div>
@@ -678,11 +757,11 @@
                 </div>
                 <div class="call-timer theater-timer" id="theaterTimer">00:00</div>
             </div>
-
+            
             <div class="input-group">
                 <input type="text" id="theater-room-id" class="input-styled" placeholder="Enter Room ID">
             </div>
-
+            
             <div class="call-controls">
                 <button class="btn" id="createTheaterRoom">
                     <i class="fas fa-network-wired"></i> Create Room
@@ -697,35 +776,38 @@
                     <i class="fas fa-phone-slash"></i> End Session
                 </button>
             </div>
-
+            
             <div class="theater-placeholder">
                 <div class="clapperboard">
                     <div class="clapper-top"></div>
                     <div class="clapper-bottom"></div>
                 </div>
             </div>
-
-            <div class="participants-container" id="participantsContainer"></div>
-
+            
+           
+            
+            <!-- Theater Video Container -->
             <div class="theater-container" id="theaterContainer">
                 <div class="theater-video-container">
                     <div class="theater-loading-spinner" id="theaterLoadingSpinner"></div>
                     <img id="videoThumbnail" src="" alt="Video Thumbnail">
                     <video id="theaterVideoElement" class="theater-video-player" controls></video>
-                    <div id="youtubePlayer"></div>
                 </div>
-
+                
                 <div class="theater-controls-container" id="theaterControls">
                     <div class="theater-seek-bar" id="theaterSeekBar">
                         <div class="theater-seek-bar-progress" id="theaterSeekBarProgress"></div>
                         <div class="theater-seek-bar-handle" id="theaterSeekBarHandle"></div>
                     </div>
-
+                    
                     <div class="theater-main-controls">
                         <div class="theater-left-controls">
+                            <button class="theater-btn" id="theaterPTTButton">
+                                <i class="fas fa-microphone"></i>
+                            </button>
                             <div class="theater-time-display" id="theaterTimeDisplay">00:00 / 00:00</div>
                         </div>
-
+                        
                         <div class="theater-center-controls">
                             <button class="theater-btn" id="theaterBackButton">
                                 <i class="fas fa-step-backward"></i>
@@ -737,7 +819,7 @@
                                 <i class="fas fa-step-forward"></i>
                             </button>
                         </div>
-
+                        
                         <div class="theater-right-controls">
                             <div class="theater-volume-container">
                                 <button class="theater-btn" id="theaterMuteButton">
@@ -745,11 +827,11 @@
                                 </button>
                                 <input type="range" class="theater-volume-slider" id="theaterVolumeSlider" min="0" max="1" step="0.01" value="0.7">
                             </div>
-
+                            
                             <button class="theater-btn" id="theaterFullscreenButton">
                                 <i class="fas fa-expand"></i>
                             </button>
-
+                            
                             <button class="theater-btn end" id="theaterHangupButton">
                                 <i class="fas fa-phone-slash"></i>
                             </button>
@@ -757,21 +839,30 @@
                     </div>
                 </div>
             </div>
-
+            
+            <!-- Participants section -->
+            <div class="ptt-container">
+                <button class="ptt-button" id="pttButton">
+                    <i class="fas fa-microphone"></i> Push to Talk
+                </button>   
+            </div>
+            
+            <!-- Theater Modal for video URL input -->
             <div class="theater-modal" id="theaterModal">
                 <div class="theater-modal-content">
                     <h3 class="theater-modal-title"><i class="fas fa-video"></i> Create Video Room</h3>
-
+                    
                     <div class="source-tabs">
                         <div class="source-tab active" data-source="direct">Direct Video</div>
                         <div class="source-tab" data-source="youtube">YouTube</div>
                         <div class="source-tab" data-source="vimeo">Vimeo</div>
                     </div>
-
+                    
                     <div class="source-content active" id="direct-source">
                         <div class="input-group">
                             <div style="position: relative;">
-                                <input type="text" id="theaterVideoUrl" class="input-styled" placeholder="Paste direct video URL (MP4, WebM)">
+                                <input type="text" id="theaterVideoUrl" class="input-styled" 
+                                       placeholder="Paste direct video URL (MP4, WebM)">
                                 <span class="theater-url-validation" id="theaterUrlValidationIcon">
                                     <i class="fas fa-circle-notch theater-url-checking"></i>
                                 </span>
@@ -782,30 +873,32 @@
                             </button>
                         </div>
                     </div>
-
+                    
                     <div class="source-content" id="youtube-source">
                         <div class="input-group">
-                            <input type="text" id="youtubeUrl" class="input-styled" placeholder="Paste YouTube URL (https://youtube.com/watch?v=...)">
+                            <input type="text" id="youtubeUrl" class="input-styled" 
+                                   placeholder="Paste YouTube URL (https://youtube.com/watch?v=...)">
                             <button class="btn" id="loadYoutubeBtn">
                                 <i class="fab fa-youtube"></i> Load YouTube Video
                             </button>
                         </div>
                     </div>
-
+                    
                     <div class="source-content" id="vimeo-source">
                         <div class="input-group">
-                            <input type="text" id="vimeoUrl" class="input-styled" placeholder="Paste Vimeo URL (https://vimeo.com/...)">
+                            <input type="text" id="vimeoUrl" class="input-styled" 
+                                   placeholder="Paste Vimeo URL (https://vimeo.com/...)">
                             <button class="btn" id="loadVimeoBtn">
                                 <i class="fab fa-vimeo"></i> Load Vimeo Video
                             </button>
                         </div>
                     </div>
-
+                    
                     <div class="video-error" id="videoError">
                         <div class="video-error-title" id="videoErrorTitle">Error Loading Video</div>
                         <div class="video-error-message" id="videoErrorMessage"></div>
                     </div>
-
+                    
                     <div class="theater-modal-buttons" id="theaterModalButtons" style="display: none;">
                         <button class="btn btn-secondary" id="theaterModalCancel">
                             <i class="fas fa-times"></i> Cancel
@@ -816,26 +909,22 @@
                     </div>
                 </div>
             </div>
-
-            <div class="theater-top-controls" id="theaterTopControls">
+            
+            <!-- Theater top controls -->
+            <div class="top-controls-container" id="theaterTopControls">
                 <button class="copy-btn" id="copyTheaterLinkTop" title="Copy room link">
                     <i class="fas fa-copy"></i>
-                </button>
-                <button class="ptt-button" id="pttButtonTop" title="Push to Talk">
-                    <i class="fas fa-microphone"></i>
                 </button>
             </div>
         </div>
     </div>
-
+    
+    <!-- Theater hangup button -->
     <button class="theater-hangup-btn" id="theaterHangupTop">
         <i class="fas fa-phone-slash"></i>
     </button>
-
-    <button class="ptt-button" id="pttButton">
-        <i class="fas fa-microphone"></i>
-    </button>
-
+    
+    <!-- Notification container -->
     <div class="notification" id="notification">
         <i class="fas fa-info-circle notification-icon"></i>
         <div class="notification-content">
@@ -843,13 +932,7 @@
             <div class="notification-message" id="notificationMessage">Notification message</div>
         </div>
     </div>
-
-    <audio id="notificationSound" preload="auto">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3" type="audio/mpeg">
-    </audio>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
+    
     <script>
         // Firebase configuration
         const firebaseConfig = {
@@ -870,7 +953,6 @@
         const theaterState = {
             roomId: null,
             player: null,
-            youtubePlayer: null,
             mediaUrl: null,
             isPlaying: false,
             isMuted: false,
@@ -895,8 +977,7 @@
             firebaseStateRef: null,
             firebaseSignalingRef: null,
             videoType: 'direct',
-            audioInterval: null,
-            isFullscreen: false
+            audioInterval: null
         };
 
         // Utility functions
@@ -913,7 +994,7 @@
             try {
                 const now = Date.now();
                 if (now - theaterState.lastNotificationTime > 1000) {
-                    const sound = document.getElementById('notificationSound');
+                    const sound = new Audio("https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3");
                     sound.play().catch(e => console.log('Audio play prevented:', e));
                     theaterState.lastNotificationTime = now;
                 }
@@ -926,25 +1007,25 @@
             const notification = document.getElementById('notification');
             const titleElem = document.getElementById('notificationTitle');
             const messageElem = document.getElementById('notificationMessage');
-
+            
             if (!notification || !titleElem || !messageElem) return;
-
+            
             notification.className = 'notification';
             if (type === 'error') {
                 notification.classList.add('error');
             } else if (type === 'success') {
                 notification.classList.add('success');
             }
-
+            
             titleElem.textContent = title;
             messageElem.textContent = message;
-
+            
             notification.classList.add('show');
-
+            
             setTimeout(() => {
                 notification.classList.remove('show');
             }, 3000);
-
+            
             playNotificationSound();
         }
 
@@ -952,7 +1033,7 @@
             const statusElem = document.getElementById('connectionStatus');
             if (statusElem) {
                 statusElem.className = 'status-indicator';
-
+                
                 if (status === 'connected') {
                     statusElem.classList.add('connected');
                     statusElem.innerHTML = `<i class="fas fa-check-circle"></i> ${text}`;
@@ -971,18 +1052,18 @@
         function startTimer() {
             theaterState.startTime = Date.now();
             clearInterval(theaterState.timer);
-
+            
             const timerElement = document.getElementById('theaterTimer');
             if (timerElement) {
                 timerElement.style.display = 'block';
                 timerElement.textContent = '00:00';
             }
-
+            
             theaterState.timer = setInterval(() => {
                 const elapsedTime = Math.floor((Date.now() - theaterState.startTime) / 1000);
                 const minutes = Math.floor(elapsedTime / 60).toString().padStart(2, '0');
                 const seconds = (elapsedTime % 60).toString().padStart(2, '0');
-
+                
                 if (timerElement) timerElement.textContent = `${minutes}:${seconds}`;
             }, 1000);
         }
@@ -991,7 +1072,7 @@
             clearInterval(theaterState.timer);
             theaterState.timer = null;
             theaterState.startTime = null;
-
+            
             const timerElement = document.getElementById('theaterTimer');
             if (timerElement) {
                 timerElement.textContent = '00:00';
@@ -999,24 +1080,27 @@
             }
         }
 
+        // Thumbnail generation
         function getVideoThumbnail(url) {
             const youtubePattern = /(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
             const vimeoPattern = /(?:vimeo\.com\/|player\.vimeo\.com\/video\/)([0-9]+)/;
-
+            
             const youtubeMatch = url.match(youtubePattern);
             if (youtubeMatch) {
                 return `https://img.youtube.com/vi/${youtubeMatch[1]}/hqdefault.jpg`;
             }
-
+            
             const vimeoMatch = url.match(vimeoPattern);
             if (vimeoMatch) {
                 return `https://vumbnail.com/${vimeoMatch[1]}.jpg`;
             }
-
-            return 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80';
+            
+            return 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80';
         }
 
+        // Firebase functions
         function setupFirebaseListeners() {
+            // Listen for video URL changes
             theaterState.firebaseRef.child('videoUrl').on('value', (snapshot) => {
                 const url = snapshot.val();
                 if (url && url !== theaterState.mediaUrl) {
@@ -1024,16 +1108,16 @@
                     loadTheaterVideo(url);
                 }
             });
-
+            
+            // Listen for video type changes
             theaterState.firebaseRef.child('videoType').on('value', (snapshot) => {
                 const type = snapshot.val();
                 if (type && type !== theaterState.videoType) {
                     theaterState.videoType = type;
-                    theaterState.isYouTube = type === 'youtube';
-                    theaterState.isVimeo = type === 'vimeo';
                 }
             });
-
+            
+            // Listen for state changes
             theaterState.firebaseStateRef.on('value', (snapshot) => {
                 const state = snapshot.val();
                 if (state && !theaterState.isSyncing) {
@@ -1041,11 +1125,13 @@
                 }
             });
         }
-
+        
         function handleRemoteStateChange(state) {
+            // Debounce to prevent rapid updates
             if (Date.now() - theaterState.lastRemoteUpdate < 500) return;
             theaterState.lastRemoteUpdate = Date.now();
-
+            
+            // Update playback state
             if (state.playing !== theaterState.isPlaying) {
                 if (state.playing) {
                     playTheater();
@@ -1053,25 +1139,26 @@
                     pauseTheater();
                 }
             }
-
+            
+            // Update seek position if necessary
             if (Math.abs(state.currentTime - theaterState.currentTime) > 1) {
                 seekTheaterTo(state.currentTime);
             }
         }
-
+        
         function sendPlayState() {
             if (!theaterState.firebaseStateRef) return;
-
+            
             theaterState.firebaseStateRef.set({
                 playing: theaterState.isPlaying,
                 currentTime: theaterState.currentTime,
                 timestamp: Date.now()
             });
         }
-
+        
         function sendSeekState(time) {
             if (!theaterState.firebaseStateRef) return;
-
+            
             theaterState.firebaseStateRef.set({
                 playing: theaterState.isPlaying,
                 currentTime: time,
@@ -1079,16 +1166,17 @@
             });
         }
 
+        // Theater functions
         function validateTheaterUrl() {
             const url = document.getElementById('theaterVideoUrl').value.trim();
             const validationIcon = document.getElementById('theaterUrlValidationIcon');
             validationIcon.style.display = 'none';
-
+            
             if (!url) return;
-
+            
             validationIcon.style.display = 'block';
             validationIcon.innerHTML = '<i class="fas fa-circle-notch theater-url-checking"></i>';
-
+            
             setTimeout(() => {
                 if (isValidTheaterUrl(url)) {
                     validationIcon.innerHTML = '<i class="fas fa-check-circle theater-url-valid"></i>';
@@ -1102,7 +1190,7 @@
             const patterns = [
                 /\.(mp4|webm|mov|mkv|avi|m3u8)(\?.*)?$/i
             ];
-
+            
             return patterns.some(pattern => pattern.test(url));
         }
 
@@ -1111,7 +1199,7 @@
             const match = url.match(youtubePattern);
             return match ? match[1] : null;
         }
-
+        
         function getVimeoVideoId(url) {
             const vimeoPattern = /(?:vimeo\.com\/|player\.vimeo\.com\/video\/)([0-9]+)/;
             const match = url.match(vimeoPattern);
@@ -1119,55 +1207,37 @@
         }
 
         function enterTheaterFullscreen() {
-            const elem = document.getElementById('theaterContainer');
-            if (elem.requestFullscreen) {
-                elem.requestFullscreen();
-            } else if (elem.webkitRequestFullscreen) {
-                elem.webkitRequestFullscreen();
-            } else if (elem.msRequestFullscreen) {
-                elem.msRequestFullscreen();
-            }
             document.body.classList.add('fullscreen-theater-mode');
             theaterState.isFullscreen = true;
             document.getElementById('theaterTopControls').style.display = 'flex';
             document.getElementById('theaterHangupTop').style.display = 'flex';
-            document.getElementById('pttButton').style.display = 'flex';
-            document.getElementById('pttButtonTop').style.display = 'flex';
+            
+            // Hide sidebar and menu toggle in fullscreen
             document.getElementById('sidebar').style.display = 'none';
             document.getElementById('desktopMenuToggle').style.display = 'none';
             document.getElementById('mobileMenuToggle').style.display = 'none';
-            updateTheaterFullscreenButton();
         }
 
         function exitTheaterFullscreen() {
-            if (document.exitFullscreen) {
-                document.exitFullscreen();
-            } else if (document.webkitExitFullscreen) {
-                document.webkitExitFullscreen();
-            } else if (document.msExitFullscreen) {
-                document.msExitFullscreen();
-            }
             document.body.classList.remove('fullscreen-theater-mode');
             theaterState.isFullscreen = false;
             document.getElementById('theaterTopControls').style.display = 'none';
             document.getElementById('theaterHangupTop').style.display = 'none';
-            document.getElementById('pttButton').style.display = 'none';
-            document.getElementById('pttButtonTop').style.display = 'none';
+            
+            // Show sidebar and menu toggle when exiting fullscreen
             document.getElementById('sidebar').style.display = 'block';
-            document.getElementById('desktopMenuToggle').style.display = 'flex';
             document.getElementById('mobileMenuToggle').style.display = 'flex';
-            updateTheaterFullscreenButton();
         }
 
         function showVideoError(title, message) {
             const errorElement = document.getElementById('videoError');
             const errorTitle = document.getElementById('videoErrorTitle');
             const errorMessage = document.getElementById('videoErrorMessage');
-
+            
             errorTitle.textContent = title;
             errorMessage.textContent = message;
             errorElement.classList.add('show');
-
+            
             document.getElementById('theaterLoadingSpinner').style.display = 'none';
         }
 
@@ -1176,10 +1246,11 @@
                 showNotification('Error', 'Please enter a valid video URL', 'error');
                 return;
             }
-
+            
             try {
                 theaterState.mediaUrl = url;
-
+                
+                // Show loading spinner and thumbnail
                 document.getElementById('theaterLoadingSpinner').style.display = 'block';
                 document.getElementById('theaterModal').style.display = 'none';
                 document.getElementById('theaterContainer').style.display = 'block';
@@ -1187,69 +1258,24 @@
                 const thumbnail = document.getElementById('videoThumbnail');
                 thumbnail.src = getVideoThumbnail(url);
                 thumbnail.style.display = 'block';
-
-                if (theaterState.videoType === 'youtube') {
-                    const videoId = getYouTubeVideoId(url);
-                    if (videoId) {
-                        document.getElementById('theaterVideoElement').style.display = 'none';
-                        document.getElementById('youtubePlayer').style.display = 'block';
-                        if (theaterState.youtubePlayer) {
-                            theaterState.youtubePlayer.loadVideoById(videoId);
-                        } else {
-                            theaterState.youtubePlayer = new YT.Player('youtubePlayer', {
-                                videoId: videoId,
-                                playerVars: {
-                                    'playsinline': 1,
-                                    'controls': 0,
-                                    'fs': 0
-                                },
-                                events: {
-                                    'onReady': onYouTubePlayerReady,
-                                    'onStateChange': onYouTubePlayerStateChange,
-                                    'onError': onYouTubePlayerError
-                                }
-                            });
-                        }
-                    } else {
-                        showNotification('Error', 'Invalid YouTube URL', 'error');
-                        return;
-                    }
-                } else if (theaterState.videoType === 'vimeo') {
-                    const videoId = getVimeoVideoId(url);
-                    if (videoId) {
-                        document.getElementById('theaterVideoElement').style.display = 'none';
-                        document.getElementById('youtubePlayer').style.display = 'block';
-                        const iframe = document.createElement('iframe');
-                        iframe.src = `https://player.vimeo.com/video/${videoId}?controls=0`;
-                        iframe.style.width = '100%';
-                        iframe.style.height = '100%';
-                        document.getElementById('youtubePlayer').innerHTML = '';
-                        document.getElementById('youtubePlayer').appendChild(iframe);
-                    } else {
-                        showNotification('Error', 'Invalid Vimeo URL', 'error');
-                        return;
-                    }
-                } else {
-                    document.getElementById('youtubePlayer').style.display = 'none';
-                    document.getElementById('theaterVideoElement').style.display = 'block';
-                    const player = document.getElementById('theaterVideoElement');
-                    player.src = url;
-                    theaterState.player = player;
-                    initVideoPlayerEvents();
-                }
-
+                
+                // Initialize player
+                const player = document.getElementById('theaterVideoElement');
+                player.src = url;
+                
+                theaterState.player = player;
+                initVideoPlayerEvents();
+                
+                // Show modal buttons and controls
                 document.getElementById('theaterModalButtons').style.display = 'flex';
                 document.getElementById('theaterTopControls').style.display = 'flex';
                 document.getElementById('theaterHangupTop').style.display = 'flex';
-                if (theaterState.isFullscreen) {
-                    document.getElementById('pttButton').style.display = 'flex';
-                    document.getElementById('pttButtonTop').style.display = 'flex';
-                }
-
+                
+                // Initialize theater controls and enter fullscreen
                 initTheaterControls();
                 startTimer();
                 enterTheaterFullscreen();
-
+                
                 showNotification('Video Loading', 'Loading video content...', 'success');
             } catch (err) {
                 console.error('Error loading video:', err);
@@ -1257,48 +1283,10 @@
             }
         }
 
-        function onYouTubePlayerReady(event) {
-            theaterState.player = event.target;
-            theaterState.duration = event.target.getDuration();
-            updateTheaterTimeDisplay();
-            document.getElementById('theaterLoadingSpinner').style.display = 'none';
-            document.getElementById('videoError').classList.remove('show');
-            startTheaterSeekUpdate();
-        }
-
-        function onYouTubePlayerStateChange(event) {
-            if (event.data === YT.PlayerState.PLAYING) {
-                theaterState.isPlaying = true;
-                theaterState.currentTime = theaterState.youtubePlayer.getCurrentTime();
-                document.getElementById('videoThumbnail').style.display = 'none';
-                updateTheaterPlayPauseButton();
-                if (theaterState.isTheaterLeader) {
-                    sendPlayState();
-                }
-            } else if (event.data === YT.PlayerState.PAUSED) {
-                theaterState.isPlaying = false;
-                updateTheaterPlayPauseButton();
-                if (theaterState.isTheaterLeader) {
-                    sendPlayState();
-                }
-            } else if (event.data === YT.PlayerState.ENDED) {
-                theaterState.isPlaying = false;
-                updateTheaterPlayPauseButton();
-            } else if (event.data === YT.PlayerState.BUFFERING) {
-                document.getElementById('theaterLoadingSpinner').style.display = 'block';
-            }
-        }
-
-        function onYouTubePlayerError(event) {
-            console.error('YouTube player error:', event);
-            showVideoError('YouTube Playback Error', 'Failed to load YouTube video.');
-            showNotification('Error', 'Failed to load YouTube video.', 'error');
-        }
-
         function initVideoPlayerEvents() {
             const videoPlayer = document.getElementById('theaterVideoElement');
             if (!videoPlayer) return;
-
+            
             videoPlayer.addEventListener('loadedmetadata', function() {
                 theaterState.duration = videoPlayer.duration;
                 updateTheaterTimeDisplay();
@@ -1306,112 +1294,132 @@
                 document.getElementById('videoError').classList.remove('show');
                 startTheaterSeekUpdate();
             });
-
+            
             videoPlayer.addEventListener('error', function(e) {
                 console.error('Video error', e);
                 if (videoPlayer.error) {
                     let errorMsg = 'Failed to load video. Please check the URL.';
                     switch (videoPlayer.error.code) {
-                        case 1: errorMsg = 'Video loading aborted.'; break;
-                        case 2: errorMsg = 'Network error while loading video.'; break;
-                        case 3: errorMsg = 'Error decoding video. The file might be corrupt.'; break;
-                        case 4: errorMsg = 'Video format not supported or missing CORS headers.'; break;
+                        case 1: // MEDIA_ERR_ABORTED
+                            errorMsg = 'Video loading aborted.';
+                            break;
+                        case 2: // MEDIA_ERR_NETWORK
+                            errorMsg = 'Network error while loading video.';
+                            break;
+                        case 3: // MEDIA_ERR_DECODE
+                            errorMsg = 'Error decoding video. The file might be corrupt.';
+                            break;
+                        case 4: // MEDIA_ERR_SRC_NOT_SUPPORTED
+                            errorMsg = 'Video format not supported or missing CORS headers. Please try a different video.';
+                            break;
                     }
                     showVideoError('Video Playback Error', errorMsg);
                 }
-                showNotification('Error', 'Failed to load video.', 'error');
+                showNotification('Error', 'Failed to load video. Please check the URL.', 'error');
             });
-
+            
             videoPlayer.addEventListener('timeupdate', function() {
                 if (!theaterState.isSyncing) {
                     theaterState.currentTime = videoPlayer.currentTime;
                     updateTheaterSeekBar();
+                    
+                    // Periodically sync state to prevent drift
                     if (theaterState.isTheaterLeader && Date.now() - theaterState.lastSync > 5000) {
                         sendPlayState();
                         theaterState.lastSync = Date.now();
                     }
                 }
             });
-
+            
             videoPlayer.addEventListener('play', function() {
                 theaterState.isPlaying = true;
                 document.getElementById('videoThumbnail').style.display = 'none';
                 updateTheaterPlayPauseButton();
+                
+                // Broadcast play command if leader
                 if (theaterState.isTheaterLeader) {
                     sendPlayState();
                 }
             });
-
+            
             videoPlayer.addEventListener('pause', function() {
                 theaterState.isPlaying = false;
                 updateTheaterPlayPauseButton();
+                
+                // Broadcast pause command if leader
                 if (theaterState.isTheaterLeader) {
                     sendPlayState();
                 }
             });
-
+            
             videoPlayer.addEventListener('ended', function() {
                 theaterState.isPlaying = false;
                 updateTheaterPlayPauseButton();
             });
-
+            
             videoPlayer.addEventListener('waiting', function() {
                 document.getElementById('theaterLoadingSpinner').style.display = 'block';
             });
-
+            
             videoPlayer.addEventListener('playing', function() {
                 document.getElementById('theaterLoadingSpinner').style.display = 'none';
             });
         }
 
         function initTheaterControls() {
+            // Play/Pause
             const playPauseBtn = document.getElementById('theaterPlayPauseButton');
             if (playPauseBtn) {
                 playPauseBtn.addEventListener('click', toggleTheaterPlayPause);
             }
-
+            
+            // Navigation
             const backBtn = document.getElementById('theaterBackButton');
             if (backBtn) {
                 backBtn.addEventListener('click', () => seekTheater(-10));
             }
-
+            
             const forwardBtn = document.getElementById('theaterForwardButton');
             if (forwardBtn) {
                 forwardBtn.addEventListener('click', () => seekTheater(10));
             }
-
+            
+            // Volume
             const muteBtn = document.getElementById('theaterMuteButton');
             if (muteBtn) {
                 muteBtn.addEventListener('click', toggleTheaterMute);
             }
-
+            
             const volumeSlider = document.getElementById('theaterVolumeSlider');
             if (volumeSlider) {
                 volumeSlider.addEventListener('input', (e) => {
                     setTheaterVolume(parseFloat(e.target.value));
                 });
             }
-
+            
+            // Fullscreen
             const fullscreenBtn = document.getElementById('theaterFullscreenButton');
             if (fullscreenBtn) {
                 fullscreenBtn.addEventListener('click', toggleTheaterFullscreen);
             }
-
+            
+            // Hang up buttons
             const hangupBtn = document.getElementById('theaterHangupButton');
             if (hangupBtn) {
                 hangupBtn.addEventListener('click', hangupTheater);
             }
-
+            
             const hangupTopBtn = document.getElementById('theaterHangupTop');
             if (hangupTopBtn) {
                 hangupTopBtn.addEventListener('click', hangupTheater);
             }
-
+            
             const endSessionBtn = document.getElementById('endTheaterSession');
             if (endSessionBtn) {
                 endSessionBtn.addEventListener('click', hangupTheater);
             }
-
+            
+            // Seek bar
             const seekBar = document.getElementById('theaterSeekBar');
             if (seekBar) {
                 seekBar.addEventListener('click', (e) => {
@@ -1421,9 +1429,11 @@
                     seekTheaterTo(seekTime);
                 });
             }
-
+            
+            // Set initial volume
             volumeSlider.value = theaterState.currentVolume;
-
+            
+            // Initialize Push-to-Talk
             initPushToTalk();
         }
 
@@ -1437,14 +1447,12 @@
 
         function playTheater() {
             if (!theaterState.player) return;
-
-            if (theaterState.isYouTube) {
-                theaterState.player.playVideo();
-            } else {
-                theaterState.player.play();
-            }
+            
+            theaterState.player.play();
             theaterState.isPlaying = true;
             updateTheaterPlayPauseButton();
+            
+            // Broadcast play command if leader
             if (theaterState.isTheaterLeader) {
                 sendPlayState();
             }
@@ -1452,14 +1460,12 @@
 
         function pauseTheater() {
             if (!theaterState.player) return;
-
-            if (theaterState.isYouTube) {
-                theaterState.player.pauseVideo();
-            } else {
-                theaterState.player.pause();
-            }
+            
+            theaterState.player.pause();
             theaterState.isPlaying = false;
             updateTheaterPlayPauseButton();
+            
+            // Broadcast pause command if leader
             if (theaterState.isTheaterLeader) {
                 sendPlayState();
             }
@@ -1467,7 +1473,7 @@
 
         function seekTheater(seconds) {
             if (!theaterState.player) return;
-
+            
             let newTime = theaterState.currentTime + seconds;
             newTime = Math.max(0, Math.min(newTime, theaterState.duration));
             seekTheaterTo(newTime);
@@ -1475,18 +1481,17 @@
 
         function seekTheaterTo(time) {
             if (!theaterState.player) return;
-
+            
             theaterState.isSyncing = true;
             theaterState.currentTime = time;
-            if (theaterState.isYouTube) {
-                theaterState.player.seekTo(time, true);
-            } else {
-                theaterState.player.currentTime = time;
-            }
+            theaterState.player.currentTime = time;
             updateTheaterSeekBar();
+            
+            // Broadcast seek command if leader
             if (theaterState.isTheaterLeader) {
                 sendSeekState(time);
             }
+            
             setTimeout(() => {
                 theaterState.isSyncing = false;
             }, 1000);
@@ -1494,40 +1499,19 @@
 
         function toggleTheaterMute() {
             if (!theaterState.player) return;
-
+            
             theaterState.isMuted = !theaterState.isMuted;
-            if (theaterState.isYouTube) {
-                if (theaterState.isMuted) {
-                    theaterState.player.mute();
-                } else {
-                    theaterState.player.unMute();
-                }
-            } else {
-                theaterState.player.muted = theaterState.isMuted;
-            }
+            theaterState.player.muted = theaterState.isMuted;
             updateTheaterVolumeButton();
         }
 
         function setTheaterVolume(volume) {
             if (!theaterState.player) return;
-
+            
             theaterState.currentVolume = volume;
             theaterState.isMuted = volume === 0;
-            if (theaterState.isYouTube) {
-                theaterState.player.setVolume(volume * 100);
-            } else {
-                theaterState.player.volume = volume;
-            }
+            theaterState.player.volume = volume;
             updateTheaterVolumeButton();
-        }
-
-        function updateTheaterFullscreenButton() {
-            const btn = document.getElementById('theaterFullscreenButton');
-            if (btn) {
-                btn.innerHTML = theaterState.isFullscreen ? 
-                    '<i class="fas fa-compress"></i>' : 
-                    '<i class="fas fa-expand"></i>';
-            }
         }
 
         function toggleTheaterFullscreen() {
@@ -1538,66 +1522,49 @@
             }
         }
 
+        // Push-to-Talk functions
         function initPushToTalk() {
             const pttButton = document.getElementById('pttButton');
-            const pttButtonTop = document.getElementById('pttButtonTop');
-            if (!pttButton || !pttButtonTop) return;
-
-            let isMicOn = false;
-
-            function toggleMic() {
-                if (isMicOn) {
-                    stopPTT();
-                } else {
-                    startPTT();
-                }
-                isMicOn = !isMicOn;
-            }
-
-            pttButton.addEventListener('click', toggleMic);
-            pttButtonTop.addEventListener('click', toggleMic);
-
+            if (!pttButton) return;
+            
+            // Mouse events
+            pttButton.addEventListener('mousedown', startPTT);
+            pttButton.addEventListener('mouseup', stopPTT);
+            pttButton.addEventListener('mouseleave', stopPTT);
+            
+            // Touch events for mobile
             pttButton.addEventListener('touchstart', (e) => {
                 e.preventDefault();
-                if (!isMicOn) toggleMic();
+                startPTT();
             });
-
-            pttButtonTop.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                if (!isMicOn) toggleMic();
-            });
-
-            pttButton.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                if (isMicOn) toggleMic();
-            });
-
-            pttButtonTop.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                if (isMicOn) toggleMic();
-            });
-
+            
+            pttButton.addEventListener('touchend', stopPTT);
+            
+            // Initialize audio visualizer
             initAudioVisualizer();
         }
-
+        
         async function startPTT() {
             if (theaterState.isPTTActive) return;
-
+            
             theaterState.isPTTActive = true;
             document.getElementById('pttButton').classList.add('active');
-            document.getElementById('pttButtonTop').classList.add('active');
-
+            
             try {
+                // Get microphone access
                 theaterState.pttAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
+                
+                // Update participant UI to show active mic
                 const myCard = document.querySelector(`.participant-card[data-id="${theaterState.userId}"] .mic-status`);
                 if (myCard) {
                     myCard.classList.add('active');
                     myCard.innerHTML = '<i class="fas fa-circle"></i> Talking';
                 }
-
+                
+                // Start audio visualization
                 startAudioVisualization(theaterState.pttAudioStream);
-                showNotification('PTT Active', 'Microphone is now active', 'success');
+                
+                showNotification('PTT Active', 'Push-to-Talk is now active', 'success');
             } catch (err) {
                 console.error('Microphone access error:', err);
                 stopPTT();
@@ -1607,31 +1574,33 @@
 
         function stopPTT() {
             if (!theaterState.isPTTActive) return;
-
+            
             theaterState.isPTTActive = false;
             document.getElementById('pttButton').classList.remove('active');
-            document.getElementById('pttButtonTop').classList.remove('active');
-
+            
+            // Update participant UI
             const myCard = document.querySelector(`.participant-card[data-id="${theaterState.userId}"] .mic-status`);
             if (myCard) {
                 myCard.classList.remove('active');
                 myCard.innerHTML = '<i class="fas fa-circle"></i> Muted';
             }
-
+            
             if (theaterState.pttAudioStream) {
                 theaterState.pttAudioStream.getTracks().forEach(track => track.stop());
                 theaterState.pttAudioStream = null;
             }
-
+            
+            // Stop audio visualization
             stopAudioVisualization();
         }
-
+        
         function initAudioVisualizer() {
+            // Create the audio bars
             const visualizer = document.getElementById('audioVisualizer');
             if (!visualizer) return;
-
+            
             visualizer.innerHTML = '';
-
+            
             for (let i = 0; i < 20; i++) {
                 const bar = document.createElement('div');
                 bar.className = 'audio-bar';
@@ -1639,34 +1608,38 @@
                 visualizer.appendChild(bar);
             }
         }
-
+        
         function startAudioVisualization(stream) {
             if (!stream) return;
-
+            
+            // Stop any existing visualization
             stopAudioVisualization();
-
+            
             try {
+                // Create audio context
                 theaterState.audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 theaterState.analyser = theaterState.audioContext.createAnalyser();
-
+                
                 const source = theaterState.audioContext.createMediaStreamSource(stream);
                 source.connect(theaterState.analyser);
-
+                
                 theaterState.analyser.fftSize = 32;
                 const bufferLength = theaterState.analyser.frequencyBinCount;
                 const dataArray = new Uint8Array(bufferLength);
-
+                
                 const bars = document.querySelectorAll('.audio-bar');
-
+                
                 theaterState.audioInterval = setInterval(() => {
                     theaterState.analyser.getByteFrequencyData(dataArray);
-
+                    
+                    // Calculate average volume
                     let sum = 0;
                     for (let i = 0; i < bufferLength; i++) {
                         sum += dataArray[i];
                     }
                     const average = sum / bufferLength;
-
+                    
+                    // Update bars
                     bars.forEach((bar, index) => {
                         const value = index < bufferLength ? dataArray[index] : 0;
                         const height = Math.max(2, value / 255 * 40);
@@ -1678,13 +1651,14 @@
                 console.error('Audio visualization error:', err);
             }
         }
-
+        
         function stopAudioVisualization() {
             if (theaterState.audioInterval) {
                 clearInterval(theaterState.audioInterval);
                 theaterState.audioInterval = null;
             }
-
+            
+            // Reset bars
             const bars = document.querySelectorAll('.audio-bar');
             bars.forEach(bar => {
                 bar.style.height = '2px';
@@ -1695,9 +1669,7 @@
             clearInterval(theaterState.seekBarUpdateInterval);
             theaterState.seekBarUpdateInterval = setInterval(() => {
                 if (!theaterState.isSyncing && theaterState.player) {
-                    theaterState.currentTime = theaterState.isYouTube ? 
-                        theaterState.player.getCurrentTime() : 
-                        theaterState.player.currentTime;
+                    theaterState.currentTime = theaterState.player.currentTime;
                     updateTheaterSeekBar();
                 }
             }, 1000);
@@ -1711,7 +1683,7 @@
                 if (progress) progress.style.width = `${percent}%`;
                 if (handle) handle.style.left = `${percent}%`;
             }
-
+            
             updateTheaterTimeDisplay();
         }
 
@@ -1721,7 +1693,7 @@
                 const secs = (seconds % 60).toString().padStart(2, '0');
                 return `${mins}:${secs}`;
             };
-
+            
             const current = formatTime(theaterState.currentTime);
             const total = formatTime(theaterState.duration);
             const timeDisplay = document.getElementById('theaterTimeDisplay');
@@ -1759,9 +1731,11 @@
                 theaterState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
                 theaterState.isTheaterLeader = true;
 
+                // Create room in Firebase
                 theaterState.firebaseRef = database.ref('rooms/' + theaterState.roomId);
                 theaterState.firebaseStateRef = theaterState.firebaseRef.child('state');
-
+                
+                // Set initial room data
                 await theaterState.firebaseRef.set({
                     created: firebase.database.ServerValue.TIMESTAMP,
                     host: theaterState.userId,
@@ -1771,24 +1745,27 @@
                         currentTime: 0
                     }
                 });
-
+                
+                // Setup listeners
                 setupFirebaseListeners();
-
+                
                 document.getElementById('copyTheaterLink').style.display = 'inline-flex';
                 document.getElementById('copyTheaterLinkTop').style.display = 'inline-flex';
                 document.getElementById('endTheaterSession').style.display = 'inline-flex';
                 showNotification('Room Generated', `Room ID: ${theaterState.roomId}. Share with others.`, 'success');
                 updateStatus(`Room created: ${theaterState.roomId}`, 'connecting');
 
+                // Add self as participant
                 addParticipant({
                     id: theaterState.userId,
                     name: theaterState.userName,
                     isLeader: true
                 });
-
+                
+                // Show the video modal
                 document.getElementById('theaterModal').style.display = 'flex';
                 document.getElementById('theaterVideoUrl').focus();
-
+                
                 startTimer();
             } catch (err) {
                 console.error('Room creation error:', err);
@@ -1800,36 +1777,39 @@
         async function joinTheaterRoom() {
             try {
                 theaterState.roomId = document.getElementById('theater-room-id').value.trim();
-
+                
                 if (!theaterState.roomId) {
                     showNotification('Error', 'Please enter a room ID', 'error');
                     return;
                 }
-
+                
+                // Check if room exists
                 const roomRef = database.ref('rooms/' + theaterState.roomId);
                 const snapshot = await roomRef.once('value');
-
+                
                 if (!snapshot.exists()) {
                     showNotification('Error', 'Room does not exist', 'error');
                     return;
                 }
-
+                
                 theaterState.firebaseRef = roomRef;
                 theaterState.firebaseStateRef = theaterState.firebaseRef.child('state');
-
+                
+                // Setup listeners
                 setupFirebaseListeners();
-
+                
                 document.getElementById('endTheaterSession').style.display = 'inline-flex';
                 document.getElementById('copyTheaterLink').style.display = 'inline-flex';
                 document.getElementById('copyTheaterLinkTop').style.display = 'inline-flex';
                 updateStatus(`Joined theater session (${theaterState.roomId})`, 'connecting');
-
+                
+                // Add self as participant
                 addParticipant({
                     id: theaterState.userId,
                     name: theaterState.userName,
                     isLeader: false
                 });
-
+                
                 showNotification('Theater Joined', `Joined theater room: ${theaterState.roomId}`, 'success');
                 startTimer();
             } catch (err) {
@@ -1843,7 +1823,7 @@
             try {
                 const baseUrl = window.location.origin + window.location.pathname;
                 const roomLink = `${baseUrl}?room=${theaterState.roomId}&mode=theater`;
-
+                
                 navigator.clipboard.writeText(roomLink).then(() => {
                     showNotification('Copied', 'Theater room link copied to clipboard', 'success');
                 }).catch(err => {
@@ -1862,13 +1842,8 @@
                 updateStatus('Ready to connect', 'disconnected');
 
                 if (theaterState.player) {
-                    if (theaterState.isYouTube) {
-                        theaterState.player.destroy();
-                        theaterState.youtubePlayer = null;
-                    } else {
-                        theaterState.player.pause();
-                        theaterState.player.src = '';
-                    }
+                    theaterState.player.pause();
+                    theaterState.player.src = '';
                     theaterState.player = null;
                 }
 
@@ -1883,23 +1858,20 @@
                 }
 
                 document.getElementById('theaterVideoElement').innerHTML = '';
-                document.getElementById('youtubePlayer').innerHTML = '';
                 document.getElementById('videoThumbnail').style.display = 'none';
                 document.getElementById('theaterContainer').style.display = 'none';
                 document.getElementById('theaterModal').style.display = 'none';
                 document.querySelector('.theater-placeholder').style.display = 'flex';
                 document.getElementById('theaterTopControls').style.display = 'none';
                 document.getElementById('theaterHangupTop').style.display = 'none';
-                document.getElementById('pttButton').style.display = 'none';
-                document.getElementById('pttButtonTop').style.display = 'none';
                 document.getElementById('endTheaterSession').style.display = 'none';
                 document.getElementById('copyTheaterLink').style.display = 'none';
                 document.getElementById('copyTheaterLinkTop').style.display = 'none';
                 document.getElementById('videoError').classList.remove('show');
-
+                
                 const roomInput = document.getElementById('theater-room-id');
                 if (roomInput) roomInput.value = '';
-
+                
                 clearInterval(theaterState.seekBarUpdateInterval);
                 theaterState.seekBarUpdateInterval = null;
                 theaterState.roomId = null;
@@ -1909,14 +1881,13 @@
                 theaterState.currentTime = 0;
                 theaterState.duration = 0;
                 theaterState.isYouTube = false;
-                theaterState.isVimeo = false;
                 theaterState.participants = {};
                 document.getElementById('participantsContainer').innerHTML = '';
-
+                
                 if (theaterState.isFullscreen) {
                     exitTheaterFullscreen();
                 }
-
+                
                 showNotification('Theater Ended', 'Theater session has ended', 'success');
             } catch (err) {
                 console.error('Hangup error:', err);
@@ -1928,13 +1899,13 @@
             theaterState.participants[participant.id] = participant;
             renderParticipants();
         }
-
+        
         function renderParticipants() {
             const container = document.getElementById('participantsContainer');
             if (!container) return;
-
+            
             container.innerHTML = '';
-
+            
             Object.values(theaterState.participants).forEach(participant => {
                 const firstLetter = participant.name.charAt(0).toUpperCase();
                 const card = document.createElement('div');
@@ -1954,6 +1925,7 @@
             });
         }
 
+        // Initialize button listeners
         function initButtonListeners() {
             document.getElementById('createTheaterRoom').addEventListener('click', createTheaterRoom);
             document.getElementById('joinTheaterRoom').addEventListener('click', joinTheaterRoom);
@@ -1995,13 +1967,16 @@
             document.getElementById('theaterModalCopy').addEventListener('click', copyTheaterLink);
             document.getElementById('copyTheaterLink').addEventListener('click', copyTheaterLink);
             document.getElementById('copyTheaterLinkTop').addEventListener('click', copyTheaterLink);
-
+            
+            // Source tab switching
             const tabs = document.querySelectorAll('.source-tab');
             tabs.forEach(tab => {
                 tab.addEventListener('click', () => {
+                    // Remove active class from all tabs and content
                     tabs.forEach(t => t.classList.remove('active'));
                     document.querySelectorAll('.source-content').forEach(c => c.classList.remove('active'));
-
+                    
+                    // Add active class to clicked tab and corresponding content
                     tab.classList.add('active');
                     const sourceType = tab.getAttribute('data-source');
                     document.getElementById(`${sourceType}-source`).classList.add('active');
@@ -2009,53 +1984,57 @@
             });
         }
 
+        // Hamburger menu functionality
         function initMenuToggle() {
             const desktopMenuToggle = document.getElementById('desktopMenuToggle');
             const mobileMenuToggle = document.getElementById('mobileMenuToggle');
             const sidebar = document.getElementById('sidebar');
-
+            const appContainer = document.getElementById('appContainer');
+            
             function toggleSidebar() {
                 sidebar.classList.toggle('active');
                 desktopMenuToggle.classList.toggle('active');
-                mobileMenuToggle.classList.toggle('active');
-                const isActive = sidebar.classList.contains('active');
-                desktopMenuToggle.querySelector('.menu-icon').style.display = isActive ? 'none' : 'block';
-                desktopMenuToggle.querySelector('.close-icon').style.display = isActive ? 'block' : 'none';
-                mobileMenuToggle.querySelector('.menu-icon').style.display = isActive ? 'none' : 'block';
-                mobileMenuToggle.querySelector('.close-icon').style.display = isActive ? 'block' : 'none';
+                
+                // Toggle icons
+                const menuIcon = desktopMenuToggle.querySelector('.menu-icon');
+                const closeIcon = desktopMenuToggle.querySelector('.close-icon');
+                
+                if (menuIcon.style.display === 'none') {
+                    menuIcon.style.display = 'block';
+                    closeIcon.style.display = 'none';
+                } else {
+                    menuIcon.style.display = 'none';
+                    closeIcon.style.display = 'block';
+                }
             }
-
+            
             if (desktopMenuToggle) {
                 desktopMenuToggle.addEventListener('click', toggleSidebar);
             }
-
+            
             if (mobileMenuToggle) {
                 mobileMenuToggle.addEventListener('click', toggleSidebar);
             }
         }
 
+        // Event listeners
         document.addEventListener('DOMContentLoaded', function() {
             initMenuToggle();
             initButtonListeners();
             updateStatus('Ready to connect', 'disconnected');
             theaterState.lastRemoteUpdate = 0;
             theaterState.lastSync = 0;
-
+            
+            // Auto-join if room ID in URL
             const urlParams = new URLSearchParams(window.location.search);
             const roomParam = urlParams.get('room');
             const modeParam = urlParams.get('mode');
-
+            
             if (roomParam && modeParam === 'theater') {
                 document.getElementById('theater-room-id').value = roomParam;
                 setTimeout(() => {
                     joinTheaterRoom();
                 }, 500);
-            }
-        });
-
-        document.addEventListener('fullscreenchange', () => {
-            if (!document.fullscreenElement) {
-                exitTheaterFullscreen();
             }
         });
     </script>
