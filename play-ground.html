@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SatLoom - Play Ground</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Play Ground Specific Styles */
+        .game-content {
+            padding: 15px;
+        }
+
+        .splash-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            text-align: center;
+        }
+
+        .game-title {
+            font-size: clamp(2rem, 8vw, 3rem);
+            font-weight: bold;
+            color: var(--text-primary);
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            margin-bottom: 2rem;
+            animation: glow 2s ease-in-out infinite alternate;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 20px rgba(255, 255, 255, 0.5); }
+            to { text-shadow: 0 0 30px rgba(255, 255, 255, 0.8); }
+        }
+
+        .loading-container {
+            width: 80%;
+            max-width: 400px;
+            margin: 2rem 0;
+        }
+
+        .loading-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .loading-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .setup-screen {
+            display: none;
+            padding: 1rem;
+        }
+
+        .setup-title {
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            color: var(--accent-color);
+        }
+
+        .player-selection {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .player-panel {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.2rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .emoji-selection {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.8rem;
+            margin: 1rem 0;
+        }
+
+        .emoji-btn {
+            font-size: 1.8rem;
+            padding: 0.8rem;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-primary);
+        }
+
+        .emoji-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            border-color: var(--accent-color);
+        }
+
+        .emoji-btn.selected {
+            border-color: var(--accent-color);
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .settings-panel {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.2rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .toggle-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .toggle-btn:hover {
+            background: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        .start-btn {
+            width: 100%;
+            padding: 0.8rem;
+            font-size: 1.2rem;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(58, 123, 213, 0.4);
+        }
+
+        .game-screen {
+            display: none;
+            padding: 0;
+            position: relative;
+            height: 100%;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding: 0 1rem;
+        }
+
+        .player-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            min-width: 150px;
+            flex: 1;
+        }
+
+        .player-emoji {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .energy-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+
+        .energy-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 5px;
+            transition: width 0.3s ease;
+        }
+
+        .board-container {
+            display: flex;
+            justify-content: center;
+            margin: 1rem 0;
+            position: relative;
+            height: calc(100vh - 300px);
+            min-height: 400px;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 2px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 10px;
+            width: min(90vw, 500px);
+            height: min(90vw, 500px);
+            position: relative;
+        }
+
+        .cell {
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            font-size: clamp(0.8rem, 2vw, 1.2rem);
+            padding: 2px;
+        }
+
+        .cell-number {
+            font-size: 0.7em;
+            font-weight: bold;
+            color: var(--text-secondary);
+        }
+
+        .cell-content {
+            font-size: 1.3em;
+            margin-top: 2px;
+        }
+
+        .player-piece {
+            font-size: 2.2em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.5s ease;
+            z-index: 10;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+            position: absolute;
+        }
+
+        .player1-piece {
+            left: -40px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .player2-piece {
+            right: -40px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .win-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .win-content {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .win-title {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--accent-color);
+        }
+
+        .win-emoji {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .win-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+
+        .win-btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .play-again-btn {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .setup-btn {
+            background: var(--text-secondary);
+            color: white;
+        }
+
+        .win-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: var(--primary-color);
+            animation: confetti-fall 3s linear infinite;
+            z-index: 1000;
+        }
+
+        @keyframes confetti-fall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        .game-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-top: 1rem;
+        }
+
+        .dice-btn {
+            font-size: 2.5rem;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-primary);
+        }
+
+        .dice-btn:hover {
+            transform: scale(1.2);
+        }
+
+        .current-player {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: var(--accent-color);
+        }
+
+        /* Keyframes */
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { 
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(58, 123, 213, 0.7);
+            }
+            70% { 
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(58, 123, 213, 0);
+            }
+            100% { 
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(58, 123, 213, 0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                padding: 10px;
+                gap: 10px;
+            }
+            
+            .player-selection {
+                grid-template-columns: 1fr;
+            }
+            
+            .board {
+                width: 95vw;
+                height: 95vw;
+            }
+            
+            .player1-piece {
+                left: -30px;
+            }
+            
+            .player2-piece {
+                right: -30px;
+            }
+        }
+    </style>
+</head>
+<body class="dark-mode">
+    <button class="desktop-menu-toggle" id="desktopMenuToggle">
+        <i class="fas fa-bars menu-icon"></i>
+        <i class="fas fa-times close-icon"></i>
+    </button>
+    
+    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+    
+    <div class="notification" id="globalNotification">
+        <i class="notification-icon fas fa-info-circle"></i>
+        <div class="notification-content">
+            <div class="notification-title" id="notificationTitle"></div>
+            <div class="notification-message" id="notificationMessage"></div>
+        </div>
+    </div>
+    
+    <div class="app-container" id="appContainer">
+        <div class="sidebar" id="sidebar">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-satellite-dish"></i>
+                </div>
+                <div class="logo-text">SatLoom</div>
+            </div>
+            
+            <div class="status-indicator" id="connectionStatus">
+                <i class="fas fa-signal"></i> <span id="statusText">Ready to connect</span>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a class="nav-link" href="index.html">
+                        <i class="fas fa-phone"></i> Audio Call
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="video-call.html">
+                        <i class="fas fa-video"></i> Video Call
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="text-chat.html">
+                        <i class="fas fa-comments"></i> Text Chat
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="theater.html">
+                        <i class="fas fa-film"></i> Movie Theater
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="play-ground.html">
+                        <i class="fas fa-gamepad"></i> Play Ground
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="settings.html">
+                        <i class="fas fa-cog"></i> Settings
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="about.html">
+                        <i class="fas fa-info-circle"></i> About
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="main-content">
+            <div class="section active" id="play-ground-section">
+                <div class="card">
+                    <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <i class="fas fa-gamepad"></i> Emoji Adventure
+                        </div>
+                        <div class="call-timer" id="gameTimer">00:00</div>
+                    </div>
+                    
+                    <div class="game-content">
+                        <div class="splash-screen" id="splashScreen">
+                            <div class="game-title">🎮 Emoji Adventure</div>
+                            <div class="loading-container">
+                                <div class="loading-bar">
+                                    <div class="loading-fill" id="loadingFill"></div>
+                                </div>
+                                <div id="loadingText">Loading... 0%</div>
+                            </div>
+                        </div>
+
+                        <div class="setup-screen" id="setupScreen">
+                            <h1 class="setup-title">🎮 Game Setup</h1>
+
+                            <div class="player-selection">
+                                <div class="player-panel">
+                                    <h3>👤 Player 1</h3>
+                                    <div class="emoji-selection" id="player1Selection">
+                                        <button class="emoji-btn" data-emoji="🚀">🚀</button>
+                                        <button class="emoji-btn" data-emoji="🐉">🐉</button>
+                                        <button class="emoji-btn" data-emoji="🦁">🦁</button>
+                                        <button class="emoji-btn" data-emoji="🌈">🌈</button>
+                                        <button class="emoji-btn" data-emoji="⚡️">⚡️</button>
+                                        <button class="emoji-btn" data-emoji="🪐">🪐</button>
+                                    </div>
+                                    <div id="player1Selected">Select your emoji!</div>
+                                </div>
+                                <div class="player-panel">
+                                    <h3>👤 Player 2</h3>
+                                    <div class="emoji-selection" id="player2Selection">
+                                        <button class="emoji-btn" data-emoji="🚀">🚀</button>
+                                        <button class="emoji-btn" data-emoji="🐉">🐉</button>
+                                        <button class="emoji-btn" data-emoji="🦁">🦁</button>
+                                        <button class="emoji-btn" data-emoji="🌈">🌈</button>
+                                        <button class="emoji-btn" data-emoji="⚡️">⚡️</button>
+                                        <button class="emoji-btn" data-emoji="🪐">🪐</button>
+                                    </div>
+                                    <div id="player2Selected">Select your emoji!</div>
+                                </div>
+                            </div>
+
+                            <div class="settings-panel">
+                                <h3>⚙️ Settings</h3>
+                                <div class="setting-item">
+                                    <span>🎵 Background Music</span>
+                                    <button class="toggle-btn" id="musicToggle">ON</button>
+                                </div>
+                                <div class="setting-item">
+                                    <span>🔊 Sound Effects</span>
+                                    <button class="toggle-btn" id="soundToggle">ON</button>
+                                </div>
+                                <div class="setting-item">
+                                    <span>🌙 Dark Mode</span>
+                                    <button class="toggle-btn" id="themeToggle">OFF</button>
+                                </div>
+                                <div class="setting-item">
+                                    <span>🤖 Single Player</span>
+                                    <button class="toggle-btn" id="singlePlayerToggle">OFF</button>
+                                </div>
+                            </div>
+                            <button class="start-btn" id="startGameBtn">🚀 Start Game</button>
+                        </div>
+
+                        <div class="game-screen" id="gameScreen">
+                            <div class="game-header">
+                                <div class="player-info player1-info">
+                                    <div class="player-emoji" id="player1Display">🚀</div>
+                                    <div>Player 1</div>
+                                    <div>Position: <span id="player1Position">0</span></div>
+                                    <div class="energy-bar">
+                                        <div class="energy-fill" id="player1Energy" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="player-info player2-info">
+                                    <div class="player-emoji" id="player2Display">🐉</div>
+                                    <div id="player2Label">Player 2</div>
+                                    <div>Position: <span id="player2Position">0</span></div>
+                                    <div class="energy-bar">
+                                        <div class="energy-fill" id="player2Energy" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="board-container">
+                                <div class="board" id="gameBoard"></div>
+                                <div class="player-piece player1-piece" id="player1Piece"></div>
+                                <div class="player-piece player2-piece" id="player2Piece"></div>
+                            </div>
+                            
+                            <div class="game-controls">
+                                <button class="dice-btn" id="diceBtn">🎲</button>
+                                <div class="current-player" id="currentPlayer">Player 1's Turn</div>
+                                <button class="toggle-btn" id="backToSetup">⚙️ Setup</button>
+                            </div>
+                        </div>
+
+                        <div class="win-screen" id="winScreen">
+                            <div class="win-content">
+                                <div class="win-title">🎉 Victory!</div>
+                                <div class="win-emoji" id="winnerEmoji">🎊</div>
+                                <div id="winnerText">Player 1 Wins!</div>
+                                <div class="win-buttons">
+                                    <button class="win-btn play-again-btn" id="playAgainBtn">🔄 Play Again</button>
+                                    <button class="win-btn setup-btn" id="backToSetupBtn">⚙️ Setup</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="app-footer">
+                <div>SatLoom v1.8.0 | Powered by SatLoom Developers</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let gameState = {
+            player1: { emoji: '🚀', position: 0, energy: 100, canMove: true },
+            player2: { emoji: '🐉', position: 0, energy: 100, canMove: true },
+            currentPlayer: 1,
+            singlePlayer: false,
+            musicEnabled: true,
+            soundEnabled: true,
+            darkMode: false,
+            specialCells: {},
+            gameStartTime: null,
+            gameTimer: null
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            showSplashScreen();
+            setupEventListeners();
+            generateSpecialCells();
+        });
+
+        function showSplashScreen() {
+            let progress = 0;
+            const loadingFill = document.getElementById('loadingFill');
+            const loadingText = document.getElementById('loadingText');
+
+            const loadingInterval = setInterval(() => {
+                progress += Math.random() * 15 + 5;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(loadingInterval);
+                    setTimeout(() => {
+                        document.getElementById('splashScreen').style.display = 'none';
+                        document.getElementById('setupScreen').style.display = 'block';
+                    }, 500);
+                }
+                loadingFill.style.width = progress + '%';
+                loadingText.textContent = `Loading... ${Math.floor(progress)}%`;
+            }, 200);
+        }
+
+        function setupEventListeners() {
+            document.querySelectorAll('.emoji-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const player = this.closest('.player-panel').querySelector('h3').textContent.includes('1') ? 1 : 2;
+                    selectEmoji(player, this.dataset.emoji);
+                });
+            });
+
+            document.getElementById('musicToggle').addEventListener('click', toggleMusic);
+            document.getElementById('soundToggle').addEventListener('click', toggleSound);
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+            document.getElementById('singlePlayerToggle').addEventListener('click', toggleSinglePlayer);
+            document.getElementById('startGameBtn').addEventListener('click', startGame);
+            document.getElementById('diceBtn').addEventListener('click', rollDice);
+            document.getElementById('backToSetup').addEventListener('click', () => showScreen('setup'));
+            document.getElementById('playAgainBtn').addEventListener('click', restartGame);
+            document.getElementById('backToSetupBtn').addEventListener('click', () => showScreen('setup'));
+        }
+
+        function selectEmoji(player, emoji) {
+            const selectionId = `player${player}Selection`;
+            document.querySelectorAll(`#${selectionId} .emoji-btn`).forEach(btn => btn.classList.remove('selected'));
+            document.querySelector(`#${selectionId} [data-emoji="${emoji}"]`).classList.add('selected');
+            gameState[`player${player}`].emoji = emoji;
+            document.getElementById(`player${player}Selected`).textContent = `Selected: ${emoji}`;
+            document.getElementById(`player${player}Display`).textContent = emoji;
+            document.getElementById(`player${player}Piece`).textContent = emoji;
+        }
+
+        function toggleMusic() {
+            gameState.musicEnabled = !gameState.musicEnabled;
+            document.getElementById('musicToggle').textContent = gameState.musicEnabled ? 'ON' : 'OFF';
+        }
+
+        function toggleSound() {
+            gameState.soundEnabled = !gameState.soundEnabled;
+            document.getElementById('soundToggle').textContent = gameState.soundEnabled ? 'ON' : 'OFF';
+        }
+
+        function toggleTheme() {
+            gameState.darkMode = !gameState.darkMode;
+            document.getElementById('themeToggle').textContent = gameState.darkMode ? 'ON' : 'OFF';
+            document.body.classList.toggle('dark-mode', gameState.darkMode);
+        }
+
+        function toggleSinglePlayer() {
+            gameState.singlePlayer = !gameState.singlePlayer;
+            document.getElementById('singlePlayerToggle').textContent = gameState.singlePlayer ? 'ON' : 'OFF';
+        }
+
+        function generateSpecialCells() {
+            const specialTypes = ['🌟', '🌋', '❄️', '⚡', '🌊', '🌀', '🔥'];
+            gameState.specialCells = {};
+
+            for (let i = 5; i < 95; i += Math.floor(Math.random() * 3) + 2) {
+                const type = specialTypes[Math.floor(Math.random() * specialTypes.length)];
+                gameState.specialCells[i] = type;
+            }
+        }
+
+        function startGame() {
+            if (!gameState.player1.emoji || !gameState.player2.emoji) {
+                alert('Please select emojis for both players!');
+                return;
+            }
+
+            createBoard();
+            updateDisplay();
+            showScreen('game');
+            startGameTimer();
+        }
+
+        function startGameTimer() {
+            gameState.gameStartTime = Date.now();
+            clearInterval(gameState.gameTimer);
+            
+            const timerElement = document.getElementById('gameTimer');
+            timerElement.style.display = 'block';
+            timerElement.textContent = '00:00';
+            
+            gameState.gameTimer = setInterval(() => {
+                const elapsedTime = Math.floor((Date.now() - gameState.gameStartTime) / 1000);
+                const minutes = Math.floor(elapsedTime / 60).toString().padStart(2, '0');
+                const seconds = (elapsedTime % 60).toString().padStart(2, '0');
+                
+                timerElement.textContent = `${minutes}:${seconds}`;
+            }, 1000);
+        }
+
+        function createBoard() {
+            const board = document.getElementById('gameBoard');
+            board.innerHTML = '';
+
+            for (let i = 100; i >= 1; i--) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.id = `cell-${i}`;
+                cell.innerHTML = `<div class="cell-number">${i}</div>` +
+                    (gameState.specialCells[i] ? `<div class="cell-content">${gameState.specialCells[i]}</div>` : '');
+                board.appendChild(cell);
+            }
+
+            document.getElementById('player1Piece').textContent = gameState.player1.emoji;
+            document.getElementById('player2Piece').textContent = gameState.player2.emoji;
+        }
+
+        function rollDice() {
+            if (!gameState[`player${gameState.currentPlayer}`].canMove) {
+                gameState[`player${gameState.currentPlayer}`].canMove = true;
+                gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
+                updateDisplay();
+                return;
+            }
+
+            const roll = Math.floor(Math.random() * 6) + 1;
+            movePlayer(gameState.currentPlayer, roll);
+            gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
+            updateDisplay();
+        }
+
+        function movePlayer(player, steps) {
+            const currentPos = gameState[`player${player}`].position;
+            let newPos = Math.min(100, currentPos + steps);
+            gameState[`player${player}`].energy -= 5;
+
+            if (gameState.specialCells[newPos]) {
+                handleSpecialCell(player, newPos);
+            } else {
+                gameState[`player${player}`].position = newPos;
+            }
+
+            if (gameState[`player${player}`].position >= 100) {
+                showWinScreen(player);
+            }
+        }
+
+        function handleSpecialCell(player, position) {
+            const special = gameState.specialCells[position];
+            let reaction = '😊';
+            const otherPlayer = player === 1 ? 2 : 1;
+
+            switch (special) {
+                case '🌟':
+                    gameState[`player${player}`].position = Math.min(100, position + 8);
+                    reaction = '✨';
+                    break;
+                case '🌋':
+                    gameState[`player${player}`].position = Math.max(1, position - 10);
+                    reaction = '😖';
+                    break;
+                case '❄️':
+                    gameState[`player${player}`].energy = Math.max(0, gameState[`player${player}`].energy - 20);
+                    reaction = '🥶';
+                    break;
+                case '⚡':
+                    gameState[`player${player}`].energy = Math.min(100, gameState[`player${player}`].energy + 10);
+                    reaction = '⚡️';
+                    break;
+                case '🌊':
+                    [gameState[`player${player}`].position, gameState[`player${otherPlayer}`].position] =
+                        [gameState[`player${otherPlayer}`].position, gameState[`player${player}`].position];
+                    reaction = '🌊';
+                    break;
+                case '🌀':
+                    gameState[`player${player}`].position = Math.floor(Math.random() * 99) + 1;
+                    reaction = '🌀';
+                    break;
+                case '🔥':
+                    gameState[`player${player}`].canMove = false;
+                    gameState[`player${player}`].position = position;
+                    reaction = '🔥';
+                    break;
+            }
+
+            showReaction(player, reaction);
+        }
+
+        function showReaction(player, emoji) {
+            const piece = document.getElementById(`player${player}Piece`);
+            const reaction = document.createElement('div');
+            reaction.className = 'reaction-emoji';
+            reaction.textContent = emoji;
+            reaction.style.position = 'absolute';
+            reaction.style.fontSize = '1.5em';
+            piece.appendChild(reaction);
+            setTimeout(() => reaction.remove(), 1000);
+        }
+
+        function updateDisplay() {
+            document.getElementById('player1Position').textContent = gameState.player1.position;
+            document.getElementById('player2Position').textContent = gameState.player2.position;
+            document.getElementById('player1Energy').style.width = gameState.player1.energy + '%';
+            document.getElementById('player2Energy').style.width = gameState.player2.energy + '%';
+            document.getElementById('currentPlayer').textContent = `Player ${gameState.currentPlayer}'s Turn`;
+        }
+
+        function showWinScreen(player) {
+            document.getElementById('winnerEmoji').textContent = gameState[`player${player}`].emoji;
+            document.getElementById('winnerText').textContent = `Player ${player} Wins!`;
+            document.getElementById('winScreen').style.display = 'flex';
+            createConfetti();
+        }
+
+        function createConfetti() {
+            const colors = ['#ff6b6b', '#ffd93d', '#4ecdc4', '#ff9a9e', '#fad0c4'];
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDelay = Math.random() * 3 + 's';
+                    document.body.appendChild(confetti);
+                    setTimeout(() => confetti.remove(), 6000);
+                }, i * 100);
+            }
+        }
+
+        function restartGame() {
+            gameState.player1.position = 0;
+            gameState.player1.energy = 100;
+            gameState.player1.canMove = true;
+            gameState.player2.position = 0;
+            gameState.player2.energy = 100;
+            gameState.player2.canMove = true;
+            gameState.currentPlayer = 1;
+            document.getElementById('winScreen').style.display = 'none';
+            generateSpecialCells();
+            createBoard();
+            updateDisplay();
+            startGameTimer();
+        }
+
+        function showScreen(screen) {
+            document.getElementById('splashScreen').style.display = 'none';
+            document.getElementById('setupScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('winScreen').style.display = 'none';
+            document.getElementById(`${screen}Screen`).style.display = screen === 'game' ? 'block' : 'flex';
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js"></script>
+</body>
+</html>
