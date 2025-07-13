@@ -1,0 +1,1790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SatLoom - Movie Theater</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .input-styled {
+            width: 100%;
+            padding: 14px 20px;
+            border-radius: 50px;
+            border: none;
+            background: rgba(30, 41, 59, 0.7);
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .input-styled:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        
+        .call-controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+        }
+        
+        .btn {
+            flex: 1;
+            min-width: 160px;
+            padding: 14px 20px;
+            border-radius: 50px;
+            border: none;
+            background: linear-gradient(to right, #3b82f6, #6366f1);
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn.btn-secondary {
+            background: linear-gradient(to right, #64748b, #475569);
+        }
+        
+        .btn.end {
+            background: linear-gradient(to right, #ef4444, #dc2626);
+        }
+        
+        .copy-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+        
+        /* Theater-specific styles */
+        .theater-container {
+            position: relative;
+            width: 100%;
+            height: 75vh;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            display: none;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .theater-video-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+        }
+        
+        #theaterVideoElement {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        #videoThumbnail {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.7;
+            filter: blur(2px);
+            display: none;
+        }
+        
+        .theater-loading-spinner {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top: 5px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+            z-index: 10;
+        }
+        
+        .theater-controls-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            z-index: 20;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .theater-container:hover .theater-controls-container {
+            opacity: 1;
+        }
+        
+        .theater-seek-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .theater-seek-bar-progress {
+            position: absolute;
+            height: 100%;
+            background: #3b82f6;
+            border-radius: 3px;
+            width: 0%;
+        }
+        
+        .theater-seek-bar-handle {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: #3b82f6;
+            border-radius: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            left: 0%;
+            cursor: pointer;
+            z-index: 2;
+        }
+        
+        .theater-main-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .theater-left-controls,
+        .theater-center-controls,
+        .theater-right-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .theater-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 16px;
+        }
+        
+        .theater-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.1);
+        }
+        
+        .theater-btn.ptt.active {
+            background: rgba(76, 175, 80, 0.7);
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+        }
+        
+        .theater-time-display {
+            font-size: 14px;
+            color: white;
+            min-width: 100px;
+            text-align: center;
+        }
+        
+        .theater-volume-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .theater-volume-slider {
+            width: 80px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            cursor: pointer;
+        }
+        
+        .theater-volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .theater-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            display: none;
+        }
+        
+        .theater-modal-content {
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 16px;
+            padding: 25px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .theater-modal-title {
+            margin-bottom: 15px;
+            color: #3b82f6;
+            display: flex;
+            align-items: center;
+        }
+        
+        .theater-url-validation {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .theater-video-format-info {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 5px;
+            display: block;
+        }
+        
+        
+        
+        .top-controls-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 8px;
+            z-index: 10002;
+            display: none;
+        }
+        
+        .theater-hangup-btn {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(239, 68, 68, 0.8);
+            border: none;
+            color: white;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            font-size: 24px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .theater-hangup-btn:hover {
+            transform: scale(1.1);
+            background: rgba(220, 38, 38, 0.9);
+        }
+        
+        .participant-card {
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 200px;
+        }
+        
+        .participant-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .participant-name {
+            font-weight: 500;
+        }
+        
+        .participant-status {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+        
+        /* Fullscreen styles */
+        .fullscreen-theater-mode #theater-section {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10000;
+            background: #000;
+        }
+        
+        .fullscreen-theater-mode #theater-section .card {
+            border-radius: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            background: transparent;
+            box-shadow: none;
+            backdrop-filter: none;
+        }
+        
+        .fullscreen-theater-mode #theaterContainer {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .fullscreen-theater-mode .theater-video-container {
+            flex: 1;
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .fullscreen-theater-mode #theaterVideoElement {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .fullscreen-theater-mode .theater-controls-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+        
+        .fullscreen-theater-mode .theater-top-controls {
+            display: flex;
+        }
+        
+        .fullscreen-theater-mode .theater-hangup-btn {
+            display: flex;
+        }
+        
+        /* Video source tabs */
+        .source-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .source-tab {
+            padding: 10px 20px;
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .source-tab.active {
+            background: linear-gradient(to right, #3b82f6, #6366f1);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+        
+        .source-content {
+            display: none;
+        }
+        
+        .source-content.active {
+            display: block;
+        }
+        
+        .video-help {
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .video-help h4 {
+            margin-bottom: 10px;
+            color: #3b82f6;
+        }
+        
+        .video-help ul {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+        
+        .video-help li {
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .video-help a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        
+        .video-help a:hover {
+            text-decoration: underline;
+        }
+        
+        .video-error {
+            background: rgba(220, 38, 38, 0.2);
+            border: 1px solid rgba(220, 38, 38, 0.5);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .video-error.show {
+            display: block;
+        }
+        
+        .video-error-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #ef4444;
+        }
+        
+        .video-error-message {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .direct-url-note {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-top: 5px;
+            display: block;
+        }
+        
+        /* Animations */
+        @keyframes clapperTop {
+            0%, 100% { transform: rotateX(-10deg); }
+            50% { transform: rotateX(-60deg); }
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .call-controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            .theater-controls-container {
+                padding: 10px;
+            }
+            
+            .theater-main-controls {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .theater-left-controls, 
+            .theater-center-controls, 
+            .theater-right-controls {
+                justify-content: center;
+                width: 100%;
+            }
+            
+            .theater-time-display {
+                flex: 1;
+                text-align: center;
+            }
+            
+            .theater-volume-container {
+                justify-content: center;
+                width: 100%;
+            }
+            
+            .theater-volume-slider {
+                flex: 1;
+                max-width: 150px;
+            }
+        }
+    </style>
+</head>
+<body class="dark-mode">
+    <button class="desktop-menu-toggle" id="desktopMenuToggle">
+        <i class="fas fa-bars menu-icon"></i>
+        <i class="fas fa-times close-icon"></i>
+    </button>
+    
+    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+    
+    <div class="notification" id="globalNotification">
+        <i class="notification-icon fas fa-info-circle"></i>
+        <div class="notification-content">
+            <div class="notification-title" id="notificationTitle"></div>
+            <div class="notification-message" id="notificationMessage"></div>
+        </div>
+    </div>
+    
+    <div class="app-container" id="appContainer">
+        <div class="sidebar" id="sidebar">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-satellite-dish"></i>
+                </div>
+                <div class="logo-text">SatLoom</div>
+            </div>
+            
+            <div class="status-indicator" id="connectionStatus">
+                <i class="fas fa-signal"></i> <span id="statusText">Ready to connect</span>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a class="nav-link" data-section="audio-call">
+                        <i class="fas fa-phone"></i> Audio Call
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="video-call.html">
+                        <i class="fas fa-video"></i> Video Call
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="text-chat.html">
+                        <i class="fas fa-comments"></i> Text Chat
+                    </a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="theater.html">
+                        <i class="fas fa-film"></i> Movie Theater
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="play-ground.html">
+                        <i class="fas fa-gamepad"></i> Play Ground
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="settings.html">
+                        <i class="fas fa-cog"></i> Settings
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="about.html">
+                        <i class="fas fa-info-circle"></i> About
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="card" id="theater-section">
+            <div class="section-title">
+                <div>
+                    <i class="fas fa-film"></i> Movie Theater
+                </div>
+                <div class="call-timer theater-timer" id="theaterTimer">00:00</div>
+            </div>
+            
+            <div class="input-group">
+                <input type="text" id="theater-room-id" class="input-styled" placeholder="Enter Room ID">
+            </div>
+            
+            <div class="call-controls">
+                <button class="btn" id="createTheaterRoom">
+                    <i class="fas fa-network-wired"></i> Create Room
+                </button>
+                <button class="btn btn-secondary" id="joinTheaterRoom">
+                    <i class="fas fa-sign-in-alt"></i> Join Room
+                </button>
+                <button class="copy-btn" id="copyTheaterLink" style="display: none;">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <button class="btn end" id="endTheaterSession" style="display: none;">
+                    <i class="fas fa-phone-slash"></i> End Session
+                </button>
+            </div>
+            
+            <div class="status-indicator" id="connectionStatus">
+                <i class="fas fa-info-circle"></i> Ready to connect
+            </div>
+            
+            <div class="theater-placeholder">
+                <div class="clapperboard">
+                    <div class="clapper-top">SATLOOM</div>
+                    <div class="clapper-bottom">THEATER</div>
+                </div>
+            </div>
+            
+            <div class="participants-container" id="participantsContainer">
+                <!-- Participants will be added here -->
+            </div>
+            
+            <!-- Theater Video Container -->
+            <div class="theater-container" id="theaterContainer">
+                <div class="theater-video-container">
+                    <div class="theater-loading-spinner" id="theaterLoadingSpinner"></div>
+                    <img id="videoThumbnail" src="" alt="Video Thumbnail">
+                    <video id="theaterVideoElement" class="theater-video-player" controls></video>
+                </div>
+                
+                <div class="theater-controls-container" id="theaterControls">
+                    <div class="theater-seek-bar" id="theaterSeekBar">
+                        <div class="theater-seek-bar-progress" id="theaterSeekBarProgress"></div>
+                        <div class="theater-seek-bar-handle" id="theaterSeekBarHandle"></div>
+                    </div>
+                    
+                    <div class="theater-main-controls">
+                        <div class="theater-left-controls">
+                            <button class="theater-btn" id="theaterPTTButton">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                            <div class="theater-time-display" id="theaterTimeDisplay">00:00 / 00:00</div>
+                        </div>
+                        
+                        <div class="theater-center-controls">
+                            <button class="theater-btn" id="theaterBackButton">
+                                <i class="fas fa-step-backward"></i>
+                            </button>
+                            <button class="theater-btn" id="theaterPlayPauseButton">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <button class="theater-btn" id="theaterForwardButton">
+                                <i class="fas fa-step-forward"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="theater-right-controls">
+                            <div class="theater-volume-container">
+                                <button class="theater-btn" id="theaterMuteButton">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
+                                <input type="range" class="theater-volume-slider" id="theaterVolumeSlider" min="0" max="1" step="0.01" value="0.7">
+                            </div>
+                            
+                            <button class="theater-btn" id="theaterFullscreenButton">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                            
+                            <button class="theater-btn end" id="theaterHangupButton">
+                                <i class="fas fa-phone-slash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Theater Modal for video URL input -->
+            <div class="theater-modal" id="theaterModal">
+                <div class="theater-modal-content">
+                    <h3 class="theater-modal-title"><i class="fas fa-video"></i> Create Video Room</h3>
+                    
+                    <div class="source-tabs">
+                        <div class="source-tab active" data-source="direct">Direct Video</div>
+                        <div class="source-tab" data-source="youtube">YouTube</div>
+                        <div class="source-tab" data-source="vimeo">Vimeo</div>
+                    </div>
+                    
+                    <div class="source-content active" id="direct-source">
+                        <div class="input-group">
+                            <div style="position: relative;">
+                                <input type="text" id="theaterVideoUrl" class="input-styled" 
+                                       placeholder="Paste direct video URL (MP4, WebM)">
+                                <span class="theater-url-validation" id="theaterUrlValidationIcon">
+                                    <i class="fas fa-circle-notch theater-url-checking"></i>
+                                </span>
+                            </div>
+                            <span class="direct-url-note">Note: Video must be served with proper CORS headers</span>
+                            <button class="btn" id="theaterLoadBtn">
+                                <i class="fas fa-video"></i> Load Video
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="source-content" id="youtube-source">
+                        <div class="input-group">
+                            <input type="text" id="youtubeUrl" class="input-styled" 
+                                   placeholder="Paste YouTube URL (https://youtube.com/watch?v=...)">
+                            <button class="btn" id="loadYoutubeBtn">
+                                <i class="fab fa-youtube"></i> Load YouTube Video
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="source-content" id="vimeo-source">
+                        <div class="input-group">
+                            <input type="text" id="vimeoUrl" class="input-styled" 
+                                   placeholder="Paste Vimeo URL (https://vimeo.com/...)">
+                            <button class="btn" id="loadVimeoBtn">
+                                <i class="fab fa-vimeo"></i> Load Vimeo Video
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="video-error" id="videoError">
+                        <div class="video-error-title" id="videoErrorTitle">Error Loading Video</div>
+                        <div class="video-error-message" id="videoErrorMessage"></div>
+                    </div>
+                    
+                   
+                    
+                    <div class="theater-modal-buttons" id="theaterModalButtons" style="display: none;">
+                        <button class="btn btn-secondary" id="theaterModalCancel">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button class="btn" id="theaterModalCopy">
+                            <i class="fas fa-copy"></i> Copy Room Link
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Theater top controls -->
+            <div class="top-controls-container" id="theaterTopControls">
+                <button class="copy-btn" id="copyTheaterLinkTop" title="Copy room link">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Theater hangup button (positioned outside main container) -->
+    <button class="theater-hangup-btn" id="theaterHangupTop">
+        <i class="fas fa-phone-slash"></i>
+    </button>
+    
+    <!-- Notification container -->
+    <div class="notification" id="notification">
+        <i class="fas fa-info-circle notification-icon"></i>
+        <div class="notification-content">
+            <div class="notification-title" id="notificationTitle">Info</div>
+            <div class="notification-message" id="notificationMessage">Notification message</div>
+        </div>
+    </div>
+    
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDeksN3qPZCmNuoASlEqG38XVmag6ecTh8",
+            authDomain: "satloom-rtc.firebaseapp.com",
+            databaseURL: "https://satloom-rtc-default-rtdb.firebaseio.com",
+            projectId: "satloom-rtc",
+            storageBucket: "satloom-rtc.appspot.com",
+            messagingSenderId: "273627860564",
+            appId: "1:273627860564:web:c326b1bb6ffcb32fb0e7c1"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Theater state
+        const theaterState = {
+            roomId: null,
+            player: null,
+            mediaUrl: null,
+            isPlaying: false,
+            isMuted: false,
+            currentVolume: 0.7,
+            currentTime: 0,
+            duration: 0,
+            isPTTActive: false,
+            pttAudioStream: null,
+            isTheaterLeader: false,
+            userId: 'user-' + Math.random().toString(36).substr(2, 8),
+            userName: 'User-' + Math.floor(Math.random() * 1000),
+            lastNotificationTime: 0,
+            isSyncing: false,
+            isYouTube: false,
+            isVimeo: false,
+            participants: {},
+            peerConnections: {},
+            dataChannel: null,
+            firebaseRef: null,
+            firebaseStateRef: null,
+            firebaseSignalingRef: null,
+            videoType: 'direct' // 'direct', 'youtube', 'vimeo'
+        };
+
+        // Utility functions
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function playNotificationSound() {
+            try {
+                const now = Date.now();
+                if (now - theaterState.lastNotificationTime > 1000) {
+                    const sound = new Audio("https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3");
+                    sound.play().catch(e => console.log('Audio play prevented:', e));
+                    theaterState.lastNotificationTime = now;
+                }
+            } catch (e) {
+                console.error('Error playing notification sound:', e);
+            }
+        }
+
+        function showNotification(title, message, type = 'info') {
+            const notification = document.getElementById('notification');
+            const titleElem = document.getElementById('notificationTitle');
+            const messageElem = document.getElementById('notificationMessage');
+            
+            if (!notification || !titleElem || !messageElem) return;
+            
+            notification.className = 'notification';
+            notification.style.background = 
+                type === 'error' ? 'rgba(244, 67, 54, 0.9)' :
+                type === 'success' ? 'rgba(34, 197, 94, 0.9)' :
+                'rgba(30, 41, 59, 0.95)';
+            
+            titleElem.textContent = title;
+            messageElem.textContent = message;
+            
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+            
+            playNotificationSound();
+        }
+
+        function updateStatus(text, status) {
+            const statusElem = document.getElementById('connectionStatus');
+            if (statusElem) {
+                statusElem.className = 'status-indicator';
+                
+                if (status === 'connected') {
+                    statusElem.classList.add('connected');
+                    statusElem.innerHTML = `<i class="fas fa-check-circle"></i> ${text}`;
+                } else if (status === 'connecting') {
+                    statusElem.classList.add('connecting');
+                    statusElem.innerHTML = `<i class="fas fa-sync-alt fa-spin"></i> ${text}`;
+                } else if (status === 'error') {
+                    statusElem.classList.add('error');
+                    statusElem.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${text}`;
+                } else {
+                    statusElem.innerHTML = `<i class="fas fa-info-circle"></i> ${text}`;
+                }
+            }
+        }
+
+        function startTimer() {
+            theaterState.startTime = Date.now();
+            clearInterval(theaterState.timer);
+            
+            const timerElement = document.getElementById('theaterTimer');
+            if (timerElement) {
+                timerElement.style.display = 'block';
+                timerElement.textContent = '00:00';
+            }
+            
+            theaterState.timer = setInterval(() => {
+                const elapsedTime = Math.floor((Date.now() - theaterState.startTime) / 1000);
+                const minutes = Math.floor(elapsedTime / 60).toString().padStart(2, '0');
+                const seconds = (elapsedTime % 60).toString().padStart(2, '0');
+                
+                if (timerElement) timerElement.textContent = `${minutes}:${seconds}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(theaterState.timer);
+            theaterState.timer = null;
+            theaterState.startTime = null;
+            
+            const timerElement = document.getElementById('theaterTimer');
+            if (timerElement) {
+                timerElement.textContent = '00:00';
+                timerElement.style.display = 'none';
+            }
+        }
+
+        // Thumbnail generation
+        function getVideoThumbnail(url) {
+            const youtubePattern = /(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+            const vimeoPattern = /(?:vimeo\.com\/|player\.vimeo\.com\/video\/)([0-9]+)/;
+            
+            const youtubeMatch = url.match(youtubePattern);
+            if (youtubeMatch) {
+                return `https://img.youtube.com/vi/${youtubeMatch[1]}/hqdefault.jpg`;
+            }
+            
+            const vimeoMatch = url.match(vimeoPattern);
+            if (vimeoMatch) {
+                return `https://vumbnail.com/${vimeoMatch[1]}.jpg`;
+            }
+            
+            return 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80';
+        }
+
+        // Firebase functions
+        function setupFirebaseListeners() {
+            // Listen for video URL changes
+            theaterState.firebaseRef.child('videoUrl').on('value', (snapshot) => {
+                const url = snapshot.val();
+                if (url && url !== theaterState.mediaUrl) {
+                    theaterState.mediaUrl = url;
+                    loadTheaterVideo(url);
+                }
+            });
+            
+            // Listen for video type changes
+            theaterState.firebaseRef.child('videoType').on('value', (snapshot) => {
+                const type = snapshot.val();
+                if (type && type !== theaterState.videoType) {
+                    theaterState.videoType = type;
+                }
+            });
+            
+            // Listen for state changes
+            theaterState.firebaseStateRef.on('value', (snapshot) => {
+                const state = snapshot.val();
+                if (state && !theaterState.isSyncing) {
+                    handleRemoteStateChange(state);
+                }
+            });
+        }
+        
+        function handleRemoteStateChange(state) {
+            // Debounce to prevent rapid updates
+            if (Date.now() - theaterState.lastRemoteUpdate < 500) return;
+            theaterState.lastRemoteUpdate = Date.now();
+            
+            // Update playback state
+            if (state.playing !== theaterState.isPlaying) {
+                if (state.playing) {
+                    playTheater();
+                } else {
+                    pauseTheater();
+                }
+            }
+            
+            // Update seek position if necessary
+            if (Math.abs(state.currentTime - theaterState.currentTime) > 1) {
+                seekTheaterTo(state.currentTime);
+            }
+        }
+        
+        function sendPlayState() {
+            if (!theaterState.firebaseStateRef) return;
+            
+            theaterState.firebaseStateRef.set({
+                playing: theaterState.isPlaying,
+                currentTime: theaterState.currentTime,
+                timestamp: Date.now()
+            });
+        }
+        
+        function sendSeekState(time) {
+            if (!theaterState.firebaseStateRef) return;
+            
+            theaterState.firebaseStateRef.set({
+                playing: theaterState.isPlaying,
+                currentTime: time,
+                timestamp: Date.now()
+            });
+        }
+
+        // Theater functions
+        function validateTheaterUrl() {
+            const url = document.getElementById('theaterVideoUrl').value.trim();
+            const validationIcon = document.getElementById('theaterUrlValidationIcon');
+            validationIcon.style.display = 'none';
+            
+            if (!url) return;
+            
+            validationIcon.style.display = 'block';
+            validationIcon.innerHTML = '<i class="fas fa-circle-notch theater-url-checking"></i>';
+            
+            setTimeout(() => {
+                if (isValidTheaterUrl(url)) {
+                    validationIcon.innerHTML = '<i class="fas fa-check-circle theater-url-valid"></i>';
+                } else {
+                    validationIcon.innerHTML = '<i class="fas fa-times-circle theater-url-invalid"></i>';
+                }
+            }, 800);
+        }
+
+        function isValidTheaterUrl(url) {
+            const patterns = [
+                /\.(mp4|webm|mov|mkv|avi|m3u8)(\?.*)?$/i
+            ];
+            
+            return patterns.some(pattern => pattern.test(url));
+        }
+
+        function getYouTubeVideoId(url) {
+            const youtubePattern = /(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+            const match = url.match(youtubePattern);
+            return match ? match[1] : null;
+        }
+        
+        function getVimeoVideoId(url) {
+            const vimeoPattern = /(?:vimeo\.com\/|player\.vimeo\.com\/video\/)([0-9]+)/;
+            const match = url.match(vimeoPattern);
+            return match ? match[1] : null;
+        }
+
+        function enterTheaterFullscreen() {
+            document.body.classList.add('fullscreen-theater-mode');
+            theaterState.isFullscreen = true;
+            document.getElementById('theaterTopControls').style.display = 'flex';
+            document.getElementById('theaterHangupTop').style.display = 'flex';
+        }
+
+        function exitTheaterFullscreen() {
+            document.body.classList.remove('fullscreen-theater-mode');
+            theaterState.isFullscreen = false;
+            document.getElementById('theaterTopControls').style.display = 'none';
+            document.getElementById('theaterHangupTop').style.display = 'none';
+        }
+
+        function showVideoError(title, message) {
+            const errorElement = document.getElementById('videoError');
+            const errorTitle = document.getElementById('videoErrorTitle');
+            const errorMessage = document.getElementById('videoErrorMessage');
+            
+            errorTitle.textContent = title;
+            errorMessage.textContent = message;
+            errorElement.classList.add('show');
+            
+            document.getElementById('theaterLoadingSpinner').style.display = 'none';
+        }
+
+        function loadTheaterVideo(url) {
+            if (!url) {
+                showNotification('Error', 'Please enter a valid video URL', 'error');
+                return;
+            }
+            
+            try {
+                theaterState.mediaUrl = url;
+                
+                // Show loading spinner and thumbnail
+                document.getElementById('theaterLoadingSpinner').style.display = 'block';
+                document.getElementById('theaterModal').style.display = 'none';
+                document.getElementById('theaterContainer').style.display = 'block';
+                document.querySelector('.theater-placeholder').style.display = 'none';
+                const thumbnail = document.getElementById('videoThumbnail');
+                thumbnail.src = getVideoThumbnail(url);
+                thumbnail.style.display = 'block';
+                
+                // Initialize player
+                const player = document.getElementById('theaterVideoElement');
+                player.src = url;
+                
+                theaterState.player = player;
+                initVideoPlayerEvents();
+                
+                // Show modal buttons and controls
+                document.getElementById('theaterModalButtons').style.display = 'flex';
+                document.getElementById('theaterTopControls').style.display = 'flex';
+                document.getElementById('theaterHangupTop').style.display = 'flex';
+                
+                // Initialize theater controls and enter fullscreen
+                initTheaterControls();
+                startTimer();
+                enterTheaterFullscreen();
+                
+                showNotification('Video Loading', 'Loading video content...', 'success');
+            } catch (err) {
+                console.error('Error loading video:', err);
+                showNotification('Error', `Failed to load video: ${err.message}`, 'error');
+            }
+        }
+
+        function initVideoPlayerEvents() {
+            const videoPlayer = document.getElementById('theaterVideoElement');
+            if (!videoPlayer) return;
+            
+            videoPlayer.addEventListener('loadedmetadata', function() {
+                theaterState.duration = videoPlayer.duration;
+                updateTheaterTimeDisplay();
+                document.getElementById('theaterLoadingSpinner').style.display = 'none';
+                document.getElementById('videoError').classList.remove('show');
+                startTheaterSeekUpdate();
+            });
+            
+            videoPlayer.addEventListener('error', function(e) {
+                console.error('Video error', e);
+                if (videoPlayer.error) {
+                    let errorMsg = 'Failed to load video. Please check the URL.';
+                    switch (videoPlayer.error.code) {
+                        case 1: // MEDIA_ERR_ABORTED
+                            errorMsg = 'Video loading aborted.';
+                            break;
+                        case 2: // MEDIA_ERR_NETWORK
+                            errorMsg = 'Network error while loading video.';
+                            break;
+                        case 3: // MEDIA_ERR_DECODE
+                            errorMsg = 'Error decoding video. The file might be corrupt.';
+                            break;
+                        case 4: // MEDIA_ERR_SRC_NOT_SUPPORTED
+                            errorMsg = 'Video format not supported or missing CORS headers. Please try a different video.';
+                            break;
+                    }
+                    showVideoError('Video Playback Error', errorMsg);
+                }
+                showNotification('Error', 'Failed to load video. Please check the URL.', 'error');
+            });
+            
+            videoPlayer.addEventListener('timeupdate', function() {
+                if (!theaterState.isSyncing) {
+                    theaterState.currentTime = videoPlayer.currentTime;
+                    updateTheaterSeekBar();
+                    
+                    // Periodically sync state to prevent drift
+                    if (theaterState.isTheaterLeader && Date.now() - theaterState.lastSync > 5000) {
+                        sendPlayState();
+                        theaterState.lastSync = Date.now();
+                    }
+                }
+            });
+            
+            videoPlayer.addEventListener('play', function() {
+                theaterState.isPlaying = true;
+                document.getElementById('videoThumbnail').style.display = 'none';
+                updateTheaterPlayPauseButton();
+                
+                // Broadcast play command if leader
+                if (theaterState.isTheaterLeader) {
+                    sendPlayState();
+                }
+            });
+            
+            videoPlayer.addEventListener('pause', function() {
+                theaterState.isPlaying = false;
+                updateTheaterPlayPauseButton();
+                
+                // Broadcast pause command if leader
+                if (theaterState.isTheaterLeader) {
+                    sendPlayState();
+                }
+            });
+            
+            videoPlayer.addEventListener('ended', function() {
+                theaterState.isPlaying = false;
+                updateTheaterPlayPauseButton();
+            });
+            
+            videoPlayer.addEventListener('waiting', function() {
+                document.getElementById('theaterLoadingSpinner').style.display = 'block';
+            });
+            
+            videoPlayer.addEventListener('playing', function() {
+                document.getElementById('theaterLoadingSpinner').style.display = 'none';
+            });
+        }
+
+        function initTheaterControls() {
+            // Play/Pause
+            const playPauseBtn = document.getElementById('theaterPlayPauseButton');
+            if (playPauseBtn) {
+                playPauseBtn.addEventListener('click', toggleTheaterPlayPause);
+            }
+            
+            // Navigation
+            const backBtn = document.getElementById('theaterBackButton');
+            if (backBtn) {
+                backBtn.addEventListener('click', () => seekTheater(-10));
+            }
+            
+            const forwardBtn = document.getElementById('theaterForwardButton');
+            if (forwardBtn) {
+                forwardBtn.addEventListener('click', () => seekTheater(10));
+            }
+            
+            // Volume
+            const muteBtn = document.getElementById('theaterMuteButton');
+            if (muteBtn) {
+                muteBtn.addEventListener('click', toggleTheaterMute);
+            }
+            
+            const volumeSlider = document.getElementById('theaterVolumeSlider');
+            if (volumeSlider) {
+                volumeSlider.addEventListener('input', (e) => {
+                    setTheaterVolume(parseFloat(e.target.value));
+                });
+            }
+            
+            // Fullscreen
+            const fullscreenBtn = document.getElementById('theaterFullscreenButton');
+            if (fullscreenBtn) {
+                fullscreenBtn.addEventListener('click', toggleTheaterFullscreen);
+            }
+            
+            // PTT
+            const pttButton = document.getElementById('theaterPTTButton');
+            if (pttButton) {
+                pttButton.addEventListener('mousedown', startPTT);
+                pttButton.addEventListener('mouseup', stopPTT);
+                pttButton.addEventListener('mouseleave', stopPTT);
+                pttButton.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    startPTT();
+                });
+                pttButton.addEventListener('touchend', stopPTT);
+            }
+            
+            // Hang up buttons
+            const hangupBtn = document.getElementById('theaterHangupButton');
+            if (hangupBtn) {
+                hangupBtn.addEventListener('click', hangupTheater);
+            }
+            
+            const hangupTopBtn = document.getElementById('theaterHangupTop');
+            if (hangupTopBtn) {
+                hangupTopBtn.addEventListener('click', hangupTheater);
+            }
+            
+            const endSessionBtn = document.getElementById('endTheaterSession');
+            if (endSessionBtn) {
+                endSessionBtn.addEventListener('click', hangupTheater);
+            }
+            
+            // Seek bar
+            const seekBar = document.getElementById('theaterSeekBar');
+            if (seekBar) {
+                seekBar.addEventListener('click', (e) => {
+                    const rect = e.target.getBoundingClientRect();
+                    const percent = (e.clientX - rect.left) / rect.width;
+                    const seekTime = percent * theaterState.duration;
+                    seekTheaterTo(seekTime);
+                });
+            }
+            
+            // Set initial volume
+            volumeSlider.value = theaterState.currentVolume;
+        }
+
+        function toggleTheaterPlayPause() {
+            if (theaterState.isPlaying) {
+                pauseTheater();
+            } else {
+                playTheater();
+            }
+        }
+
+        function playTheater() {
+            if (!theaterState.player) return;
+            
+            theaterState.player.play();
+            theaterState.isPlaying = true;
+            updateTheaterPlayPauseButton();
+            
+            // Broadcast play command if leader
+            if (theaterState.isTheaterLeader) {
+                sendPlayState();
+            }
+        }
+
+        function pauseTheater() {
+            if (!theaterState.player) return;
+            
+            theaterState.player.pause();
+            theaterState.isPlaying = false;
+            updateTheaterPlayPauseButton();
+            
+            // Broadcast pause command if leader
+            if (theaterState.isTheaterLeader) {
+                sendPlayState();
+            }
+        }
+
+        function seekTheater(seconds) {
+            if (!theaterState.player) return;
+            
+            let newTime = theaterState.currentTime + seconds;
+            newTime = Math.max(0, Math.min(newTime, theaterState.duration));
+            seekTheaterTo(newTime);
+        }
+
+        function seekTheaterTo(time) {
+            if (!theaterState.player) return;
+            
+            theaterState.isSyncing = true;
+            theaterState.currentTime = time;
+            theaterState.player.currentTime = time;
+            updateTheaterSeekBar();
+            
+            // Broadcast seek command if leader
+            if (theaterState.isTheaterLeader) {
+                sendSeekState(time);
+            }
+            
+            setTimeout(() => {
+                theaterState.isSyncing = false;
+            }, 1000);
+        }
+
+        function toggleTheaterMute() {
+            if (!theaterState.player) return;
+            
+            theaterState.isMuted = !theaterState.isMuted;
+            theaterState.player.muted = theaterState.isMuted;
+            updateTheaterVolumeButton();
+        }
+
+        function setTheaterVolume(volume) {
+            if (!theaterState.player) return;
+            
+            theaterState.currentVolume = volume;
+            theaterState.isMuted = volume === 0;
+            theaterState.player.volume = volume;
+            updateTheaterVolumeButton();
+        }
+
+        function toggleTheaterFullscreen() {
+            if (theaterState.isFullscreen) {
+                exitTheaterFullscreen();
+            } else {
+                enterTheaterFullscreen();
+            }
+        }
+
+        async function startPTT() {
+            if (theaterState.isPTTActive) return;
+            
+            theaterState.isPTTActive = true;
+            const pttButton = document.getElementById('theaterPTTButton');
+            if (pttButton) pttButton.classList.add('active');
+            
+            try {
+                theaterState.pttAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                showNotification('PTT Active', 'Push-to-Talk is now active', 'success');
+            } catch (err) {
+                console.error('Microphone access error:', err);
+                stopPTT();
+                showNotification('Error', `Failed to access microphone: ${err.message}`, 'error');
+            }
+        }
+
+        function stopPTT() {
+            if (!theaterState.isPTTActive) return;
+            
+            theaterState.isPTTActive = false;
+            const pttButton = document.getElementById('theaterPTTButton');
+            if (pttButton) pttButton.classList.remove('active');
+            
+            if (theaterState.pttAudioStream) {
+                theaterState.pttAudioStream.getTracks().forEach(track => track.stop());
+                theaterState.pttAudioStream = null;
+            }
+        }
+
+        function startTheaterSeekUpdate() {
+            clearInterval(theaterState.seekBarUpdateInterval);
+            theaterState.seekBarUpdateInterval = setInterval(() => {
+                if (!theaterState.isSyncing && theaterState.player) {
+                    theaterState.currentTime = theaterState.player.currentTime;
+                    updateTheaterSeekBar();
+                }
+            }, 1000);
+        }
+
+        function updateTheaterSeekBar() {
+            if (theaterState.duration > 0) {
+                const percent = (theaterState.currentTime / theaterState.duration) * 100;
+                const progress = document.getElementById('theaterSeekBarProgress');
+                const handle = document.getElementById('theaterSeekBarHandle');
+                if (progress) progress.style.width = `${percent}%`;
+                if (handle) handle.style.left = `${percent}%`;
+            }
+            
+            updateTheaterTimeDisplay();
+        }
+
+        function updateTheaterTimeDisplay() {
+            const formatTime = (seconds) => {
+                const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const secs = (seconds % 60).toString().padStart(2, '0');
+                return `${mins}:${secs}`;
+            };
+            
+            const current = formatTime(theaterState.currentTime);
+            const total = formatTime(theaterState.duration);
+            const timeDisplay = document.getElementById('theaterTimeDisplay');
+            if (timeDisplay) timeDisplay.textContent = `${current} / ${total}`;
+        }
+
+        function updateTheaterPlayPauseButton() {
+            const btn = document.getElementById('theaterPlayPauseButton');
+            if (btn) {
+                btn.innerHTML = theaterState.isPlaying ? 
+                    '<i class="fas fa-pause"></i>' : 
+                    '<i class="fas fa-play"></i>';
+            }
+        }
+
+        function updateTheaterVolumeButton() {
+            const icon = document.getElementById('theaterMuteButton');
+            if (icon) {
+                if (theaterState.isMuted) {
+                    icon.innerHTML = '<i class="fas fa-volume-mute"></i>';
+                } else {
+                    if (theaterState.currentVolume > 0.5) {
+                        icon.innerHTML = '<i class="fas fa-volume-up"></i>';
+                    } else if (theaterState.currentVolume > 0) {
+                        icon.innerHTML = '<i class="fas fa-volume-down"></i>';
+                    } else {
+                        icon.innerHTML = '<i class="fas fa-volume-off"></i>';
+                    }
+                }
+            }
+        }
+
+        async function createTheaterRoom() {
+            try {
+                theaterState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+                theaterState.isTheaterLeader = true;
+
+                // Create room in Firebase
+                theaterState.firebaseRef = database.ref('rooms/' + theaterState.roomId);
+                theaterState.firebaseStateRef = theaterState.firebaseRef.child('state');
+                
+                // Set initial room data
+                await theaterState.firebaseRef.set({
+                    created: firebase.database.ServerValue.TIMESTAMP,
+                    host: theaterState.userId,
+                    videoUrl: "",
+                    state: {
+                        playing: false,
+                        currentTime: 0
+                    }
+                });
+                
+                // Setup listeners
+                setupFirebaseListeners();
+                
+                document.getElementById('copyTheaterLink').style.display = 'inline-flex';
+                document.getElementById('copyTheaterLinkTop').style.display = 'inline-flex';
+                document.getElementById('endTheaterSession').style.display = 'inline-flex';
+                showNotification('Room Generated', `Room ID: ${theaterState.roomId}. Share with others.`, 'success');
+                updateStatus(`Room created: ${theaterState.roomId}`, 'connecting');
+
+                // Add self as participant
+                addParticipant({
+                    id: theaterState.userId,
+                    name: theaterState.userName,
+                    isLeader: true
+                });
+                
+                // Show the video modal
+                document.getElementById('theaterModal').style.display = 'flex';
+                document.getElementById('theaterVideoUrl').focus();
+                
+                startTimer();
+            } catch (err) {
+                console.error('Room creation error:', err);
+                showNotification('Error', `Failed to create theater room: ${err.message}`, 'error');
+                updateStatus('Room creation failed', 'error');
+            }
+        }
+
+        async function joinTheaterRoom() {
+            try {
+                theaterState.roomId = document.getElementById('theater-room-id').value.trim();
+                
+                if (!theaterState.roomId) {
+                    showNotification('Error', 'Please enter a room ID', 'error');
+                    return;
+                }
+                
+                // Check if room exists
+                const roomRef = database.ref('rooms/' + theaterState.roomId);
+                const snapshot = await roomRef.once('value');
+                
+                if (!snapshot.exists()) {
+                    showNotification('Error', 'Room does not exist', 'error');
+                    return;
+                }
+                
+                theaterState.firebaseRef = roomRef;
+                theaterState.firebaseStateRef = theaterState.firebaseRef.child('state');
+                
+                // Setup listeners
+                setupFirebaseListeners();
+                
+                document.getElementById('endTheaterSession').style.display = 'inline-flex';
+                document.getElementById('copyTheaterLink').style.display = 'inline-flex';
+                document.getElementById('copyTheaterLinkTop').style.display = 'inline-flex';
+                updateStatus(`Joined theater session (${theaterState.roomId})`, 'connecting');
+                
+                // Add self as participant
+                addParticipant({
+                    id: theaterState.userId,
+                    name: theaterState.userName,
+                    isLeader: false
+                });
+                
+                showNotification('Theater Joined', `Joined theater room: ${theaterState.roomId}`, 'success');
+                startTimer();
+            } catch (err) {
+                console.error('Join room error:', err);
+                showNotification('Connection Error', `Failed to join theater room: ${err.message}`, 'error');
+                updateStatus('Join room failed', 'error');
+            }
+        }
+
+        function copyTheaterLink() {
+            try {
+                const baseUrl = window.location.origin + window.location.pathname;
+                const roomLink = `${baseUrl}?room=${theaterState.roomId}&mode=theater`;
+                
+                navigator.clipboard.writeText(roomLink).then(() => {
+                    showNotification('Copied', 'Theater room link copied to clipboard', 'success');
+                }).catch(err => {
+                    console.error('Copy failed:', err);
+                    showNotification('Error', 'Failed to copy link', 'error');
+                });
+            } catch (err) {
+                console.error('Copy error:', err);
+                showNotification('Error', `Failed to copy link: ${err.message}`, 'error');
+            }
+        }
+
+        function hangupTheater() {
+            try {
+                stopTimer();
+                updateStatus('Ready to connect', 'disconnected');
+
+                if (theaterState.player) {
+                    theaterState.player.pause();
+                    theaterState.player.src = '';
+                    theaterState.player = null;
+                }
+
+                if (theaterState.pttAudioStream) {
+                    theaterState.pttAudioStream.getTracks().forEach(track => track.stop());
+                    theaterState.pttAudioStream = null;
+                }
+
+                if (theaterState.firebaseRef) {
+                    theaterState.firebaseRef.off();
+                    theaterState.firebaseStateRef.off();
+                }
+
+                document.getElementById('theaterVideoElement').innerHTML = '';
+                document.getElementById('videoThumbnail').style.display = 'none';
+                document.getElementById('theaterContainer').style.display = 'none';
+                document.getElementById('theaterModal').style.display = 'none';
+                document.querySelector('.theater-placeholder').style.display = 'flex';
+                document.getElementById('theaterTopControls').style.display = 'none';
+                document.getElementById('theaterHangupTop').style.display = 'none';
+                document.getElementById('endTheaterSession').style.display = 'none';
+                document.getElementById('copyTheaterLink').style.display = 'none';
+                document.getElementById('copyTheaterLinkTop').style.display = 'none';
+                document.getElementById('videoError').classList.remove('show');
+                
+                const roomInput = document.getElementById('theater-room-id');
+                if (roomInput) roomInput.value = '';
+                
+                clearInterval(theaterState.seekBarUpdateInterval);
+                theaterState.seekBarUpdateInterval = null;
+                theaterState.roomId = null;
+                theaterState.mediaUrl = null;
+                theaterState.isPlaying = false;
+                theaterState.isMuted = false;
+                theaterState.currentTime = 0;
+                theaterState.duration = 0;
+                theaterState.isYouTube = false;
+                theaterState.participants = {};
+                document.getElementById('participantsContainer').innerHTML = '';
+                
+                if (theaterState.isFullscreen) {
+                    exitTheaterFullscreen();
+                }
+                
+                showNotification('Theater Ended', 'Theater session has ended', 'success');
+            } catch (err) {
+                console.error('Hangup error:', err);
+                showNotification('Error', `Failed to end session: ${err.message}`, 'error');
+            }
+        }
+
+        function addParticipant(participant) {
+            theaterState.participants[participant.id] = participant;
+            renderParticipants();
+        }
+        
+        function renderParticipants() {
+            const container = document.getElementById('participantsContainer');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            Object.values(theaterState.participants).forEach(participant => {
+                const firstLetter = participant.name.charAt(0).toUpperCase();
+                const card = document.createElement('div');
+                card.className = 'participant-card';
+                card.innerHTML = `
+                    <div class="participant-avatar">${firstLetter}</div>
+                    <div>
+                        <div class="participant-name">${participant.name}</div>
+                        <div class="participant-status">${participant.isLeader ? 'Host' : 'Member'}</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Initialize button listeners
+        function initButtonListeners() {
+            document.getElementById('createTheaterRoom').addEventListener('click', createTheaterRoom);
+            document.getElementById('joinTheaterRoom').addEventListener('click', joinTheaterRoom);
+            document.getElementById('theaterVideoUrl').addEventListener('input', validateTheaterUrl);
+            document.getElementById('theaterLoadBtn').addEventListener('click', () => {
+                const url = document.getElementById('theaterVideoUrl').value.trim();
+                if (url && isValidTheaterUrl(url)) {
+                    theaterState.videoType = 'direct';
+                    theaterState.firebaseRef.child('videoType').set('direct');
+                    theaterState.firebaseRef.child('videoUrl').set(url);
+                } else {
+                    showNotification('Error', 'Please enter a valid video URL', 'error');
+                }
+            });
+            document.getElementById('loadYoutubeBtn').addEventListener('click', () => {
+                const url = document.getElementById('youtubeUrl').value.trim();
+                if (url) {
+                    theaterState.videoType = 'youtube';
+                    theaterState.firebaseRef.child('videoType').set('youtube');
+                    theaterState.firebaseRef.child('videoUrl').set(url);
+                } else {
+                    showNotification('Error', 'Please enter a YouTube URL', 'error');
+                }
+            });
+            document.getElementById('loadVimeoBtn').addEventListener('click', () => {
+                const url = document.getElementById('vimeoUrl').value.trim();
+                if (url) {
+                    theaterState.videoType = 'vimeo';
+                    theaterState.firebaseRef.child('videoType').set('vimeo');
+                    theaterState.firebaseRef.child('videoUrl').set(url);
+                } else {
+                    showNotification('Error', 'Please enter a Vimeo URL', 'error');
+                }
+            });
+            document.getElementById('theaterModalCancel').addEventListener('click', () => {
+                document.getElementById('theaterModal').style.display = 'none';
+                hangupTheater();
+            });
+            document.getElementById('theaterModalCopy').addEventListener('click', copyTheaterLink);
+            document.getElementById('copyTheaterLink').addEventListener('click', copyTheaterLink);
+            document.getElementById('copyTheaterLinkTop').addEventListener('click', copyTheaterLink);
+            
+            // Source tab switching
+            const tabs = document.querySelectorAll('.source-tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Remove active class from all tabs and content
+                    tabs.forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.source-content').forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked tab and corresponding content
+                    tab.classList.add('active');
+                    const sourceType = tab.getAttribute('data-source');
+                    document.getElementById(`${sourceType}-source`).classList.add('active');
+                });
+            });
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            initButtonListeners();
+            updateStatus('Ready to connect', 'disconnected');
+            theaterState.lastRemoteUpdate = 0;
+            theaterState.lastSync = 0;
+            
+            // Auto-join if room ID in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomParam = urlParams.get('room');
+            const modeParam = urlParams.get('mode');
+            
+            if (roomParam && modeParam === 'theater') {
+                document.getElementById('theater-room-id').value = roomParam;
+                setTimeout(() => {
+                    joinTheaterRoom();
+                }, 500);
+            }
+        });
+    </script>
+</body>
+</html>
