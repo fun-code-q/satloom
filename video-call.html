@@ -140,7 +140,7 @@
 
         .nav-item.active {
             transform: scale(1.02);
-            box-shadow: 0 4px 15px rgba(58, 123, 213, 0.3);
+            box-shadow: 0 4px  15px rgba(58, 123, 213, 0.3);
         }
 
         .nav-link {
@@ -684,26 +684,15 @@
                 font-size: 16px;
             }
             
-            .fullscreen-video-mode .call-controls {
+            .fullscreen-mode .call-controls {
                 bottom: 10px;
             }
             
-            .fullscreen-video-mode #video-local-video {
+            .fullscreen-mode #fullscreen-local-video {
                 width: 100px;
                 height: 75px;
                 bottom: 80px;
                 right: 10px;
-            }
-            
-            .top-controls-container {
-                top: 10px;
-                right: 10px;
-            }
-            
-            .top-control-btn {
-                width: 36px;
-                height: 36px;
-                font-size: 14px;
             }
         }
 
@@ -980,9 +969,6 @@
         <div class="video-container">
             <video id="fullscreen-remote-video" autoplay playsinline></video>
             <div class="call-timer" id="fullscreenCallTimer">00:00</div>
-            <button class="switch-camera-btn" id="fullscreenSwitchCameraBtn" title="Switch Camera">
-                <i class="fas fa-sync-alt"></i>
-            </button>
             <button class="copy-btn supercopy" id="fullscreenCopyLink" title="Copy Room Link">
                 <i class="fas fa-copy"></i>
             </button>
@@ -997,8 +983,6 @@
                     </button>
                     <button class="local-video-control-btn" id="fullscreenSizeLargeBtn" title="Large Size">
                         <i class="fas fa-expand"></i>
-                    ">
-
                     </button>
                     <button class="local-video-control-btn" id="fullscreenSwitchStreamBtn" title="Switch Streams">
                         <i class="fas fa-exchange-alt"></i>
@@ -1008,11 +992,14 @@
             </div>
         </div>
         <div class="call-controls">
+            <button class="control-btn" id="fullscreenAudioToggle">
+                <i class="fas fa-microphone"></i>
+            </button>
             <button class="control-btn" id="fullscreenVideoToggle">
                 <i class="fas fa-video"></i>
             </button>
-            <button class="control-btn" id="fullscreenAudioToggle">
-                <i class="fas fa-microphone"></i>
+            <button class="control-btn" id="fullscreenSwitchCameraBtn" title="Switch Camera">
+                <i class="fas fa-sync-alt"></i>
             </button>
             <button class="control-btn end" id="fullscreenEndCall">
                 <i class="fas fa-phone-slash"></i>
@@ -1218,6 +1205,8 @@
                 updateMirroring();
                 
                 document.getElementById('videoControls').style.display = 'flex';
+                domRefs.videoRemoteVideoContainer.style.display = 'block';
+                domRefs.localVideoContainer.style.display = 'block';
                 appState.isCameraEnabled = true;
                 
                 const devices = await navigator.mediaDevices.enumerateDevices();
@@ -1306,6 +1295,7 @@
                 if (appState.roomId) {
                     domRefs.fullscreenCopyLink.style.display = 'flex';
                 }
+                domRefs.fullscreenLocalVideoContainer.style.display = 'block';
                 showNotification('Fullscreen Mode', 'You are now in true fullscreen mode', 'success');
             } catch (err) {
                 console.error('Fullscreen error:', err);
@@ -1426,7 +1416,9 @@
                 document.getElementById('displayRoomId').style.display = 'none';
                 document.getElementById('video-room-id').value = '';
                 document.querySelector('.placeholder-animation').style.display = 'flex';
-                document.getElementById('videoRemoteVideoContainer').style.display = 'none';
+                domRefs.videoRemoteVideoContainer.style.display = 'none';
+                domRefs.localVideoContainer.style.display = 'none';
+                domRefs.fullscreenLocalVideoContainer.style.display = 'none';
 
                 if (appState.isFullscreen) {
                     exitFullscreenMode();
@@ -1481,11 +1473,19 @@
                             domRefs.localVideo.play().catch(e => console.error('Switched local video play error:', e));
                             domRefs.fullscreenLocalVideo.srcObject = appState.remoteStream;
                             domRefs.fullscreenLocalVideo.play().catch(e => console.error('Switched fullscreen local video play error:', e));
+                            domRefs.remoteVideo.srcObject = appState.localStream;
+                            domRefs.remoteVideo.play().catch(e => console.error('Switched remote video play error:', e));
+                            domRefs.fullscreenRemoteVideo.srcObject = appState.localStream;
+                            domRefs.fullscreenRemoteVideo.play().catch(e => console.error('Switched fullscreen remote video play error:', e));
                         } else {
                             domRefs.remoteVideo.srcObject = appState.remoteStream;
                             domRefs.remoteVideo.play().catch(e => console.error('Remote video play error:', e));
                             domRefs.fullscreenRemoteVideo.srcObject = appState.remoteStream;
                             domRefs.fullscreenRemoteVideo.play().catch(e => console.error('Fullscreen remote video play error:', e));
+                            domRefs.localVideo.srcObject = appState.localStream;
+                            domRefs.localVideo.play().catch(e => console.error('Local video play error:', e));
+                            domRefs.fullscreenLocalVideo.srcObject = appState.localStream;
+                            domRefs.fullscreenLocalVideo.play().catch(e => console.error('Fullscreen local video play error:', e));
                         }
                         domRefs.videoSpinner.style.display = 'none';
                     }
@@ -1644,7 +1644,6 @@
                 showNotification('Room Generated', `Room ID: ${appState.roomId}. Share with others.`, 'success');
                 updateStatus(`Room created: ${appState.roomId}`, 'connecting');
                 document.querySelector('.placeholder-animation').style.display = 'none';
-                document.getElementById('videoRemoteVideoContainer').style.display = 'block';
 
                 const mediaInitialized = await initMedia();
                 if (!mediaInitialized) return;
@@ -1694,7 +1693,6 @@
                 document.getElementById('copyVideoLink').style.display = 'inline-flex';
                 document.getElementById('enterFullscreenBtnNormal').style.display = 'inline-flex';
                 document.querySelector('.placeholder-animation').style.display = 'none';
-                document.getElementById('videoRemoteVideoContainer').style.display = 'block';
                 
                 const mediaInitialized = await initMedia();
                 if (!mediaInitialized) return;
