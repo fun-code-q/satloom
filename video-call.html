@@ -437,6 +437,7 @@
             object-fit: cover;
         }
 
+        /* FIX: Only mirror front camera */
         #video-local-video,
         #fullscreen-local-video {
             position: absolute;
@@ -444,7 +445,6 @@
             border-radius: 5px;
             background-color: #000;
             z-index: 10;
-            transform: scaleX(-1); /* Mirror effect for self-view */
         }
 
         /* Fullscreen mode */
@@ -607,6 +607,10 @@
             max-height: 200px;
             border-radius: 5px;
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            /* FIX: Ensure visibility */
+            display: block;
+            opacity: 1;
+            background: black;
         }
 
         .local-video-container video {
@@ -1227,6 +1231,9 @@
                 domRefs.localVideo.srcObject = appState.localStream;
                 domRefs.fullscreenLocalVideo.srcObject = appState.localStream;
                 
+                // FIX: Update mirroring based on camera
+                updateMirroring();
+                
                 // Show controls
                 document.getElementById('videoControls').style.display = 'flex';
                 appState.isCameraEnabled = true;
@@ -1251,6 +1258,19 @@
             }
         }
 
+        // FIX: Update mirroring based on camera type
+        function updateMirroring() {
+            if (appState.currentCamera === 'user') {
+                // Front camera - apply mirror effect
+                domRefs.localVideo.style.transform = 'scaleX(-1)';
+                domRefs.fullscreenLocalVideo.style.transform = 'scaleX(-1)';
+            } else {
+                // Back camera - remove mirror effect
+                domRefs.localVideo.style.transform = 'none';
+                domRefs.fullscreenLocalVideo.style.transform = 'none';
+            }
+        }
+
         async function switchCamera() {
             try {
                 appState.currentCamera = appState.currentCamera === 'user' ? 'environment' : 'user';
@@ -1267,6 +1287,9 @@
                 // Update video elements
                 domRefs.localVideo.srcObject = appState.localStream;
                 domRefs.fullscreenLocalVideo.srcObject = appState.localStream;
+                
+                // FIX: Update mirroring after switching
+                updateMirroring();
                 
                 // Update peer connection
                 if (appState.peerConnection) {
