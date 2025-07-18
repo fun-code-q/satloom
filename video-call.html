@@ -3,160 +3,823 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatLoom - True Fullscreen Video</title>
+    <title>SatLoom - Enhanced Video Call</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
     <style>
+        :root {
+            --primary-color: #3a7bd5;
+            --secondary-color: #00d2ff;
+            --accent-color: #00bfff;
+            --dark-bg: #0a1929;
+            --card-bg: rgba(7, 25, 43, 0.8);
+            --text-primary: #ffffff;
+            --text-secondary: #b8c5d9;
+            --success-color: #4CAF50;
+            --warning-color: #ff9800;
+            --error-color: #f44336;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(-45deg, var(--dark-bg), #203a43, #1c2b3a, #2c3e50);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            transition: background 0.5s ease;
+            overflow: hidden;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+
+        .app-container {
+            max-width: 1200px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 15px;
+            padding: 15px;
+            transition: all 0.3s ease;
+            margin: 0 auto;
+        }
+
+        .app-container.sidebar-hidden {
+            grid-template-columns: 0 1fr;
+            gap: 0;
+        }
+
+        .app-container.sidebar-hidden .sidebar {
+            padding: 0;
+            margin: 0;
+            border: none;
+            opacity: 0;
+            width: 0;
+            height: 0;
+            overflow: hidden;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow: auto;
+            max-height: calc(100vh - 30px);
+            overflow: hidden;
+        }
+
+        .sidebar {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 0.5s ease;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            height: auto;
+            overflow: hidden;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 0 0 rgba(58, 123, 213, 0.7);
+        }
+
+        .logo-text {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-menu {
+            list-style: none;
+            margin-top: 15px;
+        }
+
+        .nav-item {
+            margin-bottom: 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item.active {
+            transform: scale(1.02);
+            box-shadow: 0 4px 15px rgba(58, 123, 213, 0.3);
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: rgba(58, 123, 213, 0.15);
+            color: var(--text-primary);
+        }
+
+        .nav-link i {
+            margin-right: 8px;
+            width: 18px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .section {
+            display: none;
+            overflow: hidden;
+        }
+
+        .section.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            position: relative;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            color: var(--accent-color);
+        }
+
+        .section-title i {
+            margin-right: 8px;
+            font-size: 16px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 12px;
+            gap: 10px;
+        }
+
+        .input-styled {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 12px;
+            color: var(--text-primary);
+            border-radius: 8px;
+            width: 100%;
+            outline: none;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .input-styled:focus {
+            border-color: var(--accent-color);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            margin: 4px;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .btn i {
+            margin-right: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(58, 123, 213, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: var(--text-primary);
+            border-radius: 8px;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .call-controls {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .control-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
+            font-size: 16px;
+        }
+
+        .control-btn:not(.end) {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .control-btn.end {
+            background: linear-gradient(135deg, #e53935, #f44336);
+        }
+
+        .call-timer {
+            font-size: 20px;
+            text-align: center;
+            margin: 12px 0;
+            color: var(--accent-color);
+        }
+
+        .notification {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            max-width: 280px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            display: none;
+        }
+
+        .status-indicator {
+            padding: 8px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .status-indicator i {
+            margin-right: 6px;
+            font-size: 14px;
+        }
+
+        .status-indicator.connected {
+            background: rgba(76, 175, 80, 0.15);
+            color: #4CAF50;
+        }
+
+        .status-indicator.connecting {
+            background: rgba(255, 152, 0, 0.15);
+            color: #FF9800;
+        }
+
+        .status-indicator.error {
+            background: rgba(244, 67, 54, 0.15);
+            color: #F44336;
+        }
+
+        .app-footer {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 12px;
+            padding: 15px 0 5px;
+            margin-top: auto;
+            width: 100%;
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: var(--card-bg);
+            border: none;
+            color: var(--text-primary);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .desktop-menu-toggle {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: var(--card-bg);
+            border: none;
+            color: var(--text-primary);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .desktop-menu-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        .desktop-menu-toggle .close-icon {
+            display: none;
+        }
+
+        .sidebar-open .desktop-menu-toggle .menu-icon {
+            display: none;
+        }
+
+        .sidebar-open .desktop-menu-toggle .close-icon {
+            display: block;
+        }
+
         /* Video container */
-#videoRemoteVideoContainer {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    background-color: #000;
-    border-radius: 10px;
-    overflow: hidden;
-}
+        #videoRemoteVideoContainer {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background-color: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            display: none;
+        }
 
-#video-remote-video,
-#fullscreen-remote-video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
+        #video-remote-video,
+        #fullscreen-remote-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
 
-#video-local-video,
-#fullscreen-local-video {
-    position: absolute;
-    bottom: 30px;
-    right: 20px;
-    width: 150px;
-    height: 100px;
-    border: 2px solid #ffffff;
-    border-radius: 5px;
-    background-color: #000;
-}
+        #video-local-video,
+        #fullscreen-local-video {
+            position: absolute;
+            border: 2px solid #ffffff;
+            border-radius: 5px;
+            background-color: #000;
+            z-index: 10;
+            transform: scaleX(-1); /* Mirror effect for self-view */
+        }
 
-/* Fullscreen mode */
-.fullscreen-mode {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #000;
-    z-index: 2000;
-    flex-direction: column;
-}
+        /* Fullscreen mode */
+        .fullscreen-mode {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            z-index: 2000;
+            flex-direction: column;
+        }
 
-.fullscreen-mode .video-container {
-    flex-grow: 1;
-    position: relative;
-    width: 100%;
-}
+        .fullscreen-mode .video-container {
+            flex-grow: 1;
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
 
-.fullscreen-mode .call-controls {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 10px;
-}
+        .fullscreen-mode .call-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
 
-.exit-fullscreen-btn {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background-color: #555;
-    border: none;
-    color: #ffffff;
-    padding: 10px;
-    border-radius: 5px;
-    cursor: pointer;
-    z-index: 2100;
-}
+        .exit-fullscreen-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #555;
+            border: none;
+            color: #ffffff;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 2100;
+        }
 
-.exit-fullscreen-btn:hover {
-    background-color: #666;
-}
+        .exit-fullscreen-btn:hover {
+            background-color: #666;
+        }
 
-.fullscreen-mode .call-timer {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-}
+        .fullscreen-mode .call-timer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+        }
 
-/* Custom supercopy button - aligned to left */
-.supercopy {
-    position: fixed;
-    right: 20px;
-    top: 19%;
-    transform: translateY(-50%);
-    z-index: 1000;
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    color: var(--text-primary);
-    border-radius: 8px;
-    padding: 6px 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 12px;
-    transition: all 0.2s ease;
-    display: flex;
-}
+        /* Custom supercopy button - aligned to left */
+        .supercopy {
+            position: fixed;
+            right: 20px;
+            top: 19%;
+            transform: translateY(-50%);
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: var(--text-primary);
+            border-radius: 8px;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+            display: flex;
+        }
 
-.supercopy:hover {
-    transform: translateY(-50%) scale(1.05);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-}
+        .supercopy:hover {
+            transform: translateY(-50%) scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
 
-.supercopy:active {
-    transform: translateY(-50%) scale(0.98);
-}
+        .supercopy:active {
+            transform: translateY(-50%) scale(0.98);
+        }
 
-.supercopy i {
-    font-size: 16px;
-    animation: pulse 2s infinite;
-}
+        .supercopy i {
+            font-size: 16px;
+            animation: pulse 2s infinite;
+        }
 
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.7; }
-    100% { opacity: 1; }
-}
+        /* Switch camera button */
+        .switch-camera-btn {
+            display: none;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #555;
+            border: none;
+            color: #ffffff;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 2100;
+        }
 
-/* Switch camera button */
-.switch-camera-btn {
-    display: none;
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background-color: #555;
-    border: none;
-    color: #ffffff;
-    padding: 10px;
-    border-radius: 50%;
-    cursor: pointer;
-    z-index: 2100;
-}
+        .switch-camera-btn:hover {
+            background-color: #666;
+        }
 
-.switch-camera-btn:hover {
-    background-color: #666;
-}
+        /* Fullscreen active */
+        body.fullscreen-active .desktop-menu-toggle,
+        body.fullscreen-active .mobile-menu-toggle {
+            display: none;
+        }
 
+        /* Floating local video controls */
+        .local-video-controls {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            z-index: 15;
+            display: flex;
+            gap: 5px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
 
-/* Fullscreen active */
-body.fullscreen-active .desktop-menu-toggle,
-body.fullscreen-active .mobile-menu-toggle {
-    display: none;
-}
+        .local-video-container:hover .local-video-controls {
+            opacity: 1;
+        }
 
-</style>
+        .local-video-control-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
 
+        .local-video-control-btn:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .local-video-container {
+            position: absolute;
+            cursor: move;
+            z-index: 10;
+            resize: both;
+            overflow: hidden;
+            min-width: 80px;
+            min-height: 60px;
+            max-width: 300px;
+            max-height: 200px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .local-video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Mobile optimization */
+        @media (max-width: 900px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                padding: 10px;
+                gap: 10px;
+            }
+            
+            .app-container.sidebar-hidden {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 280px;
+                height: 100%;
+                z-index: 900;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                display: none;
+                max-height: 100vh;
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+                display: flex;
+            }
+            
+            .mobile-menu-toggle {
+                display: flex;
+            }
+            
+            .desktop-menu-toggle {
+                display: none;
+            }
+            
+            .main-content {
+                max-height: calc(100vh - 20px);
+            }
+            
+            .card {
+                padding: 15px;
+            }
+            
+            #videoRemoteVideoContainer {
+                height: 200px;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+            
+            .call-controls {
+                gap: 3px;
+            }
+            
+            .control-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 14px;
+            }
+            
+            .section-title {
+                font-size: 16px;
+            }
+            
+            .fullscreen-video-mode .call-controls {
+                bottom: 10px;
+            }
+            
+            .fullscreen-video-mode #video-local-video {
+                width: 100px;
+                height: 75px;
+                bottom: 80px;
+                right: 10px;
+            }
+            
+            .top-controls-container {
+                top: 10px;
+                right: 10px;
+            }
+            
+            .top-control-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .call-controls {
+                gap: 3px;
+            }
+            
+            .control-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
+            }
+            
+            .section-title {
+                font-size: 16px;
+            }
+        }
+
+        /* Animations */
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { 
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(58, 123, 213, 0.7);
+            }
+            70% { 
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(58, 123, 213, 0);
+            }
+            100% { 
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(58, 123, 213, 0);
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Placeholder animation */
+        .placeholder-animation {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .video-placeholder {
+            width: 160px;
+            height: 100px;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .video-icon {
+            font-size: 40px;
+            color: var(--accent-color);
+            position: relative;
+            z-index: 2;
+        }
+
+        .video-placeholder::before,
+        .video-placeholder::after {
+            content: '';
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            opacity: 0.2;
+            z-index: 1;
+            animation: videoPulse 2s infinite;
+        }
+
+        .video-placeholder::after {
+            animation-delay: 1s;
+        }
+
+        @keyframes videoPulse {
+            0% {
+                transform: scale(0.8);
+                opacity: 0.4;
+            }
+            70% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+        }
+    </style>
 </head>
 <body class="dark-mode">
     <button class="desktop-menu-toggle" id="desktopMenuToggle">
@@ -249,10 +912,13 @@ body.fullscreen-active .mobile-menu-toggle {
                         <button class="btn btn-secondary" id="joinVideoRoom">
                             <i class="fas fa-sign-in-alt"></i> Join Room
                         </button>
-                        <div class="room-info" id="roomInfo" style="display: none;">
+                        <div class="room-info" id="roomInfo" style="display: none; gap: 5px;">
                            <div class="room-id" style="display: none;"><span id="displayRoomId"></span></div>
-                            <button class="copy-btn" id="copyVideoLink">
+                            <button class="copy-btn" id="copyVideoLink" title="Copy Room Link">
                                 <i class="fas fa-copy"></i>
+                            </button>
+                            <button class="copy-btn" id="enterFullscreenBtnNormal" title="Enter Fullscreen">
+                                <i class="fas fa-expand"></i>
                             </button>
                         </div>
                     </div>
@@ -263,13 +929,31 @@ body.fullscreen-active .mobile-menu-toggle {
                         </div>
                     </div>
                     
-                    <div id="videoRemoteVideoContainer" style="display: none;">
+                    <div id="videoRemoteVideoContainer">
                         <video id="video-remote-video" autoplay playsinline></video>
-                        <video id="video-local-video" autoplay playsinline muted></video>
                         <div class="spinner" id="videoSpinner"></div>
                         <button class="switch-camera-btn" id="switchCameraBtn" title="Switch Camera">
                             <i class="fas fa-sync-alt"></i>
                         </button>
+                        
+                        <!-- Floating local video container -->
+                        <div class="local-video-container" id="localVideoContainer">
+                            <div class="local-video-controls">
+                                <button class="local-video-control-btn" id="sizeSmallBtn" title="Small Size">
+                                    <i class="fas fa-compress"></i>
+                                </button>
+                                <button class="local-video-control-btn" id="sizeMediumBtn" title="Medium Size">
+                                    <i class="fas fa-square"></i>
+                                </button>
+                                <button class="local-video-control-btn" id="sizeLargeBtn" title="Large Size">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                                <button class="local-video-control-btn" id="switchStreamBtn" title="Switch Streams">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </button>
+                            </div>
+                            <video id="video-local-video" autoplay playsinline muted></video>
+                        </div>
                     </div>
                     
                     <div class="call-controls bottom-controls" id="videoControls" style="display: none;">
@@ -298,13 +982,12 @@ body.fullscreen-active .mobile-menu-toggle {
     </div>
     
     <!-- Fullscreen mode container -->
-    <div class="fullscreen-mode" id="fullscreenMode" style="display: none;">
+    <div class="fullscreen-mode" id="fullscreenMode">
         <button class="exit-fullscreen-btn" id="exitFullscreenBtn">
             <i class="fas fa-compress"></i>
         </button>
         <div class="video-container">
             <video id="fullscreen-remote-video" autoplay playsinline></video>
-            <video id="fullscreen-local-video" autoplay playsinline muted></video>
             <div class="call-timer" id="fullscreenCallTimer">00:00</div>
             <button class="switch-camera-btn" id="fullscreenSwitchCameraBtn" title="Switch Camera">
                 <i class="fas fa-sync-alt"></i>
@@ -312,6 +995,25 @@ body.fullscreen-active .mobile-menu-toggle {
             <button class="copy-btn supercopy" id="fullscreenCopyLink" title="Copy Room Link">
                 <i class="fas fa-copy"></i>
             </button>
+            
+            <!-- Floating local video container for fullscreen -->
+            <div class="local-video-container" id="fullscreenLocalVideoContainer">
+                <div class="local-video-controls">
+                    <button class="local-video-control-btn" id="fullscreenSizeSmallBtn" title="Small Size">
+                        <i class="fas fa-compress"></i>
+                    </button>
+                    <button class="local-video-control-btn" id="fullscreenSizeMediumBtn" title="Medium Size">
+                        <i class="fas fa-square"></i>
+                    </button>
+                    <button class="local-video-control-btn" id="fullscreenSizeLargeBtn" title="Large Size">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                    <button class="local-video-control-btn" id="fullscreenSwitchStreamBtn" title="Switch Streams">
+                        <i class="fas fa-exchange-alt"></i>
+                    </button>
+                </div>
+                <video id="fullscreen-local-video" autoplay playsinline muted></video>
+            </div>
         </div>
         <div class="call-controls">
             <button class="control-btn" id="fullscreenVideoToggle">
@@ -375,7 +1077,9 @@ body.fullscreen-active .mobile-menu-toggle {
             cameraDevices: [],
             isFullscreen: false,
             lastNotificationTime: 0,
-            autoFullscreen: true // Default to true; can be overridden by settings.html
+            autoFullscreen: true,
+            localVideoPosition: { x: 20, y: 20, width: 150, height: 100 },
+            isStreamSwitched: false
         };
 
         // DOM references
@@ -407,9 +1111,10 @@ body.fullscreen-active .mobile-menu-toggle {
             fullscreenVideoToggle: document.getElementById('fullscreenVideoToggle'),
             fullscreenAudioToggle: document.getElementById('fullscreenAudioToggle'),
             fullscreenEndCall: document.getElementById('fullscreenEndCall'),
-            videoRemoteVideoContainer: document.getElementById('videoRemoteVideoContainer')
-            };
-        
+            videoRemoteVideoContainer: document.getElementById('videoRemoteVideoContainer'),
+            localVideoContainer: document.getElementById('localVideoContainer'),
+            fullscreenLocalVideoContainer: document.getElementById('fullscreenLocalVideoContainer')
+        };
 
         // Utility functions
         function playNotificationSound() {
@@ -596,7 +1301,6 @@ body.fullscreen-active .mobile-menu-toggle {
             try {
                 await document.documentElement.requestFullscreen();
                 domRefs.fullscreenMode.style.display = 'flex';
-                document.getElementById('videoRemoteVideoContainer').style.display = 'none';
                 document.querySelector('.placeholder-animation').style.display = 'none';
                 document.body.classList.add('fullscreen-active');
                 appState.isFullscreen = true;
@@ -608,8 +1312,6 @@ body.fullscreen-active .mobile-menu-toggle {
             } catch (err) {
                 console.error('Fullscreen error:', err);
                 showNotification('Warning', 'Fullscreen mode not supported or denied, continuing in windowed mode', 'error');
-                document.getElementById('videoRemoteVideoContainer').style.display = 'block';
-                document.getElementById('videoControls').style.display = 'flex';
                 domRefs.fullscreenCopyLink.style.display = 'none';
             }
         }
@@ -620,8 +1322,6 @@ body.fullscreen-active .mobile-menu-toggle {
                     await document.exitFullscreen();
                 }
                 domRefs.fullscreenMode.style.display = 'none';
-                document.getElementById('videoRemoteVideoContainer').style.display = 'none';
-                document.querySelector('.placeholder-animation').style.display = 'flex';
                 document.body.classList.remove('fullscreen-active');
                 appState.isFullscreen = false;
                 domRefs.fullscreenCopyLink.style.display = 'none';
@@ -725,7 +1425,7 @@ body.fullscreen-active .mobile-menu-toggle {
                 domRefs.fullscreenSwitchCameraBtn.style.display = 'none';
                 domRefs.videoSpinner.style.display = 'none';
                 domRefs.copyVideoLink.style.display = 'none';
-                domRefs.fullscreenCopyLink.style.display = 'none';
+                document.getElementById('enterFullscreenBtnNormal').style.display = 'none';
                 document.getElementById('roomInfo').style.display = 'none';
                 document.getElementById('displayRoomId').style.display = 'none';
                 document.getElementById('video-room-id').value = '';
@@ -742,6 +1442,7 @@ body.fullscreen-active .mobile-menu-toggle {
                 appState.isInitiator = false;
                 appState.roomId = null;
                 appState.currentCamera = 'user';
+                appState.isStreamSwitched = false;
             } catch (err) {
                 console.error('Hangup error:', err);
                 showNotification('Error', 'Failed to end call', 'error');
@@ -780,8 +1481,13 @@ body.fullscreen-active .mobile-menu-toggle {
                     appState.remoteStream.addTrack(event.track);
                     
                     if (event.track.kind === 'video') {
-                        domRefs.remoteVideo.srcObject = appState.remoteStream;
-                        domRefs.fullscreenRemoteVideo.srcObject = appState.remoteStream;
+                        if (appState.isStreamSwitched) {
+                            domRefs.localVideo.srcObject = appState.remoteStream;
+                            domRefs.fullscreenLocalVideo.srcObject = appState.remoteStream;
+                        } else {
+                            domRefs.remoteVideo.srcObject = appState.remoteStream;
+                            domRefs.fullscreenRemoteVideo.srcObject = appState.remoteStream;
+                        }
                         domRefs.videoSpinner.style.display = 'none';
                     }
                 };
@@ -937,7 +1643,7 @@ body.fullscreen-active .mobile-menu-toggle {
                 document.getElementById('displayRoomId').textContent = appState.roomId;
                 document.getElementById('displayRoomId').style.display = 'block';
                 document.getElementById('copyVideoLink').style.display = 'inline-flex';
-                domRefs.fullscreenCopyLink.style.display = appState.isFullscreen ? 'flex' : 'none';
+                document.getElementById('enterFullscreenBtnNormal').style.display = 'inline-flex';
                 showNotification('Room Generated', `Room ID: ${appState.roomId}. Share with others.`, 'success');
                 updateStatus(`Room created: ${appState.roomId}`, 'connecting');
                 document.querySelector('.placeholder-animation').style.display = 'none';
@@ -961,6 +1667,9 @@ body.fullscreen-active .mobile-menu-toggle {
 
                 appState.isStarted = true;
                 hideSidebar();
+
+                // Position local video container
+                positionLocalVideoContainer();
 
                 // Enter fullscreen mode if autoFullscreen is enabled
                 if (appState.autoFullscreen) {
@@ -993,7 +1702,7 @@ body.fullscreen-active .mobile-menu-toggle {
                 document.getElementById('displayRoomId').textContent = appState.roomId;
                 document.getElementById('displayRoomId').style.display = 'block';
                 document.getElementById('copyVideoLink').style.display = 'inline-flex';
-                domRefs.fullscreenCopyLink.style.display = appState.isFullscreen ? 'flex' : 'none';
+                document.getElementById('enterFullscreenBtnNormal').style.display = 'inline-flex';
                 document.querySelector('.placeholder-animation').style.display = 'none';
                 document.getElementById('videoRemoteVideoContainer').style.display = 'block';
                 
@@ -1014,6 +1723,9 @@ body.fullscreen-active .mobile-menu-toggle {
                 updateStatus(`Joining video room...`, 'connecting');
                 showNotification('Joining Room', `Connecting to room: ${appState.roomId}`);
                 hideSidebar();
+
+                // Position local video container
+                positionLocalVideoContainer();
 
                 // Enter fullscreen mode if autoFullscreen is enabled
                 if (appState.autoFullscreen) {
@@ -1053,61 +1765,198 @@ body.fullscreen-active .mobile-menu-toggle {
             }
         }
 
-function toggleVideo() {
-    console.log('toggleVideo clicked');
-    if (!appState.localStream) {
-        console.warn('No local stream available');
-        return;
-    }
-    const videoTracks = appState.localStream.getVideoTracks();
-    if (videoTracks.length === 0) {
-        console.warn('No video tracks found');
-        return;
-    }
+        function toggleVideo() {
+            console.log('toggleVideo clicked');
+            if (!appState.localStream) {
+                console.warn('No local stream available');
+                return;
+            }
+            const videoTracks = appState.localStream.getVideoTracks();
+            if (videoTracks.length === 0) {
+                console.warn('No video tracks found');
+                return;
+            }
 
-    const enabled = !videoTracks[0].enabled;
-    videoTracks[0].enabled = enabled;
-    appState.isCameraEnabled = enabled;
+            const enabled = !videoTracks[0].enabled;
+            videoTracks[0].enabled = enabled;
+            appState.isCameraEnabled = enabled;
 
-    // Update button states
-    if (domRefs.videoVideoToggle) {
-        domRefs.videoVideoToggle.innerHTML = enabled ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
-        domRefs.videoVideoToggle.classList.toggle('muted', !enabled);
-    }
-    if (domRefs.fullscreenVideoToggle) {
-        domRefs.fullscreenVideoToggle.innerHTML = enabled ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
-        domRefs.fullscreenVideoToggle.classList.toggle('muted', !enabled);
-    }
+            // Update button states
+            if (domRefs.videoVideoToggle) {
+                domRefs.videoVideoToggle.innerHTML = enabled ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+                domRefs.videoVideoToggle.classList.toggle('muted', !enabled);
+            }
+            if (domRefs.fullscreenVideoToggle) {
+                domRefs.fullscreenVideoToggle.innerHTML = enabled ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+                domRefs.fullscreenVideoToggle.classList.toggle('muted', !enabled);
+            }
 
-    showNotification(enabled ? 'Camera On' : 'Camera Off', `Your camera is now ${enabled ? 'enabled' : 'disabled'}`);
-}
+            showNotification(enabled ? 'Camera On' : 'Camera Off', `Your camera is now ${enabled ? 'enabled' : 'disabled'}`);
+        }
 
-function toggleAudio() {
-    console.log('toggleAudio clicked');
-    if (!appState.localStream) {
-        console.warn('No local stream available');
-        return;
-    }
-    const audioTracks = appState.localStream.getAudioTracks();
-    if (audioTracks.length === 0) {
-        console.warn('No audio tracks found');
-        return;
-    }
+        function toggleAudio() {
+            console.log('toggleAudio clicked');
+            if (!appState.localStream) {
+                console.warn('No local stream available');
+                return;
+            }
+            const audioTracks = appState.localStream.getAudioTracks();
+            if (audioTracks.length === 0) {
+                console.warn('No audio tracks found');
+                return;
+            }
 
-    const enabled = !audioTracks[0].enabled;
-    audioTracks[0].enabled = enabled;
+            const enabled = !audioTracks[0].enabled;
+            audioTracks[0].enabled = enabled;
 
-    if (domRefs.videoAudioToggle) {
-        domRefs.videoAudioToggle.innerHTML = enabled ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
-        domRefs.videoAudioToggle.classList.toggle('muted', !enabled);
-    }
-    if (domRefs.fullscreenAudioToggle) {
-        domRefs.fullscreenAudioToggle.innerHTML = enabled ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
-        domRefs.fullscreenAudioToggle.classList.toggle('muted', !enabled);
-    }
+            if (domRefs.videoAudioToggle) {
+                domRefs.videoAudioToggle.innerHTML = enabled ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
+                domRefs.videoAudioToggle.classList.toggle('muted', !enabled);
+            }
+            if (domRefs.fullscreenAudioToggle) {
+                domRefs.fullscreenAudioToggle.innerHTML = enabled ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
+                domRefs.fullscreenAudioToggle.classList.toggle('muted', !enabled);
+            }
 
-    showNotification(enabled ? 'Microphone On' : 'Microphone Off', `Your microphone is now ${enabled ? 'enabled' : 'muted'}`);
-}
+            showNotification(enabled ? 'Microphone On' : 'Microphone Off', `Your microphone is now ${enabled ? 'enabled' : 'muted'}`);
+        }
+
+        // Floating local video functions
+        function positionLocalVideoContainer() {
+            // Set initial position and size
+            domRefs.localVideoContainer.style.width = `${appState.localVideoPosition.width}px`;
+            domRefs.localVideoContainer.style.height = `${appState.localVideoPosition.height}px`;
+            domRefs.localVideoContainer.style.left = `${appState.localVideoPosition.x}px`;
+            domRefs.localVideoContainer.style.top = `${appState.localVideoPosition.y}px`;
+            
+            // Do the same for fullscreen container
+            domRefs.fullscreenLocalVideoContainer.style.width = `${appState.localVideoPosition.width}px`;
+            domRefs.fullscreenLocalVideoContainer.style.height = `${appState.localVideoPosition.height}px`;
+            domRefs.fullscreenLocalVideoContainer.style.left = `${appState.localVideoPosition.x}px`;
+            domRefs.fullscreenLocalVideoContainer.style.top = `${appState.localVideoPosition.y}px`;
+        }
+
+        function setLocalVideoSize(size) {
+            let width, height;
+            
+            switch(size) {
+                case 'small':
+                    width = 100;
+                    height = 75;
+                    break;
+                case 'medium':
+                    width = 150;
+                    height = 100;
+                    break;
+                case 'large':
+                    width = 200;
+                    height = 150;
+                    break;
+                default:
+                    width = 150;
+                    height = 100;
+            }
+            
+            appState.localVideoPosition.width = width;
+            appState.localVideoPosition.height = height;
+            
+            domRefs.localVideoContainer.style.width = `${width}px`;
+            domRefs.localVideoContainer.style.height = `${height}px`;
+            domRefs.fullscreenLocalVideoContainer.style.width = `${width}px`;
+            domRefs.fullscreenLocalVideoContainer.style.height = `${height}px`;
+            
+            showNotification('Video Size', `Local video size set to ${size}`);
+        }
+
+        function switchStreams() {
+            appState.isStreamSwitched = !appState.isStreamSwitched;
+            
+            if (appState.isStreamSwitched) {
+                // Swap streams
+                domRefs.remoteVideo.srcObject = appState.localStream;
+                domRefs.localVideo.srcObject = appState.remoteStream;
+                domRefs.fullscreenRemoteVideo.srcObject = appState.localStream;
+                domRefs.fullscreenLocalVideo.srcObject = appState.remoteStream;
+                showNotification('Stream Switched', 'Local and remote streams swapped');
+            } else {
+                // Revert to normal
+                domRefs.remoteVideo.srcObject = appState.remoteStream;
+                domRefs.localVideo.srcObject = appState.localStream;
+                domRefs.fullscreenRemoteVideo.srcObject = appState.remoteStream;
+                domRefs.fullscreenLocalVideo.srcObject = appState.localStream;
+                showNotification('Stream Switched', 'Streams returned to normal');
+            }
+        }
+
+        // Make local video container draggable
+        function makeDraggable(element) {
+            let isDragging = false;
+            let currentX;
+            let currentY;
+            let initialX;
+            let initialY;
+            let xOffset = 0;
+            let yOffset = 0;
+            
+            element.addEventListener("mousedown", dragStart);
+            element.addEventListener("touchstart", dragStart);
+            
+            function dragStart(e) {
+                e.preventDefault();
+                
+                if (e.type === "touchstart") {
+                    initialX = e.touches[0].clientX - xOffset;
+                    initialY = e.touches[0].clientY - yOffset;
+                } else {
+                    initialX = e.clientX - xOffset;
+                    initialY = e.clientY - yOffset;
+                }
+                
+                if (e.target === element) {
+                    isDragging = true;
+                }
+            }
+            
+            function dragEnd(e) {
+                initialX = currentX;
+                initialY = currentY;
+                
+                isDragging = false;
+                
+                // Save position to state
+                appState.localVideoPosition.x = parseInt(element.style.left);
+                appState.localVideoPosition.y = parseInt(element.style.top);
+            }
+            
+            function drag(e) {
+                if (isDragging) {
+                    e.preventDefault();
+                    
+                    if (e.type === "touchmove") {
+                        currentX = e.touches[0].clientX - initialX;
+                        currentY = e.touches[0].clientY - initialY;
+                    } else {
+                        currentX = e.clientX - initialX;
+                        currentY = e.clientY - initialY;
+                    }
+                    
+                    xOffset = currentX;
+                    yOffset = currentY;
+                    
+                    setTranslate(currentX, currentY, element);
+                }
+            }
+            
+            function setTranslate(xPos, yPos, el) {
+                el.style.left = `${xPos}px`;
+                el.style.top = `${yPos}px`;
+            }
+            
+            document.addEventListener("mouseup", dragEnd);
+            document.addEventListener("touchend", dragEnd);
+            document.addEventListener("mousemove", drag);
+            document.addEventListener("touchmove", drag);
+        }
 
         // Event listeners
         function setupEventListeners() {
@@ -1158,6 +2007,10 @@ function toggleAudio() {
             if (enterFullscreenBtn) enterFullscreenBtn.addEventListener('click', enterFullscreenMode);
             else console.error('enterFullscreenBtn button not found');
 
+            const enterFullscreenBtnNormal = document.getElementById('enterFullscreenBtnNormal');
+            if (enterFullscreenBtnNormal) enterFullscreenBtnNormal.addEventListener('click', enterFullscreenMode);
+            else console.error('enterFullscreenBtnNormal button not found');
+
             const fullscreenEndCallBtn = document.getElementById('fullscreenEndCall');
             if (fullscreenEndCallBtn) fullscreenEndCallBtn.addEventListener('click', hangup);
             else console.error('fullscreenEndCall button not found');
@@ -1190,6 +2043,22 @@ function toggleAudio() {
 
             // Resize listener for mobile/desktop adjustments
             window.addEventListener('resize', adjustForMobile);
+
+            // Local video container size controls
+            document.getElementById('sizeSmallBtn').addEventListener('click', () => setLocalVideoSize('small'));
+            document.getElementById('sizeMediumBtn').addEventListener('click', () => setLocalVideoSize('medium'));
+            document.getElementById('sizeLargeBtn').addEventListener('click', () => setLocalVideoSize('large'));
+            document.getElementById('switchStreamBtn').addEventListener('click', switchStreams);
+            
+            // Fullscreen local video container size controls
+            document.getElementById('fullscreenSizeSmallBtn').addEventListener('click', () => setLocalVideoSize('small'));
+            document.getElementById('fullscreenSizeMediumBtn').addEventListener('click', () => setLocalVideoSize('medium'));
+            document.getElementById('fullscreenSizeLargeBtn').addEventListener('click', () => setLocalVideoSize('large'));
+            document.getElementById('fullscreenSwitchStreamBtn').addEventListener('click', switchStreams);
+            
+            // Make local video containers draggable
+            makeDraggable(domRefs.localVideoContainer);
+            makeDraggable(domRefs.fullscreenLocalVideoContainer);
         }
 
         // Initialization
