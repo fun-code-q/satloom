@@ -140,7 +140,7 @@
 
         .nav-item.active {
             transform: scale(1.02);
-            box-shadow: 0 4px  15px rgba(58, 123, 213, 0.3);
+            box-shadow: 0 4px 15px rgba(58, 123, 213, 0.3);
         }
 
         .nav-link {
@@ -471,6 +471,7 @@
             transform: translateX(-50%);
             display: flex;
             gap: 10px;
+            z-index: 2100;
         }
 
         .exit-fullscreen-btn {
@@ -494,6 +495,7 @@
             position: absolute;
             top: 20px;
             left: 20px;
+            z-index: 2100;
         }
 
         .supercopy {
@@ -529,29 +531,6 @@
         .supercopy i {
             font-size: 16px;
             animation: pulse 2s infinite;
-        }
-
-        .switch-camera-btn {
-            display: none;
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background-color: #555;
-            border: none;
-            color: #ffffff;
-            padding: 10px;
-            border-radius: 50%;
-            cursor: pointer;
-            z-index: 2100;
-        }
-
-        .switch-camera-btn:hover {
-            background-color: #666;
-        }
-
-        body.fullscreen-active .desktop-menu-toggle,
-        body.fullscreen-active .mobile-menu-toggle {
-            display: none;
         }
 
         .local-video-controls {
@@ -684,15 +663,26 @@
                 font-size: 16px;
             }
             
-            .fullscreen-mode .call-controls {
+            .fullscreen-video-mode .call-controls {
                 bottom: 10px;
             }
             
-            .fullscreen-mode #fullscreen-local-video {
+            .fullscreen-video-mode #video-local-video {
                 width: 100px;
                 height: 75px;
                 bottom: 80px;
                 right: 10px;
+            }
+            
+            .top-controls-container {
+                top: 10px;
+                right: 10px;
+            }
+            
+            .top-control-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
             }
         }
 
@@ -914,9 +904,6 @@
                     <div id="videoRemoteVideoContainer">
                         <video id="video-remote-video" autoplay playsinline></video>
                         <div class="spinner" id="videoSpinner"></div>
-                        <button class="switch-camera-btn" id="switchCameraBtn" title="Switch Camera">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
                         
                         <div class="local-video-container" id="localVideoContainer">
                             <div class="local-video-controls">
@@ -992,14 +979,14 @@
             </div>
         </div>
         <div class="call-controls">
-            <button class="control-btn" id="fullscreenAudioToggle">
-                <i class="fas fa-microphone"></i>
-            </button>
             <button class="control-btn" id="fullscreenVideoToggle">
                 <i class="fas fa-video"></i>
             </button>
             <button class="control-btn" id="fullscreenSwitchCameraBtn" title="Switch Camera">
                 <i class="fas fa-sync-alt"></i>
+            </button>
+            <button class="control-btn" id="fullscreenAudioToggle">
+                <i class="fas fa-microphone"></i>
             </button>
             <button class="control-btn end" id="fullscreenEndCall">
                 <i class="fas fa-phone-slash"></i>
@@ -1074,8 +1061,6 @@
             localVideo: document.getElementById('video-local-video'),
             fullscreenRemoteVideo: document.getElementById('fullscreen-remote-video'),
             fullscreenLocalVideo: document.getElementById('fullscreen-local-video'),
-            switchCameraBtn: document.getElementById('switchCameraBtn'),
-            fullscreenSwitchCameraBtn: document.getElementById('fullscreenSwitchCameraBtn'),
             videoSpinner: document.getElementById('videoSpinner'),
             notificationSound: document.getElementById('notificationSound'),
             sidebar: document.getElementById('sidebar'),
@@ -1205,18 +1190,16 @@
                 updateMirroring();
                 
                 document.getElementById('videoControls').style.display = 'flex';
-                domRefs.videoRemoteVideoContainer.style.display = 'block';
-                domRefs.localVideoContainer.style.display = 'block';
                 appState.isCameraEnabled = true;
                 
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 appState.cameraDevices = devices.filter(device => device.kind === 'videoinput');
                 if (appState.cameraDevices.length > 1) {
-                    domRefs.switchCameraBtn.style.display = 'block';
-                    domRefs.fullscreenSwitchCameraBtn.style.display = 'block';
+                    document.getElementById('switchCameraBtnNormal').style.display = 'block';
+                    document.getElementById('fullscreenSwitchCameraBtn').style.display = 'block';
                 } else {
-                    domRefs.switchCameraBtn.style.display = 'none';
-                    domRefs.fullscreenSwitchCameraBtn.style.display = 'none';
+                    document.getElementById('switchCameraBtnNormal').style.display = 'none';
+                    document.getElementById('fullscreenSwitchCameraBtn').style.display = 'none';
                 }
                 
                 return true;
@@ -1295,7 +1278,10 @@
                 if (appState.roomId) {
                     domRefs.fullscreenCopyLink.style.display = 'flex';
                 }
-                domRefs.fullscreenLocalVideoContainer.style.display = 'block';
+                
+                // Position local video correctly in fullscreen
+                positionLocalVideoContainer();
+                
                 showNotification('Fullscreen Mode', 'You are now in true fullscreen mode', 'success');
             } catch (err) {
                 console.error('Fullscreen error:', err);
@@ -1314,6 +1300,9 @@
                 appState.isFullscreen = false;
                 domRefs.fullscreenCopyLink.style.display = 'none';
                 showSidebar();
+                
+                // Position local video correctly after exiting fullscreen
+                positionLocalVideoContainer();
             } catch (err) {
                 console.error('Exit fullscreen error:', err);
                 showNotification('Error', 'Failed to exit fullscreen mode', 'error');
@@ -1407,8 +1396,8 @@
                 domRefs.fullscreenLocalVideo.srcObject = null;
 
                 document.getElementById('videoControls').style.display = 'none';
-                domRefs.switchCameraBtn.style.display = 'none';
-                domRefs.fullscreenSwitchCameraBtn.style.display = 'none';
+                document.getElementById('switchCameraBtnNormal').style.display = 'none';
+                document.getElementById('fullscreenSwitchCameraBtn').style.display = 'none';
                 domRefs.videoSpinner.style.display = 'none';
                 domRefs.copyVideoLink.style.display = 'none';
                 document.getElementById('enterFullscreenBtnNormal').style.display = 'none';
@@ -1416,9 +1405,7 @@
                 document.getElementById('displayRoomId').style.display = 'none';
                 document.getElementById('video-room-id').value = '';
                 document.querySelector('.placeholder-animation').style.display = 'flex';
-                domRefs.videoRemoteVideoContainer.style.display = 'none';
-                domRefs.localVideoContainer.style.display = 'none';
-                domRefs.fullscreenLocalVideoContainer.style.display = 'none';
+                document.getElementById('videoRemoteVideoContainer').style.display = 'none';
 
                 if (appState.isFullscreen) {
                     exitFullscreenMode();
@@ -1473,19 +1460,11 @@
                             domRefs.localVideo.play().catch(e => console.error('Switched local video play error:', e));
                             domRefs.fullscreenLocalVideo.srcObject = appState.remoteStream;
                             domRefs.fullscreenLocalVideo.play().catch(e => console.error('Switched fullscreen local video play error:', e));
-                            domRefs.remoteVideo.srcObject = appState.localStream;
-                            domRefs.remoteVideo.play().catch(e => console.error('Switched remote video play error:', e));
-                            domRefs.fullscreenRemoteVideo.srcObject = appState.localStream;
-                            domRefs.fullscreenRemoteVideo.play().catch(e => console.error('Switched fullscreen remote video play error:', e));
                         } else {
                             domRefs.remoteVideo.srcObject = appState.remoteStream;
                             domRefs.remoteVideo.play().catch(e => console.error('Remote video play error:', e));
                             domRefs.fullscreenRemoteVideo.srcObject = appState.remoteStream;
                             domRefs.fullscreenRemoteVideo.play().catch(e => console.error('Fullscreen remote video play error:', e));
-                            domRefs.localVideo.srcObject = appState.localStream;
-                            domRefs.localVideo.play().catch(e => console.error('Local video play error:', e));
-                            domRefs.fullscreenLocalVideo.srcObject = appState.localStream;
-                            domRefs.fullscreenLocalVideo.play().catch(e => console.error('Fullscreen local video play error:', e));
                         }
                         domRefs.videoSpinner.style.display = 'none';
                     }
@@ -1644,6 +1623,7 @@
                 showNotification('Room Generated', `Room ID: ${appState.roomId}. Share with others.`, 'success');
                 updateStatus(`Room created: ${appState.roomId}`, 'connecting');
                 document.querySelector('.placeholder-animation').style.display = 'none';
+                document.getElementById('videoRemoteVideoContainer').style.display = 'block';
 
                 const mediaInitialized = await initMedia();
                 if (!mediaInitialized) return;
@@ -1693,6 +1673,7 @@
                 document.getElementById('copyVideoLink').style.display = 'inline-flex';
                 document.getElementById('enterFullscreenBtnNormal').style.display = 'inline-flex';
                 document.querySelector('.placeholder-animation').style.display = 'none';
+                document.getElementById('videoRemoteVideoContainer').style.display = 'block';
                 
                 const mediaInitialized = await initMedia();
                 if (!mediaInitialized) return;
@@ -1803,15 +1784,31 @@
         }
 
         function positionLocalVideoContainer() {
-            domRefs.localVideoContainer.style.width = `${appState.localVideoPosition.width}px`;
-            domRefs.localVideoContainer.style.height = `${appState.localVideoPosition.height}px`;
-            domRefs.localVideoContainer.style.left = `${appState.localVideoPosition.x}px`;
-            domRefs.localVideoContainer.style.top = `${appState.localVideoPosition.y}px`;
+            const container = appState.isFullscreen ? 
+                document.querySelector('.fullscreen-mode .video-container') : 
+                document.getElementById('videoRemoteVideoContainer');
             
-            domRefs.fullscreenLocalVideoContainer.style.width = `${appState.localVideoPosition.width}px`;
-            domRefs.fullscreenLocalVideoContainer.style.height = `${appState.localVideoPosition.height}px`;
-            domRefs.fullscreenLocalVideoContainer.style.left = `${appState.localVideoPosition.x}px`;
-            domRefs.fullscreenLocalVideoContainer.style.top = `${appState.localVideoPosition.y}px`;
+            if (!container) return;
+            
+            const containerRect = container.getBoundingClientRect();
+            const localContainer = appState.isFullscreen ? 
+                domRefs.fullscreenLocalVideoContainer : 
+                domRefs.localVideoContainer;
+            
+            // Ensure position stays within container bounds
+            appState.localVideoPosition.x = Math.max(10, Math.min(
+                appState.localVideoPosition.x, 
+                containerRect.width - appState.localVideoPosition.width - 10
+            ));
+            appState.localVideoPosition.y = Math.max(10, Math.min(
+                appState.localVideoPosition.y, 
+                containerRect.height - appState.localVideoPosition.height - 10
+            ));
+            
+            localContainer.style.width = `${appState.localVideoPosition.width}px`;
+            localContainer.style.height = `${appState.localVideoPosition.height}px`;
+            localContainer.style.left = `${appState.localVideoPosition.x}px`;
+            localContainer.style.top = `${appState.localVideoPosition.y}px`;
         }
 
         function setLocalVideoSize(size) {
@@ -1838,10 +1835,7 @@
             appState.localVideoPosition.width = width;
             appState.localVideoPosition.height = height;
             
-            domRefs.localVideoContainer.style.width = `${width}px`;
-            domRefs.localVideoContainer.style.height = `${height}px`;
-            domRefs.fullscreenLocalVideoContainer.style.width = `${width}px`;
-            domRefs.fullscreenLocalVideoContainer.style.height = `${height}px`;
+            positionLocalVideoContainer();
             
             showNotification('Video Size', `Local video size set to ${size}`);
         }
@@ -1849,27 +1843,26 @@
         function switchStreams() {
             appState.isStreamSwitched = !appState.isStreamSwitched;
             
+            const remoteVideo = appState.isFullscreen ? 
+                domRefs.fullscreenRemoteVideo : domRefs.remoteVideo;
+            const localVideo = appState.isFullscreen ? 
+                domRefs.fullscreenLocalVideo : domRefs.localVideo;
+            
             if (appState.isStreamSwitched) {
-                domRefs.remoteVideo.srcObject = appState.localStream;
-                domRefs.remoteVideo.play().catch(e => console.error('Remote video play error:', e));
-                domRefs.localVideo.srcObject = appState.remoteStream;
-                domRefs.localVideo.play().catch(e => console.error('Local video play error:', e));
-                domRefs.fullscreenRemoteVideo.srcObject = appState.localStream;
-                domRefs.fullscreenRemoteVideo.play().catch(e => console.error('Fullscreen remote video play error:', e));
-                domRefs.fullscreenLocalVideo.srcObject = appState.remoteStream;
-                domRefs.fullscreenLocalVideo.play().catch(e => console.error('Fullscreen local video play error:', e));
-                showNotification('Stream Switched', 'Local and remote streams swapped');
+                remoteVideo.srcObject = appState.localStream;
+                localVideo.srcObject = appState.remoteStream;
             } else {
-                domRefs.remoteVideo.srcObject = appState.remoteStream;
-                domRefs.remoteVideo.play().catch(e => console.error('Remote video play error:', e));
-                domRefs.localVideo.srcObject = appState.localStream;
-                domRefs.localVideo.play().catch(e => console.error('Local video play error:', e));
-                domRefs.fullscreenRemoteVideo.srcObject = appState.remoteStream;
-                domRefs.fullscreenRemoteVideo.play().catch(e => console.error('Fullscreen remote video play error:', e));
-                domRefs.fullscreenLocalVideo.srcObject = appState.localStream;
-                domRefs.fullscreenLocalVideo.play().catch(e => console.error('Fullscreen local video play error:', e));
-                showNotification('Stream Switched', 'Streams returned to normal');
+                remoteVideo.srcObject = appState.remoteStream;
+                localVideo.srcObject = appState.localStream;
             }
+            
+            // Ensure videos play
+            [remoteVideo, localVideo].forEach(video => {
+                video.play().catch(e => console.error('Video play error:', e));
+            });
+            
+            showNotification('Stream Switched', appState.isStreamSwitched ? 
+                'Local and remote streams swapped' : 'Streams returned to normal');
         }
 
         function makeDraggable(element) {
@@ -1906,8 +1899,19 @@
                 
                 isDragging = false;
                 
-                appState.localVideoPosition.x = parseInt(element.style.left);
-                appState.localVideoPosition.y = parseInt(element.style.top);
+                // Save position with bounds checking
+                const container = element.parentElement;
+                const containerRect = container.getBoundingClientRect();
+                const elRect = element.getBoundingClientRect();
+                
+                appState.localVideoPosition.x = Math.max(0, Math.min(
+                    parseInt(element.style.left), 
+                    containerRect.width - elRect.width
+                ));
+                appState.localVideoPosition.y = Math.max(0, Math.min(
+                    parseInt(element.style.top),
+                    containerRect.height - elRect.height
+                ));
             }
             
             function drag(e) {
@@ -1980,13 +1984,13 @@
             if (fullscreenCopyLinkBtn) fullscreenCopyLinkBtn.addEventListener('click', copyLink);
             else console.error('fullscreenCopyLink button not found');
 
-            const switchCameraBtn = domRefs.switchCameraBtn;
-            if (switchCameraBtn) switchCameraBtn.addEventListener('click', switchCamera);
-            else console.error('switchCameraBtn button not found');
-
             const switchCameraBtnNormal = document.getElementById('switchCameraBtnNormal');
             if (switchCameraBtnNormal) switchCameraBtnNormal.addEventListener('click', switchCamera);
             else console.error('switchCameraBtnNormal button not found');
+
+            const fullscreenSwitchCameraBtn = document.getElementById('fullscreenSwitchCameraBtn');
+            if (fullscreenSwitchCameraBtn) fullscreenSwitchCameraBtn.addEventListener('click', switchCamera);
+            else console.error('fullscreenSwitchCameraBtn button not found');
 
             const exitFullscreenBtn = domRefs.exitFullscreenBtn;
             if (exitFullscreenBtn) exitFullscreenBtn.addEventListener('click', exitFullscreenMode);
@@ -2004,17 +2008,13 @@
             if (fullscreenEndCallBtn) fullscreenEndCallBtn.addEventListener('click', hangup);
             else console.error('fullscreenEndCall button not found');
 
-            const fullscreenVideoToggleBtn = domRefs.fullscreenVideoToggle;
+            const fullscreenVideoToggleBtn = document.getElementById('fullscreenVideoToggle');
             if (fullscreenVideoToggleBtn) fullscreenVideoToggleBtn.addEventListener('click', toggleVideo);
             else console.error('fullscreenVideoToggle button not found');
 
-            const fullscreenAudioToggleBtn = domRefs.fullscreenAudioToggle;
+            const fullscreenAudioToggleBtn = document.getElementById('fullscreenAudioToggle');
             if (fullscreenAudioToggleBtn) fullscreenAudioToggleBtn.addEventListener('click', toggleAudio);
             else console.error('fullscreenAudioToggle button not found');
-
-            const fullscreenSwitchCameraBtn = domRefs.fullscreenSwitchCameraBtn;
-            if (fullscreenSwitchCameraBtn) fullscreenSwitchCameraBtn.addEventListener('click', switchCamera);
-            else console.error('fullscreenSwitchCameraBtn button not found');
 
             if (domRefs.mobileMenuToggle) domRefs.mobileMenuToggle.addEventListener('click', toggleSidebar);
             else console.error('mobileMenuToggle not found');
