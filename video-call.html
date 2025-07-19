@@ -2076,188 +2076,140 @@ function makeDraggable(element) {
         document.addEventListener("touchend", endDrag);
     }
 
-            function drag(e) {
-                if (!isDragging) return;
-                e.preventDefault();
-                
-                let clientX, clientY;
-                if (e.type === "touchmove") {
-                    clientX = e.touches[0].clientX;
-                    clientY = e.touches[0].clientY;
-                } else {
-                    clientX = e.clientX;
-                    clientY = e.clientY;
-                }
-                
-                const dx = clientX - startX;
-                const dy = clientY - startY;
-                
-                const container = element.parentElement;
-                const containerRect = container.getBoundingClientRect();
-                const elementRect = element.getBoundingClientRect();
-                
-                let newLeft = startLeft + dx;
-                let newTop = startTop + dy;
-                
-                newLeft = Math.max(0, Math.min(newLeft, containerRect.width - elementRect.width));
-                newTop = Math.max(0, Math.min(newTop, containerRect.height - elementRect.height));
-                
-                element.style.left = `${newLeft}px`;
-                element.style.top = `${newTop}px`;
-                
-                appState.localVideoPosition.x = newLeft;
-                appState.localVideoPosition.y = newTop;
+                    function drag(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            
+            let clientX, clientY;
+            if (e.type === "touchmove") {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
             }
-
-            function endDrag() {
-                isDragging = false;
-                document.removeEventListener("mousemove", drag);
-                document.removeEventListener("touchmove", drag);
-                document.removeEventListener("mouseup", endDrag);
-                document.removeEventListener("touchend", endDrag);
-            }
+            
+            const dx = clientX - startX;
+            const dy = clientY - startY;
+            
+            const container = element.parentElement;
+            const containerRect = container.getBoundingClientRect();
+            const elementRect = element.getBoundingClientRect();
+            
+            let newLeft = startLeft + dx;
+            let newTop = startTop + dy;
+            
+            // Boundary checking
+            newLeft = Math.max(0, Math.min(newLeft, containerRect.width - elementRect.width));
+            newTop = Math.max(0, Math.min(newTop, containerRect.height - elementRect.height));
+            
+            element.style.left = `${newLeft}px`;
+            element.style.top = `${newTop}px`;
+            
+            // Update position state
+            appState.localVideoPosition.x = newLeft;
+            appState.localVideoPosition.y = newTop;
         }
 
-        function setupEventListeners() {
-            console.log('Setting up event listeners');
-            
-            // Basic controls
-            document.getElementById('generateVideoRoom')?.addEventListener('click', generateRoom);
-            document.getElementById('joinVideoRoom')?.addEventListener('click', joinRoom);
-            document.getElementById('endVideoCall')?.addEventListener('click', hangup);
-            document.getElementById('videoVideoToggle')?.addEventListener('click', toggleVideo);
-            document.getElementById('videoAudioToggle')?.addEventListener('click', toggleAudio);
-            document.getElementById('copyVideoLink')?.addEventListener('click', copyLink);
-            document.getElementById('fullscreenCopyLink')?.addEventListener('click', copyLink);
-            document.getElementById('switchCameraBtnNormal')?.addEventListener('click', switchCamera);
-            document.getElementById('fullscreenSwitchCameraBtn')?.addEventListener('click', switchCamera);
-            document.getElementById('exitFullscreenBtn')?.addEventListener('click', exitFullscreenMode);
-            document.getElementById('enterFullscreenBtn')?.addEventListener('click', enterFullscreenMode);
-            document.getElementById('enterFullscreenBtnNormal')?.addEventListener('click', enterFullscreenMode);
-            document.getElementById('fullscreenEndCall')?.addEventListener('click', hangup);
-            document.getElementById('fullscreenVideoToggle')?.addEventListener('click', toggleVideo);
-            document.getElementById('fullscreenAudioToggle')?.addEventListener('click', toggleAudio);
-            document.getElementById('mobileMenuToggle')?.addEventListener('click', toggleSidebar);
-            document.getElementById('desktopMenuToggle')?.addEventListener('click', toggleSidebar);
-
-            // Local video controls (desktop)
-            document.getElementById('sizeSmallBtn')?.addEventListener('click', () => setLocalVideoSize('small'));
-            document.getElementById('sizeMediumBtn')?.addEventListener('click', () => setLocalVideoSize('medium'));
-            document.getElementById('sizeLargeBtn')?.addEventListener('click', () => setLocalVideoSize('large'));
-            document.getElementById('switchStreamBtn')?.addEventListener('click', switchStreams);
-            
-            // Fullscreen controls
-            document.getElementById('fullscreenSizeSmallBtn')?.addEventListener('click', () => setLocalVideoSize('small'));
-            document.getElementById('fullscreenSizeMediumBtn')?.addEventListener('click', () => setLocalVideoSize('medium'));
-            document.getElementById('fullscreenSizeLargeBtn')?.addEventListener('click', () => setLocalVideoSize('large'));
-            document.getElementById('fullscreenSwitchStreamBtn')?.addEventListener('click', switchStreams);
-            
-           // Mobile top controls (normal mode)
-    const mobileTopSmallBtn = document.getElementById('mobileTopSizeSmallBtn');
-    const mobileTopMediumBtn = document.getElementById('mobileTopSizeMediumBtn');
-    const mobileTopLargeBtn = document.getElementById('mobileTopSizeLargeBtn');
-    const mobileTopSwitchBtn = document.getElementById('mobileTopSwitchStreamBtn');
-
-    if (mobileTopSmallBtn) {
-        mobileTopSmallBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            setLocalVideoSize('small');
-        });
-    }
-    if (mobileTopMediumBtn) {
-        mobileTopMediumBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            setLocalVideoSize('medium');
-        });
-    }
-    if (mobileTopLargeBtn) {
-        mobileTopLargeBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            setLocalVideoSize('large');
-        });
-    }
-    if (mobileTopSwitchBtn) {
-        mobileTopSwitchBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            switchStreams();
-        });
-    }
-
-    // Fullscreen mobile top controls
-    const fullscreenMobileTopSmallBtn = document.getElementById('fullscreenMobileTopSizeSmallBtn');
-    const fullscreenMobileTopMediumBtn = document.getElementById('fullscreenMobileTopSizeMediumBtn');
-    const fullscreenMobileTopLargeBtn = document.getElementById('fullscreenMobileTopSizeLargeBtn');
-    const fullscreenMobileTopSwitchBtn = document.getElementById('fullscreenMobileTopSwitchStreamBtn');
-
-    if (fullscreenMobileTopSmallBtn) {
-        fullscreenMobileTopSmallBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            setLocalVideoSize('small');
-        });
-    }
-    if (fullscreenMobileTopMediumBtn) {
-        fullscreenMobileTopMediumBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            setLocalVideoSize('medium');
-        });
-    }
-    if (fullscreenMobileTopLargeBtn) {
-        fullscreenMobileTopLargeBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            setLocalVideoSize('large');
-        });
-    }
-    if (fullscreenMobileTopSwitchBtn) {
-        fullscreenMobileTopSwitchBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            switchStreams();
-        });
-    }
-            
-            // Add visual feedback for mobile controls
-            document.querySelectorAll('.mobile-video-top-control-btn').forEach(btn => {
-                btn.addEventListener('mousedown', () => {
-                    btn.style.transform = 'scale(0.9)';
-                    btn.style.opacity = '0.8';
-                });
-                btn.addEventListener('mouseup', () => {
-                    btn.style.transform = 'scale(1)';
-                    btn.style.opacity = '1';
-                });
-                btn.addEventListener('mouseleave', () => {
-                    btn.style.transform = 'scale(1)';
-                    btn.style.opacity = '1';
-                });
-            });
-
-            // Window events
-            document.addEventListener('fullscreenchange', () => {
-                if (!document.fullscreenElement && appState.isFullscreen) {
-                    exitFullscreenMode();
-                }
-            });
-
-            window.addEventListener('resize', adjustForMobile);
-            
-            // Make video containers draggable
-            makeDraggable(domRefs.localVideoContainer);
-            makeDraggable(domRefs.fullscreenLocalVideoContainer);
+        function endDrag() {
+            isDragging = false;
+            document.removeEventListener("mousemove", drag);
+            document.removeEventListener("touchmove", drag);
+            document.removeEventListener("mouseup", endDrag);
+            document.removeEventListener("touchend", endDrag);
         }
+    }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOMContentLoaded');
-            setupEventListeners();
-            updateStatus('Ready to connect', 'disconnected');
-            adjustForMobile();
-            
-            // Check for room ID in URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const roomIdFromUrl = urlParams.get('room');
-            if (roomIdFromUrl) {
-                document.getElementById('video-room-id').value = roomIdFromUrl;
-                joinRoom();
+    function setupEventListeners() {
+        console.log('Setting up event listeners');
+        
+        // Basic controls
+        document.getElementById('generateVideoRoom')?.addEventListener('click', generateRoom);
+        document.getElementById('joinVideoRoom')?.addEventListener('click', joinRoom);
+        document.getElementById('endVideoCall')?.addEventListener('click', hangup);
+        document.getElementById('videoVideoToggle')?.addEventListener('click', toggleVideo);
+        document.getElementById('videoAudioToggle')?.addEventListener('click', toggleAudio);
+        document.getElementById('copyVideoLink')?.addEventListener('click', copyLink);
+        document.getElementById('fullscreenCopyLink')?.addEventListener('click', copyLink);
+        document.getElementById('switchCameraBtnNormal')?.addEventListener('click', switchCamera);
+        document.getElementById('fullscreenSwitchCameraBtn')?.addEventListener('click', switchCamera);
+        document.getElementById('exitFullscreenBtn')?.addEventListener('click', exitFullscreenMode);
+        document.getElementById('enterFullscreenBtn')?.addEventListener('click', enterFullscreenMode);
+        document.getElementById('enterFullscreenBtnNormal')?.addEventListener('click', enterFullscreenMode);
+        document.getElementById('fullscreenEndCall')?.addEventListener('click', hangup);
+        document.getElementById('fullscreenVideoToggle')?.addEventListener('click', toggleVideo);
+        document.getElementById('fullscreenAudioToggle')?.addEventListener('click', toggleAudio);
+        
+        // Menu controls
+        domRefs.mobileMenuToggle?.addEventListener('click', toggleSidebar);
+        domRefs.desktopMenuToggle?.addEventListener('click', toggleSidebar);
+        
+        // Window events
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement && appState.isFullscreen) {
+                exitFullscreenMode();
             }
         });
-    </script>
+        
+        window.addEventListener('resize', adjustForMobile);
+
+        // Video size controls
+        const setupControl = (id, action) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('click', action);
+                element.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    action();
+                });
+            } else {
+                console.error(`Element not found: ${id}`);
+            }
+        };
+
+        // Desktop controls
+        setupControl('sizeSmallBtn', () => setLocalVideoSize('small'));
+        setupControl('sizeMediumBtn', () => setLocalVideoSize('medium'));
+        setupControl('sizeLargeBtn', () => setLocalVideoSize('large'));
+        setupControl('switchStreamBtn', switchStreams);
+        
+        // Fullscreen controls
+        setupControl('fullscreenSizeSmallBtn', () => setLocalVideoSize('small'));
+        setupControl('fullscreenSizeMediumBtn', () => setLocalVideoSize('medium'));
+        setupControl('fullscreenSizeLargeBtn', () => setLocalVideoSize('large'));
+        setupControl('fullscreenSwitchStreamBtn', switchStreams);
+        
+        // Mobile top controls
+        setupControl('mobileTopSizeSmallBtn', () => setLocalVideoSize('small'));
+        setupControl('mobileTopSizeMediumBtn', () => setLocalVideoSize('medium'));
+        setupControl('mobileTopSizeLargeBtn', () => setLocalVideoSize('large'));
+        setupControl('mobileTopSwitchStreamBtn', switchStreams);
+        
+        // Fullscreen mobile top controls
+        setupControl('fullscreenMobileTopSizeSmallBtn', () => setLocalVideoSize('small'));
+        setupControl('fullscreenMobileTopSizeMediumBtn', () => setLocalVideoSize('medium'));
+        setupControl('fullscreenMobileTopSizeLargeBtn', () => setLocalVideoSize('large'));
+        setupControl('fullscreenMobileTopSwitchStreamBtn', switchStreams);
+        
+        // Make video containers draggable
+        makeDraggable(domRefs.localVideoContainer);
+        makeDraggable(domRefs.fullscreenLocalVideoContainer);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOMContentLoaded');
+        setupEventListeners();
+        updateStatus('Ready to connect', 'disconnected');
+        adjustForMobile();
+        
+        // Check for room ID in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomIdFromUrl = urlParams.get('room');
+        if (roomIdFromUrl) {
+            document.getElementById('video-room-id').value = roomIdFromUrl;
+            joinRoom();
+        }
+    });
+</script>
 </body>
 </html>
