@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SatLoom - Enhanced Video Call</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -580,12 +580,38 @@
             display: block;
             opacity: 1;
             background: black;
+            touch-action: none;
         }
 
         .local-video-container video {
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+
+        /* Mobile-specific controls */
+        .mobile-controls {
+            display: none;
+            position: fixed;
+            bottom: 80px;
+            left: 0;
+            right: 0;
+            justify-content: center;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .mobile-control-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
         }
 
         @media (max-width: 900px) {
@@ -635,7 +661,7 @@
             }
             
             #videoRemoteVideoContainer {
-                height: 200px;
+                height: 60vh !important;
             }
             
             .input-group {
@@ -682,6 +708,19 @@
                 height: 36px;
                 font-size: 14px;
             }
+            
+            .mobile-controls {
+                display: flex;
+            }
+            
+            .local-video-controls {
+                display: none !important;
+            }
+            
+            .local-video-container {
+                width: 120px;
+                height: 80px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -697,6 +736,10 @@
             
             .section-title {
                 font-size: 16px;
+            }
+            
+            #videoRemoteVideoContainer {
+                height: 50vh !important;
             }
         }
 
@@ -990,6 +1033,22 @@
                 <i class="fas fa-phone-slash"></i>
             </button>
         </div>
+    </div>
+    
+    <!-- Mobile Controls -->
+    <div class="mobile-controls">
+        <button class="mobile-control-btn" id="mobileSizeSmallBtn" title="Small Size">
+            <i class="fas fa-compress"></i>
+        </button>
+        <button class="mobile-control-btn" id="mobileSizeMediumBtn" title="Medium Size">
+            <i class="fas fa-square"></i>
+        </button>
+        <button class="mobile-control-btn" id="mobileSizeLargeBtn" title="Large Size">
+            <i class="fas fa-expand"></i>
+        </button>
+        <button class="mobile-control-btn" id="mobileSwitchStreamBtn" title="Switch Streams">
+            <i class="fas fa-exchange-alt"></i>
+        </button>
     </div>
     
     <audio id="notificationSound" preload="auto">
@@ -1429,8 +1488,20 @@
                         { urls: 'stun:stun.l.google.com:19302' },
                         { urls: 'stun:stun1.l.google.com:19302' },
                         { urls: 'stun:stun2.l.google.com:19302' },
+                        { urls: 'stun:stun3.l.google.com:19302' },
+                        { urls: 'stun:stun4.l.google.com:19302' },
                         {
                             urls: 'turn:openrelay.metered.ca:80',
+                            username: 'openrelayproject',
+                            credential: 'openrelayproject'
+                        },
+                        {
+                            urls: 'turn:openrelay.metered.ca:443',
+                            username: 'openrelayproject',
+                            credential: 'openrelayproject'
+                        },
+                        {
+                            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
                             username: 'openrelayproject',
                             credential: 'openrelayproject'
                         }
@@ -1446,30 +1517,44 @@
                 }
                 
                 pc.ontrack = (event) => {
+                    console.log('Received remote track:', event.track.kind);
                     if (!appState.remoteStream) {
                         appState.remoteStream = new MediaStream();
                     }
                     
-                    appState.remoteStream.addTrack(event.track);
+                    // Check if we already have this track (prevent duplicates)
+                    if (!appState.remoteStream.getTracks().some(t => t.id === event.track.id)) {
+                        appState.remoteStream.addTrack(event.track);
+                    }
                     
                     if (event.track.kind === 'video') {
+                        console.log('Setting remote video stream');
                         if (appState.isStreamSwitched) {
                             domRefs.localVideo.srcObject = appState.remoteStream;
-                            domRefs.localVideo.play().catch(e => console.error('Switched local video play error:', e));
                             domRefs.fullscreenLocalVideo.srcObject = appState.remoteStream;
-                            domRefs.fullscreenLocalVideo.play().catch(e => console.error('Switched fullscreen local video play error:', e));
                         } else {
                             domRefs.remoteVideo.srcObject = appState.remoteStream;
-                            domRefs.remoteVideo.play().catch(e => console.error('Remote video play error:', e));
                             domRefs.fullscreenRemoteVideo.srcObject = appState.remoteStream;
-                            domRefs.fullscreenRemoteVideo.play().catch(e => console.error('Fullscreen remote video play error:', e));
                         }
+                        
+                        // Play the video
+                        const playPromise = domRefs.remoteVideo.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(e => {
+                                console.error('Remote video play error:', e);
+                                // Try again with muted
+                                domRefs.remoteVideo.muted = true;
+                                domRefs.remoteVideo.play().catch(e => console.error('Muted play failed:', e));
+                            });
+                        }
+                        
                         domRefs.videoSpinner.style.display = 'none';
                     }
                 };
                 
                 pc.onicecandidate = (event) => {
                     if (event.candidate && appState.signalingRef) {
+                        console.log('Sending ICE candidate');
                         sendMessage({
                             type: 'candidate',
                             candidate: event.candidate.candidate,
@@ -1481,6 +1566,7 @@
                 
                 pc.oniceconnectionstatechange = () => {
                     const state = pc.iceConnectionState;
+                    console.log('ICE connection state changed:', state);
                     
                     if (state === 'connected' || state === 'completed') {
                         updateStatus(`In video call (${appState.roomId})`, 'connected');
@@ -1488,8 +1574,21 @@
                         startTimer();
                     } 
                     else if (state === 'disconnected' || state === 'failed') {
-                        showNotification('Disconnected', 'Peer has left the call', 'success');
+                        showNotification('Disconnected', 'Peer has left the call', 'error');
                         hangup();
+                    }
+                };
+                
+                pc.onnegotiationneeded = async () => {
+                    console.log('Negotiation needed');
+                    try {
+                        if (appState.isInitiator) {
+                            const offer = await pc.createOffer();
+                            await pc.setLocalDescription(offer);
+                            sendMessage(offer);
+                        }
+                    } catch (err) {
+                        console.error('Negotiation error:', err);
                     }
                 };
                 
@@ -2024,15 +2123,23 @@
 
             window.addEventListener('resize', adjustForMobile);
 
+            // Desktop controls
             document.getElementById('sizeSmallBtn').addEventListener('click', () => setLocalVideoSize('small'));
             document.getElementById('sizeMediumBtn').addEventListener('click', () => setLocalVideoSize('medium'));
             document.getElementById('sizeLargeBtn').addEventListener('click', () => setLocalVideoSize('large'));
             document.getElementById('switchStreamBtn').addEventListener('click', switchStreams);
             
+            // Fullscreen controls
             document.getElementById('fullscreenSizeSmallBtn').addEventListener('click', () => setLocalVideoSize('small'));
             document.getElementById('fullscreenSizeMediumBtn').addEventListener('click', () => setLocalVideoSize('medium'));
             document.getElementById('fullscreenSizeLargeBtn').addEventListener('click', () => setLocalVideoSize('large'));
             document.getElementById('fullscreenSwitchStreamBtn').addEventListener('click', switchStreams);
+            
+            // Mobile controls
+            document.getElementById('mobileSizeSmallBtn').addEventListener('click', () => setLocalVideoSize('small'));
+            document.getElementById('mobileSizeMediumBtn').addEventListener('click', () => setLocalVideoSize('medium'));
+            document.getElementById('mobileSizeLargeBtn').addEventListener('click', () => setLocalVideoSize('large'));
+            document.getElementById('mobileSwitchStreamBtn').addEventListener('click', switchStreams);
             
             makeDraggable(domRefs.localVideoContainer);
             makeDraggable(domRefs.fullscreenLocalVideoContainer);
