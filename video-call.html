@@ -1290,61 +1290,81 @@
             }
         }
 
-        function updateMirroring() {
-            if (appState.currentCamera === 'user') {
-                domRefs.localVideo.style.transform = 'scaleX(-1)';
-                domRefs.fullscreenLocalVideo.style.transform = 'scaleX(-1)';
-            } else {
-                domRefs.localVideo.style.transform = 'none';
-                domRefs.fullscreenLocalVideo.style.transform = 'none';
-            }
+       function updateMirroring() {
+    const localVideo = domRefs.localVideo;
+    const fullscreenLocalVideo = domRefs.fullscreenLocalVideo;
+    
+    if (appState.currentCamera === 'user') {
+        // Only mirror if it's the local stream (not switched)
+        if (!appState.isStreamSwitched) {
+            localVideo.style.transform = 'scaleX(-1)';
+            fullscreenLocalVideo.style.transform = 'scaleX(-1)';
         }
+    } else {
+        localVideo.style.transform = 'none';
+        fullscreenLocalVideo.style.transform = 'none';
+    }
+    
+    // Also update the remote video if streams are switched
+    if (appState.isStreamSwitched) {
+        if (appState.currentCamera === 'user') {
+            domRefs.remoteVideo.style.transform = 'scaleX(-1)';
+            domRefs.fullscreenRemoteVideo.style.transform = 'scaleX(-1)';
+        } else {
+            domRefs.remoteVideo.style.transform = 'none';
+            domRefs.fullscreenRemoteVideo.style.transform = 'none';
+        }
+    } else {
+        domRefs.remoteVideo.style.transform = 'none';
+        domRefs.fullscreenRemoteVideo.style.transform = 'none';
+    }
+}
 
-        async function switchCamera() {
-            try {
-                appState.currentCamera = appState.currentCamera === 'user' ? 'environment' : 'user';
-                
-                const newStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: appState.currentCamera },
-                    audio: true
-                });
-                
-                appState.localStream.getTracks().forEach(track => track.stop());
-                appState.localStream = newStream;
-                
-                domRefs.localVideo.srcObject = appState.localStream;
-                domRefs.localVideo.play().catch(e => console.error('Local video play error:', e));
-                domRefs.fullscreenLocalVideo.srcObject = appState.localStream;
-                domRefs.fullscreenLocalVideo.play().catch(e => console.error('Fullscreen local video play error:', e));
-                
-                updateMirroring();
-                
-                if (appState.peerConnection) {
-                    const videoTrack = appState.localStream.getVideoTracks()[0];
-                    const audioTrack = appState.localStream.getAudioTracks()[0];
-                    const videoSender = appState.peerConnection.getSenders().find(
-                        s => s.track && s.track.kind === 'video'
-                    );
-                    const audioSender = appState.peerConnection.getSenders().find(
-                        s => s.track && s.track.kind === 'audio'
-                    );
-                    
-                    if (videoSender && videoTrack) {
-                        videoSender.replaceTrack(videoTrack);
-                    }
-                    
-                    if (audioSender && audioTrack) {
-                        audioSender.replaceTrack(audioTrack);
-                    }
-                }
-                
-                showNotification('Camera Switched', `Now using ${appState.currentCamera === 'user' ? 'front' : 'rear'} camera`, 'success');
-            } catch (err) {
-                console.error('Camera switch error:', err);
-                showNotification('Camera Error', 'Failed to switch camera', 'error');
-                updateStatus('Camera switch failed', 'error');
+       async function switchCamera() {
+    try {
+        appState.currentCamera = appState.currentCamera === 'user' ? 'environment' : 'user';
+        
+        const newStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: appState.currentCamera },
+            audio: true
+        });
+        
+        appState.localStream.getTracks().forEach(track => track.stop());
+        appState.localStream = newStream;
+        
+        domRefs.localVideo.srcObject = appState.localStream;
+        domRefs.localVideo.play().catch(e => console.error('Local video play error:', e));
+        domRefs.fullscreenLocalVideo.srcObject = appState.localStream;
+        domRefs.fullscreenLocalVideo.play().catch(e => console.error('Fullscreen local video play error:', e));
+        
+        updateMirroring(); // This updates the mirroring state
+        
+        if (appState.peerConnection) {
+            const videoTrack = appState.localStream.getVideoTracks()[0];
+            const audioTrack = appState.localStream.getAudioTracks()[0];
+            const videoSender = appState.peerConnection.getSenders().find(
+                s => s.track && s.track.kind === 'video'
+            );
+            const audioSender = appState.peerConnection.getSenders().find(
+                s => s.track && s.track.kind === 'audio'
+            );
+            
+            if (videoSender && videoTrack) {
+                videoSender.replaceTrack(videoTrack);
+            }
+            
+            if (audioSender && audioTrack) {
+                audioSender.replaceTrack(audioTrack);
             }
         }
+        
+        showNotification('Camera Switched', `Now using ${appState.currentCamera === 'user' ? 'front' : 'rear'} camera`, 'success');
+    } catch (err) {
+        console.error('Camera switch error:', err);
+        showNotification('Camera Error', 'Failed to switch camera', 'error');
+        updateStatus('Camera switch failed', 'error');
+    }
+}
 
         async function enterFullscreenMode() {
             try {
@@ -1969,46 +1989,64 @@
             showNotification('Video Size', `Local video size set to ${size}`);
         }
 
-        function switchStreams() {
-            if (!appState.localStream || !appState.remoteStream) {
-                console.warn("Cannot switch streams - one or both streams not available");
-                return;
-            }
-            
-            appState.isStreamSwitched = !appState.isStreamSwitched;
-            
-            // Get the current video elements
-            const remoteVideo = appState.isFullscreen ? 
-                domRefs.fullscreenRemoteVideo : domRefs.remoteVideo;
-            const localVideo = appState.isFullscreen ? 
-                domRefs.fullscreenLocalVideo : domRefs.localVideo;
-            
-            if (appState.isStreamSwitched) {
-                console.log("Switching streams - local becomes remote and vice versa");
-                remoteVideo.srcObject = appState.localStream;
-                localVideo.srcObject = appState.remoteStream;
-            } else {
-                console.log("Reverting streams to normal");
-                remoteVideo.srcObject = appState.remoteStream;
-                localVideo.srcObject = appState.localStream;
-            }
-            
-            // Ensure videos play
-            const playPromises = [];
-            if (remoteVideo.srcObject) {
-                playPromises.push(remoteVideo.play().catch(e => 
-                    console.error('Remote video play error:', e)));
-            }
-            if (localVideo.srcObject) {
-                playPromises.push(localVideo.play().catch(e => 
-                    console.error('Local video play error:', e)));
-            }
-            
-            Promise.all(playPromises).then(() => {
-                showNotification('Stream Switched', appState.isStreamSwitched ? 
-                    'Local and remote streams swapped' : 'Streams returned to normal');
-            });
+       function switchStreams() {
+    if (!appState.localStream || !appState.remoteStream) {
+        console.warn("Cannot switch streams - one or both streams not available");
+        return;
+    }
+    
+    appState.isStreamSwitched = !appState.isStreamSwitched;
+    
+    // Get the current video elements
+    const remoteVideo = appState.isFullscreen ? 
+        domRefs.fullscreenRemoteVideo : domRefs.remoteVideo;
+    const localVideo = appState.isFullscreen ? 
+        domRefs.fullscreenLocalVideo : domRefs.localVideo;
+    
+    if (appState.isStreamSwitched) {
+        console.log("Switching streams - local becomes remote and vice versa");
+        remoteVideo.srcObject = appState.localStream;
+        localVideo.srcObject = appState.remoteStream;
+        
+        // Apply mirroring to the local stream (now in remote video element)
+        if (appState.currentCamera === 'user') {
+            remoteVideo.style.transform = 'scaleX(-1)';
+        } else {
+            remoteVideo.style.transform = 'none';
         }
+        // Remove mirroring from the remote stream (now in local video element)
+        localVideo.style.transform = 'none';
+    } else {
+        console.log("Reverting streams to normal");
+        remoteVideo.srcObject = appState.remoteStream;
+        localVideo.srcObject = appState.localStream;
+        
+        // Remove mirroring from remote stream
+        remoteVideo.style.transform = 'none';
+        // Apply mirroring to local stream based on camera
+        if (appState.currentCamera === 'user') {
+            localVideo.style.transform = 'scaleX(-1)';
+        } else {
+            localVideo.style.transform = 'none';
+        }
+    }
+    
+    // Ensure videos play
+    const playPromises = [];
+    if (remoteVideo.srcObject) {
+        playPromises.push(remoteVideo.play().catch(e => 
+            console.error('Remote video play error:', e)));
+    }
+    if (localVideo.srcObject) {
+        playPromises.push(localVideo.play().catch(e => 
+            console.error('Local video play error:', e)));
+    }
+    
+    Promise.all(playPromises).then(() => {
+        showNotification('Stream Switched', appState.isStreamSwitched ? 
+            'Local and remote streams swapped' : 'Streams returned to normal');
+    });
+}
 
         function makeDraggable(element) {
             let isDragging = false;
