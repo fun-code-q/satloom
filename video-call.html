@@ -589,30 +589,7 @@
             object-fit: cover;
         }
 
-        /* Mobile-specific controls */
-        .mobile-controls {
-            display: none;
-            position: fixed;
-            bottom: 80px;
-            left: 0;
-            right: 0;
-            justify-content: center;
-            gap: 10px;
-            z-index: 1000;
-        }
-
-        .mobile-control-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.2);
-            border: none;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
+       
 
         /* Mobile video top controls */
         .mobile-video-top-controls {
@@ -1094,21 +1071,7 @@
         </div>
     </div>
     
-    <!-- Mobile Controls -->
-    <div class="mobile-controls">
-        <button class="mobile-control-btn" id="mobileSizeSmallBtn" title="Small Size">
-            <i class="fas fa-compress"></i>
-        </button>
-        <button class="mobile-control-btn" id="mobileSizeMediumBtn" title="Medium Size">
-            <i class="fas fa-square"></i>
-        </button>
-        <button class="mobile-control-btn" id="mobileSizeLargeBtn" title="Large Size">
-            <i class="fas fa-expand"></i>
-        </button>
-        <button class="mobile-control-btn" id="mobileSwitchStreamBtn" title="Switch Streams">
-            <i class="fas fa-exchange-alt"></i>
-        </button>
-    </div>
+   
     
     <audio id="notificationSound" preload="auto">
         <source src="https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3" type="audio/mpeg">
@@ -2207,11 +2170,6 @@
             document.getElementById('fullscreenSizeLargeBtn').addEventListener('click', () => setLocalVideoSize('large'));
             document.getElementById('fullscreenSwitchStreamBtn').addEventListener('click', switchStreams);
             
-            // Mobile controls
-            document.getElementById('mobileSizeSmallBtn').addEventListener('click', () => setLocalVideoSize('small'));
-            document.getElementById('mobileSizeMediumBtn').addEventListener('click', () => setLocalVideoSize('medium'));
-            document.getElementById('mobileSizeLargeBtn').addEventListener('click', () => setLocalVideoSize('large'));
-            document.getElementById('mobileSwitchStreamBtn').addEventListener('click', switchStreams);
             
             // Mobile top controls
             document.getElementById('mobileTopSizeSmallBtn').addEventListener('click', () => setLocalVideoSize('small'));
