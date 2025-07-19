@@ -531,40 +531,6 @@
             animation: pulse 2s infinite;
         }
 
-        .local-video-controls {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            z-index: 15;
-            display: flex;
-            gap: 5px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .local-video-container:hover .local-video-controls {
-            opacity: 1;
-        }
-
-        .local-video-control-btn {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: rgba(0, 0, 0, 0.5);
-            border: none;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.2s ease;
-        }
-
-        .local-video-control-btn:hover {
-            background: rgba(0, 0, 0, 0.8);
-        }
-
         .local-video-container {
             position: absolute;
             cursor: move;
@@ -589,29 +555,45 @@
             object-fit: cover;
         }
 
-        /* Mobile-specific controls */
-        .mobile-controls {
-            display: none;
-            position: fixed;
-            bottom: 80px;
+        .local-video-controls {
+            position: absolute;
+            top: 5px;
             left: 0;
             right: 0;
+            z-index: 15;
+            display: flex;
             justify-content: center;
-            gap: 10px;
-            z-index: 1000;
+            gap: 5px;
+            opacity: 1;
+            transition: opacity 0.3s ease;
         }
 
-        .mobile-control-btn {
-            width: 50px;
-            height: 50px;
+        @media (min-width: 901px) {
+            .local-video-controls {
+                opacity: 0;
+            }
+            .local-video-container:hover .local-video-controls {
+                opacity: 1;
+            }
+        }
+
+        .local-video-control-btn {
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.2);
+            background: rgba(0, 0, 0, 0.5);
             border: none;
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .local-video-control-btn:hover {
+            background: rgba(0, 0, 0, 0.8);
         }
 
         @media (max-width: 900px) {
@@ -707,19 +689,6 @@
                 width: 36px;
                 height: 36px;
                 font-size: 14px;
-            }
-            
-            .mobile-controls {
-                display: flex;
-            }
-            
-            .local-video-controls {
-                display: none !important;
-            }
-            
-            .local-video-container {
-                width: 120px;
-                height: 80px;
             }
         }
 
@@ -1033,22 +1002,6 @@
                 <i class="fas fa-phone-slash"></i>
             </button>
         </div>
-    </div>
-    
-    <!-- Mobile Controls -->
-    <div class="mobile-controls">
-        <button class="mobile-control-btn" id="mobileSizeSmallBtn" title="Small Size">
-            <i class="fas fa-compress"></i>
-        </button>
-        <button class="mobile-control-btn" id="mobileSizeMediumBtn" title="Medium Size">
-            <i class="fas fa-square"></i>
-        </button>
-        <button class="mobile-control-btn" id="mobileSizeLargeBtn" title="Large Size">
-            <i class="fas fa-expand"></i>
-        </button>
-        <button class="mobile-control-btn" id="mobileSwitchStreamBtn" title="Switch Streams">
-            <i class="fas fa-exchange-alt"></i>
-        </button>
     </div>
     
     <audio id="notificationSound" preload="auto">
@@ -1947,17 +1900,25 @@
             showNotification('Video Size', `Local video size set to ${size}`);
         }
 
-        function switchStreams() {
-            if (!appState.localStream || !appState.remoteStream) return;
+       function switchStreams() {
+            if (!appState.localStream || !appState.remoteStream) {
+                console.warn('Cannot switch streams - one or both streams not available');
+                showNotification('Error', 'Cannot switch streams - video not available', 'error');
+                return;
+            }
             
+            console.log('Switching streams. Current state:', appState.isStreamSwitched);
             appState.isStreamSwitched = !appState.isStreamSwitched;
             
+            // Update video sources based on switched state
             if (appState.isStreamSwitched) {
+                console.log('Setting remote video to local stream and vice versa');
                 domRefs.remoteVideo.srcObject = appState.localStream;
                 domRefs.localVideo.srcObject = appState.remoteStream;
                 domRefs.fullscreenRemoteVideo.srcObject = appState.localStream;
                 domRefs.fullscreenLocalVideo.srcObject = appState.remoteStream;
             } else {
+                console.log('Setting streams back to normal');
                 domRefs.remoteVideo.srcObject = appState.remoteStream;
                 domRefs.localVideo.srcObject = appState.localStream;
                 domRefs.fullscreenRemoteVideo.srcObject = appState.remoteStream;
@@ -1965,14 +1926,33 @@
             }
             
             // Ensure videos play
-            [domRefs.remoteVideo, domRefs.localVideo, domRefs.fullscreenRemoteVideo, domRefs.fullscreenLocalVideo].forEach(video => {
+            const videos = [
+                domRefs.remoteVideo, 
+                domRefs.localVideo, 
+                domRefs.fullscreenRemoteVideo, 
+                domRefs.fullscreenLocalVideo
+            ];
+            
+            videos.forEach(video => {
                 if (video.srcObject) {
-                    video.play().catch(e => console.error('Video play error:', e));
+                    video.play().catch(e => {
+                        console.error('Video play error:', e);
+                        // Try again with muted if needed
+                        if (video !== domRefs.localVideo && video !== domRefs.fullscreenLocalVideo) {
+                            video.muted = true;
+                            video.play().catch(e => console.error('Muted play failed:', e));
+                        }
+                    });
                 }
             });
             
-            showNotification('Stream Switched', appState.isStreamSwitched ? 
-                'Local and remote streams swapped' : 'Streams returned to normal');
+            showNotification(
+                'Stream Switched', 
+                appState.isStreamSwitched 
+                    ? 'Local and remote streams swapped' 
+                    : 'Streams returned to normal',
+                'success'
+            );
         }
 
         function makeDraggable(element) {
