@@ -581,7 +581,6 @@
             opacity: 1;
             background: black;
             touch-action: none;
-            pointer-events: auto;
         }
 
         .local-video-container video {
@@ -593,38 +592,32 @@
 
         /* Mobile video top controls */
         .mobile-video-top-controls {
-            display: flex;
+            display: none;
             position: absolute;
-            top: 5px;
+            top: 10px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 100;
             background: rgba(0, 0, 0, 0.5);
             border-radius: 20px;
             padding: 5px;
-            pointer-events: auto;
+            touch-action: manipulation;
         }
 
         .mobile-video-top-control-btn {
-            width: 30px;
-            height: 30px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
+            background: transparent;
             border: none;
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
-            margin: 0 2px;
-            pointer-events: auto;
+            font-size: 16px;
+            margin: 0 3px;
+            touch-action: manipulation;
             cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .mobile-video-top-control-btn:active {
-            transform: scale(0.9);
-            opacity: 0.8;
         }
 
         @media (max-width: 900px) {
@@ -686,6 +679,10 @@
                 font-size: 13px;
             }
             
+            .call-controls {
+                gap: 3px;
+            }
+            
             .control-btn {
                 width: 40px;
                 height: 40px;
@@ -696,9 +693,66 @@
                 font-size: 16px;
             }
             
+            .fullscreen-video-mode .call-controls {
+                bottom: 10px;
+            }
+            
+            .fullscreen-video-mode #video-local-video {
+                width: 100px;
+                height: 75px;
+                bottom: 80px;
+                right: 10px;
+            }
+            
+            .top-controls-container {
+                top: 10px;
+                right: 10px;
+            }
+            
+            .top-control-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
+            }
+            
+            .local-video-controls {
+                display: none !important;
+            }
+            
             .local-video-container {
                 width: 120px;
                 height: 80px;
+                z-index: 50;
+            }
+            
+            .mobile-video-top-controls {
+                display: flex !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .call-controls {
+                gap: 3px;
+            }
+            
+            .control-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
+            }
+            
+            .section-title {
+                font-size: 16px;
+            }
+            
+            #videoRemoteVideoContainer {
+                height: 50vh !important;
+            }
+            
+            .mobile-video-top-control-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
             }
         }
 
@@ -1053,868 +1107,866 @@
         }
 
         const appState = {
-            localStream: null,
-            remoteStream: null,
-            peerConnection: null,
-            roomId: null,
-            isInitiator: false,
-            isStarted: false,
-            timer: null,
-            startTime: null,
-            currentMode: 'video-call',
-            signalingRef: null,
-            userId: 'user-' + Math.random().toString(36).substr(2, 8),
-            isCameraEnabled: true,
-            currentCamera: 'user',
-            cameraDevices: [],
-            isFullscreen: false,
-            lastNotificationTime: 0,
-            autoFullscreen: true,
-            localVideoPosition: { x: 20, y: 20, width: 150, height: 100 },
-            isStreamSwitched: false
-        };
+    localStream: null,
+    remoteStream: null,
+    peerConnection: null,
+    roomId: null,
+    isInitiator: false,
+    isStarted: false,
+    timer: null,
+    startTime: null,
+    currentMode: 'video-call',
+    signalingRef: null,
+    userId: 'user-' + Math.random().toString(36).substr(2, 8),
+    isCameraEnabled: true,
+    currentCamera: 'user',
+    cameraDevices: [],
+    isFullscreen: false,
+    lastNotificationTime: 0,
+    autoFullscreen: true,
+    localVideoPosition: { x: 20, y: 20, width: 150, height: 100 },
+    isStreamSwitched: false
+};
 
-        const domRefs = {
-            notification: document.getElementById('globalNotification'),
-            notificationTitle: document.getElementById('notificationTitle'),
-            notificationMessage: document.getElementById('notificationMessage'),
-            connectionStatus: document.getElementById('connectionStatus'),
-            statusText: document.getElementById('statusText'),
-            videoCallTimer: document.getElementById('videoCallTimer'),
-            fullscreenCallTimer: document.getElementById('fullscreenCallTimer'),
-            fullscreenMode: document.getElementById('fullscreenMode'),
-            exitFullscreenBtn: document.getElementById('exitFullscreenBtn'),
-            enterFullscreenBtn: document.getElementById('enterFullscreenBtn'),
-            remoteVideo: document.getElementById('video-remote-video'),
-            localVideo: document.getElementById('video-local-video'),
-            fullscreenRemoteVideo: document.getElementById('fullscreen-remote-video'),
-            fullscreenLocalVideo: document.getElementById('fullscreen-local-video'),
-            videoSpinner: document.getElementById('videoSpinner'),
-            notificationSound: document.getElementById('notificationSound'),
-            sidebar: document.getElementById('sidebar'),
-            desktopMenuToggle: document.getElementById('desktopMenuToggle'),
-            mobileMenuToggle: document.getElementById('mobileMenuToggle'),
-            appContainer: document.getElementById('appContainer'),
-            copyVideoLink: document.getElementById('copyVideoLink'),
-            fullscreenCopyLink: document.getElementById('fullscreenCopyLink'),
-            fullscreenVideoToggle: document.getElementById('fullscreenVideoToggle'),
-            fullscreenAudioToggle: document.getElementById('fullscreenAudioToggle'),
-            fullscreenEndCall: document.getElementById('fullscreenEndCall'),
-            videoRemoteVideoContainer: document.getElementById('videoRemoteVideoContainer'),
-            localVideoContainer: document.getElementById('localVideoContainer'),
-            fullscreenLocalVideoContainer: document.getElementById('fullscreenLocalVideoContainer')
-        };
+const domRefs = {
+    notification: document.getElementById('globalNotification'),
+    notificationTitle: document.getElementById('notificationTitle'),
+    notificationMessage: document.getElementById('notificationMessage'),
+    connectionStatus: document.getElementById('connectionStatus'),
+    statusText: document.getElementById('statusText'),
+    videoCallTimer: document.getElementById('videoCallTimer'),
+    fullscreenCallTimer: document.getElementById('fullscreenCallTimer'),
+    fullscreenMode: document.getElementById('fullscreenMode'),
+    exitFullscreenBtn: document.getElementById('exitFullscreenBtn'),
+    enterFullscreenBtn: document.getElementById('enterFullscreenBtn'),
+    remoteVideo: document.getElementById('video-remote-video'),
+    localVideo: document.getElementById('video-local-video'),
+    fullscreenRemoteVideo: document.getElementById('fullscreen-remote-video'),
+    fullscreenLocalVideo: document.getElementById('fullscreen-local-video'),
+    videoSpinner: document.getElementById('videoSpinner'),
+    notificationSound: document.getElementById('notificationSound'),
+    sidebar: document.getElementById('sidebar'),
+    desktopMenuToggle: document.getElementById('desktopMenuToggle'),
+    mobileMenuToggle: document.getElementById('mobileMenuToggle'),
+    appContainer: document.getElementById('appContainer'),
+    copyVideoLink: document.getElementById('copyVideoLink'),
+    fullscreenCopyLink: document.getElementById('fullscreenCopyLink'),
+    fullscreenVideoToggle: document.getElementById('fullscreenVideoToggle'),
+    fullscreenAudioToggle: document.getElementById('fullscreenAudioToggle'),
+    fullscreenEndCall: document.getElementById('fullscreenEndCall'),
+    videoRemoteVideoContainer: document.getElementById('videoRemoteVideoContainer'),
+    localVideoContainer: document.getElementById('localVideoContainer'),
+    fullscreenLocalVideoContainer: document.getElementById('fullscreenLocalVideoContainer')
+};
 
-        function playNotificationSound() {
-            try {
-                const now = Date.now();
-                if (now - appState.lastNotificationTime > 1000) {
-                    domRefs.notificationSound.currentTime = 0;
-                    domRefs.notificationSound.play().catch(e => {
-                        console.log('Audio play prevented:', e);
+function playNotificationSound() {
+    try {
+        const now = Date.now();
+        if (now - appState.lastNotificationTime > 1000) {
+            domRefs.notificationSound.currentTime = 0;
+            domRefs.notificationSound.play().catch(e => {
+                console.log('Audio play prevented:', e);
+            });
+            appState.lastNotificationTime = now;
+        }
+    } catch (e) {
+        console.error('Error playing notification sound:', e);
+    }
+}
+
+function showNotification(title, message, type = 'info') {
+    if (domRefs.notification) {
+        domRefs.notification.style.display = 'flex';
+        domRefs.notificationTitle.textContent = title;
+        domRefs.notificationMessage.textContent = message;
+        
+        domRefs.notification.style.backgroundColor = 
+            type === 'error' ? 'rgba(244, 67, 54, 0.8)' :
+            type === 'success' ? 'rgba(76, 175, 80, 0.8)' :
+            'rgba(58, 123, 213, 0.8)';
+        
+        setTimeout(() => {
+            domRefs.notification.style.display = 'none';
+        }, 3000);
+        
+        playNotificationSound();
+    } else {
+        console.warn('Notification element not found, fallback to alert');
+        alert(`${title}: ${message}`);
+    }
+}
+
+function updateStatus(text, status) {
+    const statusElem = domRefs.connectionStatus;
+    statusElem.className = 'status-indicator';
+    
+    if (status === 'connected') {
+        statusElem.classList.add('connected');
+        statusElem.innerHTML = `<i class="fas fa-check-circle"></i> ${text}`;
+    } 
+    else if (status === 'connecting') {
+        statusElem.classList.add('connecting');
+        statusElem.innerHTML = `<i class="fas fa-sync-alt fa-spin"></i> ${text}`;
+    }
+    else if (status === 'error') {
+        statusElem.classList.add('error');
+        statusElem.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${text}`;
+    }
+    else {
+        statusElem.innerHTML = `<i class="fas fa-info-circle"></i> ${text}`;
+    }
+}
+
+function startTimer() {
+    appState.startTime = Date.now();
+    clearInterval(appState.timer);
+    
+    const timerElement = domRefs.videoCallTimer;
+    if (timerElement) timerElement.style.display = 'block';
+    
+    const fullscreenTimer = domRefs.fullscreenCallTimer;
+    if (fullscreenTimer) fullscreenTimer.style.display = 'block';
+    
+    appState.timer = setInterval(() => {
+        const elapsedTime = Math.floor((Date.now() - appState.startTime) / 1000);
+        const minutes = Math.floor(elapsedTime / 60).toString().padStart(2, '0');
+        const seconds = (elapsedTime % 60).toString().padStart(2, '0');
+        
+        if (timerElement) timerElement.textContent = `${minutes}:${seconds}`;
+        if (fullscreenTimer) fullscreenTimer.textContent = `${minutes}:${seconds}`;
+    }, 1000);
+}
+
+function stopTimer() {
+    clearInterval(appState.timer);
+    appState.timer = null;
+    appState.startTime = null;
+    
+    const timerElement = domRefs.videoCallTimer;
+    if (timerElement) {
+        timerElement.textContent = '00:00';
+        timerElement.style.display = 'none';
+    }
+    
+    const fullscreenTimer = domRefs.fullscreenCallTimer;
+    if (fullscreenTimer) {
+        fullscreenTimer.textContent = '00:00';
+        fullscreenTimer.style.display = 'none';
+    }
+}
+
+async function initMedia() {
+    try {
+        const constraints = { 
+            video: { facingMode: appState.currentCamera }, 
+            audio: true 
+        };
+        
+        appState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        
+        domRefs.localVideo.srcObject = appState.localStream;
+        domRefs.localVideo.play().catch(e => console.error('Local video play error:', e));
+        domRefs.fullscreenLocalVideo.srcObject = appState.localStream;
+        domRefs.fullscreenLocalVideo.play().catch(e => console.error('Fullscreen local video play error:', e));
+        
+        updateMirroring();
+        
+        document.getElementById('videoControls').style.display = 'flex';
+        appState.isCameraEnabled = true;
+        
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        appState.cameraDevices = devices.filter(device => device.kind === 'videoinput');
+        if (appState.cameraDevices.length > 1) {
+            document.getElementById('switchCameraBtnNormal').style.display = 'block';
+            document.getElementById('fullscreenSwitchCameraBtn').style.display = 'block';
+        } else {
+            document.getElementById('switchCameraBtnNormal').style.display = 'none';
+            document.getElementById('fullscreenSwitchCameraBtn').style.display = 'none';
+        }
+        
+        return true;
+    } catch (err) {
+        console.error('Media access error:', err);
+        showNotification('Media Error', 'Could not access camera/microphone. Please check permissions and ensure a camera is available.', 'error');
+        updateStatus('Media access error', 'error');
+        return false;
+    }
+}
+
+function updateMirroring() {
+    const localVideo = domRefs.localVideo;
+    const fullscreenLocalVideo = domRefs.fullscreenLocalVideo;
+    
+    if (appState.currentCamera === 'user') {
+        if (!appState.isStreamSwitched) {
+            localVideo.style.transform = 'scaleX(-1)';
+            fullscreenLocalVideo.style.transform = 'scaleX(-1)';
+        }
+    } else {
+        localVideo.style.transform = 'none';
+        fullscreenLocalVideo.style.transform = 'none';
+    }
+    
+    if (appState.isStreamSwitched) {
+        if (appState.currentCamera === 'user') {
+            domRefs.remoteVideo.style.transform = 'scaleX(-1)';
+            domRefs.fullscreenRemoteVideo.style.transform = 'scaleX(-1)';
+        } else {
+            domRefs.remoteVideo.style.transform = 'none';
+            domRefs.fullscreenRemoteVideo.style.transform = 'none';
+        }
+    } else {
+        domRefs.remoteVideo.style.transform = 'none';
+        domRefs.fullscreenRemoteVideo.style.transform = 'none';
+    }
+}
+
+async function switchCamera() {
+    try {
+        appState.currentCamera = appState.currentCamera === 'user' ? 'environment' : 'user';
+        
+        const newStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: appState.currentCamera },
+            audio: true
+        });
+        
+        appState.localStream.getTracks().forEach(track => track.stop());
+        appState.localStream = newStream;
+        
+        domRefs.localVideo.srcObject = appState.localStream;
+        domRefs.localVideo.play().catch(e => console.error('Local video play error:', e));
+        domRefs.fullscreenLocalVideo.srcObject = appState.localStream;
+        domRefs.fullscreenLocalVideo.play().catch(e => console.error('Fullscreen local video play error:', e));
+        
+        updateMirroring();
+        
+        if (appState.peerConnection) {
+            const videoTrack = appState.localStream.getVideoTracks()[0];
+            const audioTrack = appState.localStream.getAudioTracks()[0];
+            const videoSender = appState.peerConnection.getSenders().find(
+                s => s.track && s.track.kind === 'video'
+            );
+            const audioSender = appState.peerConnection.getSenders().find(
+                s => s.track && s.track.kind === 'audio'
+            );
+            
+            if (videoSender && videoTrack) {
+                videoSender.replaceTrack(videoTrack);
+            }
+            
+            if (audioSender && audioTrack) {
+                audioSender.replaceTrack(audioTrack);
+            }
+        }
+        
+        showNotification('Camera Switched', `Now using ${appState.currentCamera === 'user' ? 'front' : 'rear'} camera`, 'success');
+    } catch (err) {
+        console.error('Camera switch error:', err);
+        showNotification('Camera Error', 'Failed to switch camera', 'error');
+        updateStatus('Camera switch failed', 'error');
+    }
+}
+
+async function enterFullscreenMode() {
+    try {
+        await document.documentElement.requestFullscreen();
+        domRefs.fullscreenMode.style.display = 'flex';
+        document.querySelector('.placeholder-animation').style.display = 'none';
+        document.body.classList.add('fullscreen-active');
+        appState.isFullscreen = true;
+        hideSidebar();
+        if (appState.roomId) {
+            domRefs.fullscreenCopyLink.style.display = 'flex';
+        }
+        
+        positionLocalVideoContainer();
+        
+        showNotification('Fullscreen Mode', 'You are now in true fullscreen mode', 'success');
+    } catch (err) {
+        console.error('Fullscreen error:', err);
+        showNotification('Warning', 'Fullscreen mode not supported or denied, continuing in windowed mode', 'error');
+        domRefs.fullscreenCopyLink.style.display = 'none';
+    }
+}
+
+async function exitFullscreenMode() {
+    try {
+        if (document.fullscreenElement) {
+            await document.exitFullscreen();
+        }
+        domRefs.fullscreenMode.style.display = 'none';
+        document.body.classList.remove('fullscreen-active');
+        appState.isFullscreen = false;
+        domRefs.fullscreenCopyLink.style.display = 'none';
+        showSidebar();
+        
+        positionLocalVideoContainer();
+    } catch (err) {
+        console.error('Exit fullscreen error:', err);
+        showNotification('Error', 'Failed to exit fullscreen mode', 'error');
+    }
+}
+
+function hideSidebar() {
+    if (window.innerWidth > 900) {
+        domRefs.appContainer.classList.add('sidebar-hidden');
+        document.body.classList.remove('sidebar-open');
+        domRefs.desktopMenuToggle.querySelector('.menu-icon').style.display = 'block';
+        domRefs.desktopMenuToggle.querySelector('.close-icon').style.display = 'none';
+    } else {
+        domRefs.sidebar.classList.remove('active');
+    }
+}
+
+function showSidebar() {
+    if (window.innerWidth > 900) {
+        domRefs.appContainer.classList.remove('sidebar-hidden');
+        document.body.classList.add('sidebar-open');
+        domRefs.desktopMenuToggle.querySelector('.menu-icon').style.display = 'none';
+        domRefs.desktopMenuToggle.querySelector('.close-icon').style.display = 'block';
+    } else {
+        domRefs.sidebar.classList.add('active');
+    }
+}
+
+function toggleSidebar() {
+    if (appState.isFullscreen) return;
+    if (window.innerWidth > 900) {
+        domRefs.appContainer.classList.toggle('sidebar-hidden');
+        document.body.classList.toggle('sidebar-open');
+        const menuIcon = domRefs.desktopMenuToggle.querySelector('.menu-icon');
+        const closeIcon = domRefs.desktopMenuToggle.querySelector('.close-icon');
+        if (domRefs.appContainer.classList.contains('sidebar-hidden')) {
+            menuIcon.style.display = 'block';
+            closeIcon.style.display = 'none';
+        } else {
+            menuIcon.style.display = 'none';
+            closeIcon.style.display = 'block';
+        }
+    } else {
+        domRefs.sidebar.classList.toggle('active');
+    }
+}
+
+function adjustForMobile() {
+    if (window.innerWidth <= 900) {
+        domRefs.mobileMenuToggle.style.display = 'flex';
+        domRefs.desktopMenuToggle.style.display = 'none';
+        domRefs.sidebar.classList.remove('active');
+        document.body.classList.remove('sidebar-open');
+    } else {
+        domRefs.mobileMenuToggle.style.display = 'none';
+        domRefs.desktopMenuToggle.style.display = 'flex';
+        domRefs.sidebar.style.display = 'flex';
+        domRefs.appContainer.classList.remove('sidebar-hidden');
+    }
+}
+
+function hangup() {
+    try {
+        stopTimer();
+        updateStatus('Ready to connect', 'disconnected');
+        
+        if (appState.signalingRef) {
+            sendMessage({ type: 'bye' });
+            appState.signalingRef.off('child_added');
+            appState.signalingRef = null;
+        }
+        
+        if (appState.peerConnection) {
+            appState.peerConnection.close();
+            appState.peerConnection = null;
+        }
+
+        if (appState.localStream) {
+            appState.localStream.getTracks().forEach(track => track.stop());
+            appState.localStream = null;
+        }
+
+        if (appState.remoteStream) {
+            appState.remoteStream.getTracks().forEach(track => track.stop());
+            appState.remoteStream = null;
+        }
+
+        domRefs.remoteVideo.srcObject = null;
+        domRefs.fullscreenRemoteVideo.srcObject = null;
+        domRefs.localVideo.srcObject = null;
+        domRefs.fullscreenLocalVideo.srcObject = null;
+
+        document.getElementById('videoControls').style.display = 'none';
+        document.getElementById('switchCameraBtnNormal').style.display = 'none';
+        document.getElementById('fullscreenSwitchCameraBtn').style.display = 'none';
+        domRefs.videoSpinner.style.display = 'none';
+        domRefs.copyVideoLink.style.display = 'none';
+        document.getElementById('enterFullscreenBtnNormal').style.display = 'none';
+        document.getElementById('roomInfo').style.display = 'none';
+        document.getElementById('displayRoomId').style.display = 'none';
+        document.getElementById('video-room-id').value = '';
+        document.querySelector('.placeholder-animation').style.display = 'flex';
+        document.getElementById('videoRemoteVideoContainer').style.display = 'none';
+
+        if (appState.isFullscreen) {
+            exitFullscreenMode();
+        }
+        
+        showNotification('Call Ended', 'Your video call has ended', 'success');
+        
+        appState.isStarted = false;
+        appState.isInitiator = false;
+        appState.roomId = null;
+        appState.currentCamera = 'user';
+        appState.isStreamSwitched = false;
+    } catch (err) {
+        console.error('Hangup error:', err);
+        showNotification('Error', 'Failed to end call', 'error');
+    }
+}
+
+function createPeerConnection() {
+    try {
+        const pcConfig = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' },
+                {
+                    urls: 'turn:openrelay.metered.ca:80',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                }
+            ]
+        };
+        
+        const pc = new RTCPeerConnection(pcConfig);
+        
+        if (appState.localStream) {
+            appState.localStream.getTracks().forEach(track => {
+                pc.addTrack(track, appState.localStream);
+            });
+        }
+        
+        pc.ontrack = (event) => {
+            console.log('Received remote track:', event.track.kind);
+            if (!appState.remoteStream) {
+                appState.remoteStream = new MediaStream();
+            }
+            
+            if (!appState.remoteStream.getTracks().some(t => t.id === event.track.id)) {
+                appState.remoteStream.addTrack(event.track);
+            }
+            
+            if (event.track.kind === 'video') {
+                console.log('Setting remote video stream');
+                if (appState.isStreamSwitched) {
+                    domRefs.localVideo.srcObject = appState.remoteStream;
+                    domRefs.fullscreenLocalVideo.srcObject = appState.remoteStream;
+                } else {
+                    domRefs.remoteVideo.srcObject = appState.remoteStream;
+                    domRefs.fullscreenRemoteVideo.srcObject = appState.remoteStream;
+                }
+                
+                const playPromise = domRefs.remoteVideo.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(e => {
+                        console.error('Remote video play error:', e);
+                        domRefs.remoteVideo.muted = true;
+                        domRefs.remoteVideo.play().catch(e => console.error('Muted play failed:', e));
                     });
-                    appState.lastNotificationTime = now;
-                }
-            } catch (e) {
-                console.error('Error playing notification sound:', e);
-            }
-        }
-
-        function showNotification(title, message, type = 'info') {
-            if (domRefs.notification) {
-                domRefs.notification.style.display = 'flex';
-                domRefs.notificationTitle.textContent = title;
-                domRefs.notificationMessage.textContent = message;
-                
-                domRefs.notification.style.backgroundColor = 
-                    type === 'error' ? 'rgba(244, 67, 54, 0.8)' :
-                    type === 'success' ? 'rgba(76, 175, 80, 0.8)' :
-                    'rgba(58, 123, 213, 0.8)';
-                
-                setTimeout(() => {
-                    domRefs.notification.style.display = 'none';
-                }, 3000);
-                
-                playNotificationSound();
-            } else {
-                console.warn('Notification element not found, fallback to alert');
-                alert(`${title}: ${message}`);
-            }
-        }
-
-        function updateStatus(text, status) {
-            const statusElem = domRefs.connectionStatus;
-            statusElem.className = 'status-indicator';
-            
-            if (status === 'connected') {
-                statusElem.classList.add('connected');
-                statusElem.innerHTML = `<i class="fas fa-check-circle"></i> ${text}`;
-            } 
-            else if (status === 'connecting') {
-                statusElem.classList.add('connecting');
-                statusElem.innerHTML = `<i class="fas fa-sync-alt fa-spin"></i> ${text}`;
-            }
-            else if (status === 'error') {
-                statusElem.classList.add('error');
-                statusElem.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${text}`;
-            }
-            else {
-                statusElem.innerHTML = `<i class="fas fa-info-circle"></i> ${text}`;
-            }
-        }
-
-        function startTimer() {
-            appState.startTime = Date.now();
-            clearInterval(appState.timer);
-            
-            const timerElement = domRefs.videoCallTimer;
-            if (timerElement) timerElement.style.display = 'block';
-            
-            const fullscreenTimer = domRefs.fullscreenCallTimer;
-            if (fullscreenTimer) fullscreenTimer.style.display = 'block';
-            
-            appState.timer = setInterval(() => {
-                const elapsedTime = Math.floor((Date.now() - appState.startTime) / 1000);
-                const minutes = Math.floor(elapsedTime / 60).toString().padStart(2, '0');
-                const seconds = (elapsedTime % 60).toString().padStart(2, '0');
-                
-                if (timerElement) timerElement.textContent = `${minutes}:${seconds}`;
-                if (fullscreenTimer) fullscreenTimer.textContent = `${minutes}:${seconds}`;
-            }, 1000);
-        }
-
-        function stopTimer() {
-            clearInterval(appState.timer);
-            appState.timer = null;
-            appState.startTime = null;
-            
-            const timerElement = domRefs.videoCallTimer;
-            if (timerElement) {
-                timerElement.textContent = '00:00';
-                timerElement.style.display = 'none';
-            }
-            
-            const fullscreenTimer = domRefs.fullscreenCallTimer;
-            if (fullscreenTimer) {
-                fullscreenTimer.textContent = '00:00';
-                fullscreenTimer.style.display = 'none';
-            }
-        }
-
-        async function initMedia() {
-            try {
-                const constraints = { 
-                    video: { facingMode: appState.currentCamera }, 
-                    audio: true 
-                };
-                
-                appState.localStream = await navigator.mediaDevices.getUserMedia(constraints);
-                
-                domRefs.localVideo.srcObject = appState.localStream;
-                domRefs.localVideo.play().catch(e => console.error('Local video play error:', e));
-                domRefs.fullscreenLocalVideo.srcObject = appState.localStream;
-                domRefs.fullscreenLocalVideo.play().catch(e => console.error('Fullscreen local video play error:', e));
-                
-                updateMirroring();
-                
-                document.getElementById('videoControls').style.display = 'flex';
-                appState.isCameraEnabled = true;
-                
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                appState.cameraDevices = devices.filter(device => device.kind === 'videoinput');
-                if (appState.cameraDevices.length > 1) {
-                    document.getElementById('switchCameraBtnNormal').style.display = 'block';
-                    document.getElementById('fullscreenSwitchCameraBtn').style.display = 'block';
-                } else {
-                    document.getElementById('switchCameraBtnNormal').style.display = 'none';
-                    document.getElementById('fullscreenSwitchCameraBtn').style.display = 'none';
                 }
                 
-                return true;
-            } catch (err) {
-                console.error('Media access error:', err);
-                showNotification('Media Error', 'Could not access camera/microphone. Please check permissions and ensure a camera is available.', 'error');
-                updateStatus('Media access error', 'error');
-                return false;
-            }
-        }
-
-        function updateMirroring() {
-            const localVideo = domRefs.localVideo;
-            const fullscreenLocalVideo = domRefs.fullscreenLocalVideo;
-            
-            if (appState.currentCamera === 'user') {
-                // Only mirror if it's the local stream (not switched)
-                if (!appState.isStreamSwitched) {
-                    localVideo.style.transform = 'scaleX(-1)';
-                    fullscreenLocalVideo.style.transform = 'scaleX(-1)';
-                }
-            } else {
-                localVideo.style.transform = 'none';
-                fullscreenLocalVideo.style.transform = 'none';
-            }
-            
-            // Also update the remote video if streams are switched
-            if (appState.isStreamSwitched) {
-                if (appState.currentCamera === 'user') {
-                    domRefs.remoteVideo.style.transform = 'scaleX(-1)';
-                    domRefs.fullscreenRemoteVideo.style.transform = 'scaleX(-1)';
-                } else {
-                    domRefs.remoteVideo.style.transform = 'none';
-                    domRefs.fullscreenRemoteVideo.style.transform = 'none';
-                }
-            } else {
-                domRefs.remoteVideo.style.transform = 'none';
-                domRefs.fullscreenRemoteVideo.style.transform = 'none';
-            }
-        }
-
-        async function switchCamera() {
-            try {
-                appState.currentCamera = appState.currentCamera === 'user' ? 'environment' : 'user';
-                
-                const newStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: appState.currentCamera },
-                    audio: true
-                });
-                
-                appState.localStream.getTracks().forEach(track => track.stop());
-                appState.localStream = newStream;
-                
-                domRefs.localVideo.srcObject = appState.localStream;
-                domRefs.localVideo.play().catch(e => console.error('Local video play error:', e));
-                domRefs.fullscreenLocalVideo.srcObject = appState.localStream;
-                domRefs.fullscreenLocalVideo.play().catch(e => console.error('Fullscreen local video play error:', e));
-                
-                updateMirroring();
-                
-                if (appState.peerConnection) {
-                    const videoTrack = appState.localStream.getVideoTracks()[0];
-                    const audioTrack = appState.localStream.getAudioTracks()[0];
-                    const videoSender = appState.peerConnection.getSenders().find(
-                        s => s.track && s.track.kind === 'video'
-                    );
-                    const audioSender = appState.peerConnection.getSenders().find(
-                        s => s.track && s.track.kind === 'audio'
-                    );
-                    
-                    if (videoSender && videoTrack) {
-                        videoSender.replaceTrack(videoTrack);
-                    }
-                    
-                    if (audioSender && audioTrack) {
-                        audioSender.replaceTrack(audioTrack);
-                    }
-                }
-                
-                showNotification('Camera Switched', `Now using ${appState.currentCamera === 'user' ? 'front' : 'rear'} camera`, 'success');
-            } catch (err) {
-                console.error('Camera switch error:', err);
-                showNotification('Camera Error', 'Failed to switch camera', 'error');
-                updateStatus('Camera switch failed', 'error');
-            }
-        }
-
-        async function enterFullscreenMode() {
-            try {
-                await document.documentElement.requestFullscreen();
-                domRefs.fullscreenMode.style.display = 'flex';
-                document.querySelector('.placeholder-animation').style.display = 'none';
-                document.body.classList.add('fullscreen-active');
-                appState.isFullscreen = true;
-                hideSidebar();
-                if (appState.roomId) {
-                    domRefs.fullscreenCopyLink.style.display = 'flex';
-                }
-                
-                positionLocalVideoContainer();
-                
-                showNotification('Fullscreen Mode', 'You are now in true fullscreen mode', 'success');
-            } catch (err) {
-                console.error('Fullscreen error:', err);
-                showNotification('Warning', 'Fullscreen mode not supported or denied, continuing in windowed mode', 'error');
-                domRefs.fullscreenCopyLink.style.display = 'none';
-            }
-        }
-
-        async function exitFullscreenMode() {
-            try {
-                if (document.fullscreenElement) {
-                    await document.exitFullscreen();
-                }
-                domRefs.fullscreenMode.style.display = 'none';
-                document.body.classList.remove('fullscreen-active');
-                appState.isFullscreen = false;
-                domRefs.fullscreenCopyLink.style.display = 'none';
-                showSidebar();
-                
-                positionLocalVideoContainer();
-            } catch (err) {
-                console.error('Exit fullscreen error:', err);
-                showNotification('Error', 'Failed to exit fullscreen mode', 'error');
-            }
-        }
-
-        function hideSidebar() {
-            if (window.innerWidth > 900) {
-                domRefs.appContainer.classList.add('sidebar-hidden');
-                document.body.classList.remove('sidebar-open');
-                domRefs.desktopMenuToggle.querySelector('.menu-icon').style.display = 'block';
-                domRefs.desktopMenuToggle.querySelector('.close-icon').style.display = 'none';
-            } else {
-                domRefs.sidebar.classList.remove('active');
-            }
-        }
-
-        function showSidebar() {
-            if (window.innerWidth > 900) {
-                domRefs.appContainer.classList.remove('sidebar-hidden');
-                document.body.classList.add('sidebar-open');
-                domRefs.desktopMenuToggle.querySelector('.menu-icon').style.display = 'none';
-                domRefs.desktopMenuToggle.querySelector('.close-icon').style.display = 'block';
-            } else {
-                domRefs.sidebar.classList.add('active');
-            }
-        }
-
-        function toggleSidebar() {
-            if (appState.isFullscreen) return;
-            if (window.innerWidth > 900) {
-                domRefs.appContainer.classList.toggle('sidebar-hidden');
-                document.body.classList.toggle('sidebar-open');
-                const menuIcon = domRefs.desktopMenuToggle.querySelector('.menu-icon');
-                const closeIcon = domRefs.desktopMenuToggle.querySelector('.close-icon');
-                if (domRefs.appContainer.classList.contains('sidebar-hidden')) {
-                    menuIcon.style.display = 'block';
-                    closeIcon.style.display = 'none';
-                } else {
-                    menuIcon.style.display = 'none';
-                    closeIcon.style.display = 'block';
-                }
-            } else {
-                domRefs.sidebar.classList.toggle('active');
-            }
-        }
-
-        function adjustForMobile() {
-            if (window.innerWidth <= 900) {
-                domRefs.mobileMenuToggle.style.display = 'flex';
-                domRefs.desktopMenuToggle.style.display = 'none';
-                domRefs.sidebar.classList.remove('active');
-                document.body.classList.remove('sidebar-open');
-            } else {
-                domRefs.mobileMenuToggle.style.display = 'none';
-                domRefs.desktopMenuToggle.style.display = 'flex';
-                domRefs.sidebar.style.display = 'flex';
-                domRefs.appContainer.classList.remove('sidebar-hidden');
-            }
-        }
-
-        function hangup() {
-            try {
-                stopTimer();
-                updateStatus('Ready to connect', 'disconnected');
-                
-                if (appState.signalingRef) {
-                    sendMessage({ type: 'bye' });
-                    appState.signalingRef.off('child_added');
-                    appState.signalingRef = null;
-                }
-                
-                if (appState.peerConnection) {
-                    appState.peerConnection.close();
-                    appState.peerConnection = null;
-                }
-
-                if (appState.localStream) {
-                    appState.localStream.getTracks().forEach(track => track.stop());
-                    appState.localStream = null;
-                }
-
-                if (appState.remoteStream) {
-                    appState.remoteStream.getTracks().forEach(track => track.stop());
-                    appState.remoteStream = null;
-                }
-
-                domRefs.remoteVideo.srcObject = null;
-                domRefs.fullscreenRemoteVideo.srcObject = null;
-                domRefs.localVideo.srcObject = null;
-                domRefs.fullscreenLocalVideo.srcObject = null;
-
-                document.getElementById('videoControls').style.display = 'none';
-                document.getElementById('switchCameraBtnNormal').style.display = 'none';
-                document.getElementById('fullscreenSwitchCameraBtn').style.display = 'none';
                 domRefs.videoSpinner.style.display = 'none';
-                domRefs.copyVideoLink.style.display = 'none';
-                document.getElementById('enterFullscreenBtnNormal').style.display = 'none';
-                document.getElementById('roomInfo').style.display = 'none';
-                document.getElementById('displayRoomId').style.display = 'none';
-                document.getElementById('video-room-id').value = '';
-                document.querySelector('.placeholder-animation').style.display = 'flex';
-                document.getElementById('videoRemoteVideoContainer').style.display = 'none';
-
-                if (appState.isFullscreen) {
-                    exitFullscreenMode();
-                }
-                
-                showNotification('Call Ended', 'Your video call has ended', 'success');
-                
-                appState.isStarted = false;
-                appState.isInitiator = false;
-                appState.roomId = null;
-                appState.currentCamera = 'user';
-                appState.isStreamSwitched = false;
-            } catch (err) {
-                console.error('Hangup error:', err);
-                showNotification('Error', 'Failed to end call', 'error');
             }
-        }
-
-        function createPeerConnection() {
+        };
+        
+        pc.onicecandidate = (event) => {
+            if (event.candidate && appState.signalingRef) {
+                console.log('Sending ICE candidate');
+                sendMessage({
+                    type: 'candidate',
+                    candidate: event.candidate.candidate,
+                    sdpMid: event.candidate.sdpMid,
+                    sdpMLineIndex: event.candidate.sdpMLineIndex
+                });
+            }
+        };
+        
+        pc.oniceconnectionstatechange = () => {
+            const state = pc.iceConnectionState;
+            console.log('ICE connection state changed:', state);
+            
+            if (state === 'connected' || state === 'completed') {
+                updateStatus(`In video call (${appState.roomId})`, 'connected');
+                showNotification('Connected', 'Peer has joined the call', 'success');
+                startTimer();
+            } 
+            else if (state === 'disconnected' || state === 'failed') {
+                showNotification('Disconnected', 'Peer has left the call', 'error');
+                hangup();
+            }
+        };
+        
+        pc.onnegotiationneeded = async () => {
+            console.log('Negotiation needed');
             try {
-                const pcConfig = {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' },
-                        { urls: 'stun:stun3.l.google.com:19302' },
-                        { urls: 'stun:stun4.l.google.com:19302' },
-                        {
-                            urls: 'turn:openrelay.metered.ca:80',
-                            username: 'openrelayproject',
-                            credential: 'openrelayproject'
-                        },
-                        {
-                            urls: 'turn:openrelay.metered.ca:443',
-                            username: 'openrelayproject',
-                            credential: 'openrelayproject'
-                        },
-                        {
-                            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-                            username: 'openrelayproject',
-                            credential: 'openrelayproject'
-                        }
-                    ]
-                };
+                if (appState.isInitiator) {
+                    const offer = await pc.createOffer();
+                    await pc.setLocalDescription(offer);
+                    sendMessage(offer);
+                }
+            } catch (err) {
+                console.error('Negotiation error:', err);
+            }
+        };
+        
+        return pc;
+    } catch (err) {
+        console.error('Peer connection error:', err);
+        showNotification('Connection Error', `Failed to create peer connection: ${err.message}`, 'error');
+        updateStatus('Connection failed', 'error');
+        return null;
+    }
+}
+
+function initSignaling() {
+    try {
+        if (!database) {
+            throw new Error('Firebase database not initialized');
+        }
+        if (!appState.roomId) {
+            throw new Error('Room ID is not set');
+        }
+        if (appState.signalingRef) {
+            appState.signalingRef.off('child_added');
+        }
+        
+        appState.signalingRef = database.ref(`rooms/${appState.roomId}/messages`);
+        
+        appState.signalingRef.on('child_added', async snapshot => {
+            try {
+                const message = JSON.parse(snapshot.val());
+                console.log('Received signaling message:', message);
                 
-                const pc = new RTCPeerConnection(pcConfig);
-                
-                if (appState.localStream) {
-                    appState.localStream.getTracks().forEach(track => {
-                        pc.addTrack(track, appState.localStream);
-                    });
+                if (!appState.peerConnection) {
+                    appState.peerConnection = createPeerConnection();
+                    if (!appState.peerConnection) return;
                 }
                 
-                pc.ontrack = (event) => {
-                    console.log('Received remote track:', event.track.kind);
-                    if (!appState.remoteStream) {
-                        appState.remoteStream = new MediaStream();
-                    }
-                    
-                    if (!appState.remoteStream.getTracks().some(t => t.id === event.track.id)) {
-                        appState.remoteStream.addTrack(event.track);
-                    }
-                    
-                    if (event.track.kind === 'video') {
-                        console.log('Setting remote video stream');
-                        if (appState.isStreamSwitched) {
-                            domRefs.localVideo.srcObject = appState.remoteStream;
-                            domRefs.fullscreenLocalVideo.srcObject = appState.remoteStream;
-                        } else {
-                            domRefs.remoteVideo.srcObject = appState.remoteStream;
-                            domRefs.fullscreenRemoteVideo.srcObject = appState.remoteStream;
+                switch (message.type) {
+                    case 'offer':
+                        if (!appState.isInitiator && !appState.isStarted) {
+                            await appState.peerConnection.setRemoteDescription(
+                                new RTCSessionDescription(message));
+                            
+                            const answer = await appState.peerConnection.createAnswer();
+                            await appState.peerConnection.setLocalDescription(answer);
+                            
+                            sendMessage(answer);
+                            appState.isStarted = true;
+                            
+                            if (appState.currentMode === 'video') {
+                                domRefs.videoSpinner.style.display = 'none';
+                            }
                         }
-                        
-                        const playPromise = domRefs.remoteVideo.play();
-                        if (playPromise !== undefined) {
-                            playPromise.catch(e => {
-                                console.error('Remote video play error:', e);
-                                domRefs.remoteVideo.muted = true;
-                                domRefs.remoteVideo.play().catch(e => console.error('Muted play failed:', e));
+                        break;
+                    case 'answer':
+                        if (appState.isStarted) {
+                            await appState.peerConnection.setRemoteDescription(
+                                new RTCSessionDescription(message));
+                        }
+                        break;
+                    case 'candidate':
+                        if (appState.isStarted && appState.peerConnection.remoteDescription) {
+                            const candidate = new RTCIceCandidate({
+                                candidate: message.candidate,
+                                sdpMid: message.sdpMid,
+                                sdpMLineIndex: message.sdpMLineIndex
                             });
+                            await appState.peerConnection.addIceCandidate(candidate);
                         }
-                        
-                        domRefs.videoSpinner.style.display = 'none';
-                    }
-                };
-                
-                pc.onicecandidate = (event) => {
-                    if (event.candidate && appState.signalingRef) {
-                        console.log('Sending ICE candidate');
-                        sendMessage({
-                            type: 'candidate',
-                            candidate: event.candidate.candidate,
-                            sdpMid: event.candidate.sdpMid,
-                            sdpMLineIndex: event.candidate.sdpMLineIndex
-                        });
-                    }
-                };
-                
-                pc.oniceconnectionstatechange = () => {
-                    const state = pc.iceConnectionState;
-                    console.log('ICE connection state changed:', state);
-                    
-                    if (state === 'connected' || state === 'completed') {
-                        updateStatus(`In video call (${appState.roomId})`, 'connected');
-                        showNotification('Connected', 'Peer has joined the call', 'success');
-                        startTimer();
-                    } 
-                    else if (state === 'disconnected' || state === 'failed') {
-                        showNotification('Disconnected', 'Peer has left the call', 'error');
-                        hangup();
-                    }
-                };
-                
-                pc.onnegotiationneeded = async () => {
-                    console.log('Negotiation needed');
-                    try {
-                        if (appState.isInitiator) {
-                            const offer = await pc.createOffer();
-                            await pc.setLocalDescription(offer);
-                            sendMessage(offer);
+                        break;
+                    case 'bye':
+                        if (appState.isStarted) {
+                            hangup();
                         }
-                    } catch (err) {
-                        console.error('Negotiation error:', err);
-                    }
-                };
-                
-                return pc;
-            } catch (err) {
-                console.error('Peer connection error:', err);
-                showNotification('Connection Error', `Failed to create peer connection: ${err.message}`, 'error');
-                updateStatus('Connection failed', 'error');
-                return null;
-            }
-        }
-
-        function initSignaling() {
-            try {
-                if (!database) {
-                    throw new Error('Firebase database not initialized');
-                }
-                if (!appState.roomId) {
-                    throw new Error('Room ID is not set');
-                }
-                if (appState.signalingRef) {
-                    appState.signalingRef.off('child_added');
-                }
-                
-                appState.signalingRef = database.ref(`rooms/${appState.roomId}/messages`);
-                
-                appState.signalingRef.on('child_added', async snapshot => {
-                    try {
-                        const message = JSON.parse(snapshot.val());
-                        console.log('Received signaling message:', message);
-                        
-                        if (!appState.peerConnection) {
-                            appState.peerConnection = createPeerConnection();
-                            if (!appState.peerConnection) return;
-                        }
-                        
-                        switch (message.type) {
-                            case 'offer':
-                                if (!appState.isInitiator && !appState.isStarted) {
-                                    await appState.peerConnection.setRemoteDescription(
-                                        new RTCSessionDescription(message));
-                                    
-                                    const answer = await appState.peerConnection.createAnswer();
-                                    await appState.peerConnection.setLocalDescription(answer);
-                                    
-                                    sendMessage(answer);
-                                    appState.isStarted = true;
-                                    
-                                    if (appState.currentMode === 'video') {
-                                        domRefs.videoSpinner.style.display = 'none';
-                                    }
-                                }
-                                break;
-                            case 'answer':
-                                if (appState.isStarted) {
-                                    await appState.peerConnection.setRemoteDescription(
-                                        new RTCSessionDescription(message));
-                                }
-                                break;
-                            case 'candidate':
-                                if (appState.isStarted && appState.peerConnection.remoteDescription) {
-                                    const candidate = new RTCIceCandidate({
-                                        candidate: message.candidate,
-                                        sdpMid: message.sdpMid,
-                                        sdpMLineIndex: message.sdpMLineIndex
-                                    });
-                                    await appState.peerConnection.addIceCandidate(candidate);
-                                }
-                                break;
-                            case 'bye':
-                                if (appState.isStarted) {
-                                    hangup();
-                                }
-                                break;
-                        }
-                    } catch (err) {
-                        console.error('Signaling error:', err);
-                        showNotification('Signaling Error', `Failed to process signaling message: ${err.message}`, 'error');
-                    }
-                }, error => {
-                    console.error('Signaling listener error:', error);
-                    showNotification('Signaling Error', `Failed to listen for signaling messages: ${error.message}`, 'error');
-                });
-            } catch (err) {
-                console.error('Init signaling error:', err);
-                showNotification('Error', `Failed to initialize signaling: ${err.message}`, 'error');
-            }
-        }
-
-        function sendMessage(message) {
-            try {
-                console.log('Attempting to send message:', message);
-                if (!database) {
-                    throw new Error('Firebase database not initialized');
-                }
-                if (!appState.roomId) {
-                    throw new Error('Room ID is not set');
-                }
-                const dbRef = database.ref(`rooms/${appState.roomId}/messages`);
-                dbRef.push(JSON.stringify(message), error => {
-                    if (error) {
-                        console.error('Push error:', error);
-                        showNotification('Error', `Failed to send signaling message: ${error.message}`, 'error');
-                    } else {
-                        console.log('Message sent successfully');
-                    }
-                });
-            } catch (err) {
-                console.error('Send message error:', err);
-                showNotification('Error', `Failed to send signaling message: ${err.message}`, 'error');
-            }
-        }
-
-        async function generateRoom() {
-            console.log('generateRoom clicked');
-            try {
-                if (!database) {
-                    throw new Error('Firebase database not initialized');
-                }
-                appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-                appState.currentMode = 'video-call';
-                appState.isInitiator = true;
-
-                document.getElementById('roomInfo').style.display = 'flex';
-                document.getElementById('displayRoomId').textContent = appState.roomId;
-                document.getElementById('displayRoomId').style.display = 'block';
-                document.getElementById('copyVideoLink').style.display = 'inline-flex';
-                document.getElementById('enterFullscreenBtnNormal').style.display = 'inline-flex';
-                showNotification('Room Generated', `Room ID: ${appState.roomId}. Share with others.`, 'success');
-                updateStatus(`Room created: ${appState.roomId}`, 'connecting');
-                document.querySelector('.placeholder-animation').style.display = 'none';
-                document.getElementById('videoRemoteVideoContainer').style.display = 'block';
-
-                const mediaInitialized = await initMedia();
-                if (!mediaInitialized) return;
-
-                appState.peerConnection = createPeerConnection();
-                if (!appState.peerConnection) return;
-
-                const offer = await appState.peerConnection.createOffer();
-                await appState.peerConnection.setLocalDescription(offer);
-                
-                initSignaling();
-                sendMessage(offer);
-
-                appState.isStarted = true;
-                hideSidebar();
-
-                positionLocalVideoContainer();
-
-                if (appState.autoFullscreen) {
-                    await enterFullscreenMode();
+                        break;
                 }
             } catch (err) {
-                console.error('Error generating room:', err);
-                showNotification('Error', `Failed to create room: ${err.message}`, 'error');
-                updateStatus('Room creation failed', 'error');
-                appState.roomId = null;
+                console.error('Signaling error:', err);
+                showNotification('Signaling Error', `Failed to process signaling message: ${err.message}`, 'error');
             }
+        }, error => {
+            console.error('Signaling listener error:', error);
+            showNotification('Signaling Error', `Failed to listen for signaling messages: ${error.message}`, 'error');
+        });
+    } catch (err) {
+        console.error('Init signaling error:', err);
+        showNotification('Error', `Failed to initialize signaling: ${err.message}`, 'error');
+    }
+}
+
+function sendMessage(message) {
+    try {
+        console.log('Attempting to send message:', message);
+        if (!database) {
+            throw new Error('Firebase database not initialized');
         }
-
-        async function joinRoom() {
-            console.log('joinRoom clicked');
-            try {
-                if (!database) {
-                    throw new Error('Firebase database not initialized');
-                }
-                appState.roomId = document.getElementById('video-room-id').value.trim();
-                appState.currentMode = 'video-call';
-                
-                if (!appState.roomId) {
-                    showNotification('Error', 'Please enter a room ID', 'error');
-                    return;
-                }
-                
-                document.getElementById('roomInfo').style.display = 'flex';
-                document.getElementById('displayRoomId').textContent = appState.roomId;
-                document.getElementById('displayRoomId').style.display = 'block';
-                document.getElementById('copyVideoLink').style.display = 'inline-flex';
-                document.getElementById('enterFullscreenBtnNormal').style.display = 'inline-flex';
-                document.querySelector('.placeholder-animation').style.display = 'none';
-                document.getElementById('videoRemoteVideoContainer').style.display = 'block';
-                
-                const mediaInitialized = await initMedia();
-                if (!mediaInitialized) return;
-                
-                appState.peerConnection = createPeerConnection();
-                if (!appState.peerConnection) return;
-                
-                domRefs.videoSpinner.style.display = 'block';
-                
-                initSignaling();
-                
-                updateStatus(`Joining video room...`, 'connecting');
-                showNotification('Joining Room', `Connecting to room: ${appState.roomId}`);
-                hideSidebar();
-
-                positionLocalVideoContainer();
-
-                if (appState.autoFullscreen) {
-                    await enterFullscreenMode();
-                }
-            } catch (err) {
-                console.error('Error joining room:', err);
-                showNotification('Connection Error', `Failed to join room: ${err.message}`, 'error');
-                updateStatus('Join room failed', 'error');
-                appState.roomId = null;
-            }
+        if (!appState.roomId) {
+            throw new Error('Room ID is not set');
         }
-
-        function copyLink() {
-            console.log('copyLink clicked');
-            try {
-                const baseUrl = window.location.origin + window.location.pathname;
-                const roomLink = `${baseUrl}?room=${appState.roomId}&mode=video`;
-                
-                navigator.clipboard.writeText(roomLink).then(() => {
-                    const copyBtn = appState.isFullscreen ? domRefs.fullscreenCopyLink : domRefs.copyVideoLink;
-                    const originalText = copyBtn.innerHTML;
-                    copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                    
-                    setTimeout(() => {
-                        copyBtn.innerHTML = originalText;
-                    }, 2000);
-                    
-                    showNotification('Copied', 'Room link copied to clipboard', 'success');
-                }).catch(err => {
-                    console.error('Copy failed:', err);
-                    showNotification('Error', 'Failed to copy link', 'error');
-                });
-            } catch (err) {
-                console.error('Copy link error:', err);
-                showNotification('Error', 'Failed to copy link', 'error');
+        const dbRef = database.ref(`rooms/${appState.roomId}/messages`);
+        dbRef.push(JSON.stringify(message), error => {
+            if (error) {
+                console.error('Push error:', error);
+                showNotification('Error', `Failed to send signaling message: ${error.message}`, 'error');
+            } else {
+                console.log('Message sent successfully');
             }
+        });
+    } catch (err) {
+        console.error('Send message error:', err);
+        showNotification('Error', `Failed to send signaling message: ${err.message}`, 'error');
+    }
+}
+
+async function generateRoom() {
+    console.log('generateRoom clicked');
+    try {
+        if (!database) {
+            throw new Error('Firebase database not initialized');
         }
+        appState.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+        appState.currentMode = 'video-call';
+        appState.isInitiator = true;
 
-        function toggleVideo() {
-            console.log('toggleVideo clicked');
-            if (!appState.localStream) {
-                console.warn('No local stream available');
-                return;
-            }
-            const videoTracks = appState.localStream.getVideoTracks();
-            if (videoTracks.length === 0) {
-                console.warn('No video tracks found');
-                return;
-            }
+        document.getElementById('roomInfo').style.display = 'flex';
+        document.getElementById('displayRoomId').textContent = appState.roomId;
+        document.getElementById('displayRoomId').style.display = 'block';
+        document.getElementById('copyVideoLink').style.display = 'inline-flex';
+        document.getElementById('enterFullscreenBtnNormal').style.display = 'inline-flex';
+        showNotification('Room Generated', `Room ID: ${appState.roomId}. Share with others.`, 'success');
+        updateStatus(`Room created: ${appState.roomId}`, 'connecting');
+        document.querySelector('.placeholder-animation').style.display = 'none';
+        document.getElementById('videoRemoteVideoContainer').style.display = 'block';
 
-            const enabled = !videoTracks[0].enabled;
-            videoTracks[0].enabled = enabled;
-            appState.isCameraEnabled = enabled;
+        const mediaInitialized = await initMedia();
+        if (!mediaInitialized) return;
 
-            if (domRefs.videoVideoToggle) {
-                domRefs.videoVideoToggle.innerHTML = enabled ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
-                domRefs.videoVideoToggle.classList.toggle('muted', !enabled);
-            }
-            if (domRefs.fullscreenVideoToggle) {
-                domRefs.fullscreenVideoToggle.innerHTML = enabled ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
-                domRefs.fullscreenVideoToggle.classList.toggle('muted', !enabled);
-            }
+        appState.peerConnection = createPeerConnection();
+        if (!appState.peerConnection) return;
 
-            showNotification(enabled ? 'Camera On' : 'Camera Off', `Your camera is now ${enabled ? 'enabled' : 'disabled'}`);
+        const offer = await appState.peerConnection.createOffer();
+        await appState.peerConnection.setLocalDescription(offer);
+        
+        initSignaling();
+        sendMessage(offer);
+
+        appState.isStarted = true;
+        hideSidebar();
+
+        positionLocalVideoContainer();
+
+        if (appState.autoFullscreen) {
+            await enterFullscreenMode();
         }
+    } catch (err) {
+        console.error('Error generating room:', err);
+        showNotification('Error', `Failed to create room: ${err.message}`, 'error');
+        updateStatus('Room creation failed', 'error');
+        appState.roomId = null;
+    }
+}
 
-        function toggleAudio() {
-            console.log('toggleAudio clicked');
-            if (!appState.localStream) {
-                console.warn('No local stream available');
-                return;
-            }
-            const audioTracks = appState.localStream.getAudioTracks();
-            if (audioTracks.length === 0) {
-                console.warn('No audio tracks found');
-                return;
-            }
-
-            const enabled = !audioTracks[0].enabled;
-            audioTracks[0].enabled = enabled;
-
-            if (domRefs.videoAudioToggle) {
-                domRefs.videoAudioToggle.innerHTML = enabled ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
-                domRefs.videoAudioToggle.classList.toggle('muted', !enabled);
-            }
-            if (domRefs.fullscreenAudioToggle) {
-                domRefs.fullscreenAudioToggle.innerHTML = enabled ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
-                domRefs.fullscreenAudioToggle.classList.toggle('muted', !enabled);
-            }
-
-            showNotification(enabled ? 'Microphone On' : 'Microphone Off', `Your microphone is now ${enabled ? 'enabled' : 'muted'}`);
+async function joinRoom() {
+    console.log('joinRoom clicked');
+    try {
+        if (!database) {
+            throw new Error('Firebase database not initialized');
         }
-
-        function positionLocalVideoContainer() {
-            const container = appState.isFullscreen ? 
-                document.querySelector('.fullscreen-mode .video-container') : 
-                document.getElementById('videoRemoteVideoContainer');
-            
-            if (!container) {
-                console.error('Container not found');
-                return;
-            }
-            
-            const containerRect = container.getBoundingClientRect();
-            const localContainer = appState.isFullscreen ? 
-                domRefs.fullscreenLocalVideoContainer : 
-                domRefs.localVideoContainer;
-            
-            if (!localContainer) {
-                console.error('Local video container not found');
-                return;
-            }
-            
-            if (!appState.localVideoPosition.x || !appState.localVideoPosition.y) {
-                appState.localVideoPosition = {
-                    x: containerRect.width - 170,
-                    y: containerRect.height - 120,
-                    width: 150,
-                    height: 100
-                };
-            }
-            
-            appState.localVideoPosition.x = Math.max(10, Math.min(
-                appState.localVideoPosition.x, 
-                containerRect.width - appState.localVideoPosition.width - 10
-            ));
-            appState.localVideoPosition.y = Math.max(10, Math.min(
-                appState.localVideoPosition.y, 
-                containerRect.height - appState.localVideoPosition.height - 10
-            ));
-            
-            localContainer.style.width = `${appState.localVideoPosition.width}px`;
-            localContainer.style.height = `${appState.localVideoPosition.height}px`;
-            localContainer.style.left = `${appState.localVideoPosition.x}px`;
-            localContainer.style.top = `${appState.localVideoPosition.y}px`;
-            
-            console.log('Local video container positioned at:', 
-                appState.localVideoPosition.x, appState.localVideoPosition.y);
+        appState.roomId = document.getElementById('video-room-id').value.trim();
+        appState.currentMode = 'video-call';
+        
+        if (!appState.roomId) {
+            showNotification('Error', 'Please enter a room ID', 'error');
+            return;
         }
+        
+        document.getElementById('roomInfo').style.display = 'flex';
+        document.getElementById('displayRoomId').textContent = appState.roomId;
+        document.getElementById('displayRoomId').style.display = 'block';
+        document.getElementById('copyVideoLink').style.display = 'inline-flex';
+        document.getElementById('enterFullscreenBtnNormal').style.display = 'inline-flex';
+        document.querySelector('.placeholder-animation').style.display = 'none';
+        document.getElementById('videoRemoteVideoContainer').style.display = 'block';
+        
+        const mediaInitialized = await initMedia();
+        if (!mediaInitialized) return;
+        
+        appState.peerConnection = createPeerConnection();
+        if (!appState.peerConnection) return;
+        
+        domRefs.videoSpinner.style.display = 'block';
+        
+        initSignaling();
+        
+        updateStatus(`Joining video room...`, 'connecting');
+        showNotification('Joining Room', `Connecting to room: ${appState.roomId}`);
+        hideSidebar();
 
-        function setLocalVideoSize(size) {
-    console.log(`Setting local video size to ${size} from mobile top controls`);
+        positionLocalVideoContainer();
+
+        if (appState.autoFullscreen) {
+            await enterFullscreenMode();
+        }
+    } catch (err) {
+        console.error('Error joining room:', err);
+        showNotification('Connection Error', `Failed to join room: ${err.message}`, 'error');
+        updateStatus('Join room failed', 'error');
+        appState.roomId = null;
+    }
+}
+
+function copyLink() {
+    console.log('copyLink clicked');
+    try {
+        const baseUrl = window.location.origin + window.location.pathname;
+        const roomLink = `${baseUrl}?room=${appState.roomId}&mode=video`;
+        
+        navigator.clipboard.writeText(roomLink).then(() => {
+            const copyBtn = appState.isFullscreen ? domRefs.fullscreenCopyLink : domRefs.copyVideoLink;
+            const originalText = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            
+            setTimeout(() => {
+                copyBtn.innerHTML = originalText;
+            }, 2000);
+            
+            showNotification('Copied', 'Room link copied to clipboard', 'success');
+        }).catch(err => {
+            console.error('Copy failed:', err);
+            showNotification('Error', 'Failed to copy link', 'error');
+        });
+    } catch (err) {
+        console.error('Copy link error:', err);
+        showNotification('Error', 'Failed to copy link', 'error');
+    }
+}
+
+function toggleVideo() {
+    console.log('toggleVideo clicked');
+    if (!appState.localStream) {
+        console.warn('No local stream available');
+        return;
+    }
+    const videoTracks = appState.localStream.getVideoTracks();
+    if (videoTracks.length === 0) {
+        console.warn('No video tracks found');
+        return;
+    }
+
+    const enabled = !videoTracks[0].enabled;
+    videoTracks[0].enabled = enabled;
+    appState.isCameraEnabled = enabled;
+
+    if (domRefs.videoVideoToggle) {
+        domRefs.videoVideoToggle.innerHTML = enabled ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+        domRefs.videoVideoToggle.classList.toggle('muted', !enabled);
+    }
+    if (domRefs.fullscreenVideoToggle) {
+        domRefs.fullscreenVideoToggle.innerHTML = enabled ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+        domRefs.fullscreenVideoToggle.classList.toggle('muted', !enabled);
+    }
+
+    showNotification(enabled ? 'Camera On' : 'Camera Off', `Your camera is now ${enabled ? 'enabled' : 'disabled'}`);
+}
+
+function toggleAudio() {
+    console.log('toggleAudio clicked');
+    if (!appState.localStream) {
+        console.warn('No local stream available');
+        return;
+    }
+    const audioTracks = appState.localStream.getAudioTracks();
+    if (audioTracks.length === 0) {
+        console.warn('No audio tracks found');
+        return;
+    }
+
+    const enabled = !audioTracks[0].enabled;
+    audioTracks[0].enabled = enabled;
+
+    if (domRefs.videoAudioToggle) {
+        domRefs.videoAudioToggle.innerHTML = enabled ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
+        domRefs.videoAudioToggle.classList.toggle('muted', !enabled);
+    }
+    if (domRefs.fullscreenAudioToggle) {
+        domRefs.fullscreenAudioToggle.innerHTML = enabled ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
+        domRefs.fullscreenAudioToggle.classList.toggle('muted', !enabled);
+    }
+
+    showNotification(enabled ? 'Microphone On' : 'Microphone Off', `Your microphone is now ${enabled ? 'enabled' : 'muted'}`);
+}
+
+function positionLocalVideoContainer() {
+    const container = appState.isFullscreen ? 
+        document.querySelector('.fullscreen-mode .video-container') : 
+        document.getElementById('videoRemoteVideoContainer');
+    
+    if (!container) {
+        console.error('Container not found');
+        return;
+    }
+    
+    const containerRect = container.getBoundingClientRect();
+    const localContainer = appState.isFullscreen ? 
+        domRefs.fullscreenLocalVideoContainer : 
+        domRefs.localVideoContainer;
+    
+    if (!localContainer) {
+        console.error('Local video container not found');
+        return;
+    }
+    
+    if (!appState.localVideoPosition.x || !appState.localVideoPosition.y) {
+        appState.localVideoPosition = {
+            x: containerRect.width - 170,
+            y: containerRect.height - 120,
+            width: 150,
+            height: 100
+        };
+    }
+    
+    appState.localVideoPosition.x = Math.max(10, Math.min(
+        appState.localVideoPosition.x, 
+        containerRect.width - appState.localVideoPosition.width - 10
+    ));
+    appState.localVideoPosition.y = Math.max(10, Math.min(
+        appState.localVideoPosition.y, 
+        containerRect.height - appState.localVideoPosition.height - 10
+    ));
+    
+    localContainer.style.width = `${appState.localVideoPosition.width}px`;
+    localContainer.style.height = `${appState.localVideoPosition.height}px`;
+    localContainer.style.left = `${appState.localVideoPosition.x}px`;
+    localContainer.style.top = `${appState.localVideoPosition.y}px`;
+    
+    console.log('Local video container positioned at:', 
+        appState.localVideoPosition.x, appState.localVideoPosition.y);
+}
+
+function setLocalVideoSize(size) {
+    console.log(`Setting local video size to ${size}`);
     let width, height;
     
     switch(size) {
@@ -1944,86 +1996,85 @@
 }
 
 function switchStreams() {
-    console.log("Switch streams called from mobile top controls");
-            if (!appState.localStream || !appState.remoteStream) {
-                console.warn("Cannot switch streams - one or both streams not available");
-                return;
-            }
-            
-            appState.isStreamSwitched = !appState.isStreamSwitched;
-            
-            const remoteVideo = appState.isFullscreen ? 
-                domRefs.fullscreenRemoteVideo : domRefs.remoteVideo;
-            const localVideo = appState.isFullscreen ? 
-                domRefs.fullscreenLocalVideo : domRefs.localVideo;
-            
-            if (appState.isStreamSwitched) {
-                console.log("Switching streams - local becomes remote and vice versa");
-                remoteVideo.srcObject = appState.localStream;
-                localVideo.srcObject = appState.remoteStream;
-                
-                if (appState.currentCamera === 'user') {
-                    remoteVideo.style.transform = 'scaleX(-1)';
-                } else {
-                    remoteVideo.style.transform = 'none';
-                }
-                localVideo.style.transform = 'none';
-            } else {
-                console.log("Reverting streams to normal");
-                remoteVideo.srcObject = appState.remoteStream;
-                localVideo.srcObject = appState.localStream;
-                
-                remoteVideo.style.transform = 'none';
-                if (appState.currentCamera === 'user') {
-                    localVideo.style.transform = 'scaleX(-1)';
-                } else {
-                    localVideo.style.transform = 'none';
-                }
-            }
-            
-            const playPromises = [];
-            if (remoteVideo.srcObject) {
-                playPromises.push(remoteVideo.play().catch(e => 
-                    console.error('Remote video play error:', e)));
-            }
-            if (localVideo.srcObject) {
-                playPromises.push(localVideo.play().catch(e => 
-                    console.error('Local video play error:', e)));
-            }
-            
-            Promise.all(playPromises).then(() => {
-                showNotification('Stream Switched', appState.isStreamSwitched ? 
-                    'Local and remote streams swapped' : 'Streams returned to normal');
-            });
+    if (!appState.localStream || !appState.remoteStream) {
+        console.warn("Cannot switch streams - one or both streams not available");
+        return;
+    }
+    
+    appState.isStreamSwitched = !appState.isStreamSwitched;
+    
+    const remoteVideo = appState.isFullscreen ? 
+        domRefs.fullscreenRemoteVideo : domRefs.remoteVideo;
+    const localVideo = appState.isFullscreen ? 
+        domRefs.fullscreenLocalVideo : domRefs.localVideo;
+    
+    if (appState.isStreamSwitched) {
+        console.log("Switching streams - local becomes remote and vice versa");
+        remoteVideo.srcObject = appState.localStream;
+        localVideo.srcObject = appState.remoteStream;
+        
+        if (appState.currentCamera === 'user') {
+            remoteVideo.style.transform = 'scaleX(-1)';
+        } else {
+            remoteVideo.style.transform = 'none';
         }
+        localVideo.style.transform = 'none';
+    } else {
+        console.log("Reverting streams to normal");
+        remoteVideo.srcObject = appState.remoteStream;
+        localVideo.srcObject = appState.localStream;
+        
+        remoteVideo.style.transform = 'none';
+        if (appState.currentCamera === 'user') {
+            localVideo.style.transform = 'scaleX(-1)';
+        } else {
+            localVideo.style.transform = 'none';
+        }
+    }
+    
+    const playPromises = [];
+    if (remoteVideo.srcObject) {
+        playPromises.push(remoteVideo.play().catch(e => 
+            console.error('Remote video play error:', e)));
+    }
+    if (localVideo.srcObject) {
+        playPromises.push(localVideo.play().catch(e => 
+            console.error('Local video play error:', e)));
+    }
+    
+    Promise.all(playPromises).then(() => {
+        showNotification('Stream Switched', appState.isStreamSwitched ? 
+            'Local and remote streams swapped' : 'Streams returned to normal');
+    });
+}
 
-        function makeDraggable(element) {
-            let isDragging = false;
-            let startX, startY, startLeft, startTop;
+function makeDraggable(element) {
+    let isDragging = false;
+    let startX, startY, startLeft, startTop;
 
-            element.addEventListener("mousedown", startDrag);
-            element.addEventListener("touchstart", startDrag, { passive: false });
+    element.addEventListener("mousedown", startDrag);
+    element.addEventListener("touchstart", startDrag, { passive: false });
 
-            function startDrag(e) {
-                e.preventDefault();
-                isDragging = true;
-                
-                if (e.type === "touchstart") {
-                    startX = e.touches[0].clientX;
-                    startY = e.touches[0].clientY;
-                } else {
-                    startX = e.clientX;
-                    startY = e.clientY;
-                }
-                
-                startLeft = parseInt(element.style.left) || 0;
-                startTop = parseInt(element.style.top) || 0;
-                
-                document.addEventListener("mousemove", drag);
-                document.addEventListener("touchmove", drag, { passive: false });
-                document.addEventListener("mouseup", endDrag);
-                document.addEventListener("touchend", endDrag);
-            }
+    function startDrag(e) {
+        e.preventDefault();
+        isDragging = true;
+        
+        if (e.type === "touchstart") {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        } else {
+            startX = e.clientX;
+            startY = e.clientY;
+        }
+        
+        startLeft = parseInt(element.style.left) || 0;
+        startTop = parseInt(element.style.top) || 0;
+        
+        document.addEventListener("mousemove", drag);
+        document.addEventListener("touchmove", drag, { passive: false });
+        document.addEventListener("mouseup", endDrag);
+        document.addEventListener("touchend", endDrag);
+    }
 
             function drag(e) {
                 if (!isDragging) return;
