@@ -581,34 +581,35 @@
             opacity: 1;
             background: black;
             touch-action: none;
+            pointer-events: auto;
         }
 
         .local-video-container video {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            pointer-events: none;
         }
-
-       
 
         /* Mobile video top controls */
         .mobile-video-top-controls {
-            display: none;
+            display: flex;
             position: absolute;
             top: 5px;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 20;
+            z-index: 100;
             background: rgba(0, 0, 0, 0.5);
             border-radius: 20px;
             padding: 5px;
+            pointer-events: auto;
         }
 
         .mobile-video-top-control-btn {
             width: 30px;
             height: 30px;
             border-radius: 50%;
-            background: transparent;
+            background: rgba(255, 255, 255, 0.2);
             border: none;
             color: white;
             display: flex;
@@ -616,6 +617,14 @@
             justify-content: center;
             font-size: 14px;
             margin: 0 2px;
+            pointer-events: auto;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mobile-video-top-control-btn:active {
+            transform: scale(0.9);
+            opacity: 0.8;
         }
 
         @media (max-width: 900px) {
@@ -677,10 +686,6 @@
                 font-size: 13px;
             }
             
-            .call-controls {
-                gap: 3px;
-            }
-            
             .control-btn {
                 width: 40px;
                 height: 40px;
@@ -691,63 +696,9 @@
                 font-size: 16px;
             }
             
-            .fullscreen-video-mode .call-controls {
-                bottom: 10px;
-            }
-            
-            .fullscreen-video-mode #video-local-video {
-                width: 100px;
-                height: 75px;
-                bottom: 80px;
-                right: 10px;
-            }
-            
-            .top-controls-container {
-                top: 10px;
-                right: 10px;
-            }
-            
-            .top-control-btn {
-                width: 36px;
-                height: 36px;
-                font-size: 14px;
-            }
-            
-            .mobile-controls {
-                display: flex;
-            }
-            
-            .local-video-controls {
-                display: none !important;
-            }
-            
             .local-video-container {
                 width: 120px;
                 height: 80px;
-            }
-            
-            .mobile-video-top-controls {
-                display: flex;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .call-controls {
-                gap: 3px;
-            }
-            
-            .control-btn {
-                width: 36px;
-                height: 36px;
-                font-size: 14px;
-            }
-            
-            .section-title {
-                font-size: 16px;
-            }
-            
-            #videoRemoteVideoContainer {
-                height: 50vh !important;
             }
         }
 
@@ -1071,8 +1022,6 @@
         </div>
     </div>
     
-   
-    
     <audio id="notificationSound" preload="auto">
         <source src="https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3" type="audio/mpeg">
     </audio>
@@ -1290,81 +1239,81 @@
             }
         }
 
-       function updateMirroring() {
-    const localVideo = domRefs.localVideo;
-    const fullscreenLocalVideo = domRefs.fullscreenLocalVideo;
-    
-    if (appState.currentCamera === 'user') {
-        // Only mirror if it's the local stream (not switched)
-        if (!appState.isStreamSwitched) {
-            localVideo.style.transform = 'scaleX(-1)';
-            fullscreenLocalVideo.style.transform = 'scaleX(-1)';
+        function updateMirroring() {
+            const localVideo = domRefs.localVideo;
+            const fullscreenLocalVideo = domRefs.fullscreenLocalVideo;
+            
+            if (appState.currentCamera === 'user') {
+                // Only mirror if it's the local stream (not switched)
+                if (!appState.isStreamSwitched) {
+                    localVideo.style.transform = 'scaleX(-1)';
+                    fullscreenLocalVideo.style.transform = 'scaleX(-1)';
+                }
+            } else {
+                localVideo.style.transform = 'none';
+                fullscreenLocalVideo.style.transform = 'none';
+            }
+            
+            // Also update the remote video if streams are switched
+            if (appState.isStreamSwitched) {
+                if (appState.currentCamera === 'user') {
+                    domRefs.remoteVideo.style.transform = 'scaleX(-1)';
+                    domRefs.fullscreenRemoteVideo.style.transform = 'scaleX(-1)';
+                } else {
+                    domRefs.remoteVideo.style.transform = 'none';
+                    domRefs.fullscreenRemoteVideo.style.transform = 'none';
+                }
+            } else {
+                domRefs.remoteVideo.style.transform = 'none';
+                domRefs.fullscreenRemoteVideo.style.transform = 'none';
+            }
         }
-    } else {
-        localVideo.style.transform = 'none';
-        fullscreenLocalVideo.style.transform = 'none';
-    }
-    
-    // Also update the remote video if streams are switched
-    if (appState.isStreamSwitched) {
-        if (appState.currentCamera === 'user') {
-            domRefs.remoteVideo.style.transform = 'scaleX(-1)';
-            domRefs.fullscreenRemoteVideo.style.transform = 'scaleX(-1)';
-        } else {
-            domRefs.remoteVideo.style.transform = 'none';
-            domRefs.fullscreenRemoteVideo.style.transform = 'none';
-        }
-    } else {
-        domRefs.remoteVideo.style.transform = 'none';
-        domRefs.fullscreenRemoteVideo.style.transform = 'none';
-    }
-}
 
-       async function switchCamera() {
-    try {
-        appState.currentCamera = appState.currentCamera === 'user' ? 'environment' : 'user';
-        
-        const newStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: appState.currentCamera },
-            audio: true
-        });
-        
-        appState.localStream.getTracks().forEach(track => track.stop());
-        appState.localStream = newStream;
-        
-        domRefs.localVideo.srcObject = appState.localStream;
-        domRefs.localVideo.play().catch(e => console.error('Local video play error:', e));
-        domRefs.fullscreenLocalVideo.srcObject = appState.localStream;
-        domRefs.fullscreenLocalVideo.play().catch(e => console.error('Fullscreen local video play error:', e));
-        
-        updateMirroring(); // This updates the mirroring state
-        
-        if (appState.peerConnection) {
-            const videoTrack = appState.localStream.getVideoTracks()[0];
-            const audioTrack = appState.localStream.getAudioTracks()[0];
-            const videoSender = appState.peerConnection.getSenders().find(
-                s => s.track && s.track.kind === 'video'
-            );
-            const audioSender = appState.peerConnection.getSenders().find(
-                s => s.track && s.track.kind === 'audio'
-            );
-            
-            if (videoSender && videoTrack) {
-                videoSender.replaceTrack(videoTrack);
-            }
-            
-            if (audioSender && audioTrack) {
-                audioSender.replaceTrack(audioTrack);
+        async function switchCamera() {
+            try {
+                appState.currentCamera = appState.currentCamera === 'user' ? 'environment' : 'user';
+                
+                const newStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: appState.currentCamera },
+                    audio: true
+                });
+                
+                appState.localStream.getTracks().forEach(track => track.stop());
+                appState.localStream = newStream;
+                
+                domRefs.localVideo.srcObject = appState.localStream;
+                domRefs.localVideo.play().catch(e => console.error('Local video play error:', e));
+                domRefs.fullscreenLocalVideo.srcObject = appState.localStream;
+                domRefs.fullscreenLocalVideo.play().catch(e => console.error('Fullscreen local video play error:', e));
+                
+                updateMirroring();
+                
+                if (appState.peerConnection) {
+                    const videoTrack = appState.localStream.getVideoTracks()[0];
+                    const audioTrack = appState.localStream.getAudioTracks()[0];
+                    const videoSender = appState.peerConnection.getSenders().find(
+                        s => s.track && s.track.kind === 'video'
+                    );
+                    const audioSender = appState.peerConnection.getSenders().find(
+                        s => s.track && s.track.kind === 'audio'
+                    );
+                    
+                    if (videoSender && videoTrack) {
+                        videoSender.replaceTrack(videoTrack);
+                    }
+                    
+                    if (audioSender && audioTrack) {
+                        audioSender.replaceTrack(audioTrack);
+                    }
+                }
+                
+                showNotification('Camera Switched', `Now using ${appState.currentCamera === 'user' ? 'front' : 'rear'} camera`, 'success');
+            } catch (err) {
+                console.error('Camera switch error:', err);
+                showNotification('Camera Error', 'Failed to switch camera', 'error');
+                updateStatus('Camera switch failed', 'error');
             }
         }
-        
-        showNotification('Camera Switched', `Now using ${appState.currentCamera === 'user' ? 'front' : 'rear'} camera`, 'success');
-    } catch (err) {
-        console.error('Camera switch error:', err);
-        showNotification('Camera Error', 'Failed to switch camera', 'error');
-        updateStatus('Camera switch failed', 'error');
-    }
-}
 
         async function enterFullscreenMode() {
             try {
@@ -1378,7 +1327,6 @@
                     domRefs.fullscreenCopyLink.style.display = 'flex';
                 }
                 
-                // Position local video correctly in fullscreen
                 positionLocalVideoContainer();
                 
                 showNotification('Fullscreen Mode', 'You are now in true fullscreen mode', 'success');
@@ -1400,7 +1348,6 @@
                 domRefs.fullscreenCopyLink.style.display = 'none';
                 showSidebar();
                 
-                // Position local video correctly after exiting fullscreen
                 positionLocalVideoContainer();
             } catch (err) {
                 console.error('Exit fullscreen error:', err);
@@ -1564,7 +1511,6 @@
                         appState.remoteStream = new MediaStream();
                     }
                     
-                    // Check if we already have this track (prevent duplicates)
                     if (!appState.remoteStream.getTracks().some(t => t.id === event.track.id)) {
                         appState.remoteStream.addTrack(event.track);
                     }
@@ -1579,12 +1525,10 @@
                             domRefs.fullscreenRemoteVideo.srcObject = appState.remoteStream;
                         }
                         
-                        // Play the video
                         const playPromise = domRefs.remoteVideo.play();
                         if (playPromise !== undefined) {
                             playPromise.catch(e => {
                                 console.error('Remote video play error:', e);
-                                // Try again with muted
                                 domRefs.remoteVideo.muted = true;
                                 domRefs.remoteVideo.play().catch(e => console.error('Muted play failed:', e));
                             });
@@ -1927,24 +1871,30 @@
                 document.querySelector('.fullscreen-mode .video-container') : 
                 document.getElementById('videoRemoteVideoContainer');
             
-            if (!container) return;
+            if (!container) {
+                console.error('Container not found');
+                return;
+            }
             
             const containerRect = container.getBoundingClientRect();
             const localContainer = appState.isFullscreen ? 
                 domRefs.fullscreenLocalVideoContainer : 
                 domRefs.localVideoContainer;
             
-            // Set default position if not set
+            if (!localContainer) {
+                console.error('Local video container not found');
+                return;
+            }
+            
             if (!appState.localVideoPosition.x || !appState.localVideoPosition.y) {
                 appState.localVideoPosition = {
-                    x: containerRect.width - 170, // 150px width + 20px margin
-                    y: containerRect.height - 120, // 100px height + 20px margin
+                    x: containerRect.width - 170,
+                    y: containerRect.height - 120,
                     width: 150,
                     height: 100
                 };
             }
             
-            // Ensure position stays within container bounds
             appState.localVideoPosition.x = Math.max(10, Math.min(
                 appState.localVideoPosition.x, 
                 containerRect.width - appState.localVideoPosition.width - 10
@@ -1958,95 +1908,94 @@
             localContainer.style.height = `${appState.localVideoPosition.height}px`;
             localContainer.style.left = `${appState.localVideoPosition.x}px`;
             localContainer.style.top = `${appState.localVideoPosition.y}px`;
+            
+            console.log('Local video container positioned at:', 
+                appState.localVideoPosition.x, appState.localVideoPosition.y);
         }
 
         function setLocalVideoSize(size) {
-            let width, height;
-            
-            switch(size) {
-                case 'small':
-                    width = 100;
-                    height = 75;
-                    break;
-                case 'medium':
-                    width = 150;
-                    height = 100;
-                    break;
-                case 'large':
-                    width = 200;
-                    height = 150;
-                    break;
-                default:
-                    width = 150;
-                    height = 100;
+    console.log(`Setting local video size to ${size} from mobile top controls`);
+    let width, height;
+    
+    switch(size) {
+        case 'small':
+            width = 100;
+            height = 75;
+            break;
+        case 'medium':
+            width = 150;
+            height = 100;
+            break;
+        case 'large':
+            width = 200;
+            height = 150;
+            break;
+        default:
+            width = 150;
+            height = 100;
+    }
+    
+    appState.localVideoPosition.width = width;
+    appState.localVideoPosition.height = height;
+    
+    positionLocalVideoContainer();
+    
+    showNotification('Video Size', `Local video size set to ${size}`);
+}
+
+function switchStreams() {
+    console.log("Switch streams called from mobile top controls");
+            if (!appState.localStream || !appState.remoteStream) {
+                console.warn("Cannot switch streams - one or both streams not available");
+                return;
             }
             
-            appState.localVideoPosition.width = width;
-            appState.localVideoPosition.height = height;
+            appState.isStreamSwitched = !appState.isStreamSwitched;
             
-            positionLocalVideoContainer();
+            const remoteVideo = appState.isFullscreen ? 
+                domRefs.fullscreenRemoteVideo : domRefs.remoteVideo;
+            const localVideo = appState.isFullscreen ? 
+                domRefs.fullscreenLocalVideo : domRefs.localVideo;
             
-            showNotification('Video Size', `Local video size set to ${size}`);
+            if (appState.isStreamSwitched) {
+                console.log("Switching streams - local becomes remote and vice versa");
+                remoteVideo.srcObject = appState.localStream;
+                localVideo.srcObject = appState.remoteStream;
+                
+                if (appState.currentCamera === 'user') {
+                    remoteVideo.style.transform = 'scaleX(-1)';
+                } else {
+                    remoteVideo.style.transform = 'none';
+                }
+                localVideo.style.transform = 'none';
+            } else {
+                console.log("Reverting streams to normal");
+                remoteVideo.srcObject = appState.remoteStream;
+                localVideo.srcObject = appState.localStream;
+                
+                remoteVideo.style.transform = 'none';
+                if (appState.currentCamera === 'user') {
+                    localVideo.style.transform = 'scaleX(-1)';
+                } else {
+                    localVideo.style.transform = 'none';
+                }
+            }
+            
+            const playPromises = [];
+            if (remoteVideo.srcObject) {
+                playPromises.push(remoteVideo.play().catch(e => 
+                    console.error('Remote video play error:', e)));
+            }
+            if (localVideo.srcObject) {
+                playPromises.push(localVideo.play().catch(e => 
+                    console.error('Local video play error:', e)));
+            }
+            
+            Promise.all(playPromises).then(() => {
+                showNotification('Stream Switched', appState.isStreamSwitched ? 
+                    'Local and remote streams swapped' : 'Streams returned to normal');
+            });
         }
-
-       function switchStreams() {
-    if (!appState.localStream || !appState.remoteStream) {
-        console.warn("Cannot switch streams - one or both streams not available");
-        return;
-    }
-    
-    appState.isStreamSwitched = !appState.isStreamSwitched;
-    
-    // Get the current video elements
-    const remoteVideo = appState.isFullscreen ? 
-        domRefs.fullscreenRemoteVideo : domRefs.remoteVideo;
-    const localVideo = appState.isFullscreen ? 
-        domRefs.fullscreenLocalVideo : domRefs.localVideo;
-    
-    if (appState.isStreamSwitched) {
-        console.log("Switching streams - local becomes remote and vice versa");
-        remoteVideo.srcObject = appState.localStream;
-        localVideo.srcObject = appState.remoteStream;
-        
-        // Apply mirroring to the local stream (now in remote video element)
-        if (appState.currentCamera === 'user') {
-            remoteVideo.style.transform = 'scaleX(-1)';
-        } else {
-            remoteVideo.style.transform = 'none';
-        }
-        // Remove mirroring from the remote stream (now in local video element)
-        localVideo.style.transform = 'none';
-    } else {
-        console.log("Reverting streams to normal");
-        remoteVideo.srcObject = appState.remoteStream;
-        localVideo.srcObject = appState.localStream;
-        
-        // Remove mirroring from remote stream
-        remoteVideo.style.transform = 'none';
-        // Apply mirroring to local stream based on camera
-        if (appState.currentCamera === 'user') {
-            localVideo.style.transform = 'scaleX(-1)';
-        } else {
-            localVideo.style.transform = 'none';
-        }
-    }
-    
-    // Ensure videos play
-    const playPromises = [];
-    if (remoteVideo.srcObject) {
-        playPromises.push(remoteVideo.play().catch(e => 
-            console.error('Remote video play error:', e)));
-    }
-    if (localVideo.srcObject) {
-        playPromises.push(localVideo.play().catch(e => 
-            console.error('Local video play error:', e)));
-    }
-    
-    Promise.all(playPromises).then(() => {
-        showNotification('Stream Switched', appState.isStreamSwitched ? 
-            'Local and remote streams swapped' : 'Streams returned to normal');
-    });
-}
 
         function makeDraggable(element) {
             let isDragging = false;
@@ -2099,14 +2048,12 @@
                 let newLeft = startLeft + dx;
                 let newTop = startTop + dy;
                 
-                // Boundary checking
                 newLeft = Math.max(0, Math.min(newLeft, containerRect.width - elementRect.width));
                 newTop = Math.max(0, Math.min(newTop, containerRect.height - elementRect.height));
                 
                 element.style.left = `${newLeft}px`;
                 element.style.top = `${newTop}px`;
                 
-                // Update position state
                 appState.localVideoPosition.x = newLeft;
                 appState.localVideoPosition.y = newTop;
             }
@@ -2122,72 +2069,117 @@
 
         function setupEventListeners() {
             console.log('Setting up event listeners');
-            const generateBtn = document.getElementById('generateVideoRoom');
-            if (generateBtn) generateBtn.addEventListener('click', generateRoom);
-            else console.error('generateVideoRoom button not found');
+            
+            // Basic controls
+            document.getElementById('generateVideoRoom')?.addEventListener('click', generateRoom);
+            document.getElementById('joinVideoRoom')?.addEventListener('click', joinRoom);
+            document.getElementById('endVideoCall')?.addEventListener('click', hangup);
+            document.getElementById('videoVideoToggle')?.addEventListener('click', toggleVideo);
+            document.getElementById('videoAudioToggle')?.addEventListener('click', toggleAudio);
+            document.getElementById('copyVideoLink')?.addEventListener('click', copyLink);
+            document.getElementById('fullscreenCopyLink')?.addEventListener('click', copyLink);
+            document.getElementById('switchCameraBtnNormal')?.addEventListener('click', switchCamera);
+            document.getElementById('fullscreenSwitchCameraBtn')?.addEventListener('click', switchCamera);
+            document.getElementById('exitFullscreenBtn')?.addEventListener('click', exitFullscreenMode);
+            document.getElementById('enterFullscreenBtn')?.addEventListener('click', enterFullscreenMode);
+            document.getElementById('enterFullscreenBtnNormal')?.addEventListener('click', enterFullscreenMode);
+            document.getElementById('fullscreenEndCall')?.addEventListener('click', hangup);
+            document.getElementById('fullscreenVideoToggle')?.addEventListener('click', toggleVideo);
+            document.getElementById('fullscreenAudioToggle')?.addEventListener('click', toggleAudio);
+            document.getElementById('mobileMenuToggle')?.addEventListener('click', toggleSidebar);
+            document.getElementById('desktopMenuToggle')?.addEventListener('click', toggleSidebar);
 
-            const joinBtn = document.getElementById('joinVideoRoom');
-            if (joinBtn) joinBtn.addEventListener('click', joinRoom);
-            else console.error('joinVideoRoom button not found');
+            // Local video controls (desktop)
+            document.getElementById('sizeSmallBtn')?.addEventListener('click', () => setLocalVideoSize('small'));
+            document.getElementById('sizeMediumBtn')?.addEventListener('click', () => setLocalVideoSize('medium'));
+            document.getElementById('sizeLargeBtn')?.addEventListener('click', () => setLocalVideoSize('large'));
+            document.getElementById('switchStreamBtn')?.addEventListener('click', switchStreams);
+            
+            // Fullscreen controls
+            document.getElementById('fullscreenSizeSmallBtn')?.addEventListener('click', () => setLocalVideoSize('small'));
+            document.getElementById('fullscreenSizeMediumBtn')?.addEventListener('click', () => setLocalVideoSize('medium'));
+            document.getElementById('fullscreenSizeLargeBtn')?.addEventListener('click', () => setLocalVideoSize('large'));
+            document.getElementById('fullscreenSwitchStreamBtn')?.addEventListener('click', switchStreams);
+            
+           // Mobile top controls (normal mode)
+    const mobileTopSmallBtn = document.getElementById('mobileTopSizeSmallBtn');
+    const mobileTopMediumBtn = document.getElementById('mobileTopSizeMediumBtn');
+    const mobileTopLargeBtn = document.getElementById('mobileTopSizeLargeBtn');
+    const mobileTopSwitchBtn = document.getElementById('mobileTopSwitchStreamBtn');
 
-            const endCallBtn = document.getElementById('endVideoCall');
-            if (endCallBtn) endCallBtn.addEventListener('click', hangup);
-            else console.error('endVideoCall button not found');
+    if (mobileTopSmallBtn) {
+        mobileTopSmallBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            setLocalVideoSize('small');
+        });
+    }
+    if (mobileTopMediumBtn) {
+        mobileTopMediumBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            setLocalVideoSize('medium');
+        });
+    }
+    if (mobileTopLargeBtn) {
+        mobileTopLargeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            setLocalVideoSize('large');
+        });
+    }
+    if (mobileTopSwitchBtn) {
+        mobileTopSwitchBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            switchStreams();
+        });
+    }
 
-            const videoToggleBtn = document.getElementById('videoVideoToggle');
-            if (videoToggleBtn) videoToggleBtn.addEventListener('click', toggleVideo);
-            else console.error('videoVideoToggle button not found');
+    // Fullscreen mobile top controls
+    const fullscreenMobileTopSmallBtn = document.getElementById('fullscreenMobileTopSizeSmallBtn');
+    const fullscreenMobileTopMediumBtn = document.getElementById('fullscreenMobileTopSizeMediumBtn');
+    const fullscreenMobileTopLargeBtn = document.getElementById('fullscreenMobileTopSizeLargeBtn');
+    const fullscreenMobileTopSwitchBtn = document.getElementById('fullscreenMobileTopSwitchStreamBtn');
 
-            const audioToggleBtn = document.getElementById('videoAudioToggle');
-            if (audioToggleBtn) audioToggleBtn.addEventListener('click', toggleAudio);
-            else console.error('videoAudioToggle button not found');
+    if (fullscreenMobileTopSmallBtn) {
+        fullscreenMobileTopSmallBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            setLocalVideoSize('small');
+        });
+    }
+    if (fullscreenMobileTopMediumBtn) {
+        fullscreenMobileTopMediumBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            setLocalVideoSize('medium');
+        });
+    }
+    if (fullscreenMobileTopLargeBtn) {
+        fullscreenMobileTopLargeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            setLocalVideoSize('large');
+        });
+    }
+    if (fullscreenMobileTopSwitchBtn) {
+        fullscreenMobileTopSwitchBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            switchStreams();
+        });
+    }
+            
+            // Add visual feedback for mobile controls
+            document.querySelectorAll('.mobile-video-top-control-btn').forEach(btn => {
+                btn.addEventListener('mousedown', () => {
+                    btn.style.transform = 'scale(0.9)';
+                    btn.style.opacity = '0.8';
+                });
+                btn.addEventListener('mouseup', () => {
+                    btn.style.transform = 'scale(1)';
+                    btn.style.opacity = '1';
+                });
+                btn.addEventListener('mouseleave', () => {
+                    btn.style.transform = 'scale(1)';
+                    btn.style.opacity = '1';
+                });
+            });
 
-            const copyLinkBtn = domRefs.copyVideoLink;
-            if (copyLinkBtn) copyLinkBtn.addEventListener('click', copyLink);
-            else console.error('copyVideoLink button not found');
-
-            const fullscreenCopyLinkBtn = domRefs.fullscreenCopyLink;
-            if (fullscreenCopyLinkBtn) fullscreenCopyLinkBtn.addEventListener('click', copyLink);
-            else console.error('fullscreenCopyLink button not found');
-
-            const switchCameraBtnNormal = document.getElementById('switchCameraBtnNormal');
-            if (switchCameraBtnNormal) switchCameraBtnNormal.addEventListener('click', switchCamera);
-            else console.error('switchCameraBtnNormal button not found');
-
-            const fullscreenSwitchCameraBtn = document.getElementById('fullscreenSwitchCameraBtn');
-            if (fullscreenSwitchCameraBtn) fullscreenSwitchCameraBtn.addEventListener('click', switchCamera);
-            else console.error('fullscreenSwitchCameraBtn button not found');
-
-            const exitFullscreenBtn = domRefs.exitFullscreenBtn;
-            if (exitFullscreenBtn) exitFullscreenBtn.addEventListener('click', exitFullscreenMode);
-            else console.error('exitFullscreenBtn button not found');
-
-            const enterFullscreenBtn = domRefs.enterFullscreenBtn;
-            if (enterFullscreenBtn) enterFullscreenBtn.addEventListener('click', enterFullscreenMode);
-            else console.error('enterFullscreenBtn button not found');
-
-            const enterFullscreenBtnNormal = document.getElementById('enterFullscreenBtnNormal');
-            if (enterFullscreenBtnNormal) enterFullscreenBtnNormal.addEventListener('click', enterFullscreenMode);
-            else console.error('enterFullscreenBtnNormal button not found');
-
-            const fullscreenEndCallBtn = document.getElementById('fullscreenEndCall');
-            if (fullscreenEndCallBtn) fullscreenEndCallBtn.addEventListener('click', hangup);
-            else console.error('fullscreenEndCall button not found');
-
-            const fullscreenVideoToggleBtn = document.getElementById('fullscreenVideoToggle');
-            if (fullscreenVideoToggleBtn) fullscreenVideoToggleBtn.addEventListener('click', toggleVideo);
-            else console.error('fullscreenVideoToggle button not found');
-
-            const fullscreenAudioToggleBtn = document.getElementById('fullscreenAudioToggle');
-            if (fullscreenAudioToggleBtn) fullscreenAudioToggleBtn.addEventListener('click', toggleAudio);
-            else console.error('fullscreenAudioToggle button not found');
-
-            if (domRefs.mobileMenuToggle) domRefs.mobileMenuToggle.addEventListener('click', toggleSidebar);
-            else console.error('mobileMenuToggle not found');
-
-            if (domRefs.desktopMenuToggle) domRefs.desktopMenuToggle.addEventListener('click', toggleSidebar);
-            else console.error('desktopMenuToggle not found');
-
+            // Window events
             document.addEventListener('fullscreenchange', () => {
                 if (!document.fullscreenElement && appState.isFullscreen) {
                     exitFullscreenMode();
@@ -2195,32 +2187,8 @@
             });
 
             window.addEventListener('resize', adjustForMobile);
-
-            // Desktop controls
-            document.getElementById('sizeSmallBtn').addEventListener('click', () => setLocalVideoSize('small'));
-            document.getElementById('sizeMediumBtn').addEventListener('click', () => setLocalVideoSize('medium'));
-            document.getElementById('sizeLargeBtn').addEventListener('click', () => setLocalVideoSize('large'));
-            document.getElementById('switchStreamBtn').addEventListener('click', switchStreams);
             
-            // Fullscreen controls
-            document.getElementById('fullscreenSizeSmallBtn').addEventListener('click', () => setLocalVideoSize('small'));
-            document.getElementById('fullscreenSizeMediumBtn').addEventListener('click', () => setLocalVideoSize('medium'));
-            document.getElementById('fullscreenSizeLargeBtn').addEventListener('click', () => setLocalVideoSize('large'));
-            document.getElementById('fullscreenSwitchStreamBtn').addEventListener('click', switchStreams);
-            
-            
-            // Mobile top controls
-            document.getElementById('mobileTopSizeSmallBtn').addEventListener('click', () => setLocalVideoSize('small'));
-            document.getElementById('mobileTopSizeMediumBtn').addEventListener('click', () => setLocalVideoSize('medium'));
-            document.getElementById('mobileTopSizeLargeBtn').addEventListener('click', () => setLocalVideoSize('large'));
-            document.getElementById('mobileTopSwitchStreamBtn').addEventListener('click', switchStreams);
-            
-            // Fullscreen mobile top controls
-            document.getElementById('fullscreenMobileTopSizeSmallBtn').addEventListener('click', () => setLocalVideoSize('small'));
-            document.getElementById('fullscreenMobileTopSizeMediumBtn').addEventListener('click', () => setLocalVideoSize('medium'));
-            document.getElementById('fullscreenMobileTopSizeLargeBtn').addEventListener('click', () => setLocalVideoSize('large'));
-            document.getElementById('fullscreenMobileTopSwitchStreamBtn').addEventListener('click', switchStreams);
-            
+            // Make video containers draggable
             makeDraggable(domRefs.localVideoContainer);
             makeDraggable(domRefs.fullscreenLocalVideoContainer);
         }
@@ -2230,6 +2198,8 @@
             setupEventListeners();
             updateStatus('Ready to connect', 'disconnected');
             adjustForMobile();
+            
+            // Check for room ID in URL
             const urlParams = new URLSearchParams(window.location.search);
             const roomIdFromUrl = urlParams.get('room');
             if (roomIdFromUrl) {
