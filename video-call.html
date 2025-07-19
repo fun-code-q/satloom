@@ -422,7 +422,7 @@
         #videoRemoteVideoContainer {
             position: relative;
             width: 100%;
-            aspect-ratio: 16 / 9;
+            height: 400px;
             background-color: #000;
             border-radius: 10px;
             overflow: hidden;
@@ -438,11 +438,9 @@
 
         #video-local-video,
         #fullscreen-local-video {
-            position: absolute;
-            border: 2px solid #ffffff;
-            border-radius: 5px;
-            background-color: #000;
-            z-index: 10;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .fullscreen-mode {
@@ -1795,6 +1793,16 @@
                 domRefs.fullscreenLocalVideoContainer : 
                 domRefs.localVideoContainer;
             
+            // Set default position if not set
+            if (!appState.localVideoPosition.x || !appState.localVideoPosition.y) {
+                appState.localVideoPosition = {
+                    x: containerRect.width - 170, // 150px width + 20px margin
+                    y: containerRect.height - 120, // 100px height + 20px margin
+                    width: 150,
+                    height: 100
+                };
+            }
+            
             // Ensure position stays within container bounds
             appState.localVideoPosition.x = Math.max(10, Math.min(
                 appState.localVideoPosition.x, 
@@ -1841,24 +1849,27 @@
         }
 
         function switchStreams() {
+            if (!appState.localStream || !appState.remoteStream) return;
+            
             appState.isStreamSwitched = !appState.isStreamSwitched;
             
-            const remoteVideo = appState.isFullscreen ? 
-                domRefs.fullscreenRemoteVideo : domRefs.remoteVideo;
-            const localVideo = appState.isFullscreen ? 
-                domRefs.fullscreenLocalVideo : domRefs.localVideo;
-            
             if (appState.isStreamSwitched) {
-                remoteVideo.srcObject = appState.localStream;
-                localVideo.srcObject = appState.remoteStream;
+                domRefs.remoteVideo.srcObject = appState.localStream;
+                domRefs.localVideo.srcObject = appState.remoteStream;
+                domRefs.fullscreenRemoteVideo.srcObject = appState.localStream;
+                domRefs.fullscreenLocalVideo.srcObject = appState.remoteStream;
             } else {
-                remoteVideo.srcObject = appState.remoteStream;
-                localVideo.srcObject = appState.localStream;
+                domRefs.remoteVideo.srcObject = appState.remoteStream;
+                domRefs.localVideo.srcObject = appState.localStream;
+                domRefs.fullscreenRemoteVideo.srcObject = appState.remoteStream;
+                domRefs.fullscreenLocalVideo.srcObject = appState.localStream;
             }
             
             // Ensure videos play
-            [remoteVideo, localVideo].forEach(video => {
-                video.play().catch(e => console.error('Video play error:', e));
+            [domRefs.remoteVideo, domRefs.localVideo, domRefs.fullscreenRemoteVideo, domRefs.fullscreenLocalVideo].forEach(video => {
+                if (video.srcObject) {
+                    video.play().catch(e => console.error('Video play error:', e));
+                }
             });
             
             showNotification('Stream Switched', appState.isStreamSwitched ? 
@@ -1867,91 +1878,74 @@
 
         function makeDraggable(element) {
             let isDragging = false;
-            let currentX;
-            let currentY;
-            let initialX;
-            let initialY;
-            let xOffset = 0;
-            let yOffset = 0;
-            
-            element.addEventListener("mousedown", dragStart);
-            element.addEventListener("touchstart", dragStart);
-            
-            function dragStart(e) {
+            let startX, startY, startLeft, startTop;
+
+            element.addEventListener("mousedown", startDrag);
+            element.addEventListener("touchstart", startDrag, { passive: false });
+
+            function startDrag(e) {
                 e.preventDefault();
+                isDragging = true;
                 
                 if (e.type === "touchstart") {
-                    initialX = e.touches[0].clientX - xOffset;
-                    initialY = e.touches[0].clientY - yOffset;
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
                 } else {
-                    initialX = e.clientX - xOffset;
-                    initialY = e.clientY - yOffset;
+                    startX = e.clientX;
+                    startY = e.clientY;
                 }
                 
-                if (e.target === element) {
-                    isDragging = true;
-                }
+                startLeft = parseInt(element.style.left) || 0;
+                startTop = parseInt(element.style.top) || 0;
+                
+                document.addEventListener("mousemove", drag);
+                document.addEventListener("touchmove", drag, { passive: false });
+                document.addEventListener("mouseup", endDrag);
+                document.addEventListener("touchend", endDrag);
             }
-            
-            function dragEnd(e) {
-                initialX = currentX;
-                initialY = currentY;
+
+            function drag(e) {
+                if (!isDragging) return;
+                e.preventDefault();
                 
-                isDragging = false;
+                let clientX, clientY;
+                if (e.type === "touchmove") {
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                } else {
+                    clientX = e.clientX;
+                    clientY = e.clientY;
+                }
                 
-                // Save position with bounds checking
+                const dx = clientX - startX;
+                const dy = clientY - startY;
+                
                 const container = element.parentElement;
                 const containerRect = container.getBoundingClientRect();
-                const elRect = element.getBoundingClientRect();
+                const elementRect = element.getBoundingClientRect();
                 
-                appState.localVideoPosition.x = Math.max(0, Math.min(
-                    parseInt(element.style.left), 
-                    containerRect.width - elRect.width
-                ));
-                appState.localVideoPosition.y = Math.max(0, Math.min(
-                    parseInt(element.style.top),
-                    containerRect.height - elRect.height
-                ));
+                let newLeft = startLeft + dx;
+                let newTop = startTop + dy;
+                
+                // Boundary checking
+                newLeft = Math.max(0, Math.min(newLeft, containerRect.width - elementRect.width));
+                newTop = Math.max(0, Math.min(newTop, containerRect.height - elementRect.height));
+                
+                element.style.left = `${newLeft}px`;
+                element.style.top = `${newTop}px`;
+                
+                // Update position state
+                appState.localVideoPosition.x = newLeft;
+                appState.localVideoPosition.y = newTop;
             }
-            
-            function drag(e) {
-                if (isDragging) {
-                    e.preventDefault();
-                    
-                    if (e.type === "touchmove") {
-                        currentX = e.touches[0].clientX - initialX;
-                        currentY = e.touches[0].clientY - initialY;
-                    } else {
-                        currentX = e.clientX - initialX;
-                        currentY = e.clientY - initialY;
-                    }
-                    
-                    xOffset = currentX;
-                    yOffset = currentY;
-                    
-                    setTranslate(currentX, currentY, element);
-                }
+
+            function endDrag() {
+                isDragging = false;
+                document.removeEventListener("mousemove", drag);
+                document.removeEventListener("touchmove", drag);
+                document.removeEventListener("mouseup", endDrag);
+                document.removeEventListener("touchend", endDrag);
             }
-            
-            function setTranslate(xPos, yPos, el) {
-                const container = el.parentElement;
-                const containerRect = container.getBoundingClientRect();
-                const elRect = el.getBoundingClientRect();
-                
-                if (xPos < 0) xPos = 0;
-                if (xPos + elRect.width > containerRect.width) xPos = containerRect.width - elRect.width;
-                
-                if (yPos < 0) yPos = 0;
-                if (yPos + elRect.height > containerRect.height) yPos = containerRect.height - elRect.height;
-                
-                el.style.left = `${xPos}px`;
-                el.style.top = `${yPos}px`;
-            }
-            
-            document.addEventListener("mouseup", dragEnd);
-            document.addEventListener("touchend", dragEnd);
-            document.addEventListener("mousemove", drag);
-            document.addEventListener("touchmove", drag);
         }
 
         function setupEventListeners() {
