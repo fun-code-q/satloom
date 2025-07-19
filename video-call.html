@@ -531,6 +531,40 @@
             animation: pulse 2s infinite;
         }
 
+        .local-video-controls {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            z-index: 15;
+            display: flex;
+            gap: 5px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .local-video-container:hover .local-video-controls {
+            opacity: 1;
+        }
+
+        .local-video-control-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .local-video-control-btn:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+
         .local-video-container {
             position: absolute;
             cursor: move;
@@ -555,45 +589,56 @@
             object-fit: cover;
         }
 
-        .local-video-controls {
-            position: absolute;
-            top: 5px;
+        /* Mobile-specific controls */
+        .mobile-controls {
+            display: none;
+            position: fixed;
+            bottom: 80px;
             left: 0;
             right: 0;
-            z-index: 15;
-            display: flex;
             justify-content: center;
-            gap: 5px;
-            opacity: 1;
-            transition: opacity 0.3s ease;
+            gap: 10px;
+            z-index: 1000;
         }
 
-        @media (min-width: 901px) {
-            .local-video-controls {
-                opacity: 0;
-            }
-            .local-video-container:hover .local-video-controls {
-                opacity: 1;
-            }
-        }
-
-        .local-video-control-btn {
-            width: 24px;
-            height: 24px;
+        .mobile-control-btn {
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(255,255,255,0.2);
             border: none;
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.2s ease;
+            font-size: 20px;
         }
 
-        .local-video-control-btn:hover {
-            background: rgba(0, 0, 0, 0.8);
+        /* Mobile video top controls */
+        .mobile-video-top-controls {
+            display: none;
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            padding: 5px;
+        }
+
+        .mobile-video-top-control-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: transparent;
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            margin: 0 2px;
         }
 
         @media (max-width: 900px) {
@@ -689,6 +734,23 @@
                 width: 36px;
                 height: 36px;
                 font-size: 14px;
+            }
+            
+            .mobile-controls {
+                display: flex;
+            }
+            
+            .local-video-controls {
+                display: none !important;
+            }
+            
+            .local-video-container {
+                width: 120px;
+                height: 80px;
+            }
+            
+            .mobile-video-top-controls {
+                display: flex;
             }
         }
 
@@ -916,6 +978,20 @@
                         <div class="spinner" id="videoSpinner"></div>
                         
                         <div class="local-video-container" id="localVideoContainer">
+                            <div class="mobile-video-top-controls">
+                                <button class="mobile-video-top-control-btn" id="mobileTopSizeSmallBtn" title="Small Size">
+                                    <i class="fas fa-compress"></i>
+                                </button>
+                                <button class="mobile-video-top-control-btn" id="mobileTopSizeMediumBtn" title="Medium Size">
+                                    <i class="fas fa-square"></i>
+                                </button>
+                                <button class="mobile-video-top-control-btn" id="mobileTopSizeLargeBtn" title="Large Size">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                                <button class="mobile-video-top-control-btn" id="mobileTopSwitchStreamBtn" title="Switch Streams">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </button>
+                            </div>
                             <div class="local-video-controls">
                                 <button class="local-video-control-btn" id="sizeSmallBtn" title="Small Size">
                                     <i class="fas fa-compress"></i>
@@ -971,6 +1047,20 @@
             </button>
             
             <div class="local-video-container" id="fullscreenLocalVideoContainer">
+                <div class="mobile-video-top-controls">
+                    <button class="mobile-video-top-control-btn" id="fullscreenMobileTopSizeSmallBtn" title="Small Size">
+                        <i class="fas fa-compress"></i>
+                    </button>
+                    <button class="mobile-video-top-control-btn" id="fullscreenMobileTopSizeMediumBtn" title="Medium Size">
+                        <i class="fas fa-square"></i>
+                    </button>
+                    <button class="mobile-video-top-control-btn" id="fullscreenMobileTopSizeLargeBtn" title="Large Size">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                    <button class="mobile-video-top-control-btn" id="fullscreenMobileTopSwitchStreamBtn" title="Switch Streams">
+                        <i class="fas fa-exchange-alt"></i>
+                    </button>
+                </div>
                 <div class="local-video-controls">
                     <button class="local-video-control-btn" id="fullscreenSizeSmallBtn" title="Small Size">
                         <i class="fas fa-compress"></i>
@@ -1002,6 +1092,22 @@
                 <i class="fas fa-phone-slash"></i>
             </button>
         </div>
+    </div>
+    
+    <!-- Mobile Controls -->
+    <div class="mobile-controls">
+        <button class="mobile-control-btn" id="mobileSizeSmallBtn" title="Small Size">
+            <i class="fas fa-compress"></i>
+        </button>
+        <button class="mobile-control-btn" id="mobileSizeMediumBtn" title="Medium Size">
+            <i class="fas fa-square"></i>
+        </button>
+        <button class="mobile-control-btn" id="mobileSizeLargeBtn" title="Large Size">
+            <i class="fas fa-expand"></i>
+        </button>
+        <button class="mobile-control-btn" id="mobileSwitchStreamBtn" title="Switch Streams">
+            <i class="fas fa-exchange-alt"></i>
+        </button>
     </div>
     
     <audio id="notificationSound" preload="auto">
@@ -1900,59 +2006,45 @@
             showNotification('Video Size', `Local video size set to ${size}`);
         }
 
-       function switchStreams() {
+        function switchStreams() {
             if (!appState.localStream || !appState.remoteStream) {
-                console.warn('Cannot switch streams - one or both streams not available');
-                showNotification('Error', 'Cannot switch streams - video not available', 'error');
+                console.warn("Cannot switch streams - one or both streams not available");
                 return;
             }
             
-            console.log('Switching streams. Current state:', appState.isStreamSwitched);
             appState.isStreamSwitched = !appState.isStreamSwitched;
             
-            // Update video sources based on switched state
+            // Get the current video elements
+            const remoteVideo = appState.isFullscreen ? 
+                domRefs.fullscreenRemoteVideo : domRefs.remoteVideo;
+            const localVideo = appState.isFullscreen ? 
+                domRefs.fullscreenLocalVideo : domRefs.localVideo;
+            
             if (appState.isStreamSwitched) {
-                console.log('Setting remote video to local stream and vice versa');
-                domRefs.remoteVideo.srcObject = appState.localStream;
-                domRefs.localVideo.srcObject = appState.remoteStream;
-                domRefs.fullscreenRemoteVideo.srcObject = appState.localStream;
-                domRefs.fullscreenLocalVideo.srcObject = appState.remoteStream;
+                console.log("Switching streams - local becomes remote and vice versa");
+                remoteVideo.srcObject = appState.localStream;
+                localVideo.srcObject = appState.remoteStream;
             } else {
-                console.log('Setting streams back to normal');
-                domRefs.remoteVideo.srcObject = appState.remoteStream;
-                domRefs.localVideo.srcObject = appState.localStream;
-                domRefs.fullscreenRemoteVideo.srcObject = appState.remoteStream;
-                domRefs.fullscreenLocalVideo.srcObject = appState.localStream;
+                console.log("Reverting streams to normal");
+                remoteVideo.srcObject = appState.remoteStream;
+                localVideo.srcObject = appState.localStream;
             }
             
             // Ensure videos play
-            const videos = [
-                domRefs.remoteVideo, 
-                domRefs.localVideo, 
-                domRefs.fullscreenRemoteVideo, 
-                domRefs.fullscreenLocalVideo
-            ];
+            const playPromises = [];
+            if (remoteVideo.srcObject) {
+                playPromises.push(remoteVideo.play().catch(e => 
+                    console.error('Remote video play error:', e)));
+            }
+            if (localVideo.srcObject) {
+                playPromises.push(localVideo.play().catch(e => 
+                    console.error('Local video play error:', e)));
+            }
             
-            videos.forEach(video => {
-                if (video.srcObject) {
-                    video.play().catch(e => {
-                        console.error('Video play error:', e);
-                        // Try again with muted if needed
-                        if (video !== domRefs.localVideo && video !== domRefs.fullscreenLocalVideo) {
-                            video.muted = true;
-                            video.play().catch(e => console.error('Muted play failed:', e));
-                        }
-                    });
-                }
+            Promise.all(playPromises).then(() => {
+                showNotification('Stream Switched', appState.isStreamSwitched ? 
+                    'Local and remote streams swapped' : 'Streams returned to normal');
             });
-            
-            showNotification(
-                'Stream Switched', 
-                appState.isStreamSwitched 
-                    ? 'Local and remote streams swapped' 
-                    : 'Streams returned to normal',
-                'success'
-            );
         }
 
         function makeDraggable(element) {
@@ -2120,6 +2212,18 @@
             document.getElementById('mobileSizeMediumBtn').addEventListener('click', () => setLocalVideoSize('medium'));
             document.getElementById('mobileSizeLargeBtn').addEventListener('click', () => setLocalVideoSize('large'));
             document.getElementById('mobileSwitchStreamBtn').addEventListener('click', switchStreams);
+            
+            // Mobile top controls
+            document.getElementById('mobileTopSizeSmallBtn').addEventListener('click', () => setLocalVideoSize('small'));
+            document.getElementById('mobileTopSizeMediumBtn').addEventListener('click', () => setLocalVideoSize('medium'));
+            document.getElementById('mobileTopSizeLargeBtn').addEventListener('click', () => setLocalVideoSize('large'));
+            document.getElementById('mobileTopSwitchStreamBtn').addEventListener('click', switchStreams);
+            
+            // Fullscreen mobile top controls
+            document.getElementById('fullscreenMobileTopSizeSmallBtn').addEventListener('click', () => setLocalVideoSize('small'));
+            document.getElementById('fullscreenMobileTopSizeMediumBtn').addEventListener('click', () => setLocalVideoSize('medium'));
+            document.getElementById('fullscreenMobileTopSizeLargeBtn').addEventListener('click', () => setLocalVideoSize('large'));
+            document.getElementById('fullscreenMobileTopSwitchStreamBtn').addEventListener('click', switchStreams);
             
             makeDraggable(domRefs.localVideoContainer);
             makeDraggable(domRefs.fullscreenLocalVideoContainer);
