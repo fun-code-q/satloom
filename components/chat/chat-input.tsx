@@ -481,6 +481,12 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                         )}
                     </div>
                 </div>
+
+                <EmojiPicker
+                    isOpen={showEmojiPicker}
+                    onClose={() => setShowEmojiPicker(false)}
+                    onEmojiSelect={handleEmojiSelect}
+                />
             </div>
         )
     }
