@@ -53,8 +53,8 @@ SatLoom is a privacy-first, real-time communication web app built with Next.js a
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/sat-loom.git
-   cd sat-loom
+   git clone https://github.com/YOUR_USERNAME/satloom.git
+   cd satloom
    ```
 
 2. **Install dependencies**
