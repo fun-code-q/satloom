@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense, lazy, useMemo, useCallback } from "react"
+import React, { useState, useEffect, Suspense, lazy, useMemo, useCallback } from "react"
 import { ThemeProvider } from "@/contexts/theme-context"
 import { NotificationSystem } from "@/utils/core/notification-system"
 import { preloadComponent, resourceHints, setupLazyImages, getAdaptiveQuality } from "@/utils/core/lazy-loader"
@@ -38,6 +38,50 @@ interface UserProfile {
 
 // basePath must match next.config.mjs for static export on GitHub Pages
 const BASE_PATH = '/satloom'
+
+// Error Boundary to catch and display actual errors instead of generic crash screen
+class ChatErrorBoundary extends React.Component<
+  { children: React.ReactNode; onReset: () => void },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode; onReset: () => void }) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('ChatInterface crashed:', error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex items-center justify-center h-full bg-slate-950">
+          <div className="text-white text-center max-w-lg p-6">
+            <div className="text-2xl mb-4 text-red-400">⚠️ Chat Error</div>
+            <div className="text-sm text-slate-400 mb-4 font-mono bg-slate-900 p-3 rounded text-left overflow-auto max-h-40">
+              {this.state.error?.message || 'Unknown error'}
+            </div>
+            <button
+              onClick={() => {
+                this.setState({ hasError: false, error: null })
+                this.props.onReset()
+              }}
+              className="bg-cyan-500 hover:bg-cyan-600 px-4 py-2 rounded"
+            >
+              Return to Home
+            </button>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 export default function Home() {
   const [appState, setAppState] = useState<AppState>("landing")
@@ -365,7 +409,9 @@ export default function Home() {
               )}
 
               {appState === "chat" && currentRoomId && (
-                <ChatInterface roomId={currentRoomId} userProfile={userProfile} onLeave={handleLeaveRoom} />
+                <ChatErrorBoundary onReset={() => { setAppState('landing'); setCurrentRoomId(''); window.history.pushState({}, '', BASE_PATH) }}>
+                  <ChatInterface roomId={currentRoomId} userProfile={userProfile} onLeave={handleLeaveRoom} />
+                </ChatErrorBoundary>
               )}
 
               {appState === "chat" && !currentRoomId && (
