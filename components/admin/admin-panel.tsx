@@ -120,7 +120,7 @@ export function AdminPanelLogin({ children }: AdminPanelProps) {
                                             {/* Logo container */}
                                             <div className="relative flex items-center justify-center w-24 h-24 rounded-2xl bg-gradient-to-br from-cyan-500 via-purple-500 to-pink-500 p-1">
                                                 <div className="flex items-center justify-center w-full h-full rounded-xl bg-slate-950 overflow-hidden">
-                                                    <img src="/admin-logo.png" alt="Admin Central" className="w-16 h-16 object-contain" />
+                                                    <img src="/satloom/admin-logo.png" alt="Admin Central" className="w-16 h-16 object-contain" />
                                                 </div>
                                             </div>
                                         </div>
@@ -253,7 +253,7 @@ function AdminDashboard({ admin, activeTab, onTabChange, onLogout, filterRoomId,
                         icon: '/admin-logo.png'
                     });
                     // Play audio chime if you have an assets directory
-                    const audio = new Audio('/notification.mp3');
+                    const audio = new Audio('/satloom/notification.mp3');
                     audio.play().catch(() => { });
                 }
             }

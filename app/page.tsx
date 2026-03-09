@@ -304,7 +304,7 @@ export default function Home() {
     console.log("App: Leaving room:", currentRoomId)
     try {
       // Clear the room from URL
-      window.history.pushState({}, "", window.location.origin)
+      window.history.pushState({}, "", window.location.origin + window.location.pathname)
 
       const database = getFirebaseDatabase()
 
@@ -346,7 +346,7 @@ export default function Home() {
     setError("")
 
     // Clear URL if user cancels
-    window.history.pushState({}, "", window.location.origin)
+    window.history.pushState({}, "", window.location.origin + window.location.pathname)
   }
 
   return (
