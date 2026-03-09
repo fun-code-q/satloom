@@ -206,9 +206,18 @@ export default function Home() {
         return
       }
 
-      // Check if room exists
+      // Check if room exists with a timeout to prevent hanging on connection issues
       const roomRef = ref(database, `rooms/${cleanRoomId}`)
-      const snapshot = await get(roomRef)
+
+      // Promise with timeout for get()
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Connection timeout")), 5000)
+      );
+
+      const snapshot = await Promise.race([
+        get(roomRef),
+        timeoutPromise
+      ]) as any;
 
       if (!snapshot.exists()) {
         setError("Room not found. Please check the room ID.")
@@ -407,7 +416,12 @@ export default function Home() {
           ) : (
             <Suspense fallback={<LoadingFallback />}>
               {appState === "landing" && (
-                <LandingPage onCreateRoom={handleCreateRoom} onJoinRoom={handleJoinRoom} error={error} />
+                <LandingPage
+                  onCreateRoom={handleCreateRoom}
+                  onJoinRoom={handleJoinRoom}
+                  error={error}
+                  initialRoomId={currentRoomId}
+                />
               )}
 
               {appState === "chat" && currentRoomId && (

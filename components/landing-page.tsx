@@ -15,17 +15,21 @@ interface LandingPageProps {
   onCreateRoom: () => void
   onJoinRoom: (roomId: string) => void
   error?: string
+  initialRoomId?: string
 }
 
-export function LandingPage({ onCreateRoom, onJoinRoom, error }: LandingPageProps) {
+export function LandingPage({ onCreateRoom, onJoinRoom, error, initialRoomId }: LandingPageProps) {
   const [roomId, setRoomId] = useState("")
   const [currentTime, setCurrentTime] = useState(new Date())
   const [isMounted, setIsMounted] = useState(false)
 
-  // Handle hydration
+  // Handle hydration and initialRoomId
   useEffect(() => {
     setIsMounted(true)
-  }, [])
+    if (initialRoomId) {
+      setRoomId(initialRoomId)
+    }
+  }, [initialRoomId])
 
   // Update time every second after mount
   useEffect(() => {
