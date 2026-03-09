@@ -163,21 +163,38 @@ export class MessageStorage {
 
         if (data) {
           const messages: Message[] = Object.entries(data)
-            .map(([id, msg]: [string, any]) => ({
-              ...msg,
-              id,
-              timestamp: new Date(msg.timestamp),
-              editedAt: msg.editedAt ? new Date(msg.editedAt) : undefined,
-              // Ensure reactions exist
-              reactions: msg.reactions || { heart: [], thumbsUp: [] },
-              // Clean up null values
-              replyTo: msg.replyTo || undefined,
-              file: msg.file || undefined,
-            }))
+            .map(([id, msg]: [string, any]) => {
+              // Bulletproof timestamp parsing
+              let msgDate = new Date()
+              if (msg && msg.timestamp) {
+                const parsed = new Date(msg.timestamp)
+                if (!isNaN(parsed.getTime())) {
+                  msgDate = parsed
+                }
+              } else if (msg && msg.time) {
+                // Fallback for some older node structures
+                const parsed = new Date(msg.time)
+                if (!isNaN(parsed.getTime())) {
+                  msgDate = parsed
+                }
+              }
+
+              return {
+                ...msg,
+                id,
+                timestamp: msgDate,
+                editedAt: msg?.editedAt ? new Date(msg.editedAt) : undefined,
+                // Ensure reactions exist
+                reactions: msg?.reactions || { heart: [], thumbsUp: [] },
+                // Clean up null values
+                replyTo: msg?.replyTo || undefined,
+                file: msg?.file || undefined,
+              }
+            })
             .filter((msg: Message) => {
               // STRICT room ID filtering - only show messages from current room
               const messageRoomId = (msg as any).roomId
-              const isFromCurrentRoom = messageRoomId === roomId
+              const isFromCurrentRoom = messageRoomId === roomId || !messageRoomId
 
               if (!isFromCurrentRoom) {
                 console.log("Filtering out message from different room:", messageRoomId, "current:", roomId)
