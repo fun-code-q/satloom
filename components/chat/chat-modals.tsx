@@ -283,6 +283,8 @@ export function ChatModals(props: ChatModalsProps) {
                     onQuizStart={() => props.setShowQuizSetup(true)}
                     onMoodTrigger={() => props.setShowMoodSetup(true)}
                     onSoundboard={() => props.setShowSoundboard(!props.showSoundboard)}
+                    onStartAudioCall={props.handleStartAudioCall}
+                    onStartVideoCall={props.handleStartVideoCall}
                     currentUserId={currentUserId}
                 />
             </div>

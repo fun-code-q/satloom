@@ -16,6 +16,8 @@ interface AttachmentMenuProps {
   onVanishMode?: () => void
   onSoundboard?: () => void
   onReactRoom?: () => void
+  onAudioCall?: () => void
+  onVideoCall?: () => void
   onClose?: () => void
   isMobile?: boolean
 }
@@ -31,6 +33,8 @@ export function AttachmentMenu({
   onVanishMode,
   onSoundboard,
   onReactRoom,
+  onAudioCall,
+  onVideoCall,
   onClose,
   isMobile = false
 }: AttachmentMenuProps) {
@@ -132,6 +136,24 @@ export function AttachmentMenu({
       type: "react",
       action: () => {
         onReactRoom?.()
+        handleClose()
+      },
+    },
+    {
+      icon: Mic,
+      label: "Audio Call",
+      type: "audio-call",
+      action: () => {
+        onAudioCall?.()
+        handleClose()
+      },
+    },
+    {
+      icon: Video,
+      label: "Video Call",
+      type: "video-call",
+      action: () => {
+        onVideoCall?.()
         handleClose()
       },
     },

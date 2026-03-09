@@ -31,6 +31,7 @@ interface UseChatCallsParams {
     // Call state & setters
     incomingCall: any
     currentCall: any
+    isInCall: boolean
     currentTheaterSession: TheaterSession | null
     isTheaterHost: boolean
     theaterInvite: any
@@ -95,7 +96,7 @@ interface UseChatCallsParams {
 export function useChatCalls(params: UseChatCallsParams) {
     const {
         roomId, userProfile, currentUserId, isHost,
-        incomingCall, currentCall,
+        incomingCall, currentCall, isInCall,
         currentTheaterSession, isTheaterHost, theaterInvite, gameInvite,
         currentQuizSession, quizTimeRemaining, userQuizAnswer, currentKaraokeSession,
     } = params
@@ -501,7 +502,15 @@ export function useChatCalls(params: UseChatCallsParams) {
         items: [
             { icon: Phone, label: "Audio Call", action: handleStartAudioCall },
             { icon: Video, label: "Video Call", action: handleStartVideoCall },
-            { icon: Monitor, label: "Screen Share", action: () => notificationSystem.info("Screen Share is available inside Video Call") },
+            {
+                icon: Monitor, label: "Screen Share", action: () => {
+                    if (params.isInCall) {
+                        notificationSystem.info("Click the 'Monitor' icon inside the call window to share your screen.")
+                    } else {
+                        notificationSystem.info("Start a Video Call first to share your screen.")
+                    }
+                }
+            },
         ]
     }
 

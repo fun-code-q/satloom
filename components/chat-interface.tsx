@@ -131,6 +131,7 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
     onlineUsersCount: onlineUsers.length,
     incomingCall: feature.incomingCall,
     currentCall: feature.currentCall,
+    isInCall: feature.isInCall,
     currentTheaterSession: feature.currentTheaterSession,
     isTheaterHost: feature.isTheaterHost,
     theaterInvite: feature.theaterInvite,

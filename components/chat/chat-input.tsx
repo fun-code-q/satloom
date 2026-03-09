@@ -28,6 +28,8 @@ interface ChatInputProps {
     onQuizStart: () => void
     onMoodTrigger?: () => void
     onSoundboard?: () => void
+    onStartAudioCall: () => void
+    onStartVideoCall: () => void
     currentUserId: string
 }
 
@@ -40,7 +42,7 @@ interface PendingMessage {
     status: 'sending' | 'sent' | 'failed'
 }
 
-export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodTrigger, onSoundboard, currentUserId }: ChatInputProps) {
+export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodTrigger, onSoundboard, onStartAudioCall, onStartVideoCall, currentUserId }: ChatInputProps) {
     const { roomId, currentUser, replyingTo, setReplyingTo, setIsTyping, isTyping, addMessage } = useChatStore()
     const [message, setMessage] = useState("")
     const [showEmojiPicker, setShowEmojiPicker] = useState(false)
@@ -416,6 +418,8 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                                     setShowAttachments(false)
                                     setShowMobileReactions(true)
                                 }}
+                                onAudioCall={onStartAudioCall}
+                                onVideoCall={onStartVideoCall}
                             />
                         </div>
                     </div>
@@ -541,6 +545,8 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                         onVideoRecord={() => onStartRecording("video")}
                         onPhotoCapture={() => onStartRecording("photo")}
                         onMoodTrigger={onMoodTrigger}
+                        onAudioCall={onStartAudioCall}
+                        onVideoCall={onStartVideoCall}
                     />
                 </div>
 
