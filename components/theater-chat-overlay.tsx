@@ -59,8 +59,9 @@ export function TheaterChatOverlay({
                 },
             }
 
-            await messageStorage.sendMessage(roomId, newMessage, currentUserId)
+            const sendPromise = messageStorage.sendMessage(roomId, newMessage, currentUserId)
             setInputText("")
+            await sendPromise
         } catch (error) {
             console.error("Failed to send message:", error)
         }

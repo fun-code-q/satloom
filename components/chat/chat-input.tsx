@@ -176,11 +176,14 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
             }
 
             // Send to server
-            await messageStorage.sendMessage(roomId, newMessage, currentUserId)
+            const sendPromise = messageStorage.sendMessage(roomId, newMessage, currentUserId)
 
-            // Clear input immediately after send success
+            // Clear input immediately after starting the send process
             setMessage("")
             setReplyingTo(null)
+
+            // Await the send result
+            await sendPromise
 
             // Log telemetry
             telemetry.logEvent('message_sent', roomId, currentUser.name, currentUser.name, { length: cleanedMessage.length })
@@ -196,7 +199,7 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
             updateMessageStatus(tempId, 'sent')
 
             // Haptic feedback for successful send
-            notificationSystem.newMessage(currentUser.name, message.trim())
+            notificationSystem.newMessage(currentUser.name, cleanedMessage)
 
             // Remove from pending after a short delay (for visual transition)
             setTimeout(() => {
