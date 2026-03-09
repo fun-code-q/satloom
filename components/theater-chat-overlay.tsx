@@ -45,11 +45,13 @@ export function TheaterChatOverlay({
 
     const handleSend = async () => {
         if (!inputText.trim()) return
+        const textToSend = inputText.trim()
+        setInputText("")
 
         try {
             const messageStorage = MessageStorage.getInstance()
             const newMessage = {
-                text: inputText.trim(),
+                text: textToSend,
                 sender: currentUser,
                 senderId: currentUserId,
                 timestamp: new Date(),
@@ -59,9 +61,7 @@ export function TheaterChatOverlay({
                 },
             }
 
-            const sendPromise = messageStorage.sendMessage(roomId, newMessage, currentUserId)
-            setInputText("")
-            await sendPromise
+            await messageStorage.sendMessage(roomId, newMessage, currentUserId)
         } catch (error) {
             console.error("Failed to send message:", error)
         }

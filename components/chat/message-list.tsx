@@ -87,9 +87,14 @@ export function MessageList({
     const rowVirtualizer = useVirtualizer({
         count: filteredMessages.length,
         getScrollElement: () => parentRef.current,
-        estimateSize: () => 100, // Better estimate for messages with avatars/formatting
+        estimateSize: () => 120, // Better estimate for messages with avatars/formatting
         overscan: 5, // Number of items to render outside visible area for smoother scrolling
     })
+
+    // Force re-measurement when messages list changes to prevent overlaps
+    useEffect(() => {
+        rowVirtualizer.measure()
+    }, [filteredMessages.length, rowVirtualizer])
 
     const getQuizParticipants = () => {
         if (!currentQuizSession) return []
@@ -155,7 +160,7 @@ export function MessageList({
                                 const msg = filteredMessages[virtualItem.index]
                                 return (
                                     <div
-                                        key={msg.id}
+                                        key={virtualItem.key}
                                         data-index={virtualItem.index}
                                         ref={rowVirtualizer.measureElement}
                                         style={{
@@ -163,6 +168,7 @@ export function MessageList({
                                             top: 0,
                                             left: 0,
                                             width: "100%",
+                                            minHeight: "100px",
                                             transform: `translateY(${virtualItem.start}px)`,
                                         }}
                                     >

@@ -148,6 +148,10 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                 return
             }
 
+            // Clear input immediately to prevent double-send or concatenation
+            setMessage("")
+            setReplyingTo(null)
+
             // Stop typing indicator
             setIsTyping(false)
             userPresence.setTyping(roomId, currentUser.name, false)
@@ -177,10 +181,6 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
 
             // Send to server
             const sendPromise = messageStorage.sendMessage(roomId, newMessage, currentUserId)
-
-            // Clear input immediately after starting the send process
-            setMessage("")
-            setReplyingTo(null)
 
             // Await the send result
             await sendPromise

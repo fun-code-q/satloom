@@ -401,7 +401,7 @@ function MessageBubble({
   return (
     <div
       id={messageId}
-      className={`flex ${isOwnMessage ? "justify-end" : "justify-start"} mb-4 scroll-mt-20 transition-colors duration-300`}
+      className={`flex ${isOwnMessage ? "justify-end" : "justify-start"} mb-6 min-h-[80px] scroll-mt-20 transition-colors duration-300`}
     >
       <div className={`max-w-[85%] ${isOwnMessage ? "order-2" : "order-1"}`}>
         {/* Reply indicator */}
