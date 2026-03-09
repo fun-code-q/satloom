@@ -25,8 +25,9 @@ export function MoodSetupModal({ isOpen, onClose, roomId }: MoodSetupModalProps)
     useEffect(() => {
         if (!isOpen || !roomId) return
 
-        if (!database || !roomId) return
-        const moodRef = ref(database, `rooms/${roomId}/mood`)
+        const db = getFirebaseDatabase()
+        if (!db) return
+        const moodRef = ref(db, `rooms/${roomId}/mood`)
         const unsubscribe = onValue(moodRef, (snapshot) => {
             const data = snapshot.val() as { backgroundImage?: string; playlist?: string[] } | null
             if (data) {
