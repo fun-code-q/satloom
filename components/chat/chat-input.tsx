@@ -325,6 +325,8 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
         }
     }, [])
 
+    const [showMobileReactions, setShowMobileReactions] = useState(false)
+
     if (isMobile) {
         return (
             <div className="flex flex-col bg-slate-900/95 border-t border-slate-700 backdrop-blur-md z-30 flex-shrink-0 pb-safe">
@@ -333,6 +335,22 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                     <div className="px-4 py-2 bg-red-500/20 border-t border-red-500/30 flex items-center justify-center gap-2">
                         <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                         <span className="text-sm text-red-400">Recording...</span>
+                    </div>
+                )}
+
+                {/* Mobile Reactions Bar */}
+                {showMobileReactions && (
+                    <div className="px-4 py-3 border-b border-slate-700/50 bg-slate-800/60 animate-in slide-in-from-bottom-2">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-medium text-cyan-400">Room Reactions</span>
+                            <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setShowMobileReactions(false)}>
+                                <X className="w-3 h-3" />
+                            </Button>
+                        </div>
+                        <div className="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-hide">
+                            {/* Re-using ReactionRain logic but simplified for mobile row */}
+                            <ReactionRain roomId={roomId || ""} userId={currentUserId} inline={true} />
+                        </div>
                     </div>
                 )}
 
@@ -354,20 +372,6 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                     </div>
                 )}
 
-                {/* Poll/Event Creator Backdrop */}
-                {(showPollCreator || showEventCreator) && (
-                    <div
-                        className="fixed inset-0 z-40 bg-black/20"
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            setShowPollCreator(false)
-                            setShowEventCreator(false)
-                        }}
-                        role="button"
-                        tabIndex={-1}
-                    />
-                )}
-
                 {/* Poll/Event Creator Mobile Popups */}
                 {showPollCreator && (
                     <div className="absolute bottom-full mb-2 left-2 right-2 z-50 shadow-2xl">
@@ -381,16 +385,50 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                     </div>
                 )}
 
+                {/* Attachment menu popup - now above input */}
+                {showAttachments && (
+                    <div className="px-4 py-2 border-b border-slate-700/50 bg-slate-800/40 animate-in slide-in-from-bottom-2">
+                        <AttachmentMenu
+                            isMobile={true}
+                            onFileSelect={onFileSelect}
+                            onPollCreate={() => {
+                                setShowAttachments(false)
+                                setShowPollCreator(true)
+                            }}
+                            onEventCreate={() => {
+                                setShowAttachments(false)
+                                setShowEventCreator(true)
+                            }}
+                            onMoodTrigger={() => {
+                                setShowAttachments(false)
+                                onMoodTrigger?.()
+                            }}
+                            onVanishMode={() => {
+                                setShowAttachments(false)
+                                setShowVanishModal(true)
+                            }}
+                            onSoundboard={() => {
+                                setShowAttachments(false)
+                                onSoundboard?.()
+                            }}
+                            onReactRoom={() => {
+                                setShowAttachments(false)
+                                setShowMobileReactions(true)
+                            }}
+                        />
+                    </div>
+                )}
+
                 {/* Mobile input row */}
                 <div className="flex items-end gap-2 p-3">
                     {/* Attachment button */}
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-10 w-10 rounded-full bg-slate-700 text-gray-300 shrink-0"
+                        className={`h-10 w-10 rounded-full shrink-0 transition-colors ${showAttachments ? 'bg-cyan-500 text-white' : 'bg-slate-700 text-gray-300'}`}
                         onClick={() => setShowAttachments(!showAttachments)}
                     >
-                        <Plus className="w-5 h-5" />
+                        <Plus className={`w-5 h-5 transition-transform ${showAttachments ? 'rotate-45' : ''}`} />
                     </Button>
 
                     {/* Text input */}
@@ -405,47 +443,38 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                         />
                     </div>
 
-                    {/* Action button - mic or send */}
-                    {message.trim() ? (
-                        <Button
-                            onClick={handleSendMessage}
-                            size="icon"
-                            className="h-10 w-10 rounded-full bg-cyan-500 hover:bg-cyan-600 text-white shrink-0"
-                        >
-                            <Send className="w-5 h-5" />
-                        </Button>
-                    ) : (
+                    <div className="flex items-center gap-1">
+                        {/* Emoji button next to mic */}
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-10 w-10 rounded-full bg-slate-700 text-gray-300 shrink-0"
-                            onClick={() => setIsRecording(!isRecording)}
+                            className="h-10 w-10 rounded-full bg-slate-700 text-gray-300 shrink-0 haptic"
+                            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                         >
-                            <Mic className={`w-5 h-5 ${isRecording ? 'text-red-400' : ''}`} />
+                            <Smile className={`w-5 h-5 ${showEmojiPicker ? 'text-cyan-400' : ''}`} />
                         </Button>
-                    )}
-                </div>
 
-                {/* Attachment menu popup */}
-                {showAttachments && (
-                    <div className="px-4 pb-2">
-                        <AttachmentMenu
-                            onFileSelect={onFileSelect}
-                            onPollCreate={() => {
-                                setShowAttachments(false)
-                                setShowPollCreator(true)
-                            }}
-                            onEventCreate={() => {
-                                setShowAttachments(false)
-                                setShowEventCreator(true)
-                            }}
-                            onMoodTrigger={() => {
-                                setShowAttachments(false)
-                                onMoodTrigger?.()
-                            }}
-                        />
+                        {/* Action button - mic or send */}
+                        {message.trim() ? (
+                            <Button
+                                onClick={handleSendMessage}
+                                size="icon"
+                                className="h-10 w-10 rounded-full bg-cyan-500 hover:bg-cyan-600 text-white shrink-0"
+                            >
+                                <Send className="w-5 h-5" />
+                            </Button>
+                        ) : (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 rounded-full bg-slate-700 text-gray-300 shrink-0 haptic"
+                                onClick={() => setIsRecording(!isRecording)}
+                            >
+                                <Mic className={`w-5 h-5 ${isRecording ? 'text-red-400' : ''}`} />
+                            </Button>
+                        )}
                     </div>
-                )}
+                </div>
             </div>
         )
     }

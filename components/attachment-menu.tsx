@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { ImageIcon, Camera, Video, FileText, Mic, MapPin, User, Paperclip, BarChart2, Calendar, X, HelpCircle, Palette } from "lucide-react"
+import { ImageIcon, Camera, Video, FileText, Mic, MapPin, User, Paperclip, BarChart2, Calendar, X, HelpCircle, Palette, Eye, Music2, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 
 interface AttachmentMenuProps {
@@ -13,6 +13,9 @@ interface AttachmentMenuProps {
   onVideoRecord?: () => void
   onPhotoCapture?: () => void
   onMoodTrigger?: () => void
+  onVanishMode?: () => void
+  onSoundboard?: () => void
+  onReactRoom?: () => void
   onClose?: () => void
   isMobile?: boolean
 }
@@ -25,6 +28,9 @@ export function AttachmentMenu({
   onVideoRecord,
   onPhotoCapture,
   onMoodTrigger,
+  onVanishMode,
+  onSoundboard,
+  onReactRoom,
   onClose,
   isMobile = false
 }: AttachmentMenuProps) {
@@ -99,6 +105,33 @@ export function AttachmentMenu({
       type: "event",
       action: () => {
         onEventCreate?.()
+        handleClose()
+      },
+    },
+    {
+      icon: Eye,
+      label: "Vanish",
+      type: "vanish",
+      action: () => {
+        onVanishMode?.()
+        handleClose()
+      },
+    },
+    {
+      icon: Music2,
+      label: "Sounds",
+      type: "sounds",
+      action: () => {
+        onSoundboard?.()
+        handleClose()
+      },
+    },
+    {
+      icon: Sparkles,
+      label: "React",
+      type: "react",
+      action: () => {
+        onReactRoom?.()
         handleClose()
       },
     },
