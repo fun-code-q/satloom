@@ -231,6 +231,17 @@ export function ChatModals(props: ChatModalsProps) {
         return createPortal(content, document.body)
     }
 
+    useEffect(() => {
+        if (props.showAudioCall || props.showVideoCall) {
+            console.log("ChatModals: Call visibility changed", {
+                audio: props.showAudioCall,
+                video: props.showVideoCall,
+                currentCall: !!props.currentCall,
+                incomingCall: !!props.incomingCall
+            })
+        }
+    }, [props.showAudioCall, props.showVideoCall, props.currentCall, props.incomingCall])
+
     return (
         <>
             <div className="flex-1 min-h-0 relative flex flex-col overflow-hidden">

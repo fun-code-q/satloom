@@ -575,7 +575,7 @@ export function VideoCallModal({
     return (
       <div
         ref={modalRef}
-        className="fixed z-50 bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl cursor-move select-none overflow-hidden"
+        className="fixed z-[1000] bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl cursor-move select-none overflow-hidden"
         style={{
           left: position.x,
           top: position.y,
@@ -636,7 +636,7 @@ export function VideoCallModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[1000]">
       <div
         ref={modalRef}
         className="bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl w-full h-full max-w-4xl max-h-[90vh] mx-4 my-4 flex flex-col"

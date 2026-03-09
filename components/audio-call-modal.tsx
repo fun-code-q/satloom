@@ -259,7 +259,7 @@ export function AudioCallModal({
     return (
       <div
         ref={modalRef}
-        className="fixed z-50 bg-slate-800 border border-slate-700 rounded-2xl p-3 shadow-2xl cursor-move select-none"
+        className="fixed z-[1000] bg-slate-800 border border-slate-700 rounded-2xl p-3 shadow-2xl cursor-move select-none"
         style={{
           left: position.x,
           top: position.y,
@@ -303,7 +303,7 @@ export function AudioCallModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] p-4">
       <div
         ref={modalRef}
         className="bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto mx-auto"

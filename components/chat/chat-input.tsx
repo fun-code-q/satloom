@@ -117,6 +117,7 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
     const handleSendMessage = async () => {
         if (!message.trim() || !roomId || !currentUser) return
 
+        let tempId = ""
         try {
             // Check for quiz trigger
             if (message.trim().toLowerCase() === "?quiz?") {
@@ -152,7 +153,7 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
             userPresence.setTyping(roomId, currentUser.name, false)
 
             // Add optimistic message
-            const tempId = addOptimisticMessage(cleanedMessage, currentUser.name)
+            tempId = addOptimisticMessage(cleanedMessage, currentUser.name)
 
             const encryptionManager = EncryptionManager.getInstance()
             const encryptedText = await encryptionManager.encrypt(cleanedMessage, roomId)
@@ -177,6 +178,10 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
             // Send to server
             await messageStorage.sendMessage(roomId, newMessage)
 
+            // Clear input immediately after send success
+            setMessage("")
+            setReplyingTo(null)
+
             // Log telemetry
             telemetry.logEvent('message_sent', roomId, currentUser.name, currentUser.name, { length: cleanedMessage.length })
 
@@ -190,10 +195,6 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
             // Update status to sent
             updateMessageStatus(tempId, 'sent')
 
-            // Clear input
-            setMessage("")
-            setReplyingTo(null)
-
             // Haptic feedback for successful send
             notificationSystem.newMessage(currentUser.name, message.trim())
 
@@ -205,11 +206,8 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
         } catch (error) {
             console.error("Error sending message:", error)
 
-            // Find the temp ID for this message and mark as failed
-            const pendingArray = Array.from(pendingMessages.values())
-            const failedMsg = pendingArray.find(m => m.text === message.trim() && m.status === 'sending')
-            if (failedMsg) {
-                updateMessageStatus(failedMsg.tempId, 'failed')
+            if (tempId) {
+                updateMessageStatus(tempId, 'failed')
             }
 
             notificationSystem.error("Failed to send message")
