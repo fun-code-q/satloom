@@ -278,7 +278,7 @@ export default function Home() {
         console.log("App: Final room ID before entering chat:", roomId)
 
         // Update URL first using Next.js router to avoid _checkNotDeleted hydration errors
-        const newUrl = `/satloom?room=${encodeURIComponent(roomId)}`
+        const newUrl = `/?room=${encodeURIComponent(roomId)}`
         router.push(newUrl)
         console.log("App: Updated URL to:", newUrl)
 
@@ -306,7 +306,7 @@ export default function Home() {
     console.log("App: Leaving room:", currentRoomId)
     try {
       // Clear the room from URL
-      router.push('/satloom')
+      router.push('/')
 
       const database = getFirebaseDatabase()
 
@@ -350,7 +350,7 @@ export default function Home() {
     setError("")
 
     // Clear URL if user cancels
-    router.push('/satloom')
+    router.push('/')
   }
 
   return (
