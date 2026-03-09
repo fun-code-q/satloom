@@ -54,6 +54,8 @@ interface ChatHeaderProps {
     currentUserId: string
     // Pinned message
     pinnedMessage: Message | null
+    // Status
+    firebaseConnected: boolean
     // Search
     showChatSearch: boolean
     setShowChatSearch: (val: boolean) => void
@@ -68,6 +70,7 @@ export function ChatHeader({
     isGamesMenuOpen, setIsGamesMenuOpen, isProductivityMenuOpen, setIsProductivityMenuOpen,
     isSettingsMenuOpen, setIsSettingsMenuOpen, isAppMenuOpen, setIsAppMenuOpen,
     onlineUsers, currentUserId, pinnedMessage,
+    firebaseConnected,
     showChatSearch, setShowChatSearch,
 }: ChatHeaderProps) {
     return (
@@ -82,6 +85,11 @@ export function ChatHeader({
                         open={isMoodSelectorOpen}
                         onOpenChange={setIsMoodSelectorOpen}
                     />
+                    {!firebaseConnected && (
+                        <div className="px-2 py-1 bg-red-500/20 border border-red-500/50 rounded text-[10px] text-red-400 font-bold animate-pulse">
+                            OFFLINE: DB ERROR
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">

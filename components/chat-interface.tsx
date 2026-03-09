@@ -81,6 +81,8 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
     showEmojiPicker, setShowEmojiPicker, showChatSearch, setShowChatSearch
   } = ui
 
+  const [firebaseConnected, setFirebaseConnected] = useState(true)
+
   const {
     incomingCall, setIncomingCall, currentCall, setCurrentCall, isInCall, setIsInCall,
     currentTheaterSession, setCurrentTheaterSession, theaterInvite, setTheaterInvite,
@@ -181,6 +183,7 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
     startQuizTimer: calls.startQuizTimer,
     handleQuizFinished: calls.handleQuizFinished,
     pinnedMessageId,
+    setFirebaseConnected,
   })
 
   // --- Render ---
@@ -242,6 +245,7 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
           onlineUsers={onlineUsers}
           currentUserId={currentUserId}
           pinnedMessage={pinnedMessage}
+          firebaseConnected={firebaseConnected}
           showChatSearch={showChatSearch}
           setShowChatSearch={setShowChatSearch}
         />

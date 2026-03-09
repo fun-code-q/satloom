@@ -43,6 +43,7 @@ interface UseChatEffectsParams {
     setPresentationInvite: (val: any) => void
     setPinnedMessageId: (val: string | null) => void
     setPinnedMessage: (val: Message | null) => void
+    setFirebaseConnected: (connected: boolean) => void
     setIsHost: (val: boolean) => void
     setRoomIsProtected: (val: boolean) => void
     setPasswordValidated: (val: boolean) => void
@@ -149,8 +150,10 @@ export function useChatEffects(params: UseChatEffectsParams) {
         if (!db) {
             console.error("ChatInterface: Firebase database not initialized. Config might be missing.")
             notificationSystem.error("Database connection failed. Please check your configuration.")
+            params.setFirebaseConnected(false)
             return
         }
+        params.setFirebaseConnected(true)
 
         notificationSystem.setNotificationsEnabled(themeContext.notifications)
         notificationSystem.setSoundEnabled(themeContext.notificationSound)
