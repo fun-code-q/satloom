@@ -76,8 +76,12 @@ export function ClientSecurity() {
         }
 
         // === 4. DEVTOOLS DETECTION (debugger-based) ===
+        // Skip on mobile devices as dimensions vary frequently (address bar, keyboard)
+        // causing false positives for devtools detection.
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+
         let devtoolsInterval: NodeJS.Timeout | null = null
-        if (process.env.NODE_ENV === "production") {
+        if (process.env.NODE_ENV === "production" && !isMobile) {
             devtoolsInterval = setInterval(() => {
                 const threshold = 160
                 const widthDiff = window.outerWidth - window.innerWidth > threshold
