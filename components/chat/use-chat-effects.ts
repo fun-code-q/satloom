@@ -192,7 +192,7 @@ export function useChatEffects(params: UseChatEffectsParams) {
             roomId, currentUserId,
             (call: CallData) => {
                 if (call.callerId !== currentUserId && call.caller !== userProfile.name) {
-                    console.log("Incoming call received:", call)
+                    console.log("[Signaling] Incoming call received:", call)
                     setIncomingCall(call)
                     if (call.type === "video") {
                         setShowVideoCall(true)
@@ -204,7 +204,7 @@ export function useChatEffects(params: UseChatEffectsParams) {
                 }
             },
             (call: CallData) => {
-                console.log("Call update received:", call)
+                console.log("[Signaling] Call update received:", call)
                 if (call.participants.includes(currentUserId) || call.callerId === currentUserId) {
                     setCurrentCall(call)
                     if (call.status === "answered") {

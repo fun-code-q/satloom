@@ -328,14 +328,14 @@ export function ChatModals(props: ChatModalsProps) {
                 </div>
             )}
 
-            {/* Call and Other Notifications */}
-            {props.theaterInvite && (
+            {/* Call and Other Notifications - Portalled for true layout independence */}
+            {props.theaterInvite && renderModal(
                 <TheaterInviteNotification invite={props.theaterInvite} onAccept={props.handleAcceptTheaterInvite} onDecline={props.handleDeclineTheaterInvite} />
             )}
-            {props.gameInvite && (
+            {props.gameInvite && renderModal(
                 <GameInviteNotification invite={props.gameInvite} onAccept={props.handleAcceptGameInvite} onDecline={props.handleDeclineGameInvite} />
             )}
-            {props.presentationInvite && (
+            {props.presentationInvite && renderModal(
                 <PresentationInviteNotification
                     invite={props.presentationInvite}
                     onAccept={props.handleAcceptPresentationInvite}
@@ -343,11 +343,15 @@ export function ChatModals(props: ChatModalsProps) {
                 />
             )}
 
-            {/* Global Modals */}
-            <AudioCallModal isOpen={props.showAudioCall} onClose={props.handleEndCall} onAnswer={props.handleAnswerCall} roomId={roomId} currentUser={userProfile.name} currentUserId={currentUserId} callData={props.currentCall || props.incomingCall} isIncoming={!!(props.currentCall || props.incomingCall) && (props.currentCall || props.incomingCall)?.callerId !== currentUserId} onSwitchToVideo={() => props.handleSwitchCallType("video")} />
-            <VideoCallModal isOpen={props.showVideoCall} onClose={props.handleEndVideoCall} onAnswer={props.handleAnswerVideoCall} roomId={roomId} currentUser={userProfile.name} currentUserId={currentUserId} callData={props.currentCall || props.incomingCall} isIncoming={!!(props.currentCall || props.incomingCall) && (props.currentCall || props.incomingCall)?.callerId !== currentUserId} onStartWhiteboard={() => props.setShowWhiteboard(true)} onWatchTogether={() => props.setShowTheaterSetup(true)} onSwitchToAudio={() => props.handleSwitchCallType("audio")} />
-            <SettingsModal isOpen={props.showSettings} onClose={() => props.setShowSettings(false)} />
-            <AboutModal isOpen={props.showAbout} onClose={() => props.setShowAbout(false)} />
+            {/* Global Modals - Portalled */}
+            {renderModal(
+                <>
+                    <AudioCallModal isOpen={props.showAudioCall} onClose={props.handleEndCall} onAnswer={props.handleAnswerCall} roomId={roomId} currentUser={userProfile.name} currentUserId={currentUserId} callData={props.currentCall || props.incomingCall} isIncoming={!!(props.currentCall || props.incomingCall) && (props.currentCall || props.incomingCall)?.callerId !== currentUserId} onSwitchToVideo={() => props.handleSwitchCallType("video")} />
+                    <VideoCallModal isOpen={props.showVideoCall} onClose={props.handleEndVideoCall} onAnswer={props.handleAnswerVideoCall} roomId={roomId} currentUser={userProfile.name} currentUserId={currentUserId} callData={props.currentCall || props.incomingCall} isIncoming={!!(props.currentCall || props.incomingCall) && (props.currentCall || props.incomingCall)?.callerId !== currentUserId} onStartWhiteboard={() => props.setShowWhiteboard(true)} onWatchTogether={() => props.setShowTheaterSetup(true)} onSwitchToAudio={() => props.handleSwitchCallType("audio")} />
+                    <SettingsModal isOpen={props.showSettings} onClose={() => props.setShowSettings(false)} />
+                    <AboutModal isOpen={props.showAbout} onClose={() => props.setShowAbout(false)} />
+                </>
+            )}
             <MediaRecorder isOpen={props.showMediaRecorder} onClose={() => props.setShowMediaRecorder(false)} mode={props.mediaRecorderMode} onMediaReady={props.handleMediaRecorded} onRecordingStart={() => { }} onRecordingEnd={props.handleStopMediaRecording} />
             <PlaygroundSetupModal isOpen={props.showPlaygroundSetup} onClose={() => props.setShowPlaygroundSetup(false)} onStartGame={props.handleStartPlayground} initialGame={props.playgroundGame} />
             <TheaterSetupModal isOpen={props.showTheaterSetup} onClose={() => props.setShowTheaterSetup(false)} onCreateSession={props.handleCreateTheaterSession} />

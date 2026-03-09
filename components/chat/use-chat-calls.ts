@@ -111,6 +111,7 @@ export function useChatCalls(params: UseChatCallsParams) {
     const handleStartAudioCall = useCallback(async () => {
         try {
             console.log("Starting audio call...")
+            notificationSystem.info("Initializing audio call...")
             const callId = await callSignaling.startCall(roomId, userProfile.name, currentUserId, "audio")
             console.log("Audio call started with ID:", callId)
             telemetry.logEvent('call_started', roomId, currentUserId, userProfile.name, { type: 'audio' })
@@ -121,10 +122,11 @@ export function useChatCalls(params: UseChatCallsParams) {
             console.error("Error starting audio call:", error)
             notificationSystem.error("Failed to start audio call")
         }
-    }, [roomId, userProfile.name, currentUserId])
+    }, [roomId, userProfile.name, currentUserId, params.setShowAudioCall, params.setIsInCall])
 
     const handleAnswerCall = useCallback(() => {
         if (incomingCall) {
+            console.log("Answering call:", incomingCall.id)
             params.setCurrentCall(incomingCall)
             params.setIncomingCall(null)
 
@@ -139,25 +141,28 @@ export function useChatCalls(params: UseChatCallsParams) {
             params.setIsInCall(true)
             userPresence.updateActivity(roomId, currentUserId, incomingCall.type === "video" ? "video-call" : "call")
         }
-    }, [roomId, currentUserId, incomingCall])
+    }, [roomId, currentUserId, incomingCall, params.setCurrentCall, params.setIncomingCall, params.setShowVideoCall, params.setShowAudioCall, params.setIsInCall])
 
     const handleDeclineCall = useCallback(() => {
         if (incomingCall) {
+            console.log("Declining call:", incomingCall.id)
             callSignaling.endCall(roomId, incomingCall.id)
             params.setIncomingCall(null)
         }
-    }, [roomId, incomingCall])
+    }, [roomId, incomingCall, params.setIncomingCall])
 
     const handleEndCall = useCallback(() => {
+        console.log("Ending current call...")
         params.setShowAudioCall(false)
         params.setCurrentCall(null)
         params.setIsInCall(false)
         userPresence.updateActivity(roomId, currentUserId, "chat")
-    }, [roomId, currentUserId])
+    }, [roomId, currentUserId, params.setShowAudioCall, params.setCurrentCall, params.setIsInCall])
 
     const handleStartVideoCall = useCallback(async () => {
         try {
             console.log("Starting video call...")
+            notificationSystem.info("Initializing video call...")
             const callId = await callSignaling.startCall(roomId, userProfile.name, currentUserId, "video")
             console.log("Video call started with ID:", callId)
             telemetry.logEvent('call_started', roomId, currentUserId, userProfile.name, { type: 'video' })
@@ -168,10 +173,11 @@ export function useChatCalls(params: UseChatCallsParams) {
             console.error("Error starting video call:", error)
             notificationSystem.error("Failed to start video call")
         }
-    }, [roomId, userProfile.name, currentUserId])
+    }, [roomId, userProfile.name, currentUserId, params.setShowVideoCall, params.setIsInCall])
 
     const handleAnswerVideoCall = useCallback(() => {
         if (incomingCall && incomingCall.type === "video") {
+            console.log("Answering video call:", incomingCall.id)
             params.setCurrentCall(incomingCall)
             params.setIncomingCall(null)
 
@@ -182,14 +188,15 @@ export function useChatCalls(params: UseChatCallsParams) {
             params.setIsInCall(true)
             userPresence.updateActivity(roomId, currentUserId, "video-call")
         }
-    }, [roomId, currentUserId, incomingCall])
+    }, [roomId, currentUserId, incomingCall, params.setCurrentCall, params.setIncomingCall, params.setShowVideoCall, params.setIsInCall])
 
     const handleEndVideoCall = useCallback(() => {
+        console.log("Ending video call...")
         params.setShowVideoCall(false)
         params.setCurrentCall(null)
         params.setIsInCall(false)
         userPresence.updateActivity(roomId, currentUserId, "chat")
-    }, [roomId, currentUserId])
+    }, [roomId, currentUserId, params.setShowVideoCall, params.setCurrentCall, params.setIsInCall])
 
     const handleSwitchCallType = useCallback(async (type: "audio" | "video") => {
         if (currentCall) {
