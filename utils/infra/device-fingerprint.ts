@@ -171,6 +171,7 @@ class DeviceFingerprintManager {
      * Get canvas fingerprint
      */
     private async getCanvasFingerprint(): Promise<string> {
+        if (typeof document === "undefined") return "not-available";
         const canvas = document.createElement('canvas');
         canvas.width = 200;
         canvas.height = 50;
@@ -238,6 +239,7 @@ class DeviceFingerprintManager {
      */
     private getWebGLVendor(): string {
         try {
+            if (typeof document === "undefined") return "not-available";
             const canvas = document.createElement('canvas');
             const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
             if (!gl) return 'not-available';
@@ -256,6 +258,7 @@ class DeviceFingerprintManager {
      */
     private getWebGLRenderer(): string {
         try {
+            if (typeof document === "undefined") return "not-available";
             const canvas = document.createElement('canvas');
             const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
             if (!gl) return 'not-available';
@@ -289,6 +292,7 @@ class DeviceFingerprintManager {
      * Get installed fonts
      */
     private async getFonts(): Promise<string[]> {
+        if (typeof document === "undefined") return [];
         const fontList = [
             'Arial', 'Arial Black', 'Arial Narrow', 'Calibri', 'Cambria',
             'Comic Sans MS', 'Consolas', 'Courier', 'Courier New', 'Georgia',
