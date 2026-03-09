@@ -283,7 +283,8 @@ export default function Home() {
         if (database) {
           // Create room in Firebase
           const roomRef = ref(database, `rooms/${roomId}`)
-          await set(roomRef, {
+          // Non-blocking set
+          set(roomRef, {
             createdAt: Date.now(),
             createdBy: profile.name,
             createdByUid: currentUser?.uid || "anonymous",
@@ -294,8 +295,8 @@ export default function Home() {
                 joinedAt: Date.now(),
               },
             },
-          })
-          console.log("App: Room created in Firebase:", roomId)
+          }).catch(err => console.error("App: Failed to create room:", err))
+          console.log("App: Commenced room creation in Firebase:", roomId)
           telemetry.logEvent('room_created', roomId, currentUser?.uid || "anonymous", profile.name, { isHost: true })
         }
 
@@ -308,12 +309,13 @@ export default function Home() {
 
         if (database) {
           const memberRef = ref(database, `rooms/${roomId}/members/${profile.name}`)
-          await set(memberRef, {
+          // Non-blocking set to prevent hang on connection issues
+          set(memberRef, {
             name: profile.name,
             avatar: profile.avatar || null,
             joinedAt: Date.now(),
-          })
-          console.log("App: Added user to existing room:", roomId)
+          }).catch(err => console.error("App: Failed to add member:", err))
+          console.log("App: Commenced adding user to existing room:", roomId)
           telemetry.logEvent('user_joined', roomId, currentUser?.uid || "anonymous", profile.name)
         }
       }

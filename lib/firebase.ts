@@ -81,6 +81,7 @@ export function initializeFirebase(): {
   }
 
   const config = getFirebaseConfig()
+  console.log("Firebase: Config attempt:", config ? "Found" : "Missing")
   if (!config) return { app: null, database: null, auth: null }
 
   const apps = getApps()
@@ -100,12 +101,12 @@ export function initializeFirebase(): {
       database = getDatabase(app)
       auth = getAuth(app)
       initialized = true
-      
+
       // Diagnostic logging
       console.log("Firebase: Initialization Successful")
       console.log("Firebase: Project ID:", config.projectId)
       console.log("Firebase: Database URL:", config.databaseURL.substring(0, 20) + "...")
-      
+
       // Expose for debugging (masked)
       if (typeof window !== "undefined") {
         (window as any).__FIREBASE_DIAGNOSTICS = {
