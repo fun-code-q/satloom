@@ -100,6 +100,24 @@ export function initializeFirebase(): {
       database = getDatabase(app)
       auth = getAuth(app)
       initialized = true
+      
+      // Diagnostic logging
+      console.log("Firebase: Initialization Successful")
+      console.log("Firebase: Project ID:", config.projectId)
+      console.log("Firebase: Database URL:", config.databaseURL.substring(0, 20) + "...")
+      
+      // Expose for debugging (masked)
+      if (typeof window !== "undefined") {
+        (window as any).__FIREBASE_DIAGNOSTICS = {
+          initialized: true,
+          projectId: config.projectId,
+          databaseURL: config.databaseURL.substring(0, 15) + "...",
+          hasApp: !!app,
+          hasDb: !!database,
+          hasAuth: !!auth,
+          timestamp: new Date().toISOString()
+        }
+      }
     }
   } catch (error) {
     console.error("Error getting Firebase services:", error)
