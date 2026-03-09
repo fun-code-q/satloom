@@ -198,6 +198,7 @@ export default function Home() {
 
     // Transition immediately to profile modal instead of waiting for a blocking network check
     // This solves the hang caused by slow WebSocket fallback for get()
+    console.log("App: Version V3-INSTANT-JOIN-ACTIVE")
     setShowProfileModal(true)
   }, [])
 
