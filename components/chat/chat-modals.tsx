@@ -354,11 +354,12 @@ export function ChatModals(props: ChatModalsProps) {
                 />
             )}
 
-            {/* Global Modals - Portalled */}
+            {/* Global Modals - Rendered inline since they manage their own overlays/z-index */}
+            <AudioCallModal isOpen={props.showAudioCall} onClose={props.handleEndCall} onAnswer={props.handleAnswerCall} roomId={roomId} currentUser={userProfile.name} currentUserId={currentUserId} callData={props.currentCall || props.incomingCall} isIncoming={!!(props.currentCall || props.incomingCall) && (props.currentCall || props.incomingCall)?.callerId !== currentUserId} onSwitchToVideo={() => props.handleSwitchCallType("video")} />
+            <VideoCallModal isOpen={props.showVideoCall} onClose={props.handleEndVideoCall} onAnswer={props.handleAnswerVideoCall} roomId={roomId} currentUser={userProfile.name} currentUserId={currentUserId} callData={props.currentCall || props.incomingCall} isIncoming={!!(props.currentCall || props.incomingCall) && (props.currentCall || props.incomingCall)?.callerId !== currentUserId} onStartWhiteboard={() => props.setShowWhiteboard(true)} onWatchTogether={() => props.setShowTheaterSetup(true)} onSwitchToAudio={() => props.handleSwitchCallType("audio")} />
+
             {renderModal(
                 <>
-                    <AudioCallModal isOpen={props.showAudioCall} onClose={props.handleEndCall} onAnswer={props.handleAnswerCall} roomId={roomId} currentUser={userProfile.name} currentUserId={currentUserId} callData={props.currentCall || props.incomingCall} isIncoming={!!(props.currentCall || props.incomingCall) && (props.currentCall || props.incomingCall)?.callerId !== currentUserId} onSwitchToVideo={() => props.handleSwitchCallType("video")} />
-                    <VideoCallModal isOpen={props.showVideoCall} onClose={props.handleEndVideoCall} onAnswer={props.handleAnswerVideoCall} roomId={roomId} currentUser={userProfile.name} currentUserId={currentUserId} callData={props.currentCall || props.incomingCall} isIncoming={!!(props.currentCall || props.incomingCall) && (props.currentCall || props.incomingCall)?.callerId !== currentUserId} onStartWhiteboard={() => props.setShowWhiteboard(true)} onWatchTogether={() => props.setShowTheaterSetup(true)} onSwitchToAudio={() => props.handleSwitchCallType("audio")} />
                     <SettingsModal isOpen={props.showSettings} onClose={() => props.setShowSettings(false)} />
                     <AboutModal isOpen={props.showAbout} onClose={() => props.setShowAbout(false)} />
                 </>

@@ -4,8 +4,13 @@ import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-// @ts-ignore
-import { Mic, MicOff, Video, VideoOff, Phone, PhoneOff, Minimize2, Maximize2, Camera, CameraOff, Monitor, Palette, Settings, SignalHigh, SignalMedium, SignalLow, SignalZero, Info, Music, Smile, Wand2, Sparkles, MonitorPlay, Film } from "lucide-react"
+import { Mic, MicOff, Video, VideoOff, Phone, PhoneOff, Minimize2, Maximize2, Camera, CameraOff, Monitor, Palette, Settings, SignalHigh, SignalMedium, SignalLow, SignalZero, Info, Music, Smile, Wand2, Sparkles, MonitorPlay, Film, X } from "lucide-react"
+
+// Debug icons to prevent crashes if icons are missing from lucide-react version
+const Icon = ({ icon: LucideIcon, ...props }: any) => {
+  if (!LucideIcon) return <X {...props} />
+  return <LucideIcon {...props} />
+}
 import { CallSignaling, type CallData } from "@/utils/infra/call-signaling"
 import { useCallRecording } from "@/hooks/use-call-recording"
 import { WebRTCManager } from "@/utils/infra/webrtc-manager"
@@ -652,7 +657,7 @@ export function VideoCallModal({
             {connectionStats && (
               <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-900 border border-slate-700 group relative cursor-help">
                 {connectionStats.rtt < 100 && connectionStats.packetLoss < 1 ? (
-                  <SignalHigh className="w-3.5 h-3.5 text-green-400" />
+                  <Icon icon={SignalHigh} className="w-4 h-4 text-green-400" />
                 ) : connectionStats.rtt < 250 && connectionStats.packetLoss < 3 ? (
                   <SignalMedium className="w-3.5 h-3.5 text-yellow-400" />
                 ) : connectionStats.rtt < 500 && connectionStats.packetLoss < 7 ? (
@@ -819,7 +824,7 @@ export function VideoCallModal({
                     onClick={onWatchTogether}
                     title="Watch Together (Movie Theater)"
                   >
-                    <Film className="w-5 h-5" />
+                    <Icon icon={Film} className="w-4 h-4" />
                   </Button>
                 )}
 
@@ -831,7 +836,7 @@ export function VideoCallModal({
                     onClick={onStartWhiteboard}
                     title="Open Whiteboard"
                   >
-                    <MonitorPlay className="w-5 h-5" />
+                    <Icon icon={MonitorPlay} className="w-4 h-4" />
                   </Button>
                 )}
 
