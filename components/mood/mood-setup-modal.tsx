@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Music, Image as ImageIcon, Plus, Trash2, X, Save } from "lucide-react"
-import { database } from "@/lib/firebase"
+import { getFirebaseDatabase } from "@/lib/firebase"
 import { ref, update, onValue } from "firebase/database"
 import { toast } from "sonner"
 
@@ -60,11 +60,12 @@ export function MoodSetupModal({ isOpen, onClose, roomId }: MoodSetupModalProps)
     }
 
     const handleSave = async () => {
-        if (!database || !roomId) return
+        const db = getFirebaseDatabase()
+        if (!db || !roomId) return
         setIsLoading(true)
 
         try {
-            const moodRef = ref(database, `rooms/${roomId}/mood`)
+            const moodRef = ref(db, `rooms/${roomId}/mood`)
             await update(moodRef, {
                 backgroundImage: backgroundImage.trim() || null,
                 playlist: playlist,

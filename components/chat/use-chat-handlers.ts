@@ -2,7 +2,7 @@
 
 import { useCallback } from "react"
 import { ref, remove } from "firebase/database"
-import { database } from "../../lib/firebase"
+import { getFirebaseDatabase } from "../../lib/firebase"
 import { NotificationSystem } from "@/utils/core/notification-system"
 import { MessageStorage } from "@/utils/infra/message-storage"
 import { UserPresenceSystem } from "@/utils/infra/user-presence"
@@ -198,12 +198,13 @@ export function useChatHandlers({
             if (isHost) {
                 await userPresence.setUserOffline(roomId, currentUserId)
 
-                if (database) {
-                    const roomRef = ref(database, `rooms/${roomId}`)
+                const db = getFirebaseDatabase()
+                if (db) {
+                    const roomRef = ref(db, `rooms/${roomId}`)
                     await remove(roomRef)
-                    const callsRef = ref(database, `calls/${roomId}`)
+                    const callsRef = ref(db, `calls/${roomId}`)
                     await remove(callsRef)
-                    const gamesRef = ref(database, `games/${roomId}`)
+                    const gamesRef = ref(db, `games/${roomId}`)
                     await remove(gamesRef)
                 }
 
@@ -211,8 +212,9 @@ export function useChatHandlers({
             } else {
                 await userPresence.setUserOffline(roomId, currentUserId)
 
-                if (database) {
-                    const memberRef = ref(database, `rooms/${roomId}/members/${userProfile.name}`)
+                const db = getFirebaseDatabase()
+                if (db) {
+                    const memberRef = ref(db, `rooms/${roomId}/members/${userProfile.name}`)
                     await remove(memberRef)
                 }
 

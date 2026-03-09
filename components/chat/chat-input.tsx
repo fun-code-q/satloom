@@ -43,7 +43,7 @@ interface PendingMessage {
 }
 
 export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodTrigger, onSoundboard, onStartAudioCall, onStartVideoCall, currentUserId }: ChatInputProps) {
-    const { roomId, currentUser, replyingTo, setReplyingTo, setIsTyping, isTyping, addMessage } = useChatStore()
+    const { roomId, currentUser, replyingTo, setReplyingTo, setIsTyping, isTyping } = useChatStore()
     const [message, setMessage] = useState("")
     const [showEmojiPicker, setShowEmojiPicker] = useState(false)
     const [showPollCreator, setShowPollCreator] = useState(false)
@@ -62,12 +62,13 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
     const notificationSystem = NotificationSystem.getInstance()
     const lastSentTimeRef = useRef<number>(0)
 
-    // Generate unique temporary ID for optimistic updates
+    // Generate unique temporary ID for send-indicator tracking
     const generateTempId = useCallback(() => {
         return 'temp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9)
     }, [])
 
-    // Optimistically add message to UI
+    // Track send status locally (does NOT write to Zustand store to avoid ghost messages)
+    // Firebase listener is the single source of truth for the message list.
     const addOptimisticMessage = useCallback((text: string, sender: string): string => {
         const tempId = generateTempId()
         const pendingMsg: PendingMessage = {
@@ -78,19 +79,9 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
             timestamp: new Date(),
             status: 'sending'
         }
-
         setPendingMessages(prev => new Map(prev).set(tempId, pendingMsg))
-
-        // Add to chat store immediately (optimistic)
-        addMessage({
-            id: tempId,
-            text,
-            sender,
-            timestamp: new Date(),
-        } as any)
-
         return tempId
-    }, [generateTempId, addMessage])
+    }, [generateTempId])
 
     // Update message status
     const updateMessageStatus = useCallback((tempId: string, status: 'sent' | 'failed') => {

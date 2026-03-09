@@ -185,21 +185,17 @@ export function useChatEffects(params: UseChatEffectsParams) {
                 }
                 return msg
             }))
-            const filteredMessages = processedMessages.filter((msg) => {
-                const msgRoomId = (msg as any).roomId
-                return msgRoomId === roomId || !msgRoomId
-            })
 
             // Play sound for NEW incoming messages from others
-            if (filteredMessages.length > lastMessageCountRef.current) {
-                const newestMsg = filteredMessages[filteredMessages.length - 1]
+            if (processedMessages.length > lastMessageCountRef.current) {
+                const newestMsg = processedMessages[processedMessages.length - 1]
                 if (newestMsg.sender !== userProfile.name) {
                     notificationSystem.newMessage(newestMsg.sender, newestMsg.text)
                 }
             }
-            lastMessageCountRef.current = filteredMessages.length
+            lastMessageCountRef.current = processedMessages.length
 
-            setMessages(filteredMessages)
+            setMessages(processedMessages)
         })
 
         const presenceUnsubscribe = userPresence.listenForPresence(roomId, (users) => {

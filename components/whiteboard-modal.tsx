@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { X, Eraser, Download, Trash2, Palette, Undo, Redo } from "lucide-react"
-import { database } from "@/lib/firebase"
+import { getFirebaseDatabase } from "@/lib/firebase"
 import { ref, onValue, push, remove, set, get } from "firebase/database"
 import { Slider } from "@/components/ui/slider"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -75,7 +75,10 @@ export function WhiteboardModal({ isOpen, onClose, roomId, currentUser }: Whiteb
     useEffect(() => {
         if (!isOpen || !roomId) return
 
-        const whiteboardRef = ref(database!, `whiteboards/${roomId}`)
+        const db = getFirebaseDatabase()
+        if (!db) return
+
+        const whiteboardRef = ref(db, `whiteboards/${roomId}`)
         const unsubscribe = onValue(whiteboardRef, (snapshot) => {
             const data = snapshot.val()
             if (data) {
@@ -197,7 +200,10 @@ export function WhiteboardModal({ isOpen, onClose, roomId, currentUser }: Whiteb
                 timestamp: Date.now()
             }
 
-            const whiteboardRef = ref(database!, `whiteboards/${roomId}`)
+            const db = getFirebaseDatabase()
+            if (!db) return
+
+            const whiteboardRef = ref(db, `whiteboards/${roomId}`)
             await push(whiteboardRef, newLine)
         }
 
@@ -206,7 +212,10 @@ export function WhiteboardModal({ isOpen, onClose, roomId, currentUser }: Whiteb
 
     const clearCanvas = async () => {
         if (confirm("Are you sure you want to clear the whiteboard for everyone?")) {
-            const whiteboardRef = ref(database!, `whiteboards/${roomId}`)
+            const db = getFirebaseDatabase()
+            if (!db) return
+
+            const whiteboardRef = ref(db, `whiteboards/${roomId}`)
             await remove(whiteboardRef)
         }
     }

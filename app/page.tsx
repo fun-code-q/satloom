@@ -124,11 +124,14 @@ export default function Home() {
           signInAnonymously(auth).catch((err) => {
             console.error("App: Anonymous auth failed:", err)
             if (err.code === 'auth/admin-restricted-operation') {
-              setError("Anonymous Auth is disabled in Firebase Console. Please enable it under Build > Authentication > Sign-in method.")
+              setError(
+                "⚠️ Anonymous Auth is disabled. Please enable it in Firebase Console → Build → Authentication → Sign-in method → Anonymous."
+              )
+            } else if (err.code === 'auth/network-request-failed') {
+              setError("⚠️ Network error connecting to Firebase. Check your internet connection and firebaseConfig in .env.local.")
             } else {
-              setError("Authentication failed. Please refresh.")
+              setError(`⚠️ Authentication failed (${err.code || err.message}). Please refresh.`)
             }
-            // Still set isLoading to false so they can at least see the UI (and potentially log in as Admin)
             setIsLoading(false)
           })
         }
@@ -286,13 +289,17 @@ export default function Home() {
 
         if (database) {
           const memberRef = ref(database, `rooms/${roomId}/members/${profile.name}`)
-          // Non-blocking set to prevent hang on connection issues
-          set(memberRef, {
-            name: profile.name,
-            avatar: profile.avatar || null,
-            joinedAt: Date.now(),
-          }).catch(err => console.error("App: Failed to add member:", err))
-          console.log("App: Commenced adding user to existing room:", roomId)
+          try {
+            // Await the write so the user is registered before ChatInterface initialises its listeners
+            await set(memberRef, {
+              name: profile.name,
+              avatar: profile.avatar || null,
+              joinedAt: Date.now(),
+            })
+            console.log("App: Successfully added user to existing room:", roomId)
+          } catch (err) {
+            console.error("App: Failed to add member (room may not exist yet):", err)
+          }
           telemetry.logEvent('user_joined', roomId, currentUser?.uid || "anonymous", profile.name)
         }
       }

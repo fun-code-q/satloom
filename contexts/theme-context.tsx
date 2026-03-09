@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useState, useMemo } from "react"
 
 type Theme = "dark" | "light"
 
@@ -92,21 +92,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setHapticFeedback((prev) => !prev)
   }
 
+  const memoizedValue = useMemo(() => ({
+    theme,
+    toggleTheme,
+    notifications,
+    toggleNotifications,
+    notificationSound,
+    toggleNotificationSound,
+    vibration,
+    toggleVibration,
+    hapticFeedback,
+    toggleHapticFeedback,
+  }), [theme, notifications, notificationSound, vibration, hapticFeedback])
+
   return (
-    <ThemeContext.Provider
-      value={{
-        theme,
-        toggleTheme,
-        notifications,
-        toggleNotifications,
-        notificationSound,
-        toggleNotificationSound,
-        vibration,
-        toggleVibration,
-        hapticFeedback,
-        toggleHapticFeedback,
-      }}
-    >
+    <ThemeContext.Provider value={memoizedValue}>
       {children}
     </ThemeContext.Provider>
   )

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from "react"
 import { ref, onValue, set, remove } from "firebase/database"
-import { database } from "../../lib/firebase"
+import { getFirebaseDatabase } from "../../lib/firebase"
 import { NotificationSystem } from "@/utils/core/notification-system"
 import { UserPresenceSystem } from "@/utils/infra/user-presence"
 import { CallSignaling } from "@/utils/infra/call-signaling"
@@ -282,7 +282,8 @@ export function useChatCalls(params: UseChatCallsParams) {
 
     // --- Game handlers ---
     const sendGameInvite = useCallback(async (config: GameConfig) => {
-        if (!database || !roomId) return
+        const db = getFirebaseDatabase()
+        if (!db || !roomId) return
         const inviteId = `invite_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         const invite: GameInvite = {
             id: inviteId, roomId,
@@ -291,7 +292,7 @@ export function useChatCalls(params: UseChatCallsParams) {
             invitedUsers: ["all"], gameConfig: config as any,
             expiresAt: Date.now() + 30000, status: "pending", timestamp: Date.now(),
         }
-        const inviteRef = ref(database, `gameInvites/${roomId}/${inviteId}`)
+        const inviteRef = ref(db, `gameInvites/${roomId}/${inviteId}`)
         await set(inviteRef, invite)
         setTimeout(async () => { try { await remove(inviteRef) } catch (e) { } }, 30000)
     }, [roomId, currentUserId, userProfile.name])
@@ -339,8 +340,9 @@ export function useChatCalls(params: UseChatCallsParams) {
     }, [roomId, currentUserId])
 
     const listenForGameInvites = useCallback(() => {
-        if (!database || !roomId) return () => { }
-        const gameInvitesRef = ref(database, `gameInvites/${roomId}`)
+        const db = getFirebaseDatabase()
+        if (!db || !roomId) return () => { }
+        const gameInvitesRef = ref(db, `gameInvites/${roomId}`)
         const unsubscribe = onValue(gameInvitesRef, (snapshot: any) => {
             const invites = snapshot.val()
             if (invites) {

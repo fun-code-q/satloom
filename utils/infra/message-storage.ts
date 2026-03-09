@@ -155,10 +155,21 @@ export class MessageStorage {
 
     const messagesRef = query(ref(getFirebaseDatabase()!, `rooms/${roomId}/messages`), orderByChild("timestamp"), limitToLast(limit))
 
+    // Capture the roomId in the closure at subscription time.
+    // This prevents a race where this.currentRoomId is updated to a new room
+    // before old snapshots finish arriving, causing them to wipe the new room's messages.
+    const subscribedRoomId = roomId
+
     const unsubscribe = onValue(
       messagesRef,
       (snapshot) => {
-        console.log("Received message snapshot for room:", roomId)
+        // If this listener is for a room we've already left, silently discard.
+        if (this.currentRoomId !== subscribedRoomId) {
+          console.log("Discarding stale snapshot for old room:", subscribedRoomId, "current:", this.currentRoomId)
+          return
+        }
+
+        console.log("Received message snapshot for room:", subscribedRoomId)
         const data = snapshot.val()
 
         if (data) {
@@ -194,10 +205,10 @@ export class MessageStorage {
             .filter((msg: Message) => {
               // STRICT room ID filtering - only show messages from current room
               const messageRoomId = (msg as any).roomId
-              const isFromCurrentRoom = messageRoomId === roomId || !messageRoomId
+              const isFromCurrentRoom = messageRoomId === subscribedRoomId || !messageRoomId
 
               if (!isFromCurrentRoom) {
-                console.log("Filtering out message from different room:", messageRoomId, "current:", roomId)
+                console.log("Filtering out message from different room:", messageRoomId, "current:", subscribedRoomId)
                 return false
               }
 
@@ -216,27 +227,17 @@ export class MessageStorage {
 
           // Sort by timestamp
           messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
-          console.log(`Loaded ${messages.length} messages for room ${roomId}`)
+          console.log(`Loaded ${messages.length} messages for room ${subscribedRoomId}`)
 
-          // Double-check we're still listening for the same room before updating
-          if (this.currentRoomId === roomId) {
-            onMessage(messages)
-          } else {
-            console.log("Room changed during message loading, ignoring messages")
-            onMessage([])
-          }
+          onMessage(messages)
         } else {
-          console.log("No messages found for room:", roomId)
-          if (this.currentRoomId === roomId) {
-            onMessage([])
-          }
+          console.log("No messages found for room:", subscribedRoomId)
+          onMessage([])
         }
       },
       (error) => {
+        // Log the error but do NOT wipe messages — transient errors should not blank the chat
         console.error("Error listening for messages:", error)
-        if (this.currentRoomId === roomId) {
-          onMessage([])
-        }
       },
     )
 
@@ -244,6 +245,7 @@ export class MessageStorage {
     this.messageListeners.set(roomId, unsubscribe)
     return unsubscribe
   }
+
 
   // Edit a message
   async editMessage(roomId: string, messageId: string, newText: string): Promise<void> {

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { database } from "@/lib/firebase"
+import { getFirebaseDatabase } from "@/lib/firebase"
 import { ref, onValue } from "firebase/database"
 import { NotificationSystem } from "@/utils/core/notification-system"
 
@@ -19,9 +19,10 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
 
     // 1. Listen to Firebase for Mood changes
     useEffect(() => {
-        if (!roomId) return
+        const db = getFirebaseDatabase()
+        if (!db || !roomId) return
 
-        const moodRef = ref(database!, `rooms/${roomId}/mood`)
+        const moodRef = ref(db, `rooms/${roomId}/mood`)
         const unsubscribe = onValue(moodRef, (snapshot) => {
             const data = snapshot.val()
             if (data && data.playlist && Array.isArray(data.playlist)) {
