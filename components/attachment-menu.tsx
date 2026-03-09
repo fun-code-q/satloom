@@ -159,6 +159,10 @@ export function AttachmentMenu({
     },
   ]
 
+  const filteredOptions = isMobile
+    ? attachmentOptions
+    : attachmentOptions.filter(opt => !["vanish", "sounds", "react", "audio-call", "video-call"].includes(opt.type))
+
   const triggerFileInput = (accept: string, type: string) => {
     const input = document.createElement("input")
     input.type = "file"
@@ -279,7 +283,7 @@ export function AttachmentMenu({
       <div className="w-full bg-slate-800/40 rounded-2xl p-2 md:p-3">
         {/* Mobile attachment menu - simplified horizontal scroll */}
         <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide snap-x">
-          {attachmentOptions.map((option, index) => (
+          {filteredOptions.map((option, index) => (
             <button
               key={index}
               onClick={option.action}
@@ -322,7 +326,7 @@ export function AttachmentMenu({
           aria-label="Attachment options"
         >
           <div className="grid grid-cols-4 gap-4 w-[340px]">
-            {attachmentOptions.map((option, index) => (
+            {filteredOptions.map((option, index) => (
               <button
                 key={index}
                 onClick={option.action}
