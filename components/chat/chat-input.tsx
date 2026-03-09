@@ -1,0 +1,590 @@
+
+"use client"
+
+import { useState, useRef, useEffect, useCallback } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Mic, Video, Camera, Smile, Send, Plus, X, EyeOff, Eye, Music2, BarChart2, HelpCircle, Palette } from "lucide-react"
+import { EmojiPicker } from "@/components/emoji-picker"
+import { PollCreator } from "./poll-creator"
+import { EventCreator } from "./event-creator"
+import { AttachmentMenu } from "@/components/attachment-menu"
+import { VanishModeModal } from "@/components/vanish-mode-modal"
+import { ReactionRain } from "@/components/reaction-rain"
+import { vanishModeManager, type VanishModeType } from "@/utils/infra/vanish-mode"
+import { useChatStore } from "@/stores/chat-store"
+import { MessageStorage } from "@/utils/infra/message-storage"
+import { UserPresenceSystem } from "@/utils/infra/user-presence"
+import { NotificationSystem } from "@/utils/core/notification-system"
+import { EncryptionManager } from "@/utils/infra/encryption-manager"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { debounce, throttle } from "@/utils/core/lazy-loader"
+import { SecurityUtils } from "@/utils/infra/security-utils"
+import { telemetry } from "@/utils/core/telemetry"
+
+interface ChatInputProps {
+    onFileSelect: (type: string, file?: File | any) => void
+    onStartRecording: (mode: "audio" | "video" | "photo") => void
+    onQuizStart: () => void
+    onMoodTrigger?: () => void
+    onSoundboard?: () => void
+    currentUserId: string
+}
+
+interface PendingMessage {
+    id: string
+    tempId: string
+    text: string
+    sender: string
+    timestamp: Date
+    status: 'sending' | 'sent' | 'failed'
+}
+
+export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodTrigger, onSoundboard, currentUserId }: ChatInputProps) {
+    const { roomId, currentUser, replyingTo, setReplyingTo, setIsTyping, isTyping, addMessage } = useChatStore()
+    const [message, setMessage] = useState("")
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+    const [showPollCreator, setShowPollCreator] = useState(false)
+    const [showEventCreator, setShowEventCreator] = useState(false)
+    const [showAttachments, setShowAttachments] = useState(false)
+    const [isRecording, setIsRecording] = useState(false)
+    const [showVanishModal, setShowVanishModal] = useState(false)
+    const [vanishMode, setVanishMode] = useState<VanishModeType>("off")
+    const [vanishDuration, setVanishDuration] = useState(30000)
+    const [pendingMessages, setPendingMessages] = useState<Map<string, PendingMessage>>(new Map())
+    const isMobile = useIsMobile()
+
+    const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+    const messageStorage = MessageStorage.getInstance()
+    const userPresence = UserPresenceSystem.getInstance()
+    const notificationSystem = NotificationSystem.getInstance()
+    const lastSentTimeRef = useRef<number>(0)
+
+    // Generate unique temporary ID for optimistic updates
+    const generateTempId = useCallback(() => {
+        return 'temp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9)
+    }, [])
+
+    // Optimistically add message to UI
+    const addOptimisticMessage = useCallback((text: string, sender: string): string => {
+        const tempId = generateTempId()
+        const pendingMsg: PendingMessage = {
+            id: tempId,
+            tempId,
+            text,
+            sender,
+            timestamp: new Date(),
+            status: 'sending'
+        }
+
+        setPendingMessages(prev => new Map(prev).set(tempId, pendingMsg))
+
+        // Add to chat store immediately (optimistic)
+        addMessage({
+            id: tempId,
+            text,
+            sender,
+            timestamp: new Date(),
+        } as any)
+
+        return tempId
+    }, [generateTempId, addMessage])
+
+    // Update message status
+    const updateMessageStatus = useCallback((tempId: string, status: 'sent' | 'failed') => {
+        setPendingMessages(prev => {
+            const newMap = new Map(prev)
+            const msg = newMap.get(tempId)
+            if (msg) {
+                msg.status = status
+                newMap.set(tempId, msg)
+            }
+            return newMap
+        })
+    }, [])
+
+    // Remove pending message
+    const removePendingMessage = useCallback((tempId: string) => {
+        setPendingMessages(prev => {
+            const newMap = new Map(prev)
+            newMap.delete(tempId)
+            return newMap
+        })
+    }, [])
+
+    const handleSendMessage = async () => {
+        if (!message.trim() || !roomId || !currentUser) return
+
+        try {
+            // Check for quiz trigger
+            if (message.trim().toLowerCase() === "?quiz?") {
+                onQuizStart()
+                setMessage("")
+                return
+            }
+
+            // Check for mood trigger
+            if (message.trim().toLowerCase() === "?mood?" || message.trim().toLowerCase() === "/mood") {
+                onMoodTrigger?.()
+                setMessage("")
+                return
+            }
+
+            // Rate limiting (1s)
+            const now = Date.now()
+            if (now - lastSentTimeRef.current < 1000) {
+                notificationSystem.error("Slow down! 1 message per second.")
+                return
+            }
+            lastSentTimeRef.current = now
+
+            // Clean message
+            const cleanedMessage = SecurityUtils.cleanText(message.trim())
+            if (!cleanedMessage) {
+                setMessage("")
+                return
+            }
+
+            // Stop typing indicator
+            setIsTyping(false)
+            userPresence.setTyping(roomId, currentUser.name, false)
+
+            // Add optimistic message
+            const tempId = addOptimisticMessage(cleanedMessage, currentUser.name)
+
+            const encryptionManager = EncryptionManager.getInstance()
+            const encryptedText = await encryptionManager.encrypt(cleanedMessage, roomId)
+
+            const newMessage = {
+                text: encryptedText,
+                sender: currentUser.name,
+                timestamp: new Date(),
+                replyTo: replyingTo
+                    ? {
+                        id: replyingTo.id,
+                        text: replyingTo.text,
+                        sender: replyingTo.sender,
+                    }
+                    : undefined,
+                reactions: {
+                    heart: [],
+                    thumbsUp: [],
+                },
+            }
+
+            // Send to server
+            await messageStorage.sendMessage(roomId, newMessage)
+
+            // Log telemetry
+            telemetry.logEvent('message_sent', roomId, currentUser.name, currentUser.name, { length: cleanedMessage.length })
+
+            // Link detection
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            const urls = cleanedMessage.match(urlRegex);
+            if (urls && urls.length > 0) {
+                telemetry.logEvent('link_shared', roomId, currentUser.name, currentUser.name, { url: urls[0], count: urls.length })
+            }
+
+            // Update status to sent
+            updateMessageStatus(tempId, 'sent')
+
+            // Clear input
+            setMessage("")
+            setReplyingTo(null)
+
+            // Haptic feedback for successful send
+            notificationSystem.newMessage(currentUser.name, message.trim())
+
+            // Remove from pending after a short delay (for visual transition)
+            setTimeout(() => {
+                removePendingMessage(tempId)
+            }, 2000)
+
+        } catch (error) {
+            console.error("Error sending message:", error)
+
+            // Find the temp ID for this message and mark as failed
+            const pendingArray = Array.from(pendingMessages.values())
+            const failedMsg = pendingArray.find(m => m.text === message.trim() && m.status === 'sending')
+            if (failedMsg) {
+                updateMessageStatus(failedMsg.tempId, 'failed')
+            }
+
+            notificationSystem.error("Failed to send message")
+        }
+    }
+
+    const handleSendPoll = async (question: string, options: string[]) => {
+        if (!roomId || !currentUser) return
+
+        try {
+            const pollMessage = {
+                text: "📊 Poll: " + question,
+                sender: currentUser.name,
+                timestamp: new Date(),
+                type: 'poll',
+                poll: {
+                    question,
+                    options: options.map(opt => ({ text: opt, votes: [] })),
+                    isOpen: true
+                }
+            }
+
+            await messageStorage.sendMessage(roomId, pollMessage)
+
+            // Log telemetry
+            telemetry.logEvent('poll_created', roomId, currentUser.name, currentUser.name, { question })
+
+            setShowPollCreator(false)
+            notificationSystem.success("Poll sent!")
+        } catch (error) {
+            console.error("Error sending poll:", error)
+            notificationSystem.error("Failed to send poll")
+        }
+    }
+
+    const handleSendEvent = async (eventData: any) => {
+        if (!roomId || !currentUser) return
+
+        try {
+            const eventMessage = {
+                text: "📅 Event: " + eventData.title,
+                sender: currentUser.name,
+                timestamp: new Date(),
+                type: 'event',
+                event: {
+                    ...eventData,
+                    attendees: {
+                        going: [currentUserId],
+                        maybe: [],
+                        notGoing: []
+                    }
+                }
+            }
+
+            await messageStorage.sendMessage(roomId, eventMessage)
+            setShowEventCreator(false)
+            notificationSystem.success("Event sent!")
+        } catch (error) {
+            console.error("Error sending event:", error)
+            notificationSystem.error("Failed to send event")
+        }
+    }
+
+    // Debounced typing indicator
+    const handleTypingIndicator = useCallback(
+        throttle((isTyping: boolean) => {
+            if (!roomId || !currentUser) return
+            userPresence.setTyping(roomId, currentUser.name, isTyping)
+        }, 500),
+        [roomId, currentUser]
+    )
+
+    const handleKeyPress = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault()
+            handleSendMessage()
+        } else {
+            if (!roomId || !currentUser) return
+
+            // Handle typing indicator with throttle
+            if (!isTyping) {
+                setIsTyping(true)
+                handleTypingIndicator(true)
+            }
+
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current)
+            }
+
+            typingTimeoutRef.current = setTimeout(() => {
+                setIsTyping(false)
+                handleTypingIndicator(false)
+            }, 2000)
+        }
+    }
+
+    const handleEmojiSelect = (emoji: string) => {
+        setMessage((prev) => prev + emoji)
+        setShowEmojiPicker(false)
+    }
+
+    // Cleanup typing timeout
+    useEffect(() => {
+        return () => {
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current)
+            }
+        }
+    }, [])
+
+    // Cleanup pending messages on unmount
+    useEffect(() => {
+        return () => {
+            setPendingMessages(new Map())
+        }
+    }, [])
+
+    if (isMobile) {
+        return (
+            <div className="flex flex-col bg-slate-900/95 border-t border-slate-700 backdrop-blur-md z-30 flex-shrink-0 pb-safe">
+                {/* Recording indicator */}
+                {isRecording && (
+                    <div className="px-4 py-2 bg-red-500/20 border-t border-red-500/30 flex items-center justify-center gap-2">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                        <span className="text-sm text-red-400">Recording...</span>
+                    </div>
+                )}
+
+                {/* Reply indicator */}
+                {replyingTo && (
+                    <div className="px-4 py-2 bg-slate-700/50 border-t border-slate-600 flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                            <div className="text-xs text-cyan-400 font-medium">Replying to {replyingTo.sender}</div>
+                            <div className="text-xs text-gray-300 truncate">{replyingTo.text}</div>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-gray-400 ml-2"
+                            onClick={() => setReplyingTo(null)}
+                        >
+                            <X className="w-4 h-4" />
+                        </Button>
+                    </div>
+                )}
+
+                {/* Poll/Event Creator Backdrop */}
+                {(showPollCreator || showEventCreator) && (
+                    <div
+                        className="fixed inset-0 z-40 bg-black/20"
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            setShowPollCreator(false)
+                            setShowEventCreator(false)
+                        }}
+                        role="button"
+                        tabIndex={-1}
+                    />
+                )}
+
+                {/* Poll/Event Creator Mobile Popups */}
+                {showPollCreator && (
+                    <div className="absolute bottom-full mb-2 left-2 right-2 z-50 shadow-2xl">
+                        <PollCreator onSend={handleSendPoll} onCancel={() => setShowPollCreator(false)} />
+                    </div>
+                )}
+
+                {showEventCreator && (
+                    <div className="absolute bottom-full mb-2 left-2 right-2 z-50 shadow-2xl">
+                        <EventCreator onSend={handleSendEvent} onCancel={() => setShowEventCreator(false)} />
+                    </div>
+                )}
+
+                {/* Mobile input row */}
+                <div className="flex items-end gap-2 p-3">
+                    {/* Attachment button */}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-10 w-10 rounded-full bg-slate-700 text-gray-300 shrink-0"
+                        onClick={() => setShowAttachments(!showAttachments)}
+                    >
+                        <Plus className="w-5 h-5" />
+                    </Button>
+
+                    {/* Text input */}
+                    <div className="flex-1 relative">
+                        <Input
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            placeholder={isRecording ? "Recording..." : "Type a message..."}
+                            disabled={isRecording}
+                            className="bg-slate-700 border-slate-600 text-white placeholder:text-gray-400 h-10 pr-10 rounded-full"
+                        />
+                    </div>
+
+                    {/* Action button - mic or send */}
+                    {message.trim() ? (
+                        <Button
+                            onClick={handleSendMessage}
+                            size="icon"
+                            className="h-10 w-10 rounded-full bg-cyan-500 hover:bg-cyan-600 text-white shrink-0"
+                        >
+                            <Send className="w-5 h-5" />
+                        </Button>
+                    ) : (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 rounded-full bg-slate-700 text-gray-300 shrink-0"
+                            onClick={() => setIsRecording(!isRecording)}
+                        >
+                            <Mic className={`w-5 h-5 ${isRecording ? 'text-red-400' : ''}`} />
+                        </Button>
+                    )}
+                </div>
+
+                {/* Attachment menu popup */}
+                {showAttachments && (
+                    <div className="px-4 pb-2">
+                        <AttachmentMenu
+                            onFileSelect={onFileSelect}
+                            onPollCreate={() => {
+                                setShowAttachments(false)
+                                setShowPollCreator(true)
+                            }}
+                            onEventCreate={() => {
+                                setShowAttachments(false)
+                                setShowEventCreator(true)
+                            }}
+                            onMoodTrigger={() => {
+                                setShowAttachments(false)
+                                onMoodTrigger?.()
+                            }}
+                        />
+                    </div>
+                )}
+            </div>
+        )
+    }
+
+    // Desktop layout
+    return (
+        <div className="flex flex-col gap-2 z-30 flex-shrink-0 p-4 relative">
+            {/* Reply indicator */}
+            {replyingTo && (
+                <div className="px-2 py-1.5 bg-slate-800/60 rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-cyan-400 font-medium">Replying to {replyingTo.sender}</span>
+                        <span className="text-xs text-gray-400 truncate max-w-[200px]">{replyingTo.text}</span>
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-gray-400"
+                        onClick={() => setReplyingTo(null)}
+                    >
+                        <X className="w-4 h-4" />
+                    </Button>
+                </div>
+            )}
+
+            {/* Poll/Event Creator Desktop Backdrop */}
+            {(showPollCreator || showEventCreator) && (
+                <div
+                    className="fixed inset-0 z-40"
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        setShowPollCreator(false)
+                        setShowEventCreator(false)
+                    }}
+                    role="button"
+                    tabIndex={-1}
+                />
+            )}
+
+            {/* Poll/Event Creator Desktop Popups */}
+            {showPollCreator && (
+                <div className="absolute bottom-[72px] left-4 z-50 w-[340px] shadow-2xl">
+                    <PollCreator onSend={handleSendPoll} onCancel={() => setShowPollCreator(false)} />
+                </div>
+            )}
+
+            {showEventCreator && (
+                <div className="absolute bottom-[72px] left-4 z-50 w-[340px] shadow-2xl">
+                    <EventCreator onSend={handleSendEvent} onCancel={() => setShowEventCreator(false)} />
+                </div>
+            )}
+
+
+            {/* Main input area */}
+            <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 shrink-0">
+                    <AttachmentMenu
+                        onFileSelect={onFileSelect}
+                        onPollCreate={() => setShowPollCreator(true)}
+                        onEventCreate={() => setShowEventCreator(true)}
+                        onAudioRecord={() => onStartRecording("audio")}
+                        onVideoRecord={() => onStartRecording("video")}
+                        onPhotoCapture={() => onStartRecording("photo")}
+                        onMoodTrigger={onMoodTrigger}
+                    />
+                </div>
+
+                <Input
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Type a message..."
+                    className="flex-1 bg-slate-800/80 border-transparent text-white placeholder-gray-400 min-h-[44px] text-base rounded-full"
+                    maxLength={1000}
+                />
+
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`text-gray-400 hover:text-white hover:bg-slate-700 h-10 w-10 flex-shrink-0 haptic ${vanishMode !== "off" ? "bg-purple-500/20 text-purple-400" : ""}`}
+                    onClick={() => setShowVanishModal(!showVanishModal)}
+                    title={vanishMode !== "off" ? `Vanish: ${vanishMode}` : "Vanish Mode"}
+                >
+                    {vanishMode !== "off" ? <Eye className="w-5 h-5 text-purple-400" /> : <Eye className="w-5 h-5" />}
+                </Button>
+
+                {/* Soundboard */}
+                {onSoundboard && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-gray-400 hover:text-orange-400 hover:bg-slate-700 h-10 w-10 flex-shrink-0 haptic"
+                        onClick={onSoundboard}
+                        title="Soundboard"
+                    >
+                        <Music2 className="w-5 h-5" />
+                    </Button>
+                )}
+
+                {/* Reaction Emoji Menu */}
+                <ReactionRain roomId={roomId || ""} userId={currentUserId} />
+
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-gray-400 hover:text-white hover:bg-slate-700 h-10 w-10 flex-shrink-0 haptic"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    title="Add Emoji"
+                >
+                    <Smile className="w-5 h-5" />
+                </Button>
+
+                <Button
+                    onClick={handleSendMessage}
+                    className="bg-[#2196F3] hover:bg-blue-500 h-[44px] w-[44px] rounded-full p-0 flex-shrink-0 ml-2 shadow-lg"
+                    disabled={!message.trim()}
+                    title="Send Message"
+                >
+                    <Send className="w-5 h-5 mr-1" />
+                </Button>
+            </div>
+
+            <EmojiPicker
+                isOpen={showEmojiPicker}
+                onClose={() => setShowEmojiPicker(false)}
+                onEmojiSelect={handleEmojiSelect}
+            />
+
+            {/* Vanish Mode Modal */}
+            <VanishModeModal
+                isOpen={showVanishModal}
+                onClose={() => setShowVanishModal(false)}
+                onVanishModeSelect={(mode, duration) => {
+                    setVanishMode(mode)
+                    setVanishDuration(duration)
+                }}
+                currentMode={vanishMode}
+                currentDuration={vanishDuration}
+            />
+        </div>
+    )
+}

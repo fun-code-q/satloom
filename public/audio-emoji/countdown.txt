@@ -1,0 +1,22 @@
+PLACEHOLDER: Countdown
+    
+This is a placeholder for the Countdown sound effect.
+
+To add the actual sound:
+1. Download a royalty-free countdown sound from:
+   - https://freesound.org
+   - https://zapsplat.com
+   - https://soundbible.com
+
+2. Name it: countdown.mp3
+3. Place it in: /public/audio-emoji/countdown.mp3
+
+Specifications:
+- Format: MP3
+- Duration: ~3 seconds
+- Sample Rate: 44.1kHz
+- Bitrate: 128kbps minimum
+
+For testing purposes, you can use Web Audio API to generate a simple tone:
+- Frequency: 500Hz
+- Duration: 3s

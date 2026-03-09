@@ -1,0 +1,31 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee" /> <!-- Cyan-400 -->
+      <stop offset="100%" stop-color="#3b82f6" /> <!-- Blue-500 -->
+    </linearGradient>
+    
+    <filter id="pulse-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="blur" />
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.13  0 0 0 0 0.82  0 0 0 0 0.93  0 0 0 1 0" result="cyan-glow" />
+      <feMerge>
+        <feMergeNode in="cyan-glow" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <g filter="url(#pulse-glow)">
+    <circle cx="16" cy="16" r="14" fill="url(#logo-gradient)">
+      <animate attributeName="r" values="13.5;14.5;13.5" dur="2s" repeatCount="indefinite" />
+      <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite" />
+    </circle>
+  </g>
+
+  <!-- Satellite Dish Icon (Simplified) -->
+  <g transform="translate(8, 8) scale(0.65)" fill="white">
+    <path d="M4 12c0-4.4 3.6-8 8-8s8 3.6 8 8c0 1.5-.4 2.9-1.1 4.1l-1.4-1.4c.4-.8.5-1.7.5-2.7 0-3.3-2.7-6-6-6s-6 2.7-6 6c0 1-.2 1.9-.5 2.7L4.1 16.1C3.4 14.9 4 13.5 4 12z" />
+    <path d="M12 8c-2.2 0-4 1.8-4 4 0 .7.2 1.4.5 2l-1.4 1.4C6.4 14.6 6 13.3 6 12c0-3.3 2.7-6 6-6s6 2.7 6 6c0 1.3-.4 2.6-1.1 3.4L15.5 14c.3-.6.5-1.3.5-2 0-2.2-1.8-4-4-4z" />
+    <circle cx="12" cy="12" r="2" />
+  </g>
+</svg>

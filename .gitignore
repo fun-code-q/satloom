@@ -1,0 +1,55 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Next.js
+/.next/
+/out/
+/build
+
+# Production
+/dist
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Environment files (NEVER commit these)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+Screenshot/
+/tmp/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Vercel
+.vercel
+
+# Testing
+/screenshots/
+/coverage/
+
+# Misc
+*.log
+firebase-rules.json
+db-init.json
