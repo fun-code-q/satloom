@@ -1,3 +1,4 @@
+# Static Site Deployment Workflow
 name: Deploy to GitHub Pages
 
 on:
