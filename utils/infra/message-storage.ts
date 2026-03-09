@@ -43,7 +43,7 @@ export class MessageStorage {
   }
 
   // Send a message
-  async sendMessage(roomId: string, message: Omit<Message, "id">): Promise<string> {
+  async sendMessage(roomId: string, message: Omit<Message, "id">, userId: string): Promise<string> {
     try {
       if (!getFirebaseDatabase()!) {
         console.warn("Firebase database not initialized, message not sent")
@@ -57,6 +57,7 @@ export class MessageStorage {
       const messageData = this.cleanData({
         ...message,
         id: newMessageRef.key,
+        userId: userId, // Required by Firebase rules
         roomId: roomId, // Explicitly add room ID
         timestamp: message.timestamp.toISOString(),
         // Ensure replyTo is either a complete object or null
@@ -109,7 +110,7 @@ export class MessageStorage {
       },
     }
 
-    await this.sendMessage(roomId, message)
+    await this.sendMessage(roomId, message, "system")
   }
 
   // Send quiz results message
@@ -126,7 +127,7 @@ export class MessageStorage {
       },
     }
 
-    await this.sendMessage(roomId, message)
+    await this.sendMessage(roomId, message, "system")
   }
 
   // Listen for messages

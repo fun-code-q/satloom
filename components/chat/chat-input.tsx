@@ -176,7 +176,7 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
             }
 
             // Send to server
-            await messageStorage.sendMessage(roomId, newMessage)
+            await messageStorage.sendMessage(roomId, newMessage, currentUserId)
 
             // Clear input immediately after send success
             setMessage("")
@@ -230,7 +230,7 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                 }
             }
 
-            await messageStorage.sendMessage(roomId, pollMessage)
+            await messageStorage.sendMessage(roomId, pollMessage, currentUserId)
 
             // Log telemetry
             telemetry.logEvent('poll_created', roomId, currentUser.name, currentUser.name, { question })
@@ -262,7 +262,7 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                 }
             }
 
-            await messageStorage.sendMessage(roomId, eventMessage)
+            await messageStorage.sendMessage(roomId, eventMessage, currentUserId)
             setShowEventCreator(false)
             notificationSystem.success("Event sent!")
         } catch (error) {

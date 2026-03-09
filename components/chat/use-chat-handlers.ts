@@ -158,7 +158,7 @@ export function useChatHandlers({
                     }
                 }
 
-                await messageStorage.sendMessage(roomId, p2pMessage as any)
+                await messageStorage.sendMessage(roomId, p2pMessage as any, currentUserId)
                 telemetry.logEvent('file_shared', roomId, currentUserId, userProfile.name, { fileName: file.name, fileSize: file.size })
                 notificationSystem.success("File ready for P2P download")
             }
