@@ -176,14 +176,17 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
             }
 
             // Send to server
+            console.log("ChatInput: HandleSendMessage V5-FIX-START")
             const sendPromise = messageStorage.sendMessage(roomId, newMessage, currentUserId)
 
             // Clear input immediately after starting the send process
+            console.log("ChatInput: setMessage('') called")
             setMessage("")
             setReplyingTo(null)
 
             // Await the send result
             await sendPromise
+            console.log("ChatInput: HandleSendMessage V5-FIX-SUCCESS")
 
             // Log telemetry
             telemetry.logEvent('message_sent', roomId, currentUser.name, currentUser.name, { length: cleanedMessage.length })
@@ -444,7 +447,7 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             onKeyPress={handleKeyPress}
-                            placeholder={isRecording ? "Recording..." : "Type a message..."}
+                            placeholder={isRecording ? "Recording..." : "Type a message... (V5)"}
                             disabled={isRecording}
                             className="bg-slate-700 border-slate-600 text-white placeholder:text-gray-400 h-10 pr-10 rounded-full"
                         />
@@ -561,7 +564,7 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="Type a message..."
+                    placeholder="Type a message... (V5)"
                     className="flex-1 bg-slate-800/80 border-transparent text-white placeholder-gray-400 min-h-[44px] text-base rounded-full"
                     maxLength={1000}
                 />
