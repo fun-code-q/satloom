@@ -16,6 +16,7 @@ export class GameSounds {
   }
 
   private initAudioContext() {
+    if (typeof window === "undefined") return
     try {
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
     } catch (error) {

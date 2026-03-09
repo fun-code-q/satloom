@@ -123,6 +123,11 @@ class DeviceFingerprintManager {
      * Collect all fingerprinting components
      */
     private async collectComponents(): Promise<FingerprintComponents> {
+        if (typeof window === "undefined") {
+            // Return dummy components for SSR
+            return {} as FingerprintComponents;
+        }
+
         const nav = navigator;
         const screen = window.screen;
 
@@ -194,6 +199,7 @@ class DeviceFingerprintManager {
      * Get audio fingerprint
      */
     private async getAudioFingerprint(): Promise<string> {
+        if (typeof window === "undefined") return "not-available";
         try {
             const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
