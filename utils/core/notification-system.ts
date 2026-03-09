@@ -3,8 +3,12 @@ export class NotificationSystem {
   private audioContext: AudioContext | null = null
   private notificationsEnabled = true
   private soundEnabled = true
-  private permissionRequested = false
+  private vibrationEnabled = true
+  private permissionsRequested = false
   private isCleanupCalled = false
+  private ringingInterval: any = null
+  private currentRingingType: "audio" | "video" | null = null
+  private audioActivityListeners: ((active: boolean) => void)[] = []
 
   static getInstance(): NotificationSystem {
     if (!NotificationSystem.instance) {
@@ -34,8 +38,6 @@ export class NotificationSystem {
     this.soundEnabled = enabled
   }
 
-  private vibrationEnabled = true
-
   setVibrationEnabled(enabled: boolean) {
     this.vibrationEnabled = enabled
   }
@@ -49,11 +51,10 @@ export class NotificationSystem {
     }
   }
 
-  private async playTone(frequency: number, duration: number, volume = 0.3) {
+  private async playTone(frequency: number, duration: number, volume = 0.3, type: OscillatorType = "sine") {
     if (!this.soundEnabled || !this.audioContext) return
 
     try {
-      // Resume audio context if suspended
       if (this.audioContext.state === "suspended") {
         await this.audioContext.resume()
       }
@@ -65,7 +66,7 @@ export class NotificationSystem {
       gainNode.connect(this.audioContext.destination)
 
       oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime)
-      oscillator.type = "sine"
+      oscillator.type = type
 
       gainNode.gain.setValueAtTime(0, this.audioContext.currentTime)
       gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.01)
@@ -85,6 +86,12 @@ export class NotificationSystem {
     }
   }
 
+  private async playChord(frequencies: number[], duration: number, volume = 0.3, type: OscillatorType = "sine") {
+    if (!this.soundEnabled || !this.audioContext) return
+    const individualVolume = volume / frequencies.length
+    await Promise.all(frequencies.map(freq => this.playTone(freq, duration, individualVolume, type)))
+  }
+
   private showNotification(title: string, body: string, icon?: string) {
     if (!this.notificationsEnabled) return
 
@@ -98,7 +105,6 @@ export class NotificationSystem {
           requireInteraction: false,
         })
 
-        // Auto-close after 5 seconds
         setTimeout(() => {
           notification.close()
         }, 5000)
@@ -114,9 +120,9 @@ export class NotificationSystem {
       return false
     }
 
-    if (this.permissionRequested) return Notification.permission === "granted"
+    if (this.permissionsRequested) return Notification.permission === "granted"
 
-    this.permissionRequested = true
+    this.permissionsRequested = true
 
     try {
       const permission = await Notification.requestPermission()
@@ -127,22 +133,33 @@ export class NotificationSystem {
     }
   }
 
-  // Notification methods
+  // Event methods
   async newMessage(sender: string, message: string) {
     await this.playTone(800, 0.2)
     this.showNotification("New Message", `${sender}: ${message.substring(0, 50)}${message.length > 50 ? "..." : ""}`)
   }
 
   async roomCreated(roomId: string) {
-    await this.playTone(600, 0.3)
-    await this.playTone(800, 0.3)
-    this.showNotification("Room Created", `Room ${roomId} has been created`)
+    await this.playChord([523, 659, 783], 0.4)
+    this.showNotification("Room Created", `Room ${roomId} created successfully`)
   }
 
   async roomJoined(roomId: string) {
-    await this.playTone(500, 0.2)
-    await this.playTone(700, 0.2)
+    await this.playTone(440, 0.1)
+    await this.playTone(554, 0.1)
+    await this.playTone(659, 0.3)
     this.showNotification("Room Joined", `You joined room ${roomId}`)
+  }
+
+  async userJoined(userName: string) {
+    await this.playTone(659, 0.1)
+    await this.playTone(880, 0.2)
+    this.showNotification("User Joined", `${userName} entered the room`)
+  }
+
+  async userLeft(userName: string) {
+    await this.playTone(554, 0.2)
+    await this.playTone(440, 0.3)
   }
 
   async roomLeft(roomId: string) {
@@ -151,31 +168,51 @@ export class NotificationSystem {
   }
 
   async incomingCall(caller: string) {
-    // Play ringing sound - enhanced for better audio
-    const playRingTone = async () => {
-      await this.playTone(800, 0.5, 0.4)
-      await new Promise((resolve) => setTimeout(resolve, 200))
-      await this.playTone(600, 0.5, 0.4)
-    }
-
-    await playRingTone()
-    this.vibrate([200, 100, 200, 100, 200, 100, 200])
-    this.showNotification("Incoming Call", `${caller} is calling you`)
+    this.startRinging(caller, "audio")
   }
 
   async incomingVideoCall(caller: string) {
-    // Play video call sound (different pattern from audio call)
-    const playVideoRingTone = async () => {
-      await this.playTone(1000, 0.3, 0.4)
-      await new Promise((resolve) => setTimeout(resolve, 100))
-      await this.playTone(800, 0.3, 0.4)
-      await new Promise((resolve) => setTimeout(resolve, 100))
-      await this.playTone(1200, 0.3, 0.4)
+    this.startRinging(caller, "video")
+  }
+
+  startRinging(caller: string, type: "audio" | "video") {
+    if (this.ringingInterval) return
+    this.currentRingingType = type
+
+    const ringPattern = async () => {
+      if (type === "audio") {
+        await this.playChord([440, 554, 659], 0.6, 0.4)
+        await new Promise(r => setTimeout(r, 100))
+        await this.playChord([440, 554, 659], 0.6, 0.4)
+      } else {
+        await this.playChord([554, 698, 830], 0.4, 0.4)
+        await new Promise(r => setTimeout(r, 100))
+        await this.playChord([659, 830, 987], 0.4, 0.4)
+      }
+      this.vibrate([200, 100, 200])
     }
 
-    await playVideoRingTone()
-    this.vibrate([500, 200, 500, 200, 500])
-    this.showNotification("Incoming Video Call", `${caller} wants to video call`)
+    ringPattern()
+    this.ringingInterval = setInterval(ringPattern, 3000)
+
+    this.showNotification(
+      type === "audio" ? "Incoming Call" : "Incoming Video Call",
+      `${caller} is calling you...`
+    )
+  }
+
+  stopRinging() {
+    if (this.ringingInterval) {
+      clearInterval(this.ringingInterval)
+      this.ringingInterval = null
+      this.currentRingingType = null
+    }
+  }
+
+  async presentationInvite(host: string) {
+    await this.playChord([523, 659, 783], 0.3)
+    await this.playChord([587, 739, 880], 0.4)
+    this.showNotification("Presentation Invite", `${host} started a presentation`)
   }
 
   async theaterInvite(host: string, videoTitle: string) {
@@ -191,16 +228,21 @@ export class NotificationSystem {
   }
 
   async callConnected() {
+    this.stopRinging()
     await this.playTone(1000, 0.2)
     await this.playTone(1200, 0.2)
   }
 
   async callEnded() {
+    this.stopRinging()
     await this.playTone(400, 0.6)
   }
 
   async callNotAnswered() {
-    await this.playTone(300, 1.0)
+    this.stopRinging()
+    await this.playTone(349, 0.3, 0.3, "square")
+    await new Promise(r => setTimeout(r, 100))
+    await this.playTone(349, 0.3, 0.3, "square")
     this.showNotification("Call Missed", "Call was not answered")
   }
 
@@ -219,9 +261,6 @@ export class NotificationSystem {
     this.showNotification("Info", message)
   }
 
-  // Audio activity subscription for ducking
-  private audioActivityListeners: ((active: boolean) => void)[] = []
-
   subscribeToAudioActivity(callback: (active: boolean) => void) {
     this.audioActivityListeners.push(callback)
     return () => {
@@ -233,30 +272,24 @@ export class NotificationSystem {
     this.audioActivityListeners.forEach((cb) => cb(active))
   }
 
-  // Cleanup method to properly close AudioContext
   cleanup() {
     if (this.isCleanupCalled) return
     this.isCleanupCalled = true
-
+    this.stopRinging()
     this.audioActivityListeners = []
-
     try {
       if (this.audioContext) {
-        // Close the audio context to release resources
         if (this.audioContext.state !== "closed") {
-          this.audioContext.close().catch((error) => {
-            console.warn("Error closing audio context:", error)
-          })
+          this.audioContext.close().catch((error) => console.warn("Error closing audio context:", error))
         }
         this.audioContext = null
       }
     } catch (error) {
-      console.warn("Error during notification system cleanup:", error)
+      console.warn("Cleanup error:", error)
     }
   }
 }
 
-// Singleton instance cleanup on page unload
 if (typeof window !== "undefined") {
   window.addEventListener("beforeunload", () => {
     NotificationSystem.getInstance().cleanup()

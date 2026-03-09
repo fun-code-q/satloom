@@ -43,12 +43,13 @@ export class TicTacToeManager {
         roomId: string,
         playerXId: string,
         playerXName: string,
-        playerXAvatar?: string
+        playerXAvatar?: string,
+        providedGameId?: string
     ): Promise<TicTacToeGame | null> {
         if (!getFirebaseDatabase()!) return null
 
         try {
-            const gameId = `tictactoe_${Date.now()}`
+            const gameId = providedGameId || `tictactoe_${Date.now()}`
 
             const game: TicTacToeGame = {
                 id: gameId,

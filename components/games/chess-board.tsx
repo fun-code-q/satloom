@@ -64,7 +64,7 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose }: Chess
                     setSession(newSession)
                     initEngine(newSession.fen)
                 } else if (gameConfig.players.find(p => p.id === currentUserId)?.isHost) {
-                    manager.createGame(roomId, currentUserId, gameConfig.players[0].name).then(game => {
+                    manager.createGame(roomId, currentUserId, gameConfig.players[0].name, undefined, gameId).then(game => {
                         if (game) setSession(game)
                     })
                 }

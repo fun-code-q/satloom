@@ -48,12 +48,13 @@ export class ConnectFourManager {
         roomId: string,
         playerRedId: string,
         playerRedName: string,
-        playerRedAvatar?: string
+        playerRedAvatar?: string,
+        providedGameId?: string
     ): Promise<ConnectFourGame | null> {
         if (!getFirebaseDatabase()!) return null
 
         try {
-            const gameId = `connect4_${Date.now()}`
+            const gameId = providedGameId || `connect4_${Date.now()}`
 
             const game: ConnectFourGame = {
                 id: gameId,

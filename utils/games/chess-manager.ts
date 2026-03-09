@@ -30,9 +30,9 @@ export class ChessManager {
         return ChessManager.instance
     }
 
-    async createGame(roomId: string, hostId: string, hostName: string, hostAvatar?: string): Promise<ChessGameSession | null> {
+    async createGame(roomId: string, hostId: string, hostName: string, hostAvatar?: string, providedGameId?: string): Promise<ChessGameSession | null> {
         if (!getFirebaseDatabase()!) return null
-        const gameId = `chess_${Date.now()}`
+        const gameId = providedGameId || `chess_${Date.now()}`
         const game: ChessGameSession = {
             id: gameId,
             roomId,

@@ -401,7 +401,7 @@ function MessageBubble({
   return (
     <div
       id={messageId}
-      className={`flex ${isOwnMessage ? "justify-end" : "justify-start"} mb-6 min-h-[80px] scroll-mt-20 transition-colors duration-300`}
+      className={`flex ${isOwnMessage ? "justify-end" : "justify-start"} mb-6 min-h-[80px] scroll-mt-20 transition-colors duration-300 relative z-0 hover:z-50`}
     >
       <div className={`max-w-[85%] ${isOwnMessage ? "order-2" : "order-1"}`}>
         {/* Reply indicator */}
@@ -558,6 +558,20 @@ function MessageBubble({
                     Delete
                   </DropdownMenuItem>
                 )}
+                {onPin && (
+                  <DropdownMenuItem onClick={() => onPin(message.id)} className="hover:bg-slate-700 cursor-pointer">
+                    <span className="w-4 h-4 mr-2 flex items-center justify-center">📌</span>
+                    Pin Message
+                  </DropdownMenuItem>
+                )}
+                {message.file?.url && (
+                  <DropdownMenuItem asChild>
+                    <a href={message.file.url} download target="_blank" rel="noopener noreferrer" className="hover:bg-slate-700 cursor-pointer flex items-center">
+                      <Download className="w-4 h-4 mr-2" />
+                      Download File
+                    </a>
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -593,41 +607,6 @@ function MessageBubble({
               >
                 <Reply className="w-3.5 h-3.5" />
               </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-white hover:bg-slate-700">
-                    <MoreVertical className="w-3.5 h-3.5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700 text-white z-50">
-                  <DropdownMenuItem onClick={handleCopy} className="hover:bg-slate-700 cursor-pointer">
-                    <Copy className="w-4 h-4 mr-2" /> Copy text
-                  </DropdownMenuItem>
-                  {isOwnMessage && (
-                    <>
-                      <DropdownMenuItem onClick={() => setIsEditing(true)} className="hover:bg-slate-700 cursor-pointer">
-                        <Edit className="w-4 h-4 mr-2" /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onDelete(message.id)} className="text-red-400 hover:bg-slate-700 hover:text-red-400 cursor-pointer">
-                        <Trash2 className="w-4 h-4 mr-2" /> Delete
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  {onPin && (
-                    <DropdownMenuItem onClick={() => onPin(message.id)} className="hover:bg-slate-700 cursor-pointer">
-                      <span className="w-4 h-4 mr-2 flex items-center justify-center">📌</span> Pin Message
-                    </DropdownMenuItem>
-                  )}
-                  {message.file?.url && (
-                    <DropdownMenuItem asChild>
-                      <a href={message.file.url} download target="_blank" rel="noopener noreferrer" className="hover:bg-slate-700 cursor-pointer flex items-center">
-                        <Download className="w-4 h-4 mr-2" /> Download File
-                      </a>
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
           )}
         </div>

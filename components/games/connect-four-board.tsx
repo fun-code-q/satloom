@@ -57,7 +57,7 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose }:
                     setGame(gameState)
                     setLoading(false)
                 } else if (gameConfig.players.find(p => p.id === currentUserId)?.isHost) {
-                    manager.createGame(roomId, currentUserId, gameConfig.players[0].name).then(newGame => {
+                    manager.createGame(roomId, currentUserId, gameConfig.players[0].name, undefined, gameId).then(newGame => {
                         if (newGame) setGame(newGame)
                         setLoading(false)
                     })

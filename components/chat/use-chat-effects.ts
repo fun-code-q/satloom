@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { ref, onValue, get } from "firebase/database"
 import { getFirebaseDatabase } from "../../lib/firebase"
 import { NotificationSystem } from "@/utils/core/notification-system"
@@ -80,6 +80,9 @@ export function useChatEffects(params: UseChatEffectsParams) {
     const callSignaling = CallSignaling.getInstance()
     const theaterSignaling = TheaterSignaling.getInstance()
     const quizSystem = QuizSystem.getInstance()
+    const prevOnlineUsersRef = useRef<string[]>([])
+    const lastMessageCountRef = useRef(messages.length)
+    const wasCallAnsweredRef = useRef(false)
 
     // Initialize P2P File Transfer
     useEffect(() => {
@@ -143,6 +146,7 @@ export function useChatEffects(params: UseChatEffectsParams) {
         setIsTheaterHost(false)
         setOnlineUsers([])
         setGameInvite(null)
+        prevOnlineUsersRef.current = []
 
         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
         if (quizTimerRef.current) clearInterval(quizTimerRef.current)
@@ -185,11 +189,40 @@ export function useChatEffects(params: UseChatEffectsParams) {
                 const msgRoomId = (msg as any).roomId
                 return msgRoomId === roomId || !msgRoomId
             })
+
+            // Play sound for NEW incoming messages from others
+            if (filteredMessages.length > lastMessageCountRef.current) {
+                const newestMsg = filteredMessages[filteredMessages.length - 1]
+                if (newestMsg.sender !== userProfile.name) {
+                    notificationSystem.newMessage(newestMsg.sender, newestMsg.text)
+                }
+            }
+            lastMessageCountRef.current = filteredMessages.length
+
             setMessages(filteredMessages)
         })
 
         const presenceUnsubscribe = userPresence.listenForPresence(roomId, (users) => {
-            setOnlineUsers(users.filter((user) => user.status === "online"))
+            const onlineUsers = users.filter((user) => user.status === "online")
+            const currentOnlineIds = onlineUsers.map(u => u.id)
+
+            // Detect new joiners for sound effect
+            onlineUsers.forEach(user => {
+                if (user.id !== currentUserId && !prevOnlineUsersRef.current.includes(user.id)) {
+                    notificationSystem.userJoined(user.name)
+                }
+            })
+
+            // Detect users who left
+            prevOnlineUsersRef.current.forEach((userId: string) => {
+                if (!currentOnlineIds.includes(userId)) {
+                    const lostUser = users.find(u => u.id === userId)
+                    if (lostUser) notificationSystem.userLeft(lostUser.name)
+                }
+            })
+
+            prevOnlineUsersRef.current = currentOnlineIds
+            setOnlineUsers(onlineUsers)
         })
 
         const pinnedMessageUnsubscribe = onValue(ref(db, `rooms/${roomId}/pinnedMessageId`), (snapshot: any) => {
@@ -216,6 +249,7 @@ export function useChatEffects(params: UseChatEffectsParams) {
                 if (call.participants.includes(currentUserId) || call.callerId === currentUserId) {
                     setCurrentCall(call)
                     if (call.status === "answered") {
+                        wasCallAnsweredRef.current = true
                         setIsInCall(true)
                         // Handle modal visibility based on call type
                         if (call.type === "video") {
@@ -230,6 +264,13 @@ export function useChatEffects(params: UseChatEffectsParams) {
                         setCurrentCall(null)
                         setShowAudioCall(false)
                         setShowVideoCall(false)
+
+                        if (!wasCallAnsweredRef.current && call.callerId !== currentUserId) {
+                            notificationSystem.callNotAnswered()
+                        } else {
+                            notificationSystem.callEnded()
+                        }
+                        wasCallAnsweredRef.current = false
                     }
                 }
             },
@@ -244,7 +285,7 @@ export function useChatEffects(params: UseChatEffectsParams) {
 
         const presentationUnsubscribe = presentationModeManager.listenForInvites((invite) => {
             setPresentationInvite(invite)
-            notificationSystem.info(`${invite.hostName} started a presentation!`)
+            notificationSystem.presentationInvite(invite.hostName)
         })
 
         const gameInviteUnsubscribe = listenForGameInvites()
