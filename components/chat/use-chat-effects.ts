@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { ref, onValue, get } from "firebase/database"
-import { database } from "../../lib/firebase"
+import { getFirebaseDatabase } from "../../lib/firebase"
 import { NotificationSystem } from "@/utils/core/notification-system"
 import { MessageStorage } from "@/utils/infra/message-storage"
 import { UserPresenceSystem, type UserPresence } from "@/utils/infra/user-presence"
@@ -145,7 +145,12 @@ export function useChatEffects(params: UseChatEffectsParams) {
 
         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
         if (quizTimerRef.current) clearInterval(quizTimerRef.current)
-        messageStorage.clearMessages()
+        const db = getFirebaseDatabase()
+        if (!db) {
+            console.error("ChatInterface: Firebase database not initialized. Config might be missing.")
+            notificationSystem.error("Database connection failed. Please check your configuration.")
+            return
+        }
 
         notificationSystem.setNotificationsEnabled(themeContext.notifications)
         notificationSystem.setSoundEnabled(themeContext.notificationSound)
@@ -184,7 +189,7 @@ export function useChatEffects(params: UseChatEffectsParams) {
             setOnlineUsers(users.filter((user) => user.status === "online"))
         })
 
-        const pinnedMessageUnsubscribe = onValue(ref(database!, `rooms/${roomId}/pinnedMessageId`), (snapshot: any) => {
+        const pinnedMessageUnsubscribe = onValue(ref(db, `rooms/${roomId}/pinnedMessageId`), (snapshot: any) => {
             setPinnedMessageId(snapshot.val())
         })
 
@@ -284,8 +289,9 @@ export function useChatEffects(params: UseChatEffectsParams) {
     useEffect(() => {
         const checkHostStatus = async () => {
             try {
-                if (!database || !roomId) return
-                const roomRef = ref(database, `rooms/${roomId}`)
+                const db = getFirebaseDatabase()
+                if (!db || !roomId) return
+                const roomRef = ref(db, `rooms/${roomId}`)
                 const snapshot = await get(roomRef)
                 if (snapshot.exists()) {
                     const roomData = snapshot.val()
@@ -300,8 +306,9 @@ export function useChatEffects(params: UseChatEffectsParams) {
 
     // Subscribe to mood settings
     useEffect(() => {
-        if (!database || !roomId) return
-        const moodRef = ref(database, `rooms/${roomId}/mood`)
+        const db = getFirebaseDatabase()
+        if (!db || !roomId) return
+        const moodRef = ref(db, `rooms/${roomId}/mood`)
         const unsubscribe = onValue(moodRef, (snapshot) => {
             if (snapshot.exists()) {
                 const moodData = snapshot.val()
@@ -317,8 +324,9 @@ export function useChatEffects(params: UseChatEffectsParams) {
 
     // Check password protection
     useEffect(() => {
-        if (!database || !roomId) return
-        const passwordRef = ref(database, `rooms/${roomId}/password`)
+        const db = getFirebaseDatabase()
+        if (!db || !roomId) return
+        const passwordRef = ref(db, `rooms/${roomId}/password`)
         const unsubscribe = onValue(passwordRef, (snapshot) => {
             if (snapshot.exists()) {
                 setRoomIsProtected(true)
