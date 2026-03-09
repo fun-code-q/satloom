@@ -170,7 +170,7 @@ export function GameMenu({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-3xl h-[600px] flex flex-col p-0 overflow-hidden">
+            <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-3xl max-h-[90vh] h-auto flex flex-col p-0 overflow-hidden">
                 <DialogHeader className="p-6 pb-2 bg-slate-800/50 border-b border-slate-800">
                     <DialogTitle className="flex items-center gap-2 text-xl">
                         <Gamepad2 className="w-6 h-6 text-cyan-400" />
@@ -178,8 +178,8 @@ export function GameMenu({
                     </DialogTitle>
                 </DialogHeader>
 
-                <Tabs defaultValue="new" value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-                    <div className="px-6 pt-4">
+                <Tabs defaultValue="new" value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+                    <div className="px-6 pt-4 shrink-0">
                         <TabsList className="bg-slate-800 border border-slate-700 w-full justify-start h-auto p-1">
                             <TabsTrigger value="new" className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white px-4 py-2">
                                 <Plus className="w-4 h-4 mr-2" />
@@ -195,14 +195,14 @@ export function GameMenu({
                         </TabsList>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-slate-700">
+                    <div className="flex-1 overflow-y-auto p-4 md:p-6 scrollbar-thin scrollbar-thumb-slate-700">
                         <TabsContent value="new" className="mt-0 space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                                 {/* Chess */}
                                 <GameCard
                                     title="Chess"
-                                    description="Classic strategy game. Checkmate your opponent."
-                                    icon={<Crown className="w-8 h-8 text-yellow-500" />}
+                                    description="Strategy game."
+                                    icon={<Crown className="w-6 h-6 md:w-8 md:h-8 text-yellow-500" />}
                                     color="hover:border-yellow-500/50"
                                     onClick={() => { onOpenPlayground?.("chess"); onClose(); }}
                                     disabled={isCreating}
@@ -210,9 +210,9 @@ export function GameMenu({
 
                                 {/* Connect Four */}
                                 <GameCard
-                                    title="Connect Four"
-                                    description="Get 4 in a row horizontally, vertically, or diagonally."
-                                    icon={<div className="flex gap-1"><div className="w-4 h-4 rounded-full bg-red-500" /><div className="w-4 h-4 rounded-full bg-yellow-400" /></div>}
+                                    title="Connect 4"
+                                    description="Get 4 in a row."
+                                    icon={<div className="flex gap-1"><div className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-red-500" /><div className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-yellow-400" /></div>}
                                     color="hover:border-red-500/50"
                                     onClick={() => { onOpenPlayground?.("connect4"); onClose(); }}
                                     disabled={isCreating}
@@ -221,8 +221,8 @@ export function GameMenu({
                                 {/* Tic Tac Toe */}
                                 <GameCard
                                     title="Tic Tac Toe"
-                                    description="Simple 3x3 grid. The classic X vs O."
-                                    icon={<div className="text-2xl font-bold text-cyan-400">#</div>}
+                                    description="Classic X vs O."
+                                    icon={<div className="text-xl md:text-2xl font-bold text-cyan-400">#</div>}
                                     color="hover:border-cyan-500/50"
                                     onClick={() => { onOpenPlayground?.("tictactoe"); onClose(); }}
                                     disabled={isCreating}
@@ -232,8 +232,8 @@ export function GameMenu({
                                 {onOpenPlayground && (
                                     <GameCard
                                         title="Dots & Boxes"
-                                        description="Connect dots to close boxes. Claim the most boxes to win!"
-                                        icon={<div className="text-2xl font-bold text-green-400">⊞</div>}
+                                        description="Claim boxes."
+                                        icon={<div className="text-xl md:text-2xl font-bold text-green-400">⊞</div>}
                                         color="hover:border-green-500/50"
                                         onClick={() => { onOpenPlayground?.("dots"); onClose(); }}
                                         disabled={isCreating}

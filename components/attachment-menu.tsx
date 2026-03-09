@@ -254,26 +254,22 @@ export function AttachmentMenu({
 
   if (isMobile) {
     return (
-      <div className="w-full">
-        {isOpen && (
-          <>
-            {/* Mobile attachment menu - horizontal scroll */}
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-              {attachmentOptions.map((option, index) => (
-                <button
-                  key={index}
-                  onClick={option.action}
-                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-slate-700/50 transition-colors whitespace-nowrap"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-cyan-500 flex items-center justify-center">
-                    <option.icon className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="text-xs text-gray-300">{option.label}</span>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
+      <div className="w-full bg-slate-800/40 rounded-2xl p-2 md:p-3">
+        {/* Mobile attachment menu - simplified horizontal scroll */}
+        <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide snap-x">
+          {attachmentOptions.map((option, index) => (
+            <button
+              key={index}
+              onClick={option.action}
+              className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-slate-700/50 transition-colors snap-start min-w-[70px]"
+            >
+              <div className="w-11 h-11 rounded-2xl bg-cyan-500/90 flex items-center justify-center shadow-lg active:scale-90 transition-transform">
+                <option.icon className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-[10px] font-medium text-gray-300">{option.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
     )
   }

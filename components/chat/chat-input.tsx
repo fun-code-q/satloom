@@ -385,37 +385,39 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                     </div>
                 )}
 
-                {/* Attachment menu popup - now above input */}
+                {/* Attachment menu popup - now absolute above input */}
                 {showAttachments && (
-                    <div className="px-4 py-2 border-b border-slate-700/50 bg-slate-800/40 animate-in slide-in-from-bottom-2">
-                        <AttachmentMenu
-                            isMobile={true}
-                            onFileSelect={onFileSelect}
-                            onPollCreate={() => {
-                                setShowAttachments(false)
-                                setShowPollCreator(true)
-                            }}
-                            onEventCreate={() => {
-                                setShowAttachments(false)
-                                setShowEventCreator(true)
-                            }}
-                            onMoodTrigger={() => {
-                                setShowAttachments(false)
-                                onMoodTrigger?.()
-                            }}
-                            onVanishMode={() => {
-                                setShowAttachments(false)
-                                setShowVanishModal(true)
-                            }}
-                            onSoundboard={() => {
-                                setShowAttachments(false)
-                                onSoundboard?.()
-                            }}
-                            onReactRoom={() => {
-                                setShowAttachments(false)
-                                setShowMobileReactions(true)
-                            }}
-                        />
+                    <div className="absolute bottom-full mb-3 left-3 right-3 z-50 animate-in slide-in-from-bottom-2 duration-200">
+                        <div className="shadow-2xl rounded-3xl overflow-hidden border border-slate-700/50">
+                            <AttachmentMenu
+                                isMobile={true}
+                                onFileSelect={onFileSelect}
+                                onPollCreate={() => {
+                                    setShowAttachments(false)
+                                    setShowPollCreator(true)
+                                }}
+                                onEventCreate={() => {
+                                    setShowAttachments(false)
+                                    setShowEventCreator(true)
+                                }}
+                                onMoodTrigger={() => {
+                                    setShowAttachments(false)
+                                    onMoodTrigger?.()
+                                }}
+                                onVanishMode={() => {
+                                    setShowAttachments(false)
+                                    setShowVanishModal(true)
+                                }}
+                                onSoundboard={() => {
+                                    setShowAttachments(false)
+                                    onSoundboard?.()
+                                }}
+                                onReactRoom={() => {
+                                    setShowAttachments(false)
+                                    setShowMobileReactions(true)
+                                }}
+                            />
+                        </div>
                     </div>
                 )}
 
