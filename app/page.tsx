@@ -10,6 +10,7 @@ import { ref, get, set, remove } from "firebase/database"
 import { signInAnonymously, onAuthStateChanged, type User } from "firebase/auth"
 import dynamic from "next/dynamic"
 import { telemetry } from "@/utils/core/telemetry"
+import { useRouter } from "next/navigation"
 
 // Forced re-compile comment to resolve 404 after cache clear
 // Lazy load components for code splitting
@@ -37,6 +38,7 @@ interface UserProfile {
 }
 
 export default function Home() {
+  const router = useRouter()
   const [appState, setAppState] = useState<AppState>("landing")
   const [currentRoomId, setCurrentRoomId] = useState<string>("")
   const [userProfile, setUserProfile] = useState<UserProfile>({ name: "" })
@@ -275,9 +277,9 @@ export default function Home() {
       if (roomId && roomId.trim()) {
         console.log("App: Final room ID before entering chat:", roomId)
 
-        // Update URL first
-        const newUrl = `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(roomId)}`
-        window.history.pushState({}, "", newUrl)
+        // Update URL first using Next.js router to avoid _checkNotDeleted hydration errors
+        const newUrl = `/satloom?room=${encodeURIComponent(roomId)}`
+        router.push(newUrl)
         console.log("App: Updated URL to:", newUrl)
 
         // Use a small timeout to ensure URL is updated before state changes
@@ -304,7 +306,7 @@ export default function Home() {
     console.log("App: Leaving room:", currentRoomId)
     try {
       // Clear the room from URL
-      window.history.pushState({}, "", window.location.origin + window.location.pathname)
+      router.push('/satloom')
 
       const database = getFirebaseDatabase()
 
@@ -345,8 +347,10 @@ export default function Home() {
     setCurrentRoomId("")
     setError("")
 
+    setError("")
+
     // Clear URL if user cancels
-    window.history.pushState({}, "", window.location.origin + window.location.pathname)
+    router.push('/satloom')
   }
 
   return (

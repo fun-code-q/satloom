@@ -6,14 +6,14 @@ import { ClientSecurity } from '@/components/client-security'
 export const metadata: Metadata = {
   title: 'SatLoom',
   description: 'Secure, anonymous, real-time communication.',
-  manifest: '/manifest.json',
+  manifest: '/satloom/manifest.json',
   icons: {
     icon: [
-      { url: '/satloom-logo.svg', type: 'image/svg+xml' },
-      { url: '/satloom-icon.png', sizes: '192x192', type: 'image/png' },
+      { url: '/satloom/satloom-logo.svg', type: 'image/svg+xml' },
+      { url: '/satloom/satloom-icon.png', sizes: '192x192', type: 'image/png' },
     ],
-    shortcut: '/satloom-logo.svg',
-    apple: '/apple-icon.png',
+    shortcut: '/satloom/satloom-logo.svg',
+    apple: '/satloom/apple-icon.png',
   },
   openGraph: {
     title: 'SatLoom',
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/satloom-icon.png',
+        url: '/satloom/satloom-icon.png',
         width: 512,
         height: 512,
         alt: 'SatLoom - Secure Communication',
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     card: 'summary',
     title: 'SatLoom',
     description: 'Secure, anonymous, real-time communication.',
-    images: ['/satloom-icon.png'],
+    images: ['/satloom/satloom-icon.png'],
   },
   other: {
     'theme-color': '#0891b2',
