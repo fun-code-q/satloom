@@ -196,42 +196,9 @@ export default function Home() {
     setError("")
     setCurrentRoomId(cleanRoomId)
 
-    try {
-      // Get database instance from central utility
-      const database = getFirebaseDatabase()
-
-      if (!database) {
-        setError("Database not available. Please try again later.")
-        setCurrentRoomId("") // Clear on error
-        return
-      }
-
-      // Check if room exists with a timeout to prevent hanging on connection issues
-      const roomRef = ref(database, `rooms/${cleanRoomId}`)
-
-      // Promise with timeout for get()
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Connection timeout")), 5000)
-      );
-
-      const snapshot = await Promise.race([
-        get(roomRef),
-        timeoutPromise
-      ]) as any;
-
-      if (!snapshot.exists()) {
-        setError("Room not found. Please check the room ID.")
-        setCurrentRoomId("") // Clear on error
-        return
-      }
-
-      console.log("App: Successfully found room:", cleanRoomId)
-      setShowProfileModal(true)
-    } catch (error) {
-      console.error("Error checking room:", error)
-      setError("Failed to connect to room. Please try again.")
-      setCurrentRoomId("") // Clear on error
-    }
+    // Transition immediately to profile modal instead of waiting for a blocking network check
+    // This solves the hang caused by slow WebSocket fallback for get()
+    setShowProfileModal(true)
   }, [])
 
   const handleCreateRoom = useCallback(async () => {
