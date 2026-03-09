@@ -87,7 +87,7 @@ export function MessageList({
     const rowVirtualizer = useVirtualizer({
         count: filteredMessages.length,
         getScrollElement: () => parentRef.current,
-        estimateSize: () => 80, // Estimated height per message in pixels
+        estimateSize: () => 100, // Better estimate for messages with avatars/formatting
         overscan: 5, // Number of items to render outside visible area for smoother scrolling
     })
 
@@ -156,12 +156,13 @@ export function MessageList({
                                 return (
                                     <div
                                         key={msg.id}
+                                        data-index={virtualItem.index}
+                                        ref={rowVirtualizer.measureElement}
                                         style={{
                                             position: "absolute",
                                             top: 0,
                                             left: 0,
                                             width: "100%",
-                                            height: `${virtualItem.size}px`,
                                             transform: `translateY(${virtualItem.start}px)`,
                                         }}
                                     >
