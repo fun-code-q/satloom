@@ -125,5 +125,3 @@ See [`.env.example`](.env.example) for the full list. Key variables:
 | `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Firebase project ID |
 
 ---
-
-This project is private and owned by Akhil. All rights reserved. Redistribution or reproduction of any part of this project without explicit permission is strictly prohibited.
