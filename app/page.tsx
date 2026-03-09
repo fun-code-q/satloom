@@ -10,7 +10,6 @@ import { ref, get, set, remove } from "firebase/database"
 import { signInAnonymously, onAuthStateChanged, type User } from "firebase/auth"
 import dynamic from "next/dynamic"
 import { telemetry } from "@/utils/core/telemetry"
-import { useRouter } from "next/navigation"
 
 // Forced re-compile comment to resolve 404 after cache clear
 // Lazy load components for code splitting
@@ -37,8 +36,10 @@ interface UserProfile {
   avatar?: string
 }
 
+// basePath must match next.config.mjs for static export on GitHub Pages
+const BASE_PATH = '/satloom'
+
 export default function Home() {
-  const router = useRouter()
   const [appState, setAppState] = useState<AppState>("landing")
   const [currentRoomId, setCurrentRoomId] = useState<string>("")
   const [userProfile, setUserProfile] = useState<UserProfile>({ name: "" })
@@ -277,9 +278,9 @@ export default function Home() {
       if (roomId && roomId.trim()) {
         console.log("App: Final room ID before entering chat:", roomId)
 
-        // Update URL first using Next.js router to avoid _checkNotDeleted hydration errors
-        const newUrl = `/?room=${encodeURIComponent(roomId)}`
-        router.push(newUrl)
+        // Update URL using pushState (not router.push which tries RSC fetch on static export)
+        const newUrl = `${BASE_PATH}?room=${encodeURIComponent(roomId)}`
+        window.history.pushState({}, "", newUrl)
         console.log("App: Updated URL to:", newUrl)
 
         // Use a small timeout to ensure URL is updated before state changes
@@ -306,7 +307,7 @@ export default function Home() {
     console.log("App: Leaving room:", currentRoomId)
     try {
       // Clear the room from URL
-      router.push('/')
+      window.history.pushState({}, "", BASE_PATH)
 
       const database = getFirebaseDatabase()
 
@@ -347,10 +348,8 @@ export default function Home() {
     setCurrentRoomId("")
     setError("")
 
-    setError("")
-
     // Clear URL if user cancels
-    router.push('/')
+    window.history.pushState({}, "", BASE_PATH)
   }
 
   return (
