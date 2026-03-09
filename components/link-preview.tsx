@@ -32,11 +32,15 @@ export function LinkPreview({ url }: LinkPreviewProps) {
 
             try {
                 setLoading(true);
-                const res = await fetch(`/api/link-preview?url=${encodeURIComponent(url)}`);
-                if (!res.ok) throw new Error("Failed to fetch");
-                const data = await res.json();
+                // Since we are using static export (GitHub Pages), we cannot use dynamic API routes.
+                // We will fall back to showing the hostname as the title.
+                const urlObj = new URL(url);
                 if (isMounted) {
-                    setMetadata(data);
+                    setMetadata({
+                        title: urlObj.hostname,
+                        siteName: urlObj.hostname,
+                        description: `External link to ${urlObj.hostname}`
+                    });
                     setError(false);
                 }
             } catch (err) {
