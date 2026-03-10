@@ -55,13 +55,17 @@ export function AudioCallModal({
   const callTimerRef = useRef<NodeJS.Timeout | null>(null)
   const callSignaling = CallSignaling.getInstance()
 
-  // For audio, we'll try to get the remote stream. 
-  // Note: In a real WebRTC setup, you'd access the remote stream from the peer connection.
-  // Since we don't have direct access to the peer connection here (it's abstracted or simulated),
-  // we'll use a placeholder or assume the stream is available via a different method for v2.
-  // For now, we'll initialize it with null, but in a real app, you'd pass the actual remoteAudioStream.
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null)
+
+  const localStreamRef = useRef<MediaStream | null>(null)
+  const remoteStreamRef = useRef<MediaStream | null>(null)
+  const unsubscribeSignalsRef = useRef<() => void>(() => { })
+  const isInitializedRef = useRef(false)
+  const pendingOfferRef = useRef<any>(null)
+  const remoteAudioRef = useRef<HTMLAudioElement>(null)
+
   const { isRecording, startRecording, stopRecording } = useCallRecording({
-    stream: null, // Placeholder: Real implementation needs the WebRTC remote stream
+    stream: remoteStream,
     fileType: "audio/webm"
   })
 
@@ -99,14 +103,98 @@ export function AudioCallModal({
       if (callTimerRef.current) {
         clearInterval(callTimerRef.current)
       }
-      if (localStream) {
-        localStream.getTracks().forEach(track => {
-          track.stop()
-          console.log(`AudioCall: Stopped local track: ${track.kind}`)
-        })
-      }
+
+      // Stop all tracks using refs
+      [localStreamRef.current, remoteStreamRef.current].forEach(stream => {
+        if (stream) {
+          stream.getTracks().forEach(track => {
+            track.stop()
+            console.log(`AudioCall: Stopped track: ${track.kind}`)
+          })
+        }
+      })
+      localStreamRef.current = null
+      remoteStreamRef.current = null
+      setLocalStream(null)
+      setRemoteStream(null)
     }
-  }, [isOpen, callData?.status, localStream])
+  }, [isOpen, callData?.status])
+
+  const setLocalStreamRef = (stream: MediaStream | null) => {
+    setLocalStream(stream)
+    localStreamRef.current = stream
+  }
+
+  const setRemoteStreamRef = (stream: MediaStream | null) => {
+    setRemoteStream(stream)
+    remoteStreamRef.current = stream
+    if (remoteAudioRef.current && stream) {
+      remoteAudioRef.current.srcObject = stream
+      remoteAudioRef.current.play().catch(e => {
+        if (e.name !== "AbortError") console.error("Audio play failed:", e)
+      })
+    }
+  }
+
+  // Effect 2: WebRTC Setup
+  useEffect(() => {
+    if (!isOpen) {
+      if (isInitializedRef.current) {
+        unsubscribeSignalsRef.current()
+        WebRTCManager.getInstance().cleanup()
+        isInitializedRef.current = false
+      }
+      return
+    }
+
+    if (isInitializedRef.current || !localStream || !callData) return
+
+    const webrtc = WebRTCManager.getInstance()
+    isInitializedRef.current = true
+
+    console.log("AudioCall: Initializing WebRTC")
+    webrtc.initialize(
+      localStream,
+      (s) => setRemoteStreamRef(s),
+      (c) => {
+        if (callData?.id) {
+          callSignaling.sendSignal(roomId, callData.id, "ice-candidate", c, currentUserId)
+        }
+      }
+    )
+
+    unsubscribeSignalsRef.current = callSignaling.listenForSignals(roomId, callData.id, currentUserId, async (type, payload) => {
+      if (type === "offer") {
+        if (callData.status === "answered") {
+          const answer = await webrtc.createAnswer(payload)
+          callSignaling.sendSignal(roomId, callData.id, "answer", answer, currentUserId)
+        } else {
+          pendingOfferRef.current = payload
+        }
+      } else if (type === "answer") {
+        await webrtc.handleAnswer(payload)
+      } else if (type === "ice-candidate") {
+        await webrtc.addIceCandidate(payload)
+      }
+    })
+
+    if (!isIncoming && callData.status === "answered") {
+      webrtc.createOffer().then(offer => {
+        callSignaling.sendSignal(roomId, callData.id, "offer", offer, currentUserId)
+      }).catch(err => console.error("Error creating offer:", err))
+    }
+  }, [isOpen, callData?.status, localStream, isIncoming, roomId, currentUserId, callData?.id])
+
+  // Effect 3: Handle pending offer
+  useEffect(() => {
+    if (isOpen && isIncoming && callData?.status === "answered" && pendingOfferRef.current) {
+      const webrtc = WebRTCManager.getInstance()
+      webrtc.createAnswer(pendingOfferRef.current).then(answer => {
+        callSignaling.sendSignal(roomId, callData.id, "answer", answer, currentUserId)
+        pendingOfferRef.current = null
+      }).catch(err => console.error("Error answering pending offer:", err))
+    }
+  }, [isOpen, callData?.status, isIncoming, roomId, currentUserId, callData?.id])
 
   // Effect to handle actual track muting
   useEffect(() => {
@@ -463,6 +551,8 @@ export function AudioCallModal({
             </div>
           )}
 
+          {/* Remote audio output */}
+          <audio ref={remoteAudioRef} className="hidden" aria-hidden="true" />
         </div>
       </div>
       <VoiceFilterModal

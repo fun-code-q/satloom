@@ -12,6 +12,7 @@ interface PlaygroundSetupModalProps {
   onClose: () => void
   onStartGame: (config: GameConfig) => void
   initialGame?: "dots" | "chess" | "tictactoe" | "connect4"
+  hostName: string
 }
 
 export interface GameConfig {
@@ -32,7 +33,7 @@ export interface GameConfig {
 
 const playerColors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#06b6d4"]
 
-export function PlaygroundSetupModal({ isOpen, onClose, onStartGame, initialGame = "dots" }: PlaygroundSetupModalProps) {
+export function PlaygroundSetupModal({ isOpen, onClose, onStartGame, initialGame = "dots", hostName }: PlaygroundSetupModalProps) {
   const [selectedGame, setSelectedGame] = useState<"dots" | "chess" | "tictactoe" | "connect4">(initialGame)
   const [gameType, setGameType] = useState<"single" | "double" | "multi">("single")
   const [gridSize, setGridSize] = useState(5)
@@ -45,23 +46,29 @@ export function PlaygroundSetupModal({ isOpen, onClose, onStartGame, initialGame
   useEffect(() => {
     if (isOpen) {
       setSelectedGame(initialGame)
+      // Update first player name with hostName if available
+      setPlayerNames(prev => {
+        const next = [...prev]
+        if (hostName) next[0] = hostName
+        return next
+      })
     }
-  }, [isOpen, initialGame])
+  }, [isOpen, initialGame, hostName])
 
   const handleGameTypeChange = (type: "single" | "double" | "multi") => {
     setGameType(type)
 
     switch (type) {
       case "single":
-        setPlayerNames(["Player 1", "Computer"])
+        setPlayerNames([hostName || "Player 1", "Computer"])
         setComputerPlayers([false, true])
         break
       case "double":
-        setPlayerNames(["Player 1", "Player 2"])
+        setPlayerNames([hostName || "Player 1", "Waiting for Player 2..."])
         setComputerPlayers([false, false])
         break
       case "multi":
-        setPlayerNames(["Player 1", "Player 2", "Player 3"])
+        setPlayerNames([hostName || "Player 1", "Player 2", "Player 3"])
         setComputerPlayers([false, false, false])
         break
     }
@@ -324,6 +331,7 @@ export function PlaygroundSetupModal({ isOpen, onClose, onStartGame, initialGame
                       className="bg-slate-600 border-slate-500 text-white"
                       placeholder={`Player ${index + 1}`}
                       aria-label={`Player ${index + 1} name`}
+                      disabled={gameType === "double" && index === 1}
                     />
                     {nameErrors[index] && (
                       <span className="text-red-400 text-xs">{nameErrors[index]}</span>

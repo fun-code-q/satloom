@@ -37,15 +37,15 @@ export function useGameSync({ gameConfig, roomId, currentUserId, onExit, isPause
 
     // Initialize game
     useEffect(() => {
-        const forcedHost = true // Initial creator is host
-        setIsHost(forcedHost)
-        setHostId(currentUserId)
+        const isHostPlayer = currentUserId === gameConfig.players[0].id
+        setIsHost(isHostPlayer)
+        setHostId(gameConfig.players[0].id)
 
         const players: Player[] = gameConfig.players.map((p, index) => ({
             ...p,
-            id: index === 0 ? currentUserId : p.id,
+            id: p.id || (index === 0 ? currentUserId : `guest_${Date.now()}`),
             initials: p.name.substring(0, 2).toUpperCase(),
-            color: p.color || "#3b82f6",
+            color: p.color || (index === 0 ? "#3b82f6" : "#ef4444"),
             isComputer: p.isComputer ?? false,
             isHost: index === 0,
             status: 'active' as const,
@@ -57,23 +57,22 @@ export function useGameSync({ gameConfig, roomId, currentUserId, onExit, isPause
         const newGame = new DotsAndBoxesGame(gameId, roomId, players, gameConfig.gridSize, gameConfig.voiceChatEnabled)
         setGame(newGame)
 
-        newGame.startGame()
-        const updatedState = newGame.getGameState()
-        setGameState(updatedState)
+        if (isHostPlayer) {
+            newGame.startGame()
+            const updatedState = newGame.getGameState()
+            setGameState(updatedState)
 
-        const currentPlayer = updatedState.players[updatedState.currentPlayerIndex]
-        const myTurn = gameConfig.gameType === "single" ? !currentPlayer.isComputer : currentPlayer.id === currentUserId
-        setIsMyTurn(myTurn)
-
-        if (gameConfig.gameType !== "single" && forcedHost) {
-            gameSignaling.createGame(roomId, gameId, updatedState)
-            gameSignaling.listenForHostStatus(roomId, gameId, (isHostActive) => {
-                if (!isHostActive && !forcedHost) {
-                    notificationSystem.error("Game host has left. Returning to chat.")
-                    setTimeout(() => exitRef.current(), 2000)
-                }
-            })
+            if (gameConfig.gameType !== "single") {
+                gameSignaling.createGame(roomId, gameId, updatedState)
+            }
         }
+
+        gameSignaling.listenForHostStatus(roomId, gameId, (isHostActive) => {
+            if (!isHostActive && !isHostPlayer) {
+                notificationSystem.error("Game host has left. Returning to chat.")
+                setTimeout(() => exitRef.current(), 2000)
+            }
+        })
 
         return () => {
             if (computerMoveTimeoutRef.current) clearTimeout(computerMoveTimeoutRef.current)

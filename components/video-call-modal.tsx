@@ -101,6 +101,7 @@ export function VideoCallModal({
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
   const callTimerRef = useRef<any>(null)
+  const pendingOfferRef = useRef<any>(null)
   const callSignaling = CallSignaling.getInstance()
 
   const { isRecording, startRecording, stopRecording } = useCallRecording({
@@ -232,12 +233,11 @@ export function VideoCallModal({
     }
 
     if (isInitializedRef.current || !localStream || !callData) return
-    if (isIncoming && callData.status === "ringing") return
 
     const webrtc = WebRTCManager.getInstance()
     isInitializedRef.current = true
 
-    console.log("VideoCall: Initializing WebRTC")
+    console.log("VideoCall: Initializing WebRTC and Signal Listeners")
     webrtc.initialize(
       localStream,
       (s) => onRemoteStreamRef.current(s),
@@ -245,9 +245,16 @@ export function VideoCallModal({
     )
 
     unsubscribeSignalsRef.current = callSignaling.listenForSignals(roomId, callData.id, currentUserId, async (type, payload) => {
+      console.log(`VideoCall: Signal received (${type})`)
       if (type === "offer") {
-        const answer = await webrtc.createAnswer(payload)
-        callSignaling.sendSignal(roomId, callData.id, "answer", answer, currentUserId)
+        // We wait for status to be "answered" before answering an offer
+        if (callData.status === "answered") {
+          const answer = await webrtc.createAnswer(payload)
+          callSignaling.sendSignal(roomId, callData.id, "answer", answer, currentUserId)
+        } else {
+          // Store offer to handle once answered
+          pendingOfferRef.current = payload
+        }
       } else if (type === "answer") {
         await webrtc.handleAnswer(payload)
       } else if (type === "ice-candidate") {
@@ -255,13 +262,24 @@ export function VideoCallModal({
       }
     })
 
-    if (!isIncoming && callData.status === "ringing") {
+    // If we are the caller and it's already answered (re-entry) or just became answered
+    if (!isIncoming && callData.status === "answered") {
       webrtc.createOffer().then(offer => {
         callSignaling.sendSignal(roomId, callData.id, "offer", offer, currentUserId)
       }).catch(err => console.error("Error creating offer:", err))
     }
-
   }, [isOpen, callData?.status, localStream, isIncoming, roomId, currentUserId, callData?.id])
+
+  // Effect 3: Handle pending offer when call is answered
+  useEffect(() => {
+    if (isOpen && isIncoming && callData?.status === "answered" && pendingOfferRef.current) {
+      const webrtc = WebRTCManager.getInstance()
+      webrtc.createAnswer(pendingOfferRef.current).then(answer => {
+        callSignaling.sendSignal(roomId, callData.id, "answer", answer, currentUserId)
+        pendingOfferRef.current = null
+      }).catch(err => console.error("Error answering pending offer:", err))
+    }
+  }, [isOpen, callData?.status, isIncoming, roomId, currentUserId, callData?.id])
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60)

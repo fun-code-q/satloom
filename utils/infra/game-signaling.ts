@@ -10,13 +10,7 @@ export interface GameInvite {
   hostId: string
   hostName: string
   invitedUsers: string[] // Array of user IDs or ['all'] for everyone
-  gameConfig: {
-    gameType: 'Dots & Boxes'
-    gridSize: number
-    maxPlayers: number
-    voiceChatEnabled: boolean
-    allowComputerPlayers: boolean
-  }
+  gameConfig: any
   expiresAt: number
   status: 'pending' | 'accepted' | 'declined' | 'expired'
   timestamp: number

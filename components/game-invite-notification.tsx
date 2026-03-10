@@ -7,7 +7,7 @@ import type { GameInvite } from "@/utils/infra/game-signaling"
 interface GameInviteNotificationProps {
   invite: GameInvite
   currentPlayerCount?: number
-  onAccept: () => void
+  onAccept: (guestName: string) => void
   onAcceptAsSpectator?: () => void
   onDecline: () => void
 }
@@ -20,6 +20,8 @@ export function GameInviteNotification({
   onDecline
 }: GameInviteNotificationProps) {
   const [timeLeft, setTimeLeft] = useState(0)
+  const [isEnteringName, setIsEnteringName] = useState(false)
+  const [guestName, setGuestName] = useState("")
 
   useEffect(() => {
     const updateTimer = () => {
@@ -89,40 +91,71 @@ export function GameInviteNotification({
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex gap-2 mt-3">
-          {!isFull && (
+        {isEnteringName && !isFull && (
+          <div className="mt-3 space-y-2 animate-in slide-in-from-top-2 duration-300">
+            <input
+              type="text"
+              placeholder="Your display name"
+              value={guestName}
+              onChange={(e) => setGuestName(e.target.value)}
+              className="w-full bg-slate-800 border border-purple-500/30 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-purple-500 transition-all"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && guestName.trim()) {
+                  onAccept(guestName.trim())
+                }
+              }}
+            />
             <Button
-              onClick={onAccept}
+              onClick={() => {
+                if (guestName.trim()) onAccept(guestName.trim())
+              }}
               size="sm"
-              className="flex-1 bg-purple-500 hover:bg-purple-600 text-white h-8"
+              className="w-full bg-purple-500 hover:bg-purple-600 text-white h-8"
+              disabled={!guestName.trim()}
             >
               <Check className="w-3 h-3 mr-1" />
-              Join
+              Confirm & Play
             </Button>
-          )}
+          </div>
+        )}
 
-          {onAcceptAsSpectator && (
+        {/* Action Buttons */}
+        {!isEnteringName && (
+          <div className="flex gap-2 mt-3">
+            {!isFull && (
+              <Button
+                onClick={() => setIsEnteringName(true)}
+                size="sm"
+                className="flex-1 bg-purple-500 hover:bg-purple-600 text-white h-8"
+              >
+                <Check className="w-3 h-3 mr-1" />
+                Join
+              </Button>
+            )}
+
+            {onAcceptAsSpectator && (
+              <Button
+                onClick={onAcceptAsSpectator}
+                size="sm"
+                variant="outline"
+                className="flex-1 border-slate-600 hover:bg-slate-700 text-gray-300 h-8"
+              >
+                <Eye className="w-3 h-3 mr-1" />
+                Spectate
+              </Button>
+            )}
+
             <Button
-              onClick={onAcceptAsSpectator}
+              onClick={onDecline}
+              variant="ghost"
               size="sm"
-              variant="outline"
-              className="flex-1 border-slate-600 hover:bg-slate-700 text-gray-300 h-8"
+              className="flex-1 hover:bg-slate-700 text-gray-300 h-8"
             >
-              <Eye className="w-3 h-3 mr-1" />
-              Spectate
+              Decline
             </Button>
-          )}
-
-          <Button
-            onClick={onDecline}
-            variant="ghost"
-            size="sm"
-            className="flex-1 hover:bg-slate-700 text-gray-300 h-8"
-          >
-            Decline
-          </Button>
-        </div>
+          </div>
+        )}
       </div>
     </NotificationCard>
   )

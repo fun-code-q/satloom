@@ -12,6 +12,7 @@ import { QuizSystem, type QuizSession, type QuizAnswer } from "@/utils/games/qui
 import { presentationModeManager } from "@/utils/infra/presentation-mode"
 import { EncryptionManager } from "@/utils/infra/encryption-manager"
 import { p2pFileTransfer } from "@/utils/infra/p2p-file-transfer"
+import { karaokeManager } from "@/utils/games/karaoke"
 import type { Message } from "../message-bubble"
 
 interface UseChatEffectsParams {
@@ -26,6 +27,7 @@ interface UseChatEffectsParams {
     setReplyingTo: (msg: Message | null) => void
     // State setters
     setIncomingCall: (val: any) => void
+    currentCall: CallData | null
     setCurrentCall: (val: any) => void
     setIsInCall: (val: boolean) => void
     setShowAudioCall: (val: boolean) => void
@@ -40,6 +42,7 @@ interface UseChatEffectsParams {
     setTheaterInvite: (val: any) => void
     setIsTheaterHost: (val: boolean) => void
     setGameInvite: (val: any) => void
+    setKaraokeInvite: (val: any) => void
     setPresentationInvite: (val: any) => void
     setPinnedMessageId: (val: string | null) => void
     setPinnedMessage: (val: Message | null) => void
@@ -58,6 +61,10 @@ interface UseChatEffectsParams {
     listenForGameInvites: () => () => void
     startQuizTimer: (time: number) => void
     handleQuizFinished: (sessionId: string) => void
+    showSharedNotes: boolean
+    showSharedTaskList: boolean
+    setHasUnreadNotes: (val: boolean) => void
+    setHasUnreadTasks: (val: boolean) => void
     pinnedMessageId: string | null
 }
 
@@ -65,11 +72,12 @@ export function useChatEffects(params: UseChatEffectsParams) {
     const {
         roomId, userProfile, currentUserId, themeContext,
         messages, setMessages, setOnlineUsers, setReplyingTo,
-        setIncomingCall, setCurrentCall, setIsInCall, setShowAudioCall, setShowVideoCall,
+        setIncomingCall, currentCall, setCurrentCall, setIsInCall, setShowAudioCall, setShowVideoCall,
         setCurrentQuizSession, setQuizAnswers, setQuizResults, setUserQuizAnswer, setShowQuizResults, setQuizTimeRemaining,
         setCurrentTheaterSession, setTheaterInvite, setIsTheaterHost,
-        setGameInvite, setPresentationInvite, setPinnedMessageId, setPinnedMessage, setIsHost,
+        setGameInvite, setKaraokeInvite, setPresentationInvite, setPinnedMessageId, setPinnedMessage, setIsHost,
         setRoomIsProtected, setPasswordValidated, setMoodBackgroundImage, setMoodBackgroundMusic,
+        setHasUnreadNotes, setHasUnreadTasks, showSharedNotes, showSharedTaskList,
         typingTimeoutRef, quizTimerRef, quizSessionUnsubscribeRef, quizAnswersUnsubscribeRef,
         listenForGameInvites, startQuizTimer, handleQuizFinished, pinnedMessageId,
     } = params
@@ -83,6 +91,12 @@ export function useChatEffects(params: UseChatEffectsParams) {
     const prevOnlineUsersRef = useRef<string[]>([])
     const lastMessageCountRef = useRef(messages.length)
     const wasCallAnsweredRef = useRef(false)
+    const currentCallRef = useRef<CallData | null>(null)
+
+    // Sync currentCallRef
+    useEffect(() => {
+        currentCallRef.current = params.currentCall
+    }, [params.currentCall])
 
     // Initialize P2P File Transfer
     useEffect(() => {
@@ -102,6 +116,15 @@ export function useChatEffects(params: UseChatEffectsParams) {
         }
         initEncryption()
     }, [roomId])
+
+    // Clear unread badges when panels are opened
+    useEffect(() => {
+        if (showSharedNotes) setHasUnreadNotes(false)
+    }, [showSharedNotes])
+
+    useEffect(() => {
+        if (showSharedTaskList) setHasUnreadTasks(false)
+    }, [showSharedTaskList])
 
     // Mark messages as read
     useEffect(() => {
@@ -146,6 +169,7 @@ export function useChatEffects(params: UseChatEffectsParams) {
         setIsTheaterHost(false)
         setOnlineUsers([])
         setGameInvite(null)
+        setKaraokeInvite(null)
         prevOnlineUsersRef.current = []
 
         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
@@ -245,6 +269,9 @@ export function useChatEffects(params: UseChatEffectsParams) {
                 if (call.participants.includes(currentUserId) || call.callerId === currentUserId) {
                     setCurrentCall(call)
                     if (call.status === "answered") {
+                        if (!wasCallAnsweredRef.current) {
+                            notificationSystem.callConnected()
+                        }
                         wasCallAnsweredRef.current = true
                         setIsInCall(true)
                         // Handle modal visibility based on call type
@@ -286,6 +313,33 @@ export function useChatEffects(params: UseChatEffectsParams) {
 
         const gameInviteUnsubscribe = listenForGameInvites()
 
+        // Karaoke Invitations
+        const karaokeInviteUnsubscribe = karaokeManager.listenForInvites((invite) => {
+            if (invite) {
+                console.log("Incoming karaoke invite:", invite)
+                setKaraokeInvite(invite)
+                // Auto-clear invite after 45 seconds
+                setTimeout(() => setKaraokeInvite(null), 45000)
+            } else {
+                setKaraokeInvite(null)
+            }
+        })
+
+        // Productivity Badges Listening
+        const notesRef = ref(db, `rooms/${roomId}/notes/lastUpdatedAt`)
+        const notesUnsubscribe = onValue(notesRef, (snapshot) => {
+            if (snapshot.exists() && !showSharedNotes) {
+                setHasUnreadNotes(true)
+            }
+        })
+
+        const tasksRef = ref(db, `rooms/${roomId}/tasks/lastUpdatedAt`)
+        const tasksUnsubscribe = onValue(tasksRef, (snapshot) => {
+            if (snapshot.exists() && !showSharedTaskList) {
+                setHasUnreadTasks(true)
+            }
+        })
+
         notificationSystem.roomJoined(roomId)
 
         return () => {
@@ -297,6 +351,9 @@ export function useChatEffects(params: UseChatEffectsParams) {
             presentationUnsubscribe()
             pinnedMessageUnsubscribe()
             gameInviteUnsubscribe()
+            karaokeInviteUnsubscribe()
+            notesUnsubscribe()
+            tasksUnsubscribe()
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
             if (quizTimerRef.current) clearInterval(quizTimerRef.current)
             setMessages([])
@@ -312,6 +369,12 @@ export function useChatEffects(params: UseChatEffectsParams) {
             callSignaling.cleanup()
             theaterSignaling.cleanup()
             quizSystem.cleanup()
+
+            // End active call if any
+            if (currentCallRef.current) {
+                console.log("Cleaning up active call on room exit:", currentCallRef.current.id)
+                callSignaling.endCall(roomId, currentCallRef.current.id)
+            }
         }
     }, [roomId, currentUserId, userProfile.name, (userProfile as any).avatar, themeContext])
 

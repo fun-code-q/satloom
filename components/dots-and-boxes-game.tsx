@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
-import { Mic, MicOff, Volume2, VolumeX, X, Trophy, Clock, Pause, Play, RotateCcw, Settings } from "lucide-react"
+import { Mic, MicOff, Volume2, VolumeX, X, Trophy, Clock, Pause, Play, RotateCcw, Settings, Minimize2 } from "lucide-react"
 import { PlaygroundSetupModal } from "@/components/playground-setup-modal"
 import { AudioVisualizer } from "@/components/audio-visualizer"
 import { PrivacyShield } from "@/components/privacy-shield"
@@ -18,6 +18,7 @@ interface DotsAndBoxesGameComponentProps {
   roomId: string
   currentUserId: string
   onExit: () => void
+  onMinimize?: () => void
 }
 
 export function DotsAndBoxesGameComponent({
@@ -25,6 +26,7 @@ export function DotsAndBoxesGameComponent({
   roomId,
   currentUserId,
   onExit,
+  onMinimize,
 }: DotsAndBoxesGameComponentProps) {
   const [gameTime, setGameTime] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
@@ -124,6 +126,11 @@ export function DotsAndBoxesGameComponent({
             <Button variant="ghost" size="icon" onClick={() => setIsPaused(!isPaused)} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-700 hover:bg-slate-600 haptic">
               {isPaused ? <Play className="w-4 h-4 sm:w-5 sm:h-5" /> : <Pause className="w-4 h-4 sm:w-5 sm:h-5" />}
             </Button>
+            {onMinimize && (
+              <Button variant="ghost" size="icon" onClick={onMinimize} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-700 hover:bg-slate-600 haptic">
+                <Minimize2 className="w-4 h-4 sm:w-5 sm:h-5" />
+              </Button>
+            )}
             <Button variant="ghost" size="icon" onClick={onExit} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-red-500/20 hover:bg-red-500 text-red-500 hover:text-white haptic">
               <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>

@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react"
 import { ChessManager, type ChessGameSession } from "@/utils/games/chess-manager"
 import { chessGame, type Piece, type PieceColor } from "@/utils/games/chess-game"
 import { Button } from "@/components/ui/button"
-import { Loader2, X, RotateCcw, Trophy, Clock, Pause, Play, Settings } from "lucide-react"
+import { Loader2, X, RotateCcw, Trophy, Clock, Pause, Play, Settings, Minimize2 } from "lucide-react"
 import { PlaygroundSetupModal } from "../playground-setup-modal"
 import { toast } from "sonner"
 import { cn } from "@/utils/core/cn"
@@ -15,9 +15,10 @@ interface ChessBoardProps {
     roomId: string
     currentUserId: string
     onClose?: () => void
+    onMinimize?: () => void
 }
 
-export function ChessBoard({ gameConfig, roomId, currentUserId, onClose }: ChessBoardProps) {
+export function ChessBoard({ gameConfig, roomId, currentUserId, onClose, onMinimize }: ChessBoardProps) {
     const [session, setSession] = useState<ChessGameSession | null>(null)
     const [board, setBoard] = useState<(Piece | null)[][]>([])
     const [selectedSquare, setSelectedSquare] = useState<{ row: number, col: number } | null>(null)
@@ -231,6 +232,16 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose }: Chess
                     >
                         {isPaused ? <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Pause className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
                     </Button>
+                    {onMinimize && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-700 hover:bg-slate-600 text-white"
+                            onClick={onMinimize}
+                        >
+                            <Minimize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        </Button>
+                    )}
                     <Button
                         variant="ghost"
                         size="icon"
@@ -417,6 +428,7 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose }: Chess
                         handleRestart()
                     }}
                     initialGame="chess"
+                    hostName={session.whitePlayer.id === currentUserId ? session.whitePlayer.name : session.blackPlayer.name}
                 />
             )}
         </div>

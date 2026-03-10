@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from "react"
 import { createPortal } from "react-dom"
 import { Button } from "../ui/button"
-import { X, Smile } from "lucide-react"
+import { X, Smile, Palette, Monitor, Gamepad2 } from "lucide-react"
 import { AudioCallModal } from "../audio-call-modal"
 import { VideoCallModal } from "../video-call-modal"
 import { SettingsModal } from "../settings-modal"
@@ -22,6 +22,7 @@ import { Soundboard } from "../soundboard"
 import { PasswordEntryModal } from "../password-entry-modal"
 import { HostPasswordModal } from "../host-password-modal"
 import { KaraokeSetupModal, KaraokePlayer } from "../karaoke"
+import { KaraokeInviteNotification } from "../karaoke-invite-notification"
 import { MafiaSetupModal, MafiaGame } from "../mafia"
 import { SharedNotesPanel } from "../shared-notes-panel"
 import { SharedTaskListPanel } from "../shared-task-list-panel"
@@ -50,7 +51,7 @@ import type { TheaterSession, TheaterInvite } from "@/utils/infra/theater-signal
 import type { QuizSession, QuizAnswer, QuizResult } from "@/utils/games/quiz-system"
 import type { Message } from "../message-bubble"
 import type { GameInvite } from "@/utils/infra/game-signaling"
-import type { KaraokeSong } from "@/utils/games/karaoke"
+import type { KaraokeSong, KaraokeInvite } from "@/utils/games/karaoke"
 
 interface ChatModalsProps {
     roomId: string
@@ -113,7 +114,11 @@ interface ChatModalsProps {
     // Whiteboard
     showWhiteboard: boolean
     setShowWhiteboard: (val: boolean) => void
+    isWhiteboardMinimized: boolean
+    setIsWhiteboardMinimized: (val: boolean) => void
     // Playground
+    isPlaygroundMinimized: boolean
+    setIsPlaygroundMinimized: (val: boolean) => void
     showPlaygroundSetup: boolean
     setShowPlaygroundSetup: (val: boolean) => void
     playgroundGame: "dots" | "chess" | "tictactoe" | "connect4"
@@ -159,6 +164,8 @@ interface ChatModalsProps {
     currentKaraokeSession: any
     handleStartKaraoke: (song: KaraokeSong) => void
     handleExitKaraoke: () => void
+    karaokeInvite: KaraokeInvite | null
+    setKaraokeInvite: (val: KaraokeInvite | null) => void
     // Mafia
     showMafiaSetup: boolean
     setShowMafiaSetup: (val: boolean) => void
@@ -182,6 +189,8 @@ interface ChatModalsProps {
     setShowPresentationSetup: (val: boolean) => void
     showPresentationViewer: boolean
     setShowPresentationViewer: (val: boolean) => void
+    isPresentationMinimized: boolean
+    setIsPresentationMinimized: (val: boolean) => void
     currentPresentationId: string | null
     setCurrentPresentationId: (val: string | null) => void
     showBurnerLink: boolean
@@ -283,6 +292,37 @@ export function ChatModals(props: ChatModalsProps) {
                         </div>
                     </div>
                 )}
+
+                {/* Minimized Feature Indicators */}
+                <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-[40]">
+                    {props.showWhiteboard && props.isWhiteboardMinimized && (
+                        <Button
+                            onClick={() => props.setIsWhiteboardMinimized(false)}
+                            className="bg-cyan-600/90 hover:bg-cyan-500 text-white rounded-2xl p-4 shadow-2xl backdrop-blur-md border border-cyan-400/30 flex items-center gap-3 animate-in slide-in-from-right-10 duration-300"
+                        >
+                            <Palette className="h-5 w-5" />
+                            <span className="text-xs font-black tracking-widest uppercase">Restore Whiteboard</span>
+                        </Button>
+                    )}
+                    {props.showPresentationViewer && props.isPresentationMinimized && (
+                        <Button
+                            onClick={() => props.setIsPresentationMinimized(false)}
+                            className="bg-purple-600/90 hover:bg-purple-500 text-white rounded-2xl p-4 shadow-2xl backdrop-blur-md border border-purple-400/30 flex items-center gap-3 animate-in slide-in-from-right-10 duration-300"
+                        >
+                            <Monitor className="h-5 w-5" />
+                            <span className="text-xs font-black tracking-widest uppercase">Restore Presentation</span>
+                        </Button>
+                    )}
+                    {props.showPlayground && props.isPlaygroundMinimized && (
+                        <Button
+                            onClick={() => props.setIsPlaygroundMinimized(false)}
+                            className="bg-cyan-600/90 hover:bg-cyan-500 text-white rounded-2xl p-4 shadow-2xl backdrop-blur-md border border-cyan-400/30 flex items-center gap-3 animate-in slide-in-from-right-10 duration-300"
+                        >
+                            <Gamepad2 className="h-5 w-5" />
+                            <span className="text-xs font-black tracking-widest uppercase">Restore Game</span>
+                        </Button>
+                    )}
+                </div>
             </div>
 
             {/* Message Input - Sits at its own level */}
@@ -353,6 +393,16 @@ export function ChatModals(props: ChatModalsProps) {
                     onDecline={props.handleDeclinePresentationInvite}
                 />
             )}
+            {props.karaokeInvite && renderModal(
+                <KaraokeInviteNotification
+                    invite={props.karaokeInvite}
+                    onAccept={async () => {
+                        await props.handleStartKaraoke(props.karaokeInvite!.song)
+                        props.setKaraokeInvite(null)
+                    }}
+                    onDecline={() => props.setKaraokeInvite(null)}
+                />
+            )}
 
             {/* Global Modals - Rendered inline since they manage their own overlays/z-index */}
             <AudioCallModal isOpen={props.showAudioCall} onClose={props.handleEndCall} onAnswer={props.handleAnswerCall} roomId={roomId} currentUser={userProfile.name} currentUserId={currentUserId} callData={props.currentCall || props.incomingCall} isIncoming={!!(props.currentCall || props.incomingCall) && (props.currentCall || props.incomingCall)?.callerId !== currentUserId} onSwitchToVideo={() => props.handleSwitchCallType("video")} />
@@ -365,23 +415,23 @@ export function ChatModals(props: ChatModalsProps) {
                 </>
             )}
             <MediaRecorder isOpen={props.showMediaRecorder} onClose={() => props.setShowMediaRecorder(false)} mode={props.mediaRecorderMode} onMediaReady={props.handleMediaRecorded} onRecordingStart={() => { }} onRecordingEnd={props.handleStopMediaRecording} />
-            <PlaygroundSetupModal isOpen={props.showPlaygroundSetup} onClose={() => props.setShowPlaygroundSetup(false)} onStartGame={props.handleStartPlayground} initialGame={props.playgroundGame} />
+            <PlaygroundSetupModal isOpen={props.showPlaygroundSetup} onClose={() => props.setShowPlaygroundSetup(false)} onStartGame={props.handleStartPlayground} initialGame={props.playgroundGame} hostName={userProfile.name} />
             <TheaterSetupModal isOpen={props.showTheaterSetup} onClose={() => props.setShowTheaterSetup(false)} onCreateSession={props.handleCreateTheaterSession} />
 
             {/* Overlays */}
-            {props.showPlayground && props.playgroundConfig && (
+            {props.showPlayground && !props.isPlaygroundMinimized && props.playgroundConfig && (
                 <div className="fixed inset-0 z-50 bg-slate-900 flex items-center justify-center p-4">
                     {props.playgroundConfig.selectedGame === "dots" && (
-                        <DotsAndBoxesGameComponent gameConfig={props.playgroundConfig} roomId={roomId} currentUserId={currentUserId} onExit={props.handleExitPlayground} />
+                        <DotsAndBoxesGameComponent gameConfig={props.playgroundConfig} roomId={roomId} currentUserId={currentUserId} onExit={props.handleExitPlayground} onMinimize={() => props.setIsPlaygroundMinimized(true)} />
                     )}
                     {props.playgroundConfig.selectedGame === "chess" && (
-                        <ChessBoard gameConfig={props.playgroundConfig} roomId={roomId} currentUserId={currentUserId} onClose={props.handleExitPlayground} />
+                        <ChessBoard gameConfig={props.playgroundConfig} roomId={roomId} currentUserId={currentUserId} onClose={props.handleExitPlayground} onMinimize={() => props.setIsPlaygroundMinimized(true)} />
                     )}
                     {props.playgroundConfig.selectedGame === "connect4" && (
-                        <ConnectFourBoard gameConfig={props.playgroundConfig} roomId={roomId} currentUserId={currentUserId} onClose={props.handleExitPlayground} />
+                        <ConnectFourBoard gameConfig={props.playgroundConfig} roomId={roomId} currentUserId={currentUserId} onClose={props.handleExitPlayground} onMinimize={() => props.setIsPlaygroundMinimized(true)} />
                     )}
                     {props.playgroundConfig.selectedGame === "tictactoe" && (
-                        <TicTacToeBoard gameConfig={props.playgroundConfig} roomId={roomId} currentUserId={currentUserId} onClose={props.handleExitPlayground} />
+                        <TicTacToeBoard gameConfig={props.playgroundConfig} roomId={roomId} currentUserId={currentUserId} onClose={props.handleExitPlayground} onMinimize={() => props.setIsPlaygroundMinimized(true)} />
                     )}
                 </div>
             )}
@@ -421,7 +471,13 @@ export function ChatModals(props: ChatModalsProps) {
 
             <QuizSetupModal isOpen={props.showQuizSetup} onClose={() => props.setShowQuizSetup(false)} onStartQuiz={props.handleStartQuiz} />
             <MoodSetupModal isOpen={props.showMoodSetup} onClose={() => props.setShowMoodSetup(false)} roomId={roomId || ""} />
-            <WhiteboardModal isOpen={props.showWhiteboard} onClose={() => props.setShowWhiteboard(false)} roomId={roomId} currentUser={currentUserId} />
+            <WhiteboardModal
+                isOpen={props.showWhiteboard && !props.isWhiteboardMinimized}
+                onClose={() => props.setShowWhiteboard(false)}
+                onMinimize={() => props.setIsWhiteboardMinimized(true)}
+                roomId={roomId}
+                currentUser={currentUserId}
+            />
             <Soundboard isOpen={props.showSoundboard} onClose={() => props.setShowSoundboard(false)} roomId={roomId} userId={currentUserId} userName={userProfile.name} />
             <PasswordEntryModal isOpen={props.showPasswordEntry} roomId={roomId} onSuccess={() => { props.setShowPasswordEntry(false); props.setPasswordValidated(true) }} onCancel={() => props.setShowPasswordEntry(false)} />
             <HostPasswordModal isOpen={props.showHostPassword} roomId={roomId} isProtected={props.roomIsProtected} onClose={() => props.setShowHostPassword(false)} onProtectedChange={props.setRoomIsProtected} />
@@ -466,7 +522,15 @@ export function ChatModals(props: ChatModalsProps) {
                 }}
             />
             {props.showPresentationViewer && props.currentPresentationId && (
-                <PresentationViewer roomId={roomId} userId={currentUserId} userName={userProfile.name} presentationId={props.currentPresentationId} onClose={() => { props.setShowPresentationViewer(false); props.setCurrentPresentationId(null) }} />
+                <PresentationViewer
+                    roomId={roomId}
+                    userId={currentUserId}
+                    userName={userProfile.name}
+                    presentationId={props.currentPresentationId}
+                    isOpen={!props.isPresentationMinimized}
+                    onClose={() => { props.setShowPresentationViewer(false); props.setCurrentPresentationId(null) }}
+                    onMinimize={() => props.setIsPresentationMinimized(true)}
+                />
             )}
             <BurnerLinkModal isOpen={props.showBurnerLink} onClose={() => props.setShowBurnerLink(false)} roomId={roomId} userId={currentUserId} />
             <GifAvatarPicker isOpen={props.showGifAvatar} onClose={() => props.setShowGifAvatar(false)} onSelectAvatar={(avatarUrl) => { props.setUserAvatar(avatarUrl); props.setShowGifAvatar(false) }} />

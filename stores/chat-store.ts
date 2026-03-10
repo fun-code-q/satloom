@@ -10,6 +10,8 @@ interface ChatState {
     replyingTo: Message | null
     isTyping: boolean
     searchQuery: string
+    hasUnreadNotes: boolean
+    hasUnreadTasks: boolean
 
     // Actions
     setRoomId: (id: string) => void
@@ -20,6 +22,8 @@ interface ChatState {
     setReplyingTo: (message: Message | null) => void
     setIsTyping: (isTyping: boolean) => void
     setSearchQuery: (query: string) => void
+    setHasUnreadNotes: (val: boolean) => void
+    setHasUnreadTasks: (val: boolean) => void
     reset: () => void
 }
 
@@ -31,6 +35,8 @@ export const useChatStore = create<ChatState>((set) => ({
     replyingTo: null,
     isTyping: false,
     searchQuery: "",
+    hasUnreadNotes: false,
+    hasUnreadTasks: false,
 
     setRoomId: (roomId) => set({ roomId }),
     setCurrentUser: (currentUser) => set({ currentUser }),
@@ -40,12 +46,16 @@ export const useChatStore = create<ChatState>((set) => ({
     setReplyingTo: (replyingTo) => set({ replyingTo }),
     setIsTyping: (isTyping) => set({ isTyping }),
     setSearchQuery: (searchQuery) => set({ searchQuery }),
+    setHasUnreadNotes: (hasUnreadNotes) => set({ hasUnreadNotes }),
+    setHasUnreadTasks: (hasUnreadTasks) => set({ hasUnreadTasks }),
     reset: () => set({
         roomId: null,
         messages: [],
         onlineUsers: [],
         replyingTo: null,
         isTyping: false,
-        searchQuery: ""
+        searchQuery: "",
+        hasUnreadNotes: false,
+        hasUnreadTasks: false
     })
 }))

@@ -22,6 +22,7 @@ export function useChatUIState() {
     const [mediaRecorderMode, setMediaRecorderMode] = useState<"audio" | "video" | "photo">("audio")
     const [showKnockKnock, setShowKnockKnock] = useState(false)
     const [showWhiteboard, setShowWhiteboard] = useState(false)
+    const [isWhiteboardMinimized, setIsWhiteboardMinimized] = useState(false)
     const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false)
     const [showQuizSetup, setShowQuizSetup] = useState(false)
     const [showQuizResults, setShowQuizResults] = useState(false)
@@ -40,6 +41,7 @@ export function useChatUIState() {
     const [showBingoGame, setShowBingoGame] = useState(false)
     const [showPresentationSetup, setShowPresentationSetup] = useState(false)
     const [showPresentationViewer, setShowPresentationViewer] = useState(false)
+    const [isPresentationMinimized, setIsPresentationMinimized] = useState(false)
     const [showBurnerLink, setShowBurnerLink] = useState(false)
     const [showGifAvatar, setShowGifAvatar] = useState(false)
     const [showBreakoutRooms, setShowBreakoutRooms] = useState(false)
@@ -61,6 +63,8 @@ export function useChatUIState() {
     const [showTheaterSetup, setShowTheaterSetup] = useState(false)
     const [showTheaterFullscreen, setShowTheaterFullscreen] = useState(false)
 
+    const [isPlaygroundMinimized, setIsPlaygroundMinimized] = useState(false)
+
     return {
         showGameMenu, setShowGameMenu,
         activeGame, setActiveGame,
@@ -78,6 +82,7 @@ export function useChatUIState() {
         mediaRecorderMode, setMediaRecorderMode,
         showKnockKnock, setShowKnockKnock,
         showWhiteboard, setShowWhiteboard,
+        isWhiteboardMinimized, setIsWhiteboardMinimized,
         showLeaveConfirmation, setShowLeaveConfirmation,
         showQuizSetup, setShowQuizSetup,
         showQuizResults, setShowQuizResults,
@@ -96,6 +101,7 @@ export function useChatUIState() {
         showBingoGame, setShowBingoGame,
         showPresentationSetup, setShowPresentationSetup,
         showPresentationViewer, setShowPresentationViewer,
+        isPresentationMinimized, setIsPresentationMinimized,
         showBurnerLink, setShowBurnerLink,
         showGifAvatar, setShowGifAvatar,
         showBreakoutRooms, setShowBreakoutRooms,
@@ -107,6 +113,7 @@ export function useChatUIState() {
         playgroundConfig, setPlaygroundConfig,
         showTheaterSetup, setShowTheaterSetup,
         showTheaterFullscreen, setShowTheaterFullscreen,
+        isPlaygroundMinimized, setIsPlaygroundMinimized,
         isMoodSelectorOpen, setIsMoodSelectorOpen,
         showEmojiPicker, setShowEmojiPicker,
         showChatSearch, setShowChatSearch,

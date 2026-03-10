@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { CallData } from "@/utils/infra/call-signaling"
 import { TheaterSession, TheaterInvite } from "@/utils/infra/theater-signaling"
+import { KaraokeInvite } from "@/utils/games/karaoke"
 import { QuizSession, QuizAnswer, QuizResult } from "@/utils/games/quiz-system"
 import { GameInvite } from "@/utils/infra/game-signaling"
 import { Message } from "../message-bubble"
@@ -39,6 +40,7 @@ export function useChatFeatureState(initialAvatar?: string) {
 
     // Feature Data
     const [currentKaraokeSession, setCurrentKaraokeSession] = useState<any>(null)
+    const [karaokeInvite, setKaraokeInvite] = useState<KaraokeInvite | null>(null)
     const [currentPresentationId, setCurrentPresentationId] = useState<string | null>(null)
     const [presentationInvite, setPresentationInvite] = useState<{ presentationId: string; hostName: string; hostId: string } | null>(null)
 
@@ -71,6 +73,7 @@ export function useChatFeatureState(initialAvatar?: string) {
         gameInvite, setGameInvite,
         mafiaConfig, setMafiaConfig,
         currentKaraokeSession, setCurrentKaraokeSession,
+        karaokeInvite, setKaraokeInvite,
         currentPresentationId, setCurrentPresentationId,
         presentationInvite, setPresentationInvite,
         pinnedMessageId, setPinnedMessageId,

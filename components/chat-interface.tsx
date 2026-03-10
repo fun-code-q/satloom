@@ -46,7 +46,8 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
   console.log("ChatInterface: Initialized with roomId:", roomId)
 
   const {
-    messages, onlineUsers, setMessages, setOnlineUsers, setReplyingTo, setCurrentUser, setRoomId
+    messages, onlineUsers, setMessages, setOnlineUsers, setReplyingTo, setCurrentUser, setRoomId,
+    hasUnreadNotes, hasUnreadTasks, setHasUnreadNotes, setHasUnreadTasks
   } = useChatStore()
 
   // Use modular hooks for state
@@ -62,7 +63,7 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
     showAudioCall, setShowAudioCall, showVideoCall, setShowVideoCall,
     showSettings, setShowSettings, showAbout, setShowAbout,
     showMediaRecorder, setShowMediaRecorder, mediaRecorderMode, setMediaRecorderMode,
-    showWhiteboard, setShowWhiteboard,
+    showWhiteboard, setShowWhiteboard, isWhiteboardMinimized, setIsWhiteboardMinimized,
     showLeaveConfirmation, setShowLeaveConfirmation, showQuizSetup, setShowQuizSetup,
     showQuizResults, setShowQuizResults, showMoodSetup, setShowMoodSetup,
     showSoundboard, setShowSoundboard, showPasswordEntry, setShowPasswordEntry,
@@ -72,12 +73,15 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
     showRemoteBuzzer, setShowRemoteBuzzer, showRandomMatch, setShowRandomMatch,
     showBingoSetup, setShowBingoSetup, showBingoGame, setShowBingoGame,
     showPresentationSetup, setShowPresentationSetup, showPresentationViewer, setShowPresentationViewer,
+    isPresentationMinimized, setIsPresentationMinimized,
     showBurnerLink, setShowBurnerLink, showGifAvatar, setShowGifAvatar,
     showBreakoutRooms, setShowBreakoutRooms, showPrivacyPolicy, setShowPrivacyPolicy,
     showTermsOfService, setShowTermsOfService, playgroundGame, setPlaygroundGame,
     showPlaygroundSetup, setShowPlaygroundSetup, showPlayground, setShowPlayground,
     playgroundConfig, setPlaygroundConfig, showTheaterSetup, setShowTheaterSetup,
-    showTheaterFullscreen, setShowTheaterFullscreen, isMoodSelectorOpen, setIsMoodSelectorOpen,
+    showTheaterFullscreen, setShowTheaterFullscreen,
+    isPlaygroundMinimized, setIsPlaygroundMinimized,
+    isMoodSelectorOpen, setIsMoodSelectorOpen,
     showEmojiPicker, setShowEmojiPicker, showChatSearch, setShowChatSearch
   } = ui
 
@@ -95,6 +99,7 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
     roomIsProtected, setRoomIsProtected,
     presentationInvite, setPresentationInvite,
     currentKaraokeSession, setCurrentKaraokeSession,
+    karaokeInvite, setKaraokeInvite,
     moodBackgroundImage, setMoodBackgroundImage, moodBackgroundMusic, setMoodBackgroundMusic,
     mafiaConfig, setMafiaConfig, currentPresentationId, setCurrentPresentationId
   } = feature
@@ -143,6 +148,7 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
     userQuizAnswer: feature.userQuizAnswer,
     currentKaraokeSession: feature.currentKaraokeSession,
     presentationInvite: feature.presentationInvite,
+    playgroundGame,
     setShowAudioCall, setShowVideoCall, setIsInCall,
     setIncomingCall, setCurrentCall,
     setShowTheaterSetup, setShowTheaterFullscreen,
@@ -171,13 +177,15 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
   useChatEffects({
     roomId, userProfile, currentUserId, themeContext,
     messages, setMessages, setOnlineUsers, setReplyingTo,
-    setIncomingCall, setCurrentCall, setIsInCall, setShowAudioCall, setShowVideoCall,
+    setIncomingCall, currentCall: feature.currentCall, setCurrentCall, setIsInCall, setShowAudioCall, setShowVideoCall,
     setCurrentQuizSession, setQuizAnswers, setQuizResults, setUserQuizAnswer,
     setShowQuizResults, setQuizTimeRemaining,
     setCurrentTheaterSession, setTheaterInvite, setIsTheaterHost,
-    setGameInvite, setPresentationInvite, setPinnedMessageId, setPinnedMessage, setIsHost,
+    setGameInvite, setKaraokeInvite, setPresentationInvite, setPinnedMessageId, setPinnedMessage, setIsHost,
     setRoomIsProtected, setPasswordValidated,
     setMoodBackgroundImage, setMoodBackgroundMusic,
+    showSharedNotes, showSharedTaskList,
+    setHasUnreadNotes, setHasUnreadTasks,
     typingTimeoutRef, quizTimerRef, quizSessionUnsubscribeRef, quizAnswersUnsubscribeRef,
     listenForGameInvites: calls.listenForGameInvites,
     startQuizTimer: calls.startQuizTimer,
@@ -208,10 +216,20 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
 
         {/* Mood Background Overlay */}
         {moodBackgroundImage && (
-          <div className="absolute inset-0 z-0 opacity-20 bg-cover bg-center transition-all duration-1000" style={{ backgroundImage: `url(${moodBackgroundImage})` }} />
+          <div className="absolute inset-0 z-0 opacity-100 bg-cover bg-center transition-all duration-1000" style={{ backgroundImage: `url(${moodBackgroundImage})` }} />
         )}
         {moodBackgroundMusic && (
-          <audio src={moodBackgroundMusic} autoPlay loop className="hidden" />
+          <audio
+            src={moodBackgroundMusic}
+            autoPlay
+            loop
+            className="hidden"
+            ref={(el) => {
+              if (el) {
+                el.play().catch(e => console.log("Background music autoplay blocked, waiting for interaction", e));
+              }
+            }}
+          />
         )}
 
         <ChatHeader
@@ -248,6 +266,15 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
           firebaseConnected={firebaseConnected}
           showChatSearch={showChatSearch}
           setShowChatSearch={setShowChatSearch}
+          hasUnreadNotes={hasUnreadNotes}
+          hasUnreadTasks={hasUnreadTasks}
+        />
+
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          onChange={(e) => handlers.handleFileSelect("input", e.target.files?.[0] || e.target.files)}
         />
 
         <ChatModals
@@ -308,9 +335,13 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
           handleStopMediaRecording={handlers.handleStopMediaRecording}
           showWhiteboard={showWhiteboard}
           setShowWhiteboard={setShowWhiteboard}
+          isWhiteboardMinimized={isWhiteboardMinimized}
+          setIsWhiteboardMinimized={setIsWhiteboardMinimized}
           showPlaygroundSetup={showPlaygroundSetup}
           setShowPlaygroundSetup={setShowPlaygroundSetup}
           showPlayground={showPlayground}
+          isPlaygroundMinimized={isPlaygroundMinimized}
+          setIsPlaygroundMinimized={setIsPlaygroundMinimized}
           playgroundConfig={playgroundConfig}
           handleStartPlayground={calls.handleStartPlayground}
           handleExitPlayground={calls.handleExitPlayground}
@@ -344,6 +375,8 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
           setShowPresentationSetup={setShowPresentationSetup}
           showPresentationViewer={showPresentationViewer}
           setShowPresentationViewer={setShowPresentationViewer}
+          isPresentationMinimized={isPresentationMinimized}
+          setIsPresentationMinimized={setIsPresentationMinimized}
           currentPresentationId={currentPresentationId}
           setCurrentPresentationId={setCurrentPresentationId}
           showSharedNotes={showSharedNotes}
@@ -382,6 +415,8 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
           showKaraokeSetup={showKaraokeSetup}
           setShowKaraokeSetup={setShowKaraokeSetup}
           currentKaraokeSession={currentKaraokeSession}
+          karaokeInvite={karaokeInvite}
+          setKaraokeInvite={setKaraokeInvite}
           handleStartKaraoke={calls.handleStartKaraoke}
           handleExitKaraoke={calls.handleExitKaraoke}
           showMafiaGame={showMafiaGame}

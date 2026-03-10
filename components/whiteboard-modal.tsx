@@ -14,6 +14,7 @@ interface WhiteboardModalProps {
     onClose: () => void
     roomId: string
     currentUser: string
+    onMinimize?: () => void
 }
 
 interface Point {
@@ -29,7 +30,7 @@ interface Line {
     userId: string
 }
 
-export function WhiteboardModal({ isOpen, onClose, roomId, currentUser }: WhiteboardModalProps) {
+export function WhiteboardModal({ isOpen, onClose, roomId, currentUser, onMinimize }: WhiteboardModalProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const [isDrawing, setIsDrawing] = useState(false)
     const [color, setColor] = useState("#000000")
@@ -250,6 +251,19 @@ export function WhiteboardModal({ isOpen, onClose, roomId, currentUser }: Whiteb
                     </div>
 
                     <div className="flex items-center gap-3">
+                        {onMinimize && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={onMinimize}
+                                className="h-10 w-10 rounded-xl bg-white/5 hover:bg-cyan-500/20 text-white transition-all border border-white/5"
+                                title="Minimize"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </Button>
+                        )}
                         <Button
                             variant="ghost"
                             size="icon"

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react"
 import { BaseModal } from "@/components/base-modal"
-import { DEMO_SONGS, type KaraokeSong } from "@/utils/games/karaoke"
+import { DEMO_SONGS, type KaraokeSong, karaokeManager } from "@/utils/games/karaoke"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -57,6 +57,7 @@ export function KaraokeSetupModal({ isOpen, onClose, onStartSession }: KaraokeSe
 
         setIsCreating(true)
         try {
+            await karaokeManager.broadcastInvite(songToStart)
             await onStartSession(songToStart)
             onClose()
         } finally {

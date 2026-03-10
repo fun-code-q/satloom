@@ -12,6 +12,9 @@ import { karaokeManager, type KaraokeSong } from "@/utils/games/karaoke"
 import { presentationModeManager } from "@/utils/infra/presentation-mode"
 import type { GameConfig } from "../playground-setup-modal"
 import type { GameInvite } from "@/utils/infra/game-signaling"
+import { ChessManager } from "@/utils/games/chess-manager"
+import { TicTacToeManager } from "@/utils/games/tic-tac-toe"
+import { ConnectFourManager } from "@/utils/games/connect-four"
 import type { MenuGroup } from "./chat-types"
 import { telemetry } from "@/utils/core/telemetry"
 import {
@@ -41,6 +44,7 @@ interface UseChatCallsParams {
     userQuizAnswer: string
     currentKaraokeSession: any
     presentationInvite: { presentationId: string; hostName: string; hostId: string } | null
+    playgroundGame: "dots" | "chess" | "tictactoe" | "connect4"
     // Setters
     setShowAudioCall: (val: boolean) => void
     setShowVideoCall: (val: boolean) => void
@@ -153,11 +157,14 @@ export function useChatCalls(params: UseChatCallsParams) {
 
     const handleEndCall = useCallback(() => {
         console.log("Ending current call...")
+        if (currentCall) {
+            callSignaling.endCall(roomId, currentCall.id)
+        }
         params.setShowAudioCall(false)
         params.setCurrentCall(null)
         params.setIsInCall(false)
         userPresence.updateActivity(roomId, currentUserId, "chat")
-    }, [roomId, currentUserId, params.setShowAudioCall, params.setCurrentCall, params.setIsInCall])
+    }, [roomId, currentUserId, currentCall, params.setShowAudioCall, params.setCurrentCall, params.setIsInCall])
 
     const handleStartVideoCall = useCallback(async () => {
         try {
@@ -192,11 +199,14 @@ export function useChatCalls(params: UseChatCallsParams) {
 
     const handleEndVideoCall = useCallback(() => {
         console.log("Ending video call...")
+        if (currentCall) {
+            callSignaling.endCall(roomId, currentCall.id)
+        }
         params.setShowVideoCall(false)
         params.setCurrentCall(null)
         params.setIsInCall(false)
         userPresence.updateActivity(roomId, currentUserId, "chat")
-    }, [roomId, currentUserId, params.setShowVideoCall, params.setCurrentCall, params.setIsInCall])
+    }, [roomId, currentUserId, currentCall, params.setShowVideoCall, params.setCurrentCall, params.setIsInCall])
 
     const handleSwitchCallType = useCallback(async (type: "audio" | "video") => {
         if (currentCall) {
@@ -320,14 +330,42 @@ export function useChatCalls(params: UseChatCallsParams) {
         }
     }, [roomId, currentUserId, sendGameInvite])
 
-    const handleAcceptGameInvite = useCallback(() => {
+    const handleAcceptGameInvite = useCallback(async (guestName?: string) => {
         if (gameInvite) {
-            params.setPlaygroundConfig(gameInvite.gameConfig as any)
+            const updatedConfig = { ...gameInvite.gameConfig } as any
+            if (guestName && updatedConfig.players && updatedConfig.players.length > 1) {
+                const newPlayers = [...updatedConfig.players]
+                newPlayers[1] = {
+                    ...newPlayers[1],
+                    id: currentUserId,
+                    name: guestName,
+                    isComputer: false
+                }
+                updatedConfig.players = newPlayers
+            }
+
+            // Register guest in the database session
+            try {
+                if (gameInvite.gameId) {
+                    const type = updatedConfig.gameType || params.playgroundGame
+                    if (type === "chess") {
+                        await ChessManager.getInstance().joinGame(roomId, gameInvite.gameId, currentUserId, guestName || userProfile.name, userProfile.avatar)
+                    } else if (type === "tictactoe") {
+                        await TicTacToeManager.getInstance().joinGame(roomId, gameInvite.gameId, currentUserId, guestName || userProfile.name, userProfile.avatar)
+                    } else if (type === "connect4") {
+                        await ConnectFourManager.getInstance().joinGame(roomId, gameInvite.gameId, currentUserId, guestName || userProfile.name, userProfile.avatar)
+                    }
+                }
+            } catch (error) {
+                console.error("Error joining game in database:", error)
+            }
+
+            params.setPlaygroundConfig(updatedConfig)
             params.setShowPlayground(true)
             params.setGameInvite(null)
             userPresence.updateActivity(roomId, currentUserId, "game")
         }
-    }, [roomId, currentUserId, gameInvite])
+    }, [roomId, currentUserId, gameInvite, userProfile, params.playgroundGame])
 
     const handleDeclineGameInvite = useCallback(() => {
         params.setGameInvite(null)

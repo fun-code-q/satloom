@@ -229,25 +229,7 @@ export function MessageList({
                             <QuizResultsBubble results={quizResults} totalQuestions={currentQuizSession.totalQuestions} />
                         )}
 
-                        {/* Typing Indicator */}
-                        {onlineUsers.some((u) => u.isTyping && u.name !== currentUser?.name) && (
-                            <div className="flex justify-start mb-4">
-                                <div className="bg-slate-800 rounded-2xl p-3 flex items-center gap-2 haptic-flash">
-                                    <div className="flex gap-1">
-                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                                    </div>
-                                    <span className="text-xs text-gray-400 ml-2">
-                                        {onlineUsers
-                                            .filter((u) => u.isTyping && u.name !== currentUser?.name)
-                                            .map((u) => u.name)
-                                            .join(", ")}{" "}
-                                        is typing...
-                                    </span>
-                                </div>
-                            </div>
-                        )}
+                        {/* Typing indicator removed from here */}
                     </>
                 )}
 
@@ -270,6 +252,26 @@ export function MessageList({
                         >
                             <X className="w-4 h-4" />
                         </Button>
+                    </div>
+                </div>
+            )}
+
+            {/* Typing Indicator */}
+            {onlineUsers.some((u) => u.isTyping && u.name !== currentUser?.name) && (
+                <div className="px-4 py-2 flex justify-start z-10 sticky bottom-0 pointer-events-none">
+                    <div className="bg-slate-800/80 backdrop-blur-md rounded-2xl p-3 flex items-center gap-2 haptic-flash border border-slate-700/50 shadow-xl">
+                        <div className="flex gap-1">
+                            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"></div>
+                        </div>
+                        <span className="text-xs font-medium text-cyan-400/90 ml-2">
+                            {onlineUsers
+                                .filter((u) => u.isTyping && u.name !== currentUser?.name)
+                                .map((u) => u.name)
+                                .join(", ")}{" "}
+                            is typing...
+                        </span>
                     </div>
                 </div>
             )}

@@ -59,6 +59,8 @@ interface ChatHeaderProps {
     // Search
     showChatSearch: boolean
     setShowChatSearch: (val: boolean) => void
+    hasUnreadNotes: boolean
+    hasUnreadTasks: boolean
 }
 
 export function ChatHeader({
@@ -72,6 +74,7 @@ export function ChatHeader({
     onlineUsers, currentUserId, pinnedMessage,
     firebaseConnected,
     showChatSearch, setShowChatSearch,
+    hasUnreadNotes, hasUnreadTasks,
 }: ChatHeaderProps) {
     return (
         <>
@@ -150,15 +153,25 @@ export function ChatHeader({
                         {/* Productivity Menu */}
                         <DropdownMenu open={isProductivityMenuOpen} onOpenChange={setIsProductivityMenuOpen}>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 bg-white/5 rounded-xl h-10 w-10 transition-colors" title="Productivity & Collaboration">
+                                <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 bg-white/5 rounded-xl h-10 w-10 transition-colors relative" title="Productivity & Collaboration">
                                     <Briefcase className="w-5 h-5" />
+                                    {(hasUnreadNotes || hasUnreadTasks) && (
+                                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse" />
+                                    )}
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" side="bottom" className="bg-slate-800 border-slate-700 text-white min-w-56 animate-none rounded-xl shadow-2xl" sideOffset={5}>
                                 <DropdownMenuLabel className="text-xs text-slate-400 uppercase tracking-wider px-2 py-1.5 font-semibold">{productivityGroup.label}</DropdownMenuLabel>
                                 {productivityGroup.items.map((item, i) => (
-                                    <DropdownMenuItem key={i} onClick={item.action} className="hover:bg-slate-700 cursor-pointer min-h-[44px] haptic flex items-center gap-3 px-3 transition-colors">
-                                        <item.icon className="w-4 h-4 flex-shrink-0" /><span>{item.label}</span>
+                                    <DropdownMenuItem key={i} onClick={item.action} className="hover:bg-slate-700 cursor-pointer min-h-[44px] haptic flex items-center justify-between px-3 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <item.icon className="w-4 h-4 flex-shrink-0" />
+                                            <span>{item.label}</span>
+                                        </div>
+                                        {((item.label.toLowerCase().includes("notes") && hasUnreadNotes) ||
+                                            (item.label.toLowerCase().includes("task") && hasUnreadTasks)) && (
+                                                <span className="w-2 h-2 bg-red-500 rounded-full" />
+                                            )}
                                     </DropdownMenuItem>
                                 ))}
                             </DropdownMenuContent>

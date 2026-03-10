@@ -14,10 +14,12 @@ interface PresentationViewerProps {
     userId: string
     userName: string
     presentationId: string
+    isOpen: boolean
     onClose: () => void
+    onMinimize?: () => void
 }
 
-export function PresentationViewer({ roomId, userId, userName, presentationId, onClose }: PresentationViewerProps) {
+export function PresentationViewer({ roomId, userId, userName, presentationId, isOpen, onClose, onMinimize }: PresentationViewerProps) {
     const [currentSlide, setCurrentSlide] = useState<Slide | null>(null)
     const [presentation, setPresentation] = useState<any>(null)
     const [canControl, setCanControl] = useState(false)
@@ -354,6 +356,8 @@ export function PresentationViewer({ roomId, userId, userName, presentationId, o
     const slideKeys = Object.keys(presentation?.slides || {})
     const currentIndex = presentation?.currentSlideIndex || 0
 
+    if (!isOpen) return null
+
     if (!currentSlide) {
         return (
             <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-3xl">
@@ -386,14 +390,28 @@ export function PresentationViewer({ roomId, userId, userName, presentationId, o
                         </div>
                     </div>
                 </div>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleLeave}
-                    className="h-12 w-12 rounded-2xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white transition-all border border-red-500/20"
-                >
-                    <X className="h-6 w-6" />
-                </Button>
+                <div className="flex items-center gap-3">
+                    {onMinimize && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onMinimize}
+                            className="h-12 w-12 rounded-2xl bg-white/5 hover:bg-purple-500/20 text-white transition-all border border-white/10"
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </Button>
+                    )}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleLeave}
+                        className="h-12 w-12 rounded-2xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white transition-all border border-red-500/20"
+                    >
+                        <X className="h-6 w-6" />
+                    </Button>
+                </div>
             </div>
 
             {/* Main Stage */}

@@ -46,6 +46,15 @@ export interface KaraokeSession {
     createdAt: number
 }
 
+export interface KaraokeInvite {
+    id: string
+    roomId: string
+    song: KaraokeSong
+    hostId: string
+    hostName: string
+    expiresAt: number
+}
+
 // Demo songs for testing
 export const DEMO_SONGS: KaraokeSong[] = [
     {
@@ -444,6 +453,48 @@ class KaraokeManager {
      */
     private notifyListeners(): void {
         this.listeners.forEach((listener) => listener(this.getState()))
+    }
+
+    /**
+     * Broadcast a karaoke invitation
+     */
+    async broadcastInvite(song: KaraokeSong): Promise<void> {
+        if (!this.roomId || !this.userId || !getFirebaseDatabase()) return
+
+        try {
+            const inviteRef = ref(getFirebaseDatabase()!, `karaokeInvites/${this.roomId}`)
+            const invite: KaraokeInvite = {
+                id: `invite-${Date.now()}`,
+                roomId: this.roomId,
+                song,
+                hostId: this.userId,
+                hostName: this.userName,
+                expiresAt: Date.now() + 60000, // 1 minute
+            }
+            await set(inviteRef, invite)
+        } catch (error) {
+            console.error("Failed to broadcast karaoke invite:", error)
+        }
+    }
+
+    /**
+     * Listen for karaoke invitations
+     */
+    listenForInvites(callback: (invite: KaraokeInvite | null) => void): () => void {
+        if (!this.roomId || !getFirebaseDatabase()!) return () => { }
+
+        const inviteRef = ref(getFirebaseDatabase()!, `karaokeInvites/${this.roomId}`)
+        const unsubscribe = onValue(inviteRef, (snapshot) => {
+            const invite = snapshot.val() as KaraokeInvite | null
+            if (invite && invite.expiresAt > Date.now() && invite.hostId !== this.userId) {
+                callback(invite)
+            } else {
+                callback(null)
+            }
+        })
+
+        this.unsubscribers.push(unsubscribe)
+        return unsubscribe
     }
 
     /**

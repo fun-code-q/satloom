@@ -6,6 +6,7 @@ export class WebRTCManager {
 
     private onRemoteStreamCallback: ((stream: MediaStream) => void) | null = null
     private onIceCandidateCallback: ((candidate: RTCIceCandidate) => void) | null = null
+    private iceCandidateBuffer: RTCIceCandidateInit[] = []
 
     private config: RTCConfiguration = {
         iceServers: this.getIceServers(),
@@ -138,6 +139,8 @@ export class WebRTCManager {
         this.peerConnection.onconnectionstatechange = () => {
             console.log("WebRTC Connection State:", this.peerConnection?.connectionState)
         }
+
+        this.iceCandidateBuffer = []
     }
 
     async createOffer(): Promise<RTCSessionDescriptionInit> {
@@ -154,8 +157,11 @@ export class WebRTCManager {
         await this.peerConnection.setRemoteDescription(new RTCSessionDescription(remoteOffer))
         const answer = await this.peerConnection.createAnswer()
         await this.peerConnection.setLocalDescription(answer)
+
+        await this.processIceBuffer()
         return answer
     }
+
 
     async handleAnswer(remoteAnswer: RTCSessionDescriptionInit) {
         if (!this.peerConnection) throw new Error("PeerConnection not initialized")
@@ -163,15 +169,38 @@ export class WebRTCManager {
         if (this.peerConnection.signalingState === "stable") return
 
         await this.peerConnection.setRemoteDescription(new RTCSessionDescription(remoteAnswer))
+        await this.processIceBuffer()
     }
 
     async addIceCandidate(candidate: RTCIceCandidateInit) {
         if (!this.peerConnection) return
 
+        if (!this.peerConnection.remoteDescription) {
+            console.log("WebRTC: Buffering ICE candidate until remote description is set")
+            this.iceCandidateBuffer.push(candidate)
+            return
+        }
+
         try {
             await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate))
         } catch (e) {
             console.error("Error adding ICE candidate:", e)
+        }
+    }
+
+    private async processIceBuffer() {
+        if (!this.peerConnection || !this.peerConnection.remoteDescription) return
+
+        console.log(`WebRTC: Processing ${this.iceCandidateBuffer.length} buffered ICE candidates`)
+        while (this.iceCandidateBuffer.length > 0) {
+            const candidate = this.iceCandidateBuffer.shift()
+            if (candidate) {
+                try {
+                    await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate))
+                } catch (e) {
+                    console.error("Error adding buffered ICE candidate:", e)
+                }
+            }
         }
     }
 

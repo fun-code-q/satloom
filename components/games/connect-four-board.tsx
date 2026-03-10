@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react"
 import { type ConnectFourGame, ConnectFourManager, type ConnectFourPlayer, type ConnectFourCell } from "@/utils/games/connect-four"
 import { Button } from "@/components/ui/button"
-import { Loader2, X, RotateCcw, Trophy, Clock, ChevronDown, Pause, Play, Settings } from "lucide-react"
+import { Loader2, X, RotateCcw, Trophy, Clock, ChevronDown, Pause, Play, Settings, Minimize2 } from "lucide-react"
 import { PlaygroundSetupModal } from "../playground-setup-modal"
 import { toast } from "sonner"
 import { cn } from "@/utils/core/cn"
@@ -14,9 +14,10 @@ interface ConnectFourBoardProps {
     roomId: string
     currentUserId: string
     onClose?: () => void
+    onMinimize?: () => void
 }
 
-export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose }: ConnectFourBoardProps) {
+export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, onMinimize }: ConnectFourBoardProps) {
     const [game, setGame] = useState<ConnectFourGame | null>(null)
     const [loading, setLoading] = useState(true)
     const [processing, setProcessing] = useState(false)
@@ -232,6 +233,16 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose }:
                     >
                         {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
                     </Button>
+                    {onMinimize && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 text-white"
+                            onClick={onMinimize}
+                        >
+                            <Minimize2 className="w-4 h-4" />
+                        </Button>
+                    )}
                     <Button
                         variant="ghost"
                         size="icon"
@@ -366,6 +377,7 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose }:
                         handleRestart()
                     }}
                     initialGame="connect4"
+                    hostName={game.players.red.id === currentUserId ? game.players.red.name : game.players.yellow.name}
                 />
             )}
         </div>

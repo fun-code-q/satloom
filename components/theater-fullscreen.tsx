@@ -19,6 +19,9 @@ import { Settings, List, ChevronRight, ChevronLeft, FastForward } from "lucide-r
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Slider } from "@/components/ui/slider"
 import { Badge } from "@/components/ui/badge"
+import dynamic from 'next/dynamic'
+
+const ReactPlayer = dynamic(() => import('react-player'), { ssr: false }) as any
 
 interface TheaterFullscreenProps {
   isOpen: boolean
@@ -32,10 +35,6 @@ interface TheaterFullscreenProps {
   pendingFile?: File | null
   onFileProcessed?: () => void
 }
-
-import ReactPlayer from 'react-player'
-
-// ... (keep existing imports)
 
 export function TheaterFullscreen({
   isOpen,
@@ -599,30 +598,36 @@ export function TheaterFullscreen({
               onProgress={handleProgress as any}
               onDuration={setDuration}
               onEnded={() => setIsPlaying(false)}
-              onBuffer={handleBuffer}
-              onBufferEnd={handleBufferEnd}
-              controls={false}
-              style={{ position: 'absolute', top: 0, left: 0 }}
-              {...({} as any)}
+              onBuffer={() => setIsBuffering(true)}
+              onBufferEnd={() => setIsBuffering(false)}
             />
           )}
 
           {/* Loading / Buffering Overlay */}
           {(!playerReady || session.status === "loading" || isBuffering || transcodingProgress !== null) && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10 backdrop-blur-sm">
-              <div className="text-white text-center">
-                <div className="animate-spin w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full mx-auto mb-4" />
-                <p>
+            <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-30 backdrop-blur-md">
+              <div className="text-white text-center animate-in fade-in zoom-in duration-500">
+                <div className="animate-spin w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full mx-auto mb-6" />
+                <h3 className="text-xl font-bold mb-2">
                   {transcodingProgress !== null
-                    ? `Processing movie compatibility... ${transcodingProgress}%`
-                    : !playerReady ? "Loading video..."
+                    ? `Processing compatibility... ${transcodingProgress}%`
+                    : !playerReady ? "Initializing Cinema..."
                       : isBuffering ? "Waiting for Host..."
-                        : "Loading..."}
-                </p>
+                        : "Synchronizing..."}
+                </h3>
+                <p className="text-slate-400 text-sm mb-8">This won't take long</p>
+                <Button
+                  variant="ghost"
+                  onClick={handleClose}
+                  className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-8 py-3 rounded-xl border border-red-500/30 transition-all font-bold"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Cancel & Leave
+                </Button>
                 {transcodingProgress !== null && (
-                  <div className="w-64 h-1 bg-white/20 rounded-full mt-4 mx-auto overflow-hidden">
+                  <div className="w-64 h-1.5 bg-white/10 rounded-full mt-6 mx-auto overflow-hidden">
                     <div
-                      className="h-full bg-cyan-400 transition-all duration-300"
+                      className="h-full bg-cyan-500 transition-all duration-300"
                       style={{ width: `${transcodingProgress}%` }}
                     />
                   </div>

@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react"
 import { type TicTacToeGame, TicTacToeManager, type Player as TicSymbol, type CellValue } from "@/utils/games/tic-tac-toe"
 import { Button } from "@/components/ui/button"
-import { Loader2, X, Circle, RotateCcw, Trophy, Clock, Pause, Play, Settings } from "lucide-react"
+import { Loader2, X, Circle, RotateCcw, Trophy, Clock, Pause, Play, Settings, Minimize2 } from "lucide-react"
 import { PlaygroundSetupModal } from "../playground-setup-modal"
 import { toast } from "sonner"
 import { cn } from "@/utils/core/cn"
@@ -14,9 +14,10 @@ interface TicTacToeBoardProps {
     roomId: string
     currentUserId: string
     onClose?: () => void
+    onMinimize?: () => void
 }
 
-export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose }: TicTacToeBoardProps) {
+export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onMinimize }: TicTacToeBoardProps) {
     const [game, setGame] = useState<TicTacToeGame | null>(null)
     const [loading, setLoading] = useState(true)
     const [processing, setProcessing] = useState(false)
@@ -205,6 +206,16 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose }: T
                     >
                         {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
                     </Button>
+                    {onMinimize && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 text-white"
+                            onClick={onMinimize}
+                        >
+                            <Minimize2 className="w-4 h-4" />
+                        </Button>
+                    )}
                     <Button
                         variant="ghost"
                         size="icon"
@@ -321,6 +332,7 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose }: T
                         handleRestart()
                     }}
                     initialGame="tictactoe"
+                    hostName={game.players.X.id === currentUserId ? game.players.X.name : game.players.O.name}
                 />
             )}
         </div>
