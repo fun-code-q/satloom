@@ -239,11 +239,13 @@ export function ChatInput({
 
     // Debounced typing indicator
     const handleTypingIndicator = useCallback(
-        throttle((isTyping: boolean) => {
-            if (!roomId || !currentUserId) return
-            userPresence.setTyping(roomId, currentUserId, isTyping)
-        }, 500),
-        [roomId, currentUserId]
+        (isTyping: boolean) => {
+            throttle((isTyping: boolean) => {
+                if (!roomId || !currentUserId) return
+                userPresence.setTyping(roomId, currentUserId, isTyping)
+            }, 500)(isTyping)
+        },
+        [roomId, currentUserId, userPresence]
     )
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -294,7 +296,7 @@ export function ChatInput({
                 userPresence.setRecordingVoice(roomId, currentUserId, false)
             }
         }
-    }, [isRecording, roomId, currentUserId])
+    }, [isRecording, roomId, currentUserId, userPresence])
 
 
     if (isMobile) {
@@ -481,9 +483,7 @@ export function ChatInput({
     }
 
     // Desktop layout
-    const { isEnabled: isVKeyboardEnabled } = useVirtualKeyboardStore()
-
-    if (isVKeyboardEnabled && isMobile) {
+    if (isKeyboardEnabled && isMobile) {
         return null;
     }
 

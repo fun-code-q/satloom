@@ -128,7 +128,7 @@ export function useChatHandlers({
         } catch (error) {
             console.error("Error adding reaction:", error)
         }
-    }, [roomId, messageStorage])
+    }, [roomId, messageStorage, userProfile.name])
 
     const handleDeleteMessage = useCallback(async (messageId: string) => {
         try {
@@ -396,7 +396,7 @@ export function useChatHandlers({
         } catch (error) {
             console.error("Error updating mood:", error)
         }
-    }, [roomId, currentUserId, setCurrentUserMood, userPresence, notificationSystem])
+    }, [roomId, currentUserId, setCurrentUserMood, userPresence, notificationSystem, userProfile.name])
 
     const handleKickUser = useCallback(async (userId: string) => {
         try {
