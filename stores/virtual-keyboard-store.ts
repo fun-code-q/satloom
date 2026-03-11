@@ -20,6 +20,8 @@ interface VirtualKeyboardState extends VirtualKeyboardSettings {
     setLayout: (layout: KeyboardLayout) => void
     setShowNumbersRow: (show: boolean) => void
     setHapticFeedback: (enabled: boolean) => void
+    setIsFloating: (isFloating: boolean) => void
+    setCoords: (coords: { x: number; y: number }) => void
     updateSettings: (settings: Partial<VirtualKeyboardSettings>) => void
     resetToDefaults: () => void
 }
@@ -76,6 +78,10 @@ export const useVirtualKeyboardStore = create<VirtualKeyboardState>()(
 
             setHapticFeedback: (enabled: boolean) => set({ hapticFeedback: enabled }),
 
+            setIsFloating: (isFloating: boolean) => set({ isFloating }),
+
+            setCoords: (coords: { x: number; y: number }) => set({ coords }),
+
             updateSettings: (settings: Partial<VirtualKeyboardSettings>) => set((state) => ({ ...state, ...settings })),
 
             resetToDefaults: () => set({ ...DEFAULT_KEYBOARD_SETTINGS }),
@@ -96,6 +102,8 @@ export const useVirtualKeyboardStore = create<VirtualKeyboardState>()(
                 layout: state.layout,
                 showNumbersRow: state.showNumbersRow,
                 hapticFeedback: state.hapticFeedback,
+                isFloating: state.isFloating,
+                coords: state.coords,
             }),
         }
     )

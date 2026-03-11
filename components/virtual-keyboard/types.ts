@@ -45,6 +45,10 @@ export interface VirtualKeyboardSettings {
     layout: KeyboardLayout
     showNumbersRow: boolean
     hapticFeedback: boolean
+
+    // Floating State
+    isFloating: boolean
+    coords: { x: number; y: number }
 }
 
 export const DEFAULT_KEYBOARD_SETTINGS: VirtualKeyboardSettings = {
@@ -61,6 +65,8 @@ export const DEFAULT_KEYBOARD_SETTINGS: VirtualKeyboardSettings = {
     layout: 'qwerty',
     showNumbersRow: true,
     hapticFeedback: true,
+    isFloating: false,
+    coords: { x: 0, y: 0 },
 }
 
 // QWERTY Layout
@@ -122,8 +128,8 @@ export const QWERTY_LAYOUT: KeyboardKeyData[][] = [
         { display: '123', value: 'switch-numeric', type: 'switch', width: 'w-14' },
         { display: ',', value: ',', type: 'comma', width: 'w-10' },
         { display: '␣', value: ' ', type: 'space', width: 'flex-1' },
-        { display: '.com', value: '.com', type: 'domain', width: 'w-16' },
-        { display: '↵', value: 'enter', type: 'enter', width: 'w-14' },
+        { display: '.', value: '.', type: 'dot', width: 'w-10' },
+        { display: '↵', value: 'enter', type: 'enter', width: 'w-16' },
     ],
 ]
 

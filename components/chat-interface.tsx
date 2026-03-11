@@ -142,6 +142,38 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
     }
   }, [onlineUsers, userProfile.name, onLeave])
 
+  // --- Screen Wake Lock & Fullscreen Persistence ---
+  const wakeLockRef = useRef<any>(null)
+  React.useEffect(() => {
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLockRef.current = await (navigator as any).wakeLock.request('screen')
+        }
+      } catch (err) {
+        console.error('Wake Lock failed:', err)
+      }
+    }
+
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        await requestWakeLock()
+        // Note: Re-entering fullscreen usually requires a user gesture
+        // We can't auto-force it, but we can remind the user or try
+      } else if (wakeLockRef.current) {
+        await wakeLockRef.current.release()
+        wakeLockRef.current = null
+      }
+    }
+
+    requestWakeLock()
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      if (wakeLockRef.current) wakeLockRef.current.release()
+    }
+  }, [])
+
 
 
   const themeContext = useTheme()

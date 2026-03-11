@@ -40,16 +40,62 @@ export function VirtualKeyboard({
         textColor,
         keyTextSize,
         layout,
+        isFloating,
+        coords,
         setLayout,
         toggleEnabled,
         setVisible,
+        setCoords,
+        setIsFloating,
     } = useVirtualKeyboardStore()
 
     const [showSettings, setShowSettings] = useState(false)
     const [isShiftActive, setIsShiftActive] = useState(false)
     const [nativeKeyboardHeight, setNativeKeyboardHeight] = useState(0)
+    const [isDragging, setIsDragging] = useState(false)
+    const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
     const inputValueRef = useRef(initialValue)
     const shiftTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const keyboardRef = useRef<HTMLDivElement>(null)
+
+    // Auto-show when input is focused
+    useEffect(() => {
+        if (!inputRef?.current || !isEnabled) return
+
+        const handleFocus = () => {
+            if (isEnabled) setVisible(true)
+        }
+
+        const input = inputRef.current
+        input.addEventListener('focus', handleFocus)
+        return () => input.removeEventListener('focus', handleFocus)
+    }, [inputRef, isEnabled, setVisible])
+
+    // Dragging Logic
+    const handlePointerDown = (e: React.PointerEvent) => {
+        if (!isFloating) return
+        setIsDragging(true)
+        const rect = keyboardRef.current?.getBoundingClientRect()
+        if (rect) {
+            setDragOffset({
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            })
+        }
+        ; (e.target as HTMLElement).setPointerCapture(e.pointerId)
+    }
+
+    const handlePointerMove = (e: React.PointerEvent) => {
+        if (!isDragging || !isFloating) return
+        const x = e.clientX - dragOffset.x
+        const y = e.clientY - dragOffset.y
+        setCoords({ x, y })
+    }
+
+    const handlePointerUp = (e: React.PointerEvent) => {
+        setIsDragging(false)
+            ; (e.target as HTMLElement).releasePointerCapture(e.pointerId)
+    }
 
     // Get current layout
     const getCurrentLayout = useCallback((): KeyboardKeyData[][] => {
@@ -77,7 +123,7 @@ export function VirtualKeyboard({
 
     // Detect native keyboard using visualViewport API
     useEffect(() => {
-        if (!isMobile || !isEnabled) {
+        if (!isMobile || !isEnabled || isFloating) {
             setNativeKeyboardHeight(0)
             return
         }
@@ -156,9 +202,20 @@ export function VirtualKeyboard({
             }
 
             case 'enter': {
-                // Enter key - could trigger submit
+                // Enter key - triggers send
                 if (inputRef && 'current' in inputRef && inputRef.current) {
-                    inputRef.current.dispatchEvent(new Event('submit', { bubbles: true }))
+                    const event = new KeyboardEvent('keydown', {
+                        key: 'Enter',
+                        code: 'Enter',
+                        bubbles: true,
+                    })
+                    inputRef.current.dispatchEvent(event)
+
+                    // Also try to find and click the send button if event doesn't trigger it
+                    const form = inputRef.current.closest('form')
+                    if (form) {
+                        form.requestSubmit()
+                    }
                 }
                 break
             }
@@ -171,7 +228,7 @@ export function VirtualKeyboard({
                     if (shiftTimeoutRef.current) clearTimeout(shiftTimeoutRef.current)
                     shiftTimeoutRef.current = setTimeout(() => {
                         setIsShiftActive(false)
-                    }, 1000)
+                    }, 5000)
                 }
                 break
             }
@@ -192,17 +249,31 @@ export function VirtualKeyboard({
 
     // Get position styles
     const getPositionStyles = () => {
+        if (isFloating) {
+            return {
+                left: coords.x || '10%',
+                top: coords.y || '30%',
+                width: `${width}%`,
+                position: 'fixed' as const,
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+            }
+        }
+
         const baseStyles = {}
 
         if (position === 'bottom') {
             return {
                 ...baseStyles,
                 bottom: nativeKeyboardHeight > 0 ? `${nativeKeyboardHeight}px` : '0px',
+                left: `${(100 - width) / 2}%`,
+                width: `${width}%`,
             }
         } else {
             return {
                 ...baseStyles,
                 top: '0px',
+                left: `${(100 - width) / 2}%`,
+                width: `${width}%`,
             }
         }
     }
@@ -216,51 +287,58 @@ export function VirtualKeyboard({
     return (
         <>
             <div
+                ref={keyboardRef}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
                 className={cn(
-                    'fixed left-0 right-0 z-[100] transition-all duration-200',
-                    'flex flex-col',
-                    isVisible ? 'translate-y-0' : 'translate-y-full'
+                    'fixed z-[1000] transition-all duration-300 backdrop-blur-xl border border-white/10 overflow-hidden',
+                    'flex flex-col rounded-2xl select-none',
+                    isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none translate-y-4',
+                    isDragging ? 'scale-[1.02] rotate-1' : 'scale-100 rotate-0'
                 )}
                 style={{
                     ...getPositionStyles(),
                     height: `${height}px`,
-                    width: `${width}%`,
-                    left: `${(100 - width) / 2}%`,
                     opacity: opacity / 100,
                     backgroundColor: backgroundColor,
                 }}
                 role="keyboard"
                 aria-label="Virtual keyboard"
             >
-                {/* Header */}
-                <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10">
+                {/* Minimal Header / Drag Handle */}
+                <div
+                    onPointerDown={handlePointerDown}
+                    className={cn(
+                        "flex items-center justify-between px-4 py-2 cursor-move active:cursor-grabbing",
+                        isFloating ? "bg-white/5" : "bg-transparent"
+                    )}
+                >
                     <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400 font-medium">
-                            {layout === 'qwerty' ? 'QWERTY' : layout === 'numeric' ? '123' : '#+='}
+                        <div className="w-8 h-1 bg-white/20 rounded-full" />
+                        <span className="text-[10px] text-white/40 font-bold uppercase tracking-widest">
+                            {layout}
                         </span>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
                         <button
                             type="button"
                             onClick={() => setShowSettings(true)}
-                            className="p-1.5 rounded-md hover:bg-white/10 transition-colors"
-                            aria-label="Keyboard settings"
+                            className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
                         >
-                            <Settings className="w-4 h-4 text-gray-400" />
+                            <Settings className="w-3.5 h-3.5 text-white/60" />
                         </button>
                         <button
                             type="button"
-                            onClick={toggleEnabled}
-                            className="p-1.5 rounded-md hover:bg-white/10 transition-colors"
-                            aria-label="Close keyboard"
+                            onClick={() => setVisible(false)}
+                            className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
                         >
-                            <X className="w-4 h-4 text-gray-400" />
+                            <X className="w-3.5 h-3.5 text-white/60" />
                         </button>
                     </div>
                 </div>
 
                 {/* Keyboard rows */}
-                <div className="flex-1 flex flex-col justify-center py-1 overflow-hidden">
+                <div className="flex-1 flex flex-col justify-center px-1 pb-2">
                     {getCurrentLayout().map((row, rowIndex) => (
                         <KeyboardRow
                             key={`row-${rowIndex}`}

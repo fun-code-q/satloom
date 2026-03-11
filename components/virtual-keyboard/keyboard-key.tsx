@@ -58,10 +58,10 @@ export function KeyboardKey({
             case 'transparent':
             default:
                 return {
-                    base: 'bg-slate-700/60',
-                    pressed: 'bg-slate-600/80',
-                    special: 'bg-slate-600/60',
-                    specialPressed: 'bg-slate-500/80',
+                    base: 'bg-white/5 hover:bg-white/10',
+                    pressed: 'bg-white/20',
+                    special: 'bg-white/10 hover:bg-white/15',
+                    specialPressed: 'bg-white/25',
                 }
         }
     }
@@ -90,21 +90,21 @@ export function KeyboardKey({
             onClick={handlePress}
             onMouseDown={handleKeyDown}
             className={cn(
-                'flex items-center justify-center rounded-md transition-all duration-75 select-none',
-                'focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-1',
-                'active:scale-95 active:translate-y-0.5',
+                'flex items-center justify-center rounded-xl transition-all duration-75 select-none',
+                'focus:outline-none',
+                'active:scale-95 active:brightness-125',
                 isPressed
                     ? (isSpecial ? styles.specialPressed : styles.pressed)
                     : (isSpecial ? styles.special : styles.base),
-                isShiftActive && isShiftKey ? 'bg-cyan-600' : '',
+                isShiftActive && isShiftKey ? 'bg-cyan-500/40 border border-cyan-500/50' : 'border border-white/5',
                 keyData.width || 'flex-1',
                 className
             )}
             style={{
                 color: textColor,
                 fontSize: `${textSize}px`,
-                minHeight: keyData.type === 'space' ? '44px' : '40px',
-                aspectRatio: keyData.type === 'space' ? 'auto' : '1',
+                minHeight: keyData.type === 'space' ? '42px' : '38px',
+                margin: '2px',
             }}
         >
             {isShiftKey && isShiftActive ? (
