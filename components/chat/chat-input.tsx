@@ -32,6 +32,7 @@ interface ChatInputProps {
     onStartAudioCall: () => void
     onStartVideoCall: () => void
     currentUserId: string
+    inputRef: React.RefObject<HTMLInputElement | null>
 }
 
 interface PendingMessage {
@@ -43,7 +44,7 @@ interface PendingMessage {
     status: 'sending' | 'sent' | 'failed'
 }
 
-export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodTrigger, onSoundboard, onStartAudioCall, onStartVideoCall, currentUserId }: ChatInputProps) {
+export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodTrigger, onSoundboard, onStartAudioCall, onStartVideoCall, currentUserId, inputRef }: ChatInputProps) {
     const { roomId, currentUser, replyingTo, setReplyingTo, setIsTyping, isTyping } = useChatStore()
     const [message, setMessage] = useState("")
     const [showEmojiPicker, setShowEmojiPicker] = useState(false)
@@ -57,7 +58,6 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
     const isMobile = useIsMobile()
 
     // Virtual keyboard
-    const inputRef = useRef<HTMLInputElement>(null)
     const { isEnabled: isKeyboardEnabled, toggleEnabled: toggleKeyboard } = useVirtualKeyboardStore()
 
     const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -458,11 +458,6 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                     currentMode={vanishMode}
                     currentDuration={vanishDuration}
                 />
-
-                {/* Virtual Keyboard */}
-                <VirtualKeyboard
-                    inputRef={inputRef}
-                />
             </div>
         )
     }
@@ -539,6 +534,7 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                 </div>
 
                 <Input
+                    ref={inputRef}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyPress={handleKeyPress}

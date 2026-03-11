@@ -2,7 +2,8 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
@@ -33,6 +34,15 @@ export function ProfileModal({ isOpen, onClose, onSave, defaultProfile }: Profil
       setAvatar(defaultProfile.avatar)
     }
   }, [defaultProfile])
+  const isMobile = useIsMobile()
+
+  const enterFullscreen = useCallback(() => {
+    if (isMobile && document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.warn("Fullscreen request failed:", err)
+      })
+    }
+  }, [isMobile])
 
   const handleSave = () => {
     if (!name.trim()) {
@@ -43,6 +53,7 @@ export function ProfileModal({ isOpen, onClose, onSave, defaultProfile }: Profil
     }
     onSave({ name: name.trim(), avatar })
     toast.success("Profile saved successfully!")
+    enterFullscreen()
     onClose()
   }
 
@@ -52,6 +63,7 @@ export function ProfileModal({ isOpen, onClose, onSave, defaultProfile }: Profil
     }
     onSave({ name: name.trim() })
     toast.success("Profile saved with default name")
+    enterFullscreen()
     onClose()
   }
 

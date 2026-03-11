@@ -44,6 +44,7 @@ import { ConnectFourBoard } from "../games/connect-four-board"
 import { TicTacToeBoard } from "../games/tic-tac-toe-board"
 import { EmojiPicker } from "../emoji-picker"
 import { ReactionRain } from "../reaction-rain"
+import { VirtualKeyboard } from "../virtual-keyboard"
 import { ChatInput } from "./chat-input"
 import { MessageList } from "./message-list"
 import { BaseModal } from "../base-modal"
@@ -243,6 +244,7 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
     } = props
 
     const [mounted, setMounted] = useState(false)
+    const keyboardInputRef = React.useRef<HTMLInputElement>(null)
 
     useEffect(() => {
         setMounted(true)
@@ -368,8 +370,12 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
                     onStartAudioCall={props.handleStartAudioCall}
                     onStartVideoCall={props.handleStartVideoCall}
                     currentUserId={currentUserId}
+                    inputRef={keyboardInputRef}
                 />
             </div>
+
+            {/* Global Virtual Keyboard */}
+            <VirtualKeyboard inputRef={keyboardInputRef} />
 
             {/* PRODUCTIVITY MODALS - Portalled for true layout independence */}
             {props.showSharedNotes && renderModal(
