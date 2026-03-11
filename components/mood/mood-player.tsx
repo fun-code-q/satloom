@@ -73,7 +73,20 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
                     await audio.play()
                     setCurrentSongIndex(index)
                 } catch (e) {
-                    console.error("Auto-play failed (likely interaction needed):", e)
+                    console.log("Auto-play failed (likely interaction needed), will retry on interaction")
+
+                    // Unlock audio on first user interaction
+                    const unlockAudio = async () => {
+                        try {
+                            await audio.play()
+                            window.removeEventListener("click", unlockAudio)
+                            window.removeEventListener("keydown", unlockAudio)
+                        } catch (err) {
+                            console.error("Manual play failed:", err)
+                        }
+                    }
+                    window.addEventListener("click", unlockAudio)
+                    window.addEventListener("keydown", unlockAudio)
                 }
             } else if (audio.paused) {
                 audio.play().catch(e => console.error("Play failed:", e))
@@ -83,7 +96,6 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
         // Handle song end -> Next song
         const handleEnded = () => {
             const nextIndex = (currentSongIndex + 1) % playlist.length
-            setCurrentSongIndex(nextIndex) // Update state
             playSong(nextIndex)
         }
 
@@ -94,8 +106,6 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
 
         return () => {
             audio.removeEventListener("ended", handleEnded)
-            // Don't pause on cleanup of effect to allow continuous play, 
-            // unless component unmounts (handled by parent removal or strict mode)
         }
     }, [playlist, currentSongIndex]) // Dependencies: when playlist updates or index changes
 

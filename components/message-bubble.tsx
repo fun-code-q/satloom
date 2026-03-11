@@ -326,18 +326,23 @@ function MessageBubble({
     if (isImage) {
       return (
         <div className="mt-2 cursor-pointer" onClick={() => setShowFilePreview(true)}>
-          {message.file.encrypted && !p2pBlobUrl ? (
+          {(message.file.encrypted && !p2pBlobUrl && !isOwnMessage) ? (
             <div className="w-64 h-48 rounded-lg bg-slate-700/50 flex flex-col items-center justify-center border border-dashed border-cyan-500/30">
               <span className="text-2xl mb-2">🔒</span>
               <span className="text-xs text-cyan-400">Encrypted Image</span>
             </div>
           ) : (
-            <img
-              src={fileUrl || "/placeholder.svg"}
-              alt={message.file.name}
-              className="max-w-64 max-h-48 rounded-lg object-cover"
-              loading="lazy"
-            />
+            <div className="relative group/media">
+              <img
+                src={fileUrl || "/placeholder.svg"}
+                alt={message.file.name}
+                className="max-w-64 max-h-48 rounded-lg object-cover shadow-lg transition-transform hover:scale-[1.02]"
+                loading="lazy"
+              />
+              <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/60 to-transparent rounded-b-lg opacity-0 group-hover/media:opacity-100 transition-opacity">
+                <p className="text-[10px] text-white truncate">{message.file.name}</p>
+              </div>
+            </div>
           )}
         </div>
       )
@@ -345,19 +350,24 @@ function MessageBubble({
 
     if (isVideo) {
       return (
-        <div className="mt-2 cursor-pointer relative" onClick={() => setShowFilePreview(true)}>
-          {message.file.encrypted && !p2pBlobUrl ? (
+        <div className="mt-2 cursor-pointer relative group/media" onClick={() => setShowFilePreview(true)}>
+          {(message.file.encrypted && !p2pBlobUrl && !isOwnMessage) ? (
             <div className="w-64 h-48 rounded-lg bg-slate-700/50 flex flex-col items-center justify-center border border-dashed border-cyan-500/30">
               <span className="text-2xl mb-2">🎞️🔒</span>
               <span className="text-xs text-cyan-400">Encrypted Video</span>
             </div>
           ) : (
             <>
-              <video className="max-w-64 max-h-48 rounded-lg object-cover" muted>
+              <video className="max-w-64 max-h-48 rounded-lg object-cover shadow-lg" muted>
                 <source src={fileUrl} type={message.file.type} />
               </video>
-              <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-lg">
-                <Play className="w-8 h-8 text-white" />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover/media:bg-black/40 transition-colors rounded-lg">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30">
+                  <Play className="w-6 h-6 text-white fill-white" />
+                </div>
+              </div>
+              <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/60 to-transparent rounded-b-lg opacity-0 group-hover/media:opacity-100 transition-opacity">
+                <p className="text-[10px] text-white truncate">{message.file.name}</p>
               </div>
             </>
           )}

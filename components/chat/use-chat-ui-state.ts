@@ -62,6 +62,8 @@ export function useChatUIState() {
     // Theater state
     const [showTheaterSetup, setShowTheaterSetup] = useState(false)
     const [showTheaterFullscreen, setShowTheaterFullscreen] = useState(false)
+    const [isTheaterMinimized, setIsTheaterMinimized] = useState(false)
+    const [isKaraokeMinimized, setIsKaraokeMinimized] = useState(false)
 
     const [isPlaygroundMinimized, setIsPlaygroundMinimized] = useState(false)
 
@@ -113,6 +115,8 @@ export function useChatUIState() {
         playgroundConfig, setPlaygroundConfig,
         showTheaterSetup, setShowTheaterSetup,
         showTheaterFullscreen, setShowTheaterFullscreen,
+        isTheaterMinimized, setIsTheaterMinimized,
+        isKaraokeMinimized, setIsKaraokeMinimized,
         isPlaygroundMinimized, setIsPlaygroundMinimized,
         isMoodSelectorOpen, setIsMoodSelectorOpen,
         showEmojiPicker, setShowEmojiPicker,

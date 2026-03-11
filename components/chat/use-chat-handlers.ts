@@ -122,9 +122,12 @@ export function useChatHandlers({
         console.log(`ChatInterface: File select - type: ${type}, file:`, file)
 
         try {
-            if (type === "input") {
+            if (type === "input" && !file) {
                 fileInputRef.current?.click()
-            } else if (file instanceof File) {
+                return
+            }
+
+            if (file instanceof File) {
                 const validation = await SecurityUtils.validateFile(file)
                 if (!validation.valid) {
                     notificationSystem.error(validation.error || "Invalid file")
@@ -137,7 +140,9 @@ export function useChatHandlers({
                     return
                 }
 
+                const localPreviewUrl = URL.createObjectURL(file)
                 notificationSystem.info(`Preparing ${file.name} for P2P sharing...`)
+                userPresence.setSendingFile(roomId, currentUserId, true)
 
                 const fileId = p2pFileTransfer.registerFile(file)
 
@@ -147,7 +152,7 @@ export function useChatHandlers({
                     roomId: roomId,
                     timestamp: Date.now(),
                     file: {
-                        url: "#",
+                        url: localPreviewUrl,
                         name: file.name,
                         size: file.size,
                         type: file.type,
@@ -159,11 +164,13 @@ export function useChatHandlers({
                 }
 
                 await messageStorage.sendMessage(roomId, p2pMessage as any, currentUserId)
+                userPresence.setSendingFile(roomId, currentUserId, false)
                 telemetry.logEvent('file_shared', roomId, currentUserId, userProfile.name, { fileName: file.name, fileSize: file.size })
                 notificationSystem.success("File ready for P2P download")
             }
         } catch (error) {
             console.error("Error handling file select:", error)
+            userPresence.setSendingFile(roomId, currentUserId, false)
             notificationSystem.error("Failed to share file")
         }
     }, [roomId, userProfile.name, fileInputRef, messageStorage, notificationSystem])

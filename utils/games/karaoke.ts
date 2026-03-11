@@ -23,6 +23,8 @@ export interface KaraokeSong {
     artist: string
     duration: number
     lyrics: LyricLine[]
+    audioUrl?: string
+    videoType?: "direct" | "youtube" | "vimeo" | "twitch"
     coverUrl?: string
 }
 
@@ -68,6 +70,8 @@ export const DEMO_SONGS: KaraokeSong[] = [
             { id: "l3", startTime: 16000, endTime: 24000, text: "I once was lost, but now am found" },
             { id: "l4", startTime: 24000, endTime: 32000, text: "Was blind, but now I see" },
         ],
+        audioUrl: "https://www.youtube.com/watch?v=CDdvReNXZuk",
+        videoType: "youtube"
     },
     {
         id: "song-2",
@@ -480,13 +484,14 @@ class KaraokeManager {
     /**
      * Listen for karaoke invitations
      */
-    listenForInvites(callback: (invite: KaraokeInvite | null) => void): () => void {
-        if (!this.roomId || !getFirebaseDatabase()!) return () => { }
+    listenForInvites(roomId: string, currentUserId: string, callback: (invite: KaraokeInvite | null) => void): () => void {
+        const db = getFirebaseDatabase()
+        if (!roomId || !db) return () => { }
 
-        const inviteRef = ref(getFirebaseDatabase()!, `karaokeInvites/${this.roomId}`)
+        const inviteRef = ref(db, `karaokeInvites/${roomId}`)
         const unsubscribe = onValue(inviteRef, (snapshot) => {
             const invite = snapshot.val() as KaraokeInvite | null
-            if (invite && invite.expiresAt > Date.now() && invite.hostId !== this.userId) {
+            if (invite && invite.expiresAt > Date.now() && invite.hostId !== currentUserId) {
                 callback(invite)
             } else {
                 callback(null)
@@ -500,12 +505,14 @@ class KaraokeManager {
     /**
      * Listen for session changes
      */
-    listenForSession(): void {
-        if (!this.roomId || !getFirebaseDatabase()!) return
+    listenForSession(roomId: string, callback?: (session: KaraokeSession | null) => void): () => void {
+        const db = getFirebaseDatabase()
+        if (!roomId || !db) return () => { }
 
-        const sessionRef = ref(getFirebaseDatabase()!, `karaoke/${this.roomId}`)
+        const sessionRef = ref(db, `karaoke/${roomId}`)
         const unsubscribe = onValue(sessionRef, (snapshot) => {
             const session = snapshot.val() as KaraokeSession | null
+            console.log(`[Karaoke] Session update for room ${roomId}:`, session?.status || "none")
 
             if (session) {
                 this.state.isActive = true
@@ -517,10 +524,12 @@ class KaraokeManager {
                 this.state.isSinging = false
             }
 
+            if (callback) callback(session)
             this.notifyListeners()
         })
 
         this.unsubscribers.push(unsubscribe)
+        return unsubscribe
     }
 
     /**

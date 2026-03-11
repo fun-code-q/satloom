@@ -448,6 +448,7 @@ export function useChatCalls(params: UseChatCallsParams) {
             const sessionId = await quizSystem.createQuizSession(roomId, currentUserId, userProfile.name, topic)
             setTimeout(() => { quizSystem.startQuiz(roomId, sessionId) }, 1000)
             telemetry.logEvent('quiz_started', roomId, currentUserId, userProfile.name, { topic: topic || 'random' })
+            userPresence.updateActivity(roomId, currentUserId, "game")
             notificationSystem.success(topic ? `${topic} quiz started!` : "Random quiz started!")
         } catch (error) {
             console.error("Error starting quiz:", error)
@@ -518,6 +519,7 @@ export function useChatCalls(params: UseChatCallsParams) {
         params.setUserQuizAnswer("")
         params.setShowQuizResults(false)
         params.setQuizTimeRemaining(0)
+        userPresence.updateActivity(roomId, currentUserId, "chat")
         notificationSystem.success("Quiz exited")
     }, [roomId, currentQuizSession])
 

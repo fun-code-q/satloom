@@ -8,12 +8,14 @@ import { ref, onValue, push, remove, set, get } from "firebase/database"
 import { Slider } from "@/components/ui/slider"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { whiteboardSignaling } from "@/utils/infra/whiteboard-signaling"
 
 interface WhiteboardModalProps {
     isOpen: boolean
     onClose: () => void
     roomId: string
     currentUser: string
+    currentUserName?: string
     onMinimize?: () => void
 }
 
@@ -30,7 +32,7 @@ interface Line {
     userId: string
 }
 
-export function WhiteboardModal({ isOpen, onClose, roomId, currentUser, onMinimize }: WhiteboardModalProps) {
+export function WhiteboardModal({ isOpen, onClose, roomId, currentUser, currentUserName, onMinimize }: WhiteboardModalProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const [isDrawing, setIsDrawing] = useState(false)
     const [color, setColor] = useState("#000000")
@@ -111,6 +113,9 @@ export function WhiteboardModal({ isOpen, onClose, roomId, currentUser, onMinimi
     }, [isOpen, roomId])
 
     const drawLines = (ctx: CanvasRenderingContext2D, linesToDraw: Line[]) => {
+        const canvas = canvasRef.current
+        if (!canvas) return
+
         ctx.lineCap = "round"
         ctx.lineJoin = "round"
 
@@ -120,10 +125,16 @@ export function WhiteboardModal({ isOpen, onClose, roomId, currentUser, onMinimi
             ctx.beginPath()
             ctx.strokeStyle = line.color
             ctx.lineWidth = line.width
-            ctx.moveTo(line.points[0].x, line.points[0].y)
+
+            // Map normalized points to current canvas size
+            const startX = line.points[0].x * canvas.width
+            const startY = line.points[0].y * canvas.height
+            ctx.moveTo(startX, startY)
 
             for (let i = 1; i < line.points.length; i++) {
-                ctx.lineTo(line.points[i].x, line.points[i].y)
+                const x = line.points[i].x * canvas.width
+                const y = line.points[i].y * canvas.height
+                ctx.lineTo(x, y)
             }
             ctx.stroke()
         })
@@ -146,8 +157,8 @@ export function WhiteboardModal({ isOpen, onClose, roomId, currentUser, onMinimi
         }
 
         return {
-            x: clientX - rect.left,
-            y: clientY - rect.top
+            x: (clientX - rect.left) / rect.width,
+            y: (clientY - rect.top) / rect.height
         }
     }
 
@@ -178,9 +189,11 @@ export function WhiteboardModal({ isOpen, onClose, roomId, currentUser, onMinimi
             // Draw local preview just for this segment
             if (currentLine.length > 0) {
                 const lastPoint = currentLine[currentLine.length - 1]
+                const canvas = canvasRef.current
+
                 ctx.beginPath()
-                ctx.moveTo(lastPoint.x, lastPoint.y)
-                ctx.lineTo(coords.x, coords.y)
+                ctx.moveTo(lastPoint.x * canvas.width, lastPoint.y * canvas.height)
+                ctx.lineTo(coords.x * canvas.width, coords.y * canvas.height)
                 ctx.stroke()
             }
         }
@@ -251,6 +264,23 @@ export function WhiteboardModal({ isOpen, onClose, roomId, currentUser, onMinimi
                     </div>
 
                     <div className="flex items-center gap-3">
+                        {onMinimize && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                    if (confirm("Send invitation to everyone in the room to join the whiteboard?")) {
+                                        whiteboardSignaling.broadcastInvite(roomId, currentUser, currentUserName || "Someone")
+                                    }
+                                }}
+                                className="h-10 w-10 rounded-xl bg-white/5 hover:bg-cyan-500/20 text-cyan-400 transition-all border border-white/5 mr-2"
+                                title="Invite others"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                            </Button>
+                        )}
                         {onMinimize && (
                             <Button
                                 variant="ghost"

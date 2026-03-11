@@ -221,6 +221,22 @@ export class NotificationSystem {
     this.showNotification("Theater Invite", `${host} invited you to watch ${videoTitle}`)
   }
 
+  async whiteboardInvite(host: string) {
+    await this.playTone(500, 0.3)
+    await this.playTone(800, 0.3)
+    this.showNotification("Whiteboard Invite", `${host} invited you to collaborate on the whiteboard`)
+  }
+
+  async notesUpdated(userName: string) {
+    await this.playTone(700, 0.1)
+    this.showNotification("Notes Updated", `${userName} updated the shared notes`)
+  }
+
+  async tasksUpdated(userName: string) {
+    await this.playTone(750, 0.1)
+    this.showNotification("Tasks Updated", `${userName} updated the shared task list`)
+  }
+
   async gameInvite(host: string, gameType: string) {
     await this.playTone(700, 0.3)
     await this.playTone(1000, 0.3)

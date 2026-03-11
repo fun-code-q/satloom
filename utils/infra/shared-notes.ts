@@ -71,7 +71,7 @@ class SharedNotesManager {
         if (!this.roomId || !getFirebaseDatabase()!) return
 
         try {
-            const notesRef = ref(getFirebaseDatabase()!, `notes/${this.roomId}`)
+            const notesRef = ref(getFirebaseDatabase()!, `rooms/${this.roomId}/productivity/notes`)
             const snapshot = await get(notesRef)
 
             if (!snapshot.exists()) {
@@ -122,11 +122,11 @@ class SharedNotesManager {
                 isPinned: false,
             }
 
-            const noteRef = ref(getFirebaseDatabase()!, `notes/${this.roomId}/notes/${note.id}`)
+            const noteRef = ref(getFirebaseDatabase()!, `rooms/${this.roomId}/productivity/notes/notes/${note.id}`)
             await set(noteRef, note)
 
             // Update last modified
-            const notesMetaRef = ref(getFirebaseDatabase()!, `notes/${this.roomId}`)
+            const notesMetaRef = ref(getFirebaseDatabase()!, `rooms/${this.roomId}/productivity/notes`)
             await update(notesMetaRef, {
                 lastModified: Date.now(),
                 lastModifiedBy: this.userName,
@@ -150,7 +150,7 @@ class SharedNotesManager {
         if (!this.roomId || !getFirebaseDatabase() || !this.state.notes[noteId]) return false
 
         try {
-            const noteRef = ref(getFirebaseDatabase()!, `notes/${this.roomId}/notes/${noteId}`)
+            const noteRef = ref(getFirebaseDatabase()!, `rooms/${this.roomId}/productivity/notes/notes/${noteId}`)
             const currentNote = this.state.notes[noteId]
 
             await update(noteRef, {
@@ -166,7 +166,7 @@ class SharedNotesManager {
             }
 
             // Update last modified
-            const notesMetaRef = ref(getFirebaseDatabase()!, `notes/${this.roomId}`)
+            const notesMetaRef = ref(getFirebaseDatabase()!, `rooms/${this.roomId}/productivity/notes`)
             await update(notesMetaRef, {
                 lastModified: Date.now(),
                 lastModifiedBy: this.userName,
@@ -187,7 +187,7 @@ class SharedNotesManager {
         if (!this.roomId || !getFirebaseDatabase() || !this.state.notes[noteId]) return false
 
         try {
-            const noteRef = ref(getFirebaseDatabase()!, `notes/${this.roomId}/notes/${noteId}`)
+            const noteRef = ref(getFirebaseDatabase()!, `rooms/${this.roomId}/productivity/notes/notes/${noteId}`)
             await remove(noteRef)
 
             delete this.state.notes[noteId]
@@ -197,7 +197,7 @@ class SharedNotesManager {
             }
 
             // Update last modified
-            const notesMetaRef = ref(getFirebaseDatabase()!, `notes/${this.roomId}`)
+            const notesMetaRef = ref(getFirebaseDatabase()!, `rooms/${this.roomId}/productivity/notes`)
             await update(notesMetaRef, {
                 lastModified: Date.now(),
                 lastModifiedBy: this.userName,
@@ -280,7 +280,7 @@ class SharedNotesManager {
     listenForNotes(): void {
         if (!this.roomId || !getFirebaseDatabase()!) return
 
-        const notesRef = ref(getFirebaseDatabase()!, `notes/${this.roomId}`)
+        const notesRef = ref(getFirebaseDatabase()!, `rooms/${this.roomId}/productivity/notes`)
         const unsubscribe = onValue(notesRef, (snapshot) => {
             const data = snapshot.val() as SharedNotes | null
 

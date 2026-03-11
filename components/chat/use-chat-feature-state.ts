@@ -4,6 +4,7 @@ import { TheaterSession, TheaterInvite } from "@/utils/infra/theater-signaling"
 import { KaraokeInvite } from "@/utils/games/karaoke"
 import { QuizSession, QuizAnswer, QuizResult } from "@/utils/games/quiz-system"
 import { GameInvite } from "@/utils/infra/game-signaling"
+import { WhiteboardInvite } from "@/utils/infra/whiteboard-signaling"
 import { Message } from "../message-bubble"
 
 export function useChatFeatureState(initialAvatar?: string) {
@@ -33,6 +34,7 @@ export function useChatFeatureState(initialAvatar?: string) {
     const [userAvatar, setUserAvatar] = useState<string | undefined>(initialAvatar)
     const [moodBackgroundImage, setMoodBackgroundImage] = useState<string | null>(null)
     const [moodBackgroundMusic, setMoodBackgroundMusic] = useState<string | null>(null)
+    const [moodPlaylist, setMoodPlaylist] = useState<string[]>([])
 
     // Game & Invite
     const [gameInvite, setGameInvite] = useState<GameInvite | null>(null)
@@ -43,6 +45,7 @@ export function useChatFeatureState(initialAvatar?: string) {
     const [karaokeInvite, setKaraokeInvite] = useState<KaraokeInvite | null>(null)
     const [currentPresentationId, setCurrentPresentationId] = useState<string | null>(null)
     const [presentationInvite, setPresentationInvite] = useState<{ presentationId: string; hostName: string; hostId: string } | null>(null)
+    const [whiteboardInvite, setWhiteboardInvite] = useState<WhiteboardInvite | null>(null)
 
     // Pinned Message
     const [pinnedMessageId, setPinnedMessageId] = useState<string | null>(null)
@@ -70,12 +73,14 @@ export function useChatFeatureState(initialAvatar?: string) {
         userAvatar, setUserAvatar,
         moodBackgroundImage, setMoodBackgroundImage,
         moodBackgroundMusic, setMoodBackgroundMusic,
+        moodPlaylist, setMoodPlaylist,
         gameInvite, setGameInvite,
         mafiaConfig, setMafiaConfig,
         currentKaraokeSession, setCurrentKaraokeSession,
         karaokeInvite, setKaraokeInvite,
         currentPresentationId, setCurrentPresentationId,
         presentationInvite, setPresentationInvite,
+        whiteboardInvite, setWhiteboardInvite,
         pinnedMessageId, setPinnedMessageId,
         pinnedMessage, setPinnedMessage,
         passwordValidated, setPasswordValidated,

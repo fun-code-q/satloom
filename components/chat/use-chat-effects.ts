@@ -11,6 +11,7 @@ import { TheaterSignaling, type TheaterInvite } from "@/utils/infra/theater-sign
 import { QuizSystem, type QuizSession, type QuizAnswer } from "@/utils/games/quiz-system"
 import { presentationModeManager } from "@/utils/infra/presentation-mode"
 import { EncryptionManager } from "@/utils/infra/encryption-manager"
+import { whiteboardSignaling } from "@/utils/infra/whiteboard-signaling"
 import { p2pFileTransfer } from "@/utils/infra/p2p-file-transfer"
 import { karaokeManager } from "@/utils/games/karaoke"
 import type { Message } from "../message-bubble"
@@ -25,6 +26,7 @@ interface UseChatEffectsParams {
     setMessages: (msgs: Message[]) => void
     setOnlineUsers: (users: UserPresence[]) => void
     setReplyingTo: (msg: Message | null) => void
+    currentUserMood: { emoji: string; text: string } | null
     // State setters
     setIncomingCall: (val: any) => void
     currentCall: CallData | null
@@ -43,7 +45,9 @@ interface UseChatEffectsParams {
     setIsTheaterHost: (val: boolean) => void
     setGameInvite: (val: any) => void
     setKaraokeInvite: (val: any) => void
+    setCurrentKaraokeSession: (val: any) => void
     setPresentationInvite: (val: any) => void
+    setWhiteboardInvite: (val: any) => void
     setPinnedMessageId: (val: string | null) => void
     setPinnedMessage: (val: Message | null) => void
     setFirebaseConnected: (connected: boolean) => void
@@ -52,6 +56,7 @@ interface UseChatEffectsParams {
     setPasswordValidated: (val: boolean) => void
     setMoodBackgroundImage: (val: string | null) => void
     setMoodBackgroundMusic: (val: string | null) => void
+    setMoodPlaylist: (val: string[]) => void
     // Refs
     typingTimeoutRef: React.MutableRefObject<any>
     quizTimerRef: React.MutableRefObject<any>
@@ -75,11 +80,13 @@ export function useChatEffects(params: UseChatEffectsParams) {
         setIncomingCall, currentCall, setCurrentCall, setIsInCall, setShowAudioCall, setShowVideoCall,
         setCurrentQuizSession, setQuizAnswers, setQuizResults, setUserQuizAnswer, setShowQuizResults, setQuizTimeRemaining,
         setCurrentTheaterSession, setTheaterInvite, setIsTheaterHost,
-        setGameInvite, setKaraokeInvite, setPresentationInvite, setPinnedMessageId, setPinnedMessage, setIsHost,
-        setRoomIsProtected, setPasswordValidated, setMoodBackgroundImage, setMoodBackgroundMusic,
+        setGameInvite, setKaraokeInvite, setPresentationInvite, setWhiteboardInvite, setPinnedMessageId, setPinnedMessage, setIsHost,
+        setCurrentKaraokeSession,
+        setRoomIsProtected, setPasswordValidated, setMoodBackgroundImage, setMoodBackgroundMusic, setMoodPlaylist,
         setHasUnreadNotes, setHasUnreadTasks, showSharedNotes, showSharedTaskList,
         typingTimeoutRef, quizTimerRef, quizSessionUnsubscribeRef, quizAnswersUnsubscribeRef,
         listenForGameInvites, startQuizTimer, handleQuizFinished, pinnedMessageId,
+        currentUserMood,
     } = params
 
     const notificationSystem = NotificationSystem.getInstance()
@@ -146,7 +153,10 @@ export function useChatEffects(params: UseChatEffectsParams) {
 
     // Main room initialization effect
     useEffect(() => {
+        if (!roomId || !currentUserId) return
+
         console.log("ChatInterface: Initializing for room", roomId)
+        karaokeManager.initialize(roomId, currentUserId, userProfile.name)
         if (!roomId || roomId.trim() === "") {
             console.error("ChatInterface: Cannot initialize with invalid roomId:", roomId)
             return
@@ -187,7 +197,7 @@ export function useChatEffects(params: UseChatEffectsParams) {
         notificationSystem.setSoundEnabled(themeContext.notificationSound)
         notificationSystem.requestPermission()
 
-        const cleanUserInfo = { name: userProfile.name, currentActivity: "chat" as const }
+        const cleanUserInfo = { name: userProfile.name, currentActivity: "chat" as const, mood: currentUserMood || undefined }
         if ((userProfile as any).avatar && (userProfile as any).avatar.trim() !== "") {
             (cleanUserInfo as any).avatar = (userProfile as any).avatar
         }
@@ -266,35 +276,61 @@ export function useChatEffects(params: UseChatEffectsParams) {
             },
             (call: CallData) => {
                 console.log("[Signaling] Call update received:", call)
-                if (call.participants.includes(currentUserId) || call.callerId === currentUserId) {
-                    setCurrentCall(call)
-                    if (call.status === "answered") {
-                        if (!wasCallAnsweredRef.current) {
-                            notificationSystem.callConnected()
-                        }
-                        wasCallAnsweredRef.current = true
-                        setIsInCall(true)
-                        // Handle modal visibility based on call type
-                        if (call.type === "video") {
-                            setShowVideoCall(true)
-                            setShowAudioCall(false)
-                        } else {
-                            setShowVideoCall(false)
-                            setShowAudioCall(true)
-                        }
-                    } else if (call.status === "ended") {
-                        setIsInCall(false)
-                        setCurrentCall(null)
-                        setShowAudioCall(false)
-                        setShowVideoCall(false)
-
-                        if (!wasCallAnsweredRef.current && call.callerId !== currentUserId) {
-                            notificationSystem.callNotAnswered()
-                        } else {
-                            notificationSystem.callEnded()
-                        }
-                        wasCallAnsweredRef.current = false
+                // Ignore updates if they don't relate to our current call or incoming call
+                // and we are already in call state
+                setCurrentCall((prev: CallData | null) => {
+                    // If no call tracked, take this one if it's active
+                    if (!prev) {
+                        if (call.status !== "ended") return call
+                        return null
                     }
+
+                    // If we have a tracked call, only take updates for it
+                    if (prev.id === call.id) {
+                        return call
+                    }
+
+                    return prev
+                })
+
+                if (call.status === "answered") {
+                    // Only process 'answered' for the relevant call
+                    setCurrentCall((prev: CallData | null) => {
+                        if (prev && prev.id === call.id) {
+                            if (!wasCallAnsweredRef.current) {
+                                notificationSystem.callConnected()
+                            }
+                            wasCallAnsweredRef.current = true
+                            setIsInCall(true)
+
+                            // Handle modal visibility based on call type
+                            if (call.type === "video") {
+                                setShowVideoCall(true)
+                                setShowAudioCall(false)
+                            } else {
+                                setShowVideoCall(false)
+                                setShowAudioCall(true)
+                            }
+                        }
+                        return prev
+                    })
+                } else if (call.status === "ended") {
+                    setCurrentCall((prev: CallData | null) => {
+                        if (prev && prev.id === call.id) {
+                            setIsInCall(false)
+                            setShowAudioCall(false)
+                            setShowVideoCall(false)
+
+                            if (!wasCallAnsweredRef.current && call.callerId !== currentUserId) {
+                                notificationSystem.callNotAnswered()
+                            } else {
+                                notificationSystem.callEnded()
+                            }
+                            wasCallAnsweredRef.current = false
+                            return null
+                        }
+                        return prev
+                    })
                 }
             },
         )
@@ -313,8 +349,18 @@ export function useChatEffects(params: UseChatEffectsParams) {
 
         const gameInviteUnsubscribe = listenForGameInvites()
 
+        const whiteboardUnsubscribe = whiteboardSignaling.listenForInvites(roomId, currentUserId, (invite) => {
+            setWhiteboardInvite(invite)
+            notificationSystem.whiteboardInvite(invite.hostName)
+        })
+
+        // Karaoke Sessions
+        const karaokeSessionUnsubscribe = karaokeManager.listenForSession(roomId, (session) => {
+            setCurrentKaraokeSession(session)
+        })
+
         // Karaoke Invitations
-        const karaokeInviteUnsubscribe = karaokeManager.listenForInvites((invite) => {
+        const karaokeInviteUnsubscribe = karaokeManager.listenForInvites(roomId, currentUserId, (invite) => {
             if (invite) {
                 console.log("Incoming karaoke invite:", invite)
                 setKaraokeInvite(invite)
@@ -326,17 +372,21 @@ export function useChatEffects(params: UseChatEffectsParams) {
         })
 
         // Productivity Badges Listening
-        const notesRef = ref(db, `rooms/${roomId}/notes/lastUpdatedAt`)
+        const notesRef = ref(db, `rooms/${roomId}/productivity/notes/lastModified`)
         const notesUnsubscribe = onValue(notesRef, (snapshot) => {
             if (snapshot.exists() && !showSharedNotes) {
                 setHasUnreadNotes(true)
+                // We don't have the user name here easily, so we just say "Someone"
+                // Ideally we'd store the last modifier's name in Firebase too
+                notificationSystem.notesUpdated("Someone")
             }
         })
 
-        const tasksRef = ref(db, `rooms/${roomId}/tasks/lastUpdatedAt`)
+        const tasksRef = ref(db, `rooms/${roomId}/productivity/tasks/lastModified`)
         const tasksUnsubscribe = onValue(tasksRef, (snapshot) => {
             if (snapshot.exists() && !showSharedTaskList) {
                 setHasUnreadTasks(true)
+                notificationSystem.tasksUpdated("Someone")
             }
         })
 
@@ -352,6 +402,8 @@ export function useChatEffects(params: UseChatEffectsParams) {
             pinnedMessageUnsubscribe()
             gameInviteUnsubscribe()
             karaokeInviteUnsubscribe()
+            karaokeSessionUnsubscribe()
+            whiteboardUnsubscribe()
             notesUnsubscribe()
             tasksUnsubscribe()
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
@@ -417,9 +469,11 @@ export function useChatEffects(params: UseChatEffectsParams) {
                 const moodData = snapshot.val()
                 setMoodBackgroundImage(moodData.backgroundImage || null)
                 setMoodBackgroundMusic(moodData.backgroundMusic || null)
+                setMoodPlaylist(moodData.playlist || [])
             } else {
                 setMoodBackgroundImage(null)
                 setMoodBackgroundMusic(null)
+                setMoodPlaylist([])
             }
         })
         return () => unsubscribe()
@@ -471,4 +525,10 @@ export function useChatEffects(params: UseChatEffectsParams) {
             if (quizAnswersUnsubscribeRef.current) quizAnswersUnsubscribeRef.current()
         }
     }, [roomId, currentUserId])
+
+    // Sync current user mood change
+    useEffect(() => {
+        if (!roomId || !currentUserId) return
+        userPresence.setUserMood(roomId, currentUserId, currentUserMood || undefined)
+    }, [currentUserMood, roomId, currentUserId])
 }

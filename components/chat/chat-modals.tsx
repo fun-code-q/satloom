@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from "react"
 import { createPortal } from "react-dom"
 import { Button } from "../ui/button"
-import { X, Smile, Palette, Monitor, Gamepad2 } from "lucide-react"
+import { X, Smile, Palette, Monitor, Gamepad2, Mic, Film } from "lucide-react"
 import { AudioCallModal } from "../audio-call-modal"
 import { VideoCallModal } from "../video-call-modal"
 import { SettingsModal } from "../settings-modal"
@@ -18,6 +18,7 @@ import { GameInviteNotification } from "../game-invite-notification"
 import { QuizSetupModal } from "../quiz-setup-modal"
 import { MoodSetupModal } from "../mood/mood-setup-modal"
 import { WhiteboardModal } from "../whiteboard-modal"
+import { WhiteboardInviteNotification } from "../whiteboard-invite-notification"
 import { Soundboard } from "../soundboard"
 import { PasswordEntryModal } from "../password-entry-modal"
 import { HostPasswordModal } from "../host-password-modal"
@@ -52,6 +53,7 @@ import type { QuizSession, QuizAnswer, QuizResult } from "@/utils/games/quiz-sys
 import type { Message } from "../message-bubble"
 import type { GameInvite } from "@/utils/infra/game-signaling"
 import type { KaraokeSong, KaraokeInvite } from "@/utils/games/karaoke"
+import type { WhiteboardInvite } from "@/utils/infra/whiteboard-signaling"
 
 interface ChatModalsProps {
     roomId: string
@@ -112,10 +114,6 @@ interface ChatModalsProps {
     handleMediaRecorded: (file: File, type: string) => void
     handleStopMediaRecording: () => void
     // Whiteboard
-    showWhiteboard: boolean
-    setShowWhiteboard: (val: boolean) => void
-    isWhiteboardMinimized: boolean
-    setIsWhiteboardMinimized: (val: boolean) => void
     // Playground
     isPlaygroundMinimized: boolean
     setIsPlaygroundMinimized: (val: boolean) => void
@@ -138,6 +136,8 @@ interface ChatModalsProps {
     handleAcceptTheaterInvite: () => void
     handleDeclineTheaterInvite: () => void
     handleExitTheater: () => void
+    isTheaterMinimized: boolean
+    setIsTheaterMinimized: (val: boolean) => void
     pendingMediaFile: File | null
     setPendingMediaFile: (file: File | null) => void
     // Quiz Modal
@@ -146,6 +146,13 @@ interface ChatModalsProps {
     // Mood
     showMoodSetup: boolean
     setShowMoodSetup: (val: boolean) => void
+    // Whiteboard
+    showWhiteboard: boolean
+    setShowWhiteboard: (val: boolean) => void
+    isWhiteboardMinimized: boolean
+    setIsWhiteboardMinimized: (val: boolean) => void
+    whiteboardInvite: WhiteboardInvite | null
+    setWhiteboardInvite: (val: WhiteboardInvite | null) => void
     // Soundboard
     showSoundboard: boolean
     setShowSoundboard: (val: boolean) => void
@@ -162,6 +169,8 @@ interface ChatModalsProps {
     showKaraokeSetup: boolean
     setShowKaraokeSetup: (val: boolean) => void
     currentKaraokeSession: any
+    isKaraokeMinimized: boolean
+    setIsKaraokeMinimized: (val: boolean) => void
     handleStartKaraoke: (song: KaraokeSong) => void
     handleExitKaraoke: () => void
     karaokeInvite: KaraokeInvite | null
@@ -322,6 +331,24 @@ export function ChatModals(props: ChatModalsProps) {
                             <span className="text-xs font-black tracking-widest uppercase">Restore Game</span>
                         </Button>
                     )}
+                    {props.showTheaterFullscreen && props.isTheaterMinimized && (
+                        <Button
+                            onClick={() => props.setIsTheaterMinimized(false)}
+                            className="bg-cyan-600/90 hover:bg-cyan-500 text-white rounded-2xl p-4 shadow-2xl backdrop-blur-md border border-cyan-400/30 flex items-center gap-3 animate-in slide-in-from-right-10 duration-300"
+                        >
+                            <Film className="h-5 w-5" />
+                            <span className="text-xs font-black tracking-widest uppercase">Restore Cinema</span>
+                        </Button>
+                    )}
+                    {props.currentKaraokeSession && props.isKaraokeMinimized && (
+                        <Button
+                            onClick={() => props.setIsKaraokeMinimized(false)}
+                            className="bg-purple-600/90 hover:bg-purple-500 text-white rounded-2xl p-4 shadow-2xl backdrop-blur-md border border-purple-400/30 flex items-center gap-3 animate-in slide-in-from-right-10 duration-300"
+                        >
+                            <Mic className="h-5 w-5" />
+                            <span className="text-xs font-black tracking-widest uppercase">Restore Karaoke</span>
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -403,6 +430,17 @@ export function ChatModals(props: ChatModalsProps) {
                     onDecline={() => props.setKaraokeInvite(null)}
                 />
             )}
+            {props.whiteboardInvite && renderModal(
+                <WhiteboardInviteNotification
+                    invite={props.whiteboardInvite}
+                    onAccept={() => {
+                        props.setShowWhiteboard(true)
+                        props.setIsWhiteboardMinimized(false)
+                        props.setWhiteboardInvite(null)
+                    }}
+                    onDecline={() => props.setWhiteboardInvite(null)}
+                />
+            )}
 
             {/* Global Modals - Rendered inline since they manage their own overlays/z-index */}
             <AudioCallModal isOpen={props.showAudioCall} onClose={props.handleEndCall} onAnswer={props.handleAnswerCall} roomId={roomId} currentUser={userProfile.name} currentUserId={currentUserId} callData={props.currentCall || props.incomingCall} isIncoming={!!(props.currentCall || props.incomingCall) && (props.currentCall || props.incomingCall)?.callerId !== currentUserId} onSwitchToVideo={() => props.handleSwitchCallType("video")} />
@@ -437,8 +475,9 @@ export function ChatModals(props: ChatModalsProps) {
             )}
             {props.currentTheaterSession && (
                 <TheaterFullscreen
-                    isOpen={props.showTheaterFullscreen}
+                    isOpen={props.showTheaterFullscreen && !props.isTheaterMinimized}
                     onClose={props.handleExitTheater}
+                    onMinimize={() => props.setIsTheaterMinimized(true)}
                     session={props.currentTheaterSession}
                     roomId={roomId}
                     currentUser={userProfile.name}
@@ -477,12 +516,19 @@ export function ChatModals(props: ChatModalsProps) {
                 onMinimize={() => props.setIsWhiteboardMinimized(true)}
                 roomId={roomId}
                 currentUser={currentUserId}
+                currentUserName={userProfile.name}
             />
             <Soundboard isOpen={props.showSoundboard} onClose={() => props.setShowSoundboard(false)} roomId={roomId} userId={currentUserId} userName={userProfile.name} />
             <PasswordEntryModal isOpen={props.showPasswordEntry} roomId={roomId} onSuccess={() => { props.setShowPasswordEntry(false); props.setPasswordValidated(true) }} onCancel={() => props.setShowPasswordEntry(false)} />
             <HostPasswordModal isOpen={props.showHostPassword} roomId={roomId} isProtected={props.roomIsProtected} onClose={() => props.setShowHostPassword(false)} onProtectedChange={props.setRoomIsProtected} />
             <KaraokeSetupModal isOpen={props.showKaraokeSetup} onClose={() => props.setShowKaraokeSetup(false)} onStartSession={props.handleStartKaraoke} />
-            {props.currentKaraokeSession && <KaraokePlayer session={props.currentKaraokeSession} onEnd={props.handleExitKaraoke} />}
+            {props.currentKaraokeSession && !props.isKaraokeMinimized && renderModal(
+                <KaraokePlayer
+                    session={props.currentKaraokeSession}
+                    onEnd={props.handleExitKaraoke}
+                    onMinimize={() => props.setIsKaraokeMinimized(true)}
+                />
+            )}
 
             {/* Mafia */}
             {props.showMafiaSetup && (

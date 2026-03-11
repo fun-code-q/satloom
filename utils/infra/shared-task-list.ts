@@ -75,7 +75,7 @@ class TaskListManager {
         if (!this.roomId || !getFirebaseDatabase()!) return
 
         try {
-            const tasksRef = ref(getFirebaseDatabase()!, `tasks/${this.roomId}`)
+            const tasksRef = ref(getFirebaseDatabase()!, `rooms/${this.roomId}/productivity/tasks`)
             const snapshot = await get(tasksRef)
 
             if (!snapshot.exists()) {
@@ -124,11 +124,11 @@ class TaskListManager {
                 priority,
             }
 
-            const taskRef = ref(getFirebaseDatabase()!, `tasks/${this.roomId}/tasks/${task.id}`)
+            const taskRef = ref(getFirebaseDatabase()!, `rooms/${this.roomId}/productivity/tasks/tasks/${task.id}`)
             await set(taskRef, task)
 
             // Update last modified
-            const tasksMetaRef = ref(getFirebaseDatabase()!, `tasks/${this.roomId}`)
+            const tasksMetaRef = ref(getFirebaseDatabase()!, `rooms/${this.roomId}/productivity/tasks`)
             await update(tasksMetaRef, {
                 lastModified: Date.now(),
                 lastModifiedBy: this.userName,
@@ -165,7 +165,7 @@ class TaskListManager {
             return false
 
         try {
-            const taskRef = ref(getFirebaseDatabase()!, `tasks/${this.roomId}/tasks/${taskId}`)
+            const taskRef = ref(getFirebaseDatabase()!, `rooms/${this.roomId}/productivity/tasks/tasks/${taskId}`)
             const currentTask = this.state.tasks.find((t) => t.id === taskId)
 
             await update(taskRef, updates)
@@ -176,7 +176,7 @@ class TaskListManager {
             )
 
             // Update last modified
-            const tasksMetaRef = ref(getFirebaseDatabase()!, `tasks/${this.roomId}`)
+            const tasksMetaRef = ref(getFirebaseDatabase()!, `rooms/${this.roomId}/productivity/tasks`)
             await update(tasksMetaRef, {
                 lastModified: Date.now(),
                 lastModifiedBy: this.userName,
@@ -198,13 +198,13 @@ class TaskListManager {
             return false
 
         try {
-            const taskRef = ref(getFirebaseDatabase()!, `tasks/${this.roomId}/tasks/${taskId}`)
+            const taskRef = ref(getFirebaseDatabase()!, `rooms/${this.roomId}/productivity/tasks/tasks/${taskId}`)
             await remove(taskRef)
 
             this.state.tasks = this.state.tasks.filter((t) => t.id !== taskId)
 
             // Update last modified
-            const tasksMetaRef = ref(getFirebaseDatabase()!, `tasks/${this.roomId}`)
+            const tasksMetaRef = ref(getFirebaseDatabase()!, `rooms/${this.roomId}/productivity/tasks`)
             await update(tasksMetaRef, {
                 lastModified: Date.now(),
                 lastModifiedBy: this.userName,
@@ -320,7 +320,7 @@ class TaskListManager {
     listenForTasks(): void {
         if (!this.roomId || !getFirebaseDatabase()!) return
 
-        const tasksRef = ref(getFirebaseDatabase()!, `tasks/${this.roomId}`)
+        const tasksRef = ref(getFirebaseDatabase()!, `rooms/${this.roomId}/productivity/tasks`)
         const unsubscribe = onValue(tasksRef, (snapshot) => {
             const data = snapshot.val() as TaskList | null
 

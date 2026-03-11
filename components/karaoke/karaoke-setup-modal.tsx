@@ -24,6 +24,7 @@ export function KaraokeSetupModal({ isOpen, onClose, onStartSession }: KaraokeSe
     const [customTitle, setCustomTitle] = useState("")
     const [customArtist, setCustomArtist] = useState("")
     const [customLyrics, setCustomLyrics] = useState("")
+    const [customAudioUrl, setCustomAudioUrl] = useState("")
 
     const filteredSongs = DEMO_SONGS.filter(
         (song) =>
@@ -49,7 +50,9 @@ export function KaraokeSetupModal({ isOpen, onClose, onStartSession }: KaraokeSe
                 title: customTitle,
                 artist: customArtist || "Unknown Artist",
                 duration: lines.length * 4000,
-                lyrics: lines
+                lyrics: lines,
+                audioUrl: customAudioUrl,
+                videoType: customAudioUrl.includes("youtube.com") || customAudioUrl.includes("youtu.be") ? "youtube" : "direct"
             }
         }
 
@@ -183,6 +186,15 @@ export function KaraokeSetupModal({ isOpen, onClose, onStartSession }: KaraokeSe
                                 value={customLyrics}
                                 onChange={(e) => setCustomLyrics(e.target.value)}
                                 className="w-full h-40 bg-white/5 border border-white/10 rounded-2xl p-4 focus:ring-2 focus:ring-primary/50 text-white resize-none placeholder:text-white/20 outline-none"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-white/40 uppercase tracking-wider ml-1">Audio/Music URL (Optional)</label>
+                            <Input
+                                placeholder="YouTube link or direct mp3 URL..."
+                                value={customAudioUrl}
+                                onChange={(e) => setCustomAudioUrl(e.target.value)}
+                                className="bg-white/5 border-white/10 rounded-xl focus:ring-primary/50 text-white"
                             />
                         </div>
                         <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 flex items-start gap-3">

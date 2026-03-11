@@ -71,6 +71,7 @@ export class UserPresenceSystem {
         isSendingFile: false,
         name: userInfo.name,
         currentActivity: userInfo.currentActivity || "chat",
+        mood: userInfo.mood,
       }
 
       // Only add avatar if it exists and is not undefined

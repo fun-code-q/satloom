@@ -21,6 +21,15 @@ import { useChatUIState } from "./chat/use-chat-ui-state"
 import { useChatFeatureState } from "./chat/use-chat-feature-state"
 import { ChatHeader } from "./chat/chat-header"
 import { ChatModals } from "./chat/chat-modals"
+import { MoodPlayer } from "./mood/mood-player"
+import { KaraokePlayer } from "./karaoke/karaoke-player"
+import {
+  MessageSquare, Users, Settings, Gamepad2, Film, Music, Palette, Phone, Video, Monitor,
+  Camera, Zap, Ghost, Dices, Shuffle, Calendar, BarChart2,
+  MonitorPlay, FileText, CheckSquare, Globe, Share2,
+  Briefcase, Link, Shield, ShieldCheck, Info, BellRing, UserPlus,
+  Mic
+} from "lucide-react"
 
 interface ChatInterfaceProps {
   roomId: string
@@ -74,6 +83,7 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
     showBingoSetup, setShowBingoSetup, showBingoGame, setShowBingoGame,
     showPresentationSetup, setShowPresentationSetup, showPresentationViewer, setShowPresentationViewer,
     isPresentationMinimized, setIsPresentationMinimized,
+    isKaraokeMinimized, setIsKaraokeMinimized,
     showBurnerLink, setShowBurnerLink, showGifAvatar, setShowGifAvatar,
     showBreakoutRooms, setShowBreakoutRooms, showPrivacyPolicy, setShowPrivacyPolicy,
     showTermsOfService, setShowTermsOfService, playgroundGame, setPlaygroundGame,
@@ -101,7 +111,8 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
     currentKaraokeSession, setCurrentKaraokeSession,
     karaokeInvite, setKaraokeInvite,
     moodBackgroundImage, setMoodBackgroundImage, moodBackgroundMusic, setMoodBackgroundMusic,
-    mafiaConfig, setMafiaConfig, currentPresentationId, setCurrentPresentationId
+    mafiaConfig, setMafiaConfig, currentPresentationId, setCurrentPresentationId,
+    whiteboardInvite, setWhiteboardInvite
   } = feature
 
   // Memoize getUserColor
@@ -181,9 +192,9 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
     setCurrentQuizSession, setQuizAnswers, setQuizResults, setUserQuizAnswer,
     setShowQuizResults, setQuizTimeRemaining,
     setCurrentTheaterSession, setTheaterInvite, setIsTheaterHost,
-    setGameInvite, setKaraokeInvite, setPresentationInvite, setPinnedMessageId, setPinnedMessage, setIsHost,
+    setGameInvite, setKaraokeInvite, setCurrentKaraokeSession: feature.setCurrentKaraokeSession, setPresentationInvite, setWhiteboardInvite, setPinnedMessageId, setPinnedMessage, setIsHost,
     setRoomIsProtected, setPasswordValidated,
-    setMoodBackgroundImage, setMoodBackgroundMusic,
+    setMoodBackgroundImage, setMoodBackgroundMusic, setMoodPlaylist: feature.setMoodPlaylist,
     showSharedNotes, showSharedTaskList,
     setHasUnreadNotes, setHasUnreadTasks,
     typingTimeoutRef, quizTimerRef, quizSessionUnsubscribeRef, quizAnswersUnsubscribeRef,
@@ -192,6 +203,7 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
     handleQuizFinished: calls.handleQuizFinished,
     pinnedMessageId,
     setFirebaseConnected,
+    currentUserMood: feature.currentUserMood,
   })
 
   // --- Render ---
@@ -212,25 +224,29 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
   return (
     <PrivacyShield>
       <div className="h-full flex flex-col relative overflow-hidden bg-slate-950">
-        <SpaceBackground />
+        {/* Mood Player */}
+        <MoodPlayer roomId={roomId} />
 
-        {/* Mood Background Overlay */}
-        {moodBackgroundImage && (
-          <div className="absolute inset-0 z-0 opacity-100 bg-cover bg-center transition-all duration-1000" style={{ backgroundImage: `url(${moodBackgroundImage})` }} />
+        {/* Karaoke Restore Button */}
+        {feature.currentKaraokeSession && isKaraokeMinimized && (
+          <div className="fixed bottom-24 right-6 z-50 animate-in slide-in-from-right-10 duration-500">
+            <button
+              onClick={() => setIsKaraokeMinimized(false)}
+              className="group relative flex items-center gap-3 bg-slate-900/80 backdrop-blur-xl border border-cyan-500/30 p-2 pr-5 rounded-2xl shadow-2xl shadow-cyan-500/20 hover:border-cyan-400 transition-all active:scale-95"
+            >
+              <div className="h-10 w-10 bg-cyan-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-600/20 group-hover:scale-110 transition-transform">
+                <Mic className="h-5 w-5 text-white" />
+              </div>
+              <div className="text-left">
+                <p className="text-[10px] font-black text-cyan-400 uppercase tracking-widest leading-none mb-1">On Stage</p>
+                <p className="text-sm font-bold text-white leading-none truncate max-w-[120px]">
+                  {feature.currentKaraokeSession.song?.title || "Karaoke"}
+                </p>
+              </div>
+            </button>
+          </div>
         )}
-        {moodBackgroundMusic && (
-          <audio
-            src={moodBackgroundMusic}
-            autoPlay
-            loop
-            className="hidden"
-            ref={(el) => {
-              if (el) {
-                el.play().catch(e => console.log("Background music autoplay blocked, waiting for interaction", e));
-              }
-            }}
-          />
-        )}
+
 
         <ChatHeader
           roomId={roomId}
@@ -337,6 +353,8 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
           setShowWhiteboard={setShowWhiteboard}
           isWhiteboardMinimized={isWhiteboardMinimized}
           setIsWhiteboardMinimized={setIsWhiteboardMinimized}
+          whiteboardInvite={whiteboardInvite}
+          setWhiteboardInvite={setWhiteboardInvite}
           showPlaygroundSetup={showPlaygroundSetup}
           setShowPlaygroundSetup={setShowPlaygroundSetup}
           showPlayground={showPlayground}
@@ -357,6 +375,8 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
           handleAcceptTheaterInvite={calls.handleAcceptTheaterInvite}
           handleDeclineTheaterInvite={calls.handleDeclineTheaterInvite}
           handleExitTheater={calls.handleExitTheater}
+          isTheaterMinimized={ui.isTheaterMinimized}
+          setIsTheaterMinimized={ui.setIsTheaterMinimized}
           showQuizSetup={showQuizSetup}
           handleStartQuiz={calls.handleStartQuiz}
           showGameMenu={showGameMenu}
@@ -415,6 +435,8 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
           showKaraokeSetup={showKaraokeSetup}
           setShowKaraokeSetup={setShowKaraokeSetup}
           currentKaraokeSession={currentKaraokeSession}
+          isKaraokeMinimized={ui.isKaraokeMinimized}
+          setIsKaraokeMinimized={ui.setIsKaraokeMinimized}
           karaokeInvite={karaokeInvite}
           setKaraokeInvite={setKaraokeInvite}
           handleStartKaraoke={calls.handleStartKaraoke}
@@ -430,6 +452,15 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
           handleCreateTheaterSession={calls.handleCreateTheaterSession}
         />
       </div>
+
+      {/* Karaoke Stage */}
+      {feature.currentKaraokeSession && !isKaraokeMinimized && (
+        <KaraokePlayer
+          session={feature.currentKaraokeSession}
+          onEnd={calls.handleExitKaraoke}
+          onMinimize={() => setIsKaraokeMinimized(true)}
+        />
+      )}
     </PrivacyShield>
   )
 }

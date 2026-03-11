@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 // @ts-ignore
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, X, Mic, MicOff, Users, MessageSquare, Smile, Film } from "lucide-react"
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, X, Mic, MicOff, Users, MessageSquare, Smile, Film, Minimize2 } from "lucide-react"
 import { TheaterSignaling, type TheaterSession, type TheaterAction } from "@/utils/infra/theater-signaling"
 import { createPeerConnection } from "@/lib/webrtc"
 import { TheaterChatOverlay, type Message } from "./theater-chat-overlay"
@@ -34,6 +34,7 @@ interface TheaterFullscreenProps {
   messages: Message[]
   pendingFile?: File | null
   onFileProcessed?: () => void
+  onMinimize?: () => void
 }
 
 export function TheaterFullscreen({
@@ -47,6 +48,7 @@ export function TheaterFullscreen({
   messages,
   pendingFile,
   onFileProcessed,
+  onMinimize,
 }: TheaterFullscreenProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
@@ -624,6 +626,14 @@ export function TheaterFullscreen({
                   <X className="w-4 h-4 mr-2" />
                   Cancel & Leave
                 </Button>
+                <Button
+                  variant="ghost"
+                  onClick={onMinimize}
+                  className="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-xl border border-white/10 transition-all font-bold ml-3"
+                >
+                  <Minimize2 className="w-4 h-4 mr-2" />
+                  Minimize
+                </Button>
                 {transcodingProgress !== null && (
                   <div className="w-64 h-1.5 bg-white/10 rounded-full mt-6 mx-auto overflow-hidden">
                     <div
@@ -901,6 +911,16 @@ export function TheaterFullscreen({
                   </div>
                 </PopoverContent>
               </Popover>
+
+              {/* Minimize Button */}
+              <Button
+                variant={"ghost" as any}
+                size={"icon" as any}
+                className="w-10 h-10 rounded-full bg-slate-700 hover:bg-slate-600 transition-all hover:scale-110 border border-slate-600"
+                onClick={onMinimize}
+              >
+                <Minimize2 className="w-5 h-5 text-white" />
+              </Button>
 
               {/* Exit Button */}
               <Button

@@ -158,31 +158,36 @@ export class CallSignaling {
     if (!db) return () => { }
 
     const callsRef = ref(db, `calls/${roomId}`)
+    const STALE_THRESHOLD = 5 * 60 * 1000 // 5 minutes
 
     const unsubscribe = onValue(callsRef, (snapshot: any) => {
       const calls = snapshot.val()
       if (calls) {
+        const now = Date.now()
         Object.values(calls).forEach((call: any) => {
           const callData = call as CallData
 
+          // Ignore very old calls
+          if (now - callData.timestamp > STALE_THRESHOLD && callData.status !== "ringing") {
+            return
+          }
+
           // Handle incoming calls (for other users)
           if (callData.status === "ringing" && callData.callerId !== currentUserId) {
-            console.log("Incoming call detected:", callData)
+            console.log("[Signaling] Incoming call detected:", callData.id)
             onIncomingCall(callData)
           }
 
           // Handle call updates (for all participants)
           if (callData.participants.includes(currentUserId) || callData.callerId === currentUserId) {
-            console.log("Call update:", callData)
+            // Only update if it's not a dead call unless it just ended
             onCallUpdate(callData)
           }
         })
       }
     })
 
-    // Store the unsubscribe function
     this.callListeners.set(roomId, unsubscribe)
-
     return unsubscribe
   }
 

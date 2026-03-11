@@ -85,9 +85,8 @@ export function SpaceBackground({ backgroundImage }: SpaceBackgroundProps) {
           <img
             src={backgroundImage}
             alt="Mood Background"
-            className="w-full h-full object-cover opacity-60 blur-[2px]"
+            className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-black/40" />
         </div>
       )}
       <canvas

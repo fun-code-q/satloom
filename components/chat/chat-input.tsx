@@ -145,7 +145,7 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
 
             // Stop typing indicator
             setIsTyping(false)
-            userPresence.setTyping(roomId, currentUser.name, false)
+            userPresence.setTyping(roomId, currentUserId, false)
 
             // Add optimistic message
             tempId = addOptimisticMessage(cleanedMessage, currentUser.name)
@@ -268,10 +268,10 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
     // Debounced typing indicator
     const handleTypingIndicator = useCallback(
         throttle((isTyping: boolean) => {
-            if (!roomId || !currentUser) return
-            userPresence.setTyping(roomId, currentUser.name, isTyping)
+            if (!roomId || !currentUserId) return
+            userPresence.setTyping(roomId, currentUserId, isTyping)
         }, 500),
-        [roomId, currentUser]
+        [roomId, currentUserId]
     )
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -318,6 +318,18 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
             setPendingMessages(new Map())
         }
     }, [])
+
+    // Sync recording status with presence system
+    useEffect(() => {
+        if (!roomId || !currentUserId) return
+        userPresence.setRecordingVoice(roomId, currentUserId, isRecording)
+
+        return () => {
+            if (roomId && currentUserId) {
+                userPresence.setRecordingVoice(roomId, currentUserId, false)
+            }
+        }
+    }, [isRecording, roomId, currentUserId])
 
     const [showMobileReactions, setShowMobileReactions] = useState(false)
 

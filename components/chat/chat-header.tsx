@@ -16,6 +16,8 @@ import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem,
     DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator,
 } from "../ui/dropdown-menu"
+import { Popover, PopoverContent, PopoverTrigger, PopoverClose } from "../ui/popover"
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 
 interface ChatHeaderProps {
     roomId: string
@@ -292,23 +294,58 @@ export function ChatHeader({
             {/* Online Users Bar */}
             {onlineUsers.length > 1 && (
                 <div className="px-3 py-2 bg-slate-800/50 border-b border-slate-700">
-                    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide online-users-bar">
+                    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide online-users-bar flex-nowrap">
                         <span className="text-xs text-gray-400 whitespace-nowrap flex-shrink-0">Online:</span>
                         {onlineUsers.map((user) => (
-                            <div key={user.id} className="flex items-center gap-1.5 bg-slate-700/50 rounded-full px-2.5 py-1.5 whitespace-nowrap flex-shrink-0">
-                                {user.avatar ? (
-                                    <img src={user.avatar || "/placeholder.svg"} alt={user.name} className="w-5 h-5 rounded-full" />
-                                ) : (
-                                    <div className="w-5 h-5 rounded-full bg-slate-600 flex items-center justify-center">
-                                        <span className="text-xs">{user.name[0]}</span>
+                            <Popover key={user.id}>
+                                <PopoverTrigger asChild>
+                                    <button className="flex items-center gap-1.5 bg-slate-700/50 hover:bg-slate-700 rounded-full px-2.5 py-1.5 whitespace-nowrap flex-shrink-0 transition-colors haptic">
+                                        <Avatar className="w-5 h-5">
+                                            <AvatarImage src={user.avatar} alt={user.name} />
+                                            <AvatarFallback className="text-[10px] bg-slate-600">{user.name[0]}</AvatarFallback>
+                                        </Avatar>
+                                        <span className="text-xs text-white">{user.name}</span>
+                                        {user.mood && <span className="text-xs">{user.mood.emoji}</span>}
+                                    </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-64 bg-slate-800 border-slate-700 p-0 overflow-hidden rounded-2xl shadow-2xl animate-in zoom-in-95" sideOffset={8}>
+                                    <div className="p-4 flex flex-col items-center gap-3">
+                                        <div className="relative">
+                                            <Avatar className="w-20 h-20 border-4 border-slate-700 shadow-xl">
+                                                <AvatarImage src={user.avatar} alt={user.name} />
+                                                <AvatarFallback className="text-2xl bg-slate-700 text-white font-bold">{user.name[0]}</AvatarFallback>
+                                            </Avatar>
+                                            {user.status === "online" && (
+                                                <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-2 border-slate-800 rounded-full" />
+                                            )}
+                                        </div>
+                                        <div className="text-center">
+                                            <h3 className="text-lg font-bold text-white flex items-center justify-center gap-2">
+                                                {user.name}
+                                                {user.mood && <span title={user.mood.text}>{user.mood.emoji}</span>}
+                                            </h3>
+                                            <p className="text-xs text-gray-400 uppercase tracking-widest mt-1">
+                                                {user.currentActivity ? user.currentActivity.replace("-", " ") : "In Chat"}
+                                            </p>
+                                        </div>
+                                        {user.mood?.text && (
+                                            <div className="bg-slate-700/50 px-3 py-1.5 rounded-lg text-sm text-gray-200 text-center italic w-full">
+                                                "{user.mood.text}"
+                                            </div>
+                                        )}
+                                        <div className="w-full h-px bg-slate-700/50 my-1" />
+                                        <div className="flex gap-2 w-full">
+                                            <Button variant="ghost" className="flex-1 text-xs text-slate-300 hover:text-white hover:bg-slate-700 rounded-xl">View Profile</Button>
+                                            <Button variant="ghost" className="flex-1 text-xs text-slate-300 hover:text-white hover:bg-slate-700 rounded-xl">Message</Button>
+                                        </div>
                                     </div>
-                                )}
-                                <span className="text-xs text-white">{user.name}</span>
-                                {user.mood && <span className="text-xs" title={user.mood.text}>{user.mood.emoji}</span>}
-                                {user.currentActivity && user.currentActivity !== "chat" && (
-                                    <span className="text-xs text-cyan-400 hidden sm:inline">({user.currentActivity})</span>
-                                )}
-                            </div>
+                                    <div className="absolute top-2 right-2">
+                                        <PopoverClose className="h-6 w-6 rounded-full flex items-center justify-center hover:bg-slate-700 text-gray-400 hover:text-white transition-colors">
+                                            <X className="w-4 h-4" />
+                                        </PopoverClose>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
                         ))}
                     </div>
                 </div>

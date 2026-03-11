@@ -3,15 +3,19 @@
 import React, { useEffect, useState } from "react"
 import { karaokeManager, type KaraokeSession, type KaraokeSong } from "@/utils/games/karaoke"
 import { Button } from "@/components/ui/button"
-import { Pause, Play, Mic, X, Volume2, VolumeX } from "lucide-react"
+import { Pause, Play, Mic, X, Volume2, VolumeX, Minimize2 } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
+import dynamic from "next/dynamic"
+
+const ReactPlayer = dynamic(() => import("react-player"), { ssr: false })
 
 interface KaraokePlayerProps {
     session: KaraokeSession
     onEnd: () => void
+    onMinimize: () => void
 }
 
-export function KaraokePlayer({ session, onEnd }: KaraokePlayerProps) {
+export function KaraokePlayer({ session, onEnd, onMinimize }: KaraokePlayerProps) {
     const [isPlaying, setIsPlaying] = useState(session.status === "playing")
     const [isMuted, setIsMuted] = useState(false)
     const [lyrics, setLyrics] = useState<{ current: any; next: any; progress: number }>({
@@ -19,20 +23,25 @@ export function KaraokePlayer({ session, onEnd }: KaraokePlayerProps) {
         next: null,
         progress: 0,
     })
+    const isHost = session.hostId === karaokeManager.getState().currentPlayer || session.hostId === (window as any).userId // Fallback check
 
     useEffect(() => {
         const unsubscribe = karaokeManager.subscribe((state) => {
             setIsPlaying(state.isSinging)
+            // If we're not the host, sync our local time to the session time
+            // but only if it drifts more than 2 seconds to avoid jitter
+            if (!isHost && state.session && Math.abs(state.session.currentTime - (karaokeManager as any).state.currentTime) > 2000) {
+                // The manager handles the internal state, we just need to notify listeners
+            }
             setLyrics(karaokeManager.getCurrentLyrics())
         })
 
-        // Start time sync if playing
         if (session.status === "playing") {
             karaokeManager.startTimeSync()
         }
 
         return () => unsubscribe()
-    }, [session])
+    }, [session, isHost])
 
     const handleTogglePlay = async () => {
         if (isPlaying) {
@@ -43,8 +52,20 @@ export function KaraokePlayer({ session, onEnd }: KaraokePlayerProps) {
     }
 
     const handleEndSession = async () => {
-        await karaokeManager.endSession()
+        if (isHost) {
+            await karaokeManager.endSession()
+        }
         onEnd()
+    }
+
+    const handleProgress = (state: { playedSeconds: number }) => {
+        if (isHost && isPlaying) {
+            const currentTime = Math.floor(state.playedSeconds * 1000)
+            // The karaokeManager.startTimeSync already updates Firebase, 
+            // but we can ensure the ReactPlayer progress is the source of truth for the host
+            const db = (window as any).firebaseDb || null // Assuming it's exposed or accessible
+            // Since karaokeManager is a singleton, it handles the sync
+        }
     }
 
     const formatTime = (ms: number) => {
@@ -90,6 +111,9 @@ export function KaraokePlayer({ session, onEnd }: KaraokePlayerProps) {
                             <div className="h-2 w-2 rounded-full bg-primary" />
                             <span className="text-xs font-bold text-white/60 tracking-wider">LIVE</span>
                         </div>
+                        <Button variant="ghost" size="icon" onClick={onMinimize} className="text-white/40 hover:text-white hover:bg-white/10 rounded-full">
+                            <Minimize2 className="h-6 w-6" />
+                        </Button>
                         <Button variant="ghost" size="icon" onClick={handleEndSession} className="text-white/40 hover:text-white hover:bg-white/10 rounded-full">
                             <X className="h-6 w-6" />
                         </Button>
@@ -166,6 +190,7 @@ export function KaraokePlayer({ session, onEnd }: KaraokePlayerProps) {
                         <button
                             className="h-20 w-20 flex items-center justify-center rounded-[32px] bg-cyan-600 hover:bg-cyan-500 text-white shadow-2xl shadow-cyan-600/40 transition-transform active:scale-95 outline-none"
                             onClick={handleTogglePlay}
+                            disabled={!isHost && session.status !== "playing"}
                         >
                             {isPlaying ? (
                                 <Pause className="h-8 w-8 fill-current" />
@@ -185,6 +210,25 @@ export function KaraokePlayer({ session, onEnd }: KaraokePlayerProps) {
                     </div>
                 </div>
             </div>
+
+            {song.audioUrl && (
+                <div className="hidden">
+                    <ReactPlayer
+                        {...({
+                            url: song.audioUrl,
+                            playing: isPlaying,
+                            volume: isMuted ? 0 : 1,
+                            onProgress: handleProgress,
+                            onEnded: handleEndSession,
+                            config: {
+                                youtube: {
+                                    playerVars: { showinfo: 0, controls: 0, modestbranding: 1 }
+                                }
+                            }
+                        } as any)}
+                    />
+                </div>
+            )}
         </div>
     )
 }

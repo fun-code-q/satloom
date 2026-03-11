@@ -137,7 +137,16 @@ export class WebRTCManager {
 
         // Connection state logging
         this.peerConnection.onconnectionstatechange = () => {
-            console.log("WebRTC Connection State:", this.peerConnection?.connectionState)
+            const state = this.peerConnection?.connectionState
+            console.log("[WebRTC] Connection State Changed:", state)
+
+            if (state === "connected") {
+                console.log("[WebRTC] Successfully established peer connection")
+            } else if (state === "failed") {
+                console.error("[WebRTC] Connection failed. Check ICE servers and network configuration.")
+            } else if (state === "disconnected") {
+                console.warn("[WebRTC] Peer disconnected")
+            }
         }
 
         this.iceCandidateBuffer = []
