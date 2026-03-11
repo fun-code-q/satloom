@@ -14,7 +14,7 @@ export function NotificationCard({ children, className, onClose, title, icon }: 
     return (
         <div
             className={cn(
-                "fixed top-4 right-4 z-50 w-full max-w-sm bg-slate-800/95 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-4 shadow-2xl animate-in slide-in-from-right-full duration-300",
+                "fixed top-4 right-4 z-[300] w-full max-w-sm bg-slate-800/95 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-4 shadow-2xl animate-in slide-in-from-right-full duration-300",
                 className
             )}
             role="alert"

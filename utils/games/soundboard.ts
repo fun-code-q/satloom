@@ -68,6 +68,7 @@ class SoundboardManager {
     private lastPlayedTimestamp: number = Date.now()
 
     private constructor() {
+        console.log("[Soundboard] Constructor called, starting preload...")
         this.preloadSounds()
     }
 
@@ -100,8 +101,10 @@ class SoundboardManager {
     private preloadSounds(): void {
         if (typeof window === "undefined") return
 
+        console.log("[Soundboard] Preloading sounds...")
+
         DEFAULT_SOUNDS.forEach((sound) => {
-            // Skip preloading for synth sounds
+            // Skip preloading for synth sounds - these use Web Audio API
             if (["celebration", "laughter", "applause", "correct", "wrong"].includes(sound.id)) {
                 return
             }
@@ -109,6 +112,12 @@ class SoundboardManager {
             const audio = new Audio(sound.audioUrl)
             audio.preload = "auto"
             audio.volume = this.state.volume
+
+            // Add error handling for audio loading
+            audio.addEventListener('error', (e) => {
+                console.error(`[Soundboard] Error loading sound ${sound.id}:`, e)
+            })
+
             this.audioElements.set(sound.id, audio)
 
             audio.addEventListener("ended", () => {
@@ -116,7 +125,9 @@ class SoundboardManager {
             })
         })
 
-        // Initialize AudioContext on user interaction
+        console.log(`[Soundboard] Preloaded ${this.audioElements.size} audio files`)
+
+        // Initialize AudioContext on user interaction (required for Web Audio API)
         document.addEventListener(
             "click",
             () => {
@@ -157,6 +168,42 @@ class SoundboardManager {
     }
 
     /**
+     * Get or create audio element for a sound
+     */
+    private getAudioElement(soundId: string): HTMLAudioElement | null {
+        const synthSounds = ["celebration", "laughter", "applause", "correct", "wrong"]
+
+        // Don't return audio element for synth sounds
+        if (synthSounds.includes(soundId)) {
+            return null
+        }
+
+        // Return existing audio element if available
+        const existingAudio = this.audioElements.get(soundId)
+        if (existingAudio) {
+            return existingAudio
+        }
+
+        // Fallback: Create audio element on-demand if not preloaded
+        const sound = DEFAULT_SOUNDS.find(s => s.id === soundId)
+        if (sound) {
+            console.warn(`[Soundboard] Audio not preloaded for ${soundId}, creating on-demand...`)
+            const audio = new Audio(sound.audioUrl)
+            audio.volume = this.state.volume
+            this.audioElements.set(soundId, audio)
+
+            audio.addEventListener("ended", () => {
+                this.setState({ isPlaying: false, currentSound: null })
+            })
+
+            return audio
+        }
+
+        console.error(`[Soundboard] Sound not found: ${soundId}`)
+        return null
+    }
+
+    /**
      * Play a sound locally
      */
     private playSoundLocally(soundId: string): void {
@@ -174,12 +221,30 @@ class SoundboardManager {
             return
         }
 
-        const audio = this.audioElements.get(soundId)
+        const audio = this.getAudioElement(soundId)
         if (audio) {
-            audio.currentTime = 0
-            audio.volume = this.state.volume
-            audio.play().catch((err) => console.error("Failed to play sound:", err))
-            this.setState({ isPlaying: true, currentSound: soundId })
+            try {
+                audio.currentTime = 0
+                audio.volume = this.state.volume
+                const playPromise = audio.play()
+
+                if (playPromise !== undefined) {
+                    playPromise.catch((err) => {
+                        console.error(`[Soundboard] Playback failed for ${soundId}:`, err)
+                        // Try to recreate and play again as fallback
+                        this.audioElements.delete(soundId)
+                        const retryAudio = this.getAudioElement(soundId)
+                        if (retryAudio) {
+                            retryAudio.play().catch((e) => console.error(`[Soundboard] Retry failed:`, e))
+                        }
+                    })
+                }
+                this.setState({ isPlaying: true, currentSound: soundId })
+            } catch (err) {
+                console.error(`[Soundboard] Error playing sound ${soundId}:`, err)
+            }
+        } else {
+            console.error(`[Soundboard] Could not get audio element for: ${soundId}`)
         }
     }
 

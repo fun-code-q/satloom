@@ -39,6 +39,8 @@ export const metadata: Metadata = {
   },
   other: {
     'theme-color': '#0891b2',
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'black-translucent',
   },
 }
 
@@ -48,6 +50,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({

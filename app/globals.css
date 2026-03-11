@@ -54,6 +54,10 @@
     @apply border-border;
   }
 
+  html {
+    touch-action: pan-x pan-y;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;

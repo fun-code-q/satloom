@@ -4,7 +4,7 @@
 import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Mic, Video, Camera, Smile, Send, Plus, X, EyeOff, Eye, Music2, BarChart2, HelpCircle, Palette } from "lucide-react"
+import { Mic, Video, Camera, Smile, Send, Plus, X, EyeOff, Eye, Music2, BarChart2, HelpCircle, Palette, Keyboard } from "lucide-react"
 import { EmojiPicker } from "@/components/emoji-picker"
 import { PollCreator } from "./poll-creator"
 import { EventCreator } from "./event-creator"
@@ -21,6 +21,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { debounce, throttle } from "@/utils/core/lazy-loader"
 import { SecurityUtils } from "@/utils/infra/security-utils"
 import { telemetry } from "@/utils/core/telemetry"
+import { VirtualKeyboard, useVirtualKeyboardStore } from "@/components/virtual-keyboard"
 
 interface ChatInputProps {
     onFileSelect: (type: string, file?: File | any) => void
@@ -54,6 +55,10 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
     const [vanishMode, setVanishMode] = useState<VanishModeType>("off")
     const [vanishDuration, setVanishDuration] = useState(30000)
     const isMobile = useIsMobile()
+
+    // Virtual keyboard
+    const inputRef = useRef<HTMLInputElement>(null)
+    const { isEnabled: isKeyboardEnabled, toggleEnabled: toggleKeyboard } = useVirtualKeyboardStore()
 
     const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
     const messageStorage = MessageStorage.getInstance()
@@ -381,11 +386,13 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                     {/* Text input */}
                     <div className="flex-1 relative">
                         <Input
+                            ref={inputRef}
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             onKeyPress={handleKeyPress}
                             placeholder={isRecording ? "Recording..." : "Type a message..."}
                             disabled={isRecording}
+                            inputMode={isKeyboardEnabled ? "none" : undefined}
                             className="bg-slate-700 border-slate-600 text-white placeholder:text-gray-400 h-10 pr-10 rounded-full"
                         />
                     </div>
@@ -399,6 +406,17 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                         >
                             <Smile className={`w-5 h-5 ${showEmojiPicker ? 'text-cyan-400' : ''}`} />
+                        </Button>
+
+                        {/* Virtual keyboard toggle */}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className={`h-10 w-10 rounded-full shrink-0 transition-colors ${isKeyboardEnabled ? 'bg-cyan-600 text-white' : 'bg-slate-700 text-gray-300'} haptic`}
+                            onClick={() => toggleKeyboard()}
+                            title="Toggle virtual keyboard"
+                        >
+                            <Keyboard className="w-5 h-5" />
                         </Button>
 
                         {/* Action button - mic or send */}
@@ -439,6 +457,11 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                     }}
                     currentMode={vanishMode}
                     currentDuration={vanishDuration}
+                />
+
+                {/* Virtual Keyboard */}
+                <VirtualKeyboard
+                    inputRef={inputRef}
                 />
             </div>
         )

@@ -11,7 +11,7 @@ import type { MenuGroup } from "./chat-types"
 import type { RoomMember } from "@/stores/chat-store"
 import {
     Film, Gamepad2, Briefcase, Hammer, MoreVertical, Settings,
-    Copy, Pin, X, Search,
+    Copy, Pin, X, Search, Maximize2, Minimize2,
 } from "lucide-react"
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -90,6 +90,7 @@ export function ChatHeader({
     const [isHeaderVisible, setIsHeaderVisible] = useState(true)
     const headerTimeoutRef = useRef<NodeJS.Timeout | null>(null)
     const userPresence = UserPresenceSystem.getInstance()
+    const [isFullscreen, setIsFullscreen] = useState(false)
 
     // Sync sub-menus on main menu close
     useEffect(() => {
@@ -128,6 +129,35 @@ export function ChatHeader({
     }, [resetHideTimer, autoHide])
 
     const handleMouseMove = () => resetHideTimer()
+
+    // Fullscreen toggle handler
+    const toggleFullscreen = useCallback(() => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().then(() => {
+                setIsFullscreen(true)
+            }).catch((err) => {
+                console.error("Error attempting to enable fullscreen:", err)
+            })
+        } else {
+            document.exitFullscreen().then(() => {
+                setIsFullscreen(false)
+            }).catch((err) => {
+                console.error("Error attempting to exit fullscreen:", err)
+            })
+        }
+    }, [])
+
+    // Listen for fullscreen changes
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement)
+        }
+
+        document.addEventListener("fullscreenchange", handleFullscreenChange)
+        return () => {
+            document.removeEventListener("fullscreenchange", handleFullscreenChange)
+        }
+    }, [])
 
     return (
         <>
@@ -367,6 +397,18 @@ export function ChatHeader({
                         <div className="px-3 py-2 bg-slate-800/50 border-b border-slate-700">
                             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide online-users-bar flex-nowrap">
                                 <span className="text-xs text-gray-400 whitespace-nowrap flex-shrink-0">Participants:</span>
+                                {/* Mobile Fullscreen Toggle - only visible on mobile */}
+                                <button
+                                    onClick={toggleFullscreen}
+                                    className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-gray-300 hover:text-white transition-colors flex-shrink-0"
+                                    aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                                >
+                                    {isFullscreen ? (
+                                        <Minimize2 className="w-4 h-4" />
+                                    ) : (
+                                        <Maximize2 className="w-4 h-4" />
+                                    )}
+                                </button>
                                 {roomMembers.map((member) => {
                                     const onlineUser = onlineUsers.find(u => u.name === member.name)
                                     const isOnline = !!onlineUser

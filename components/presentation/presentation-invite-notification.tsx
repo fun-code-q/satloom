@@ -16,7 +16,7 @@ interface PresentationInviteNotificationProps {
 
 export function PresentationInviteNotification({ invite, onAccept, onDecline }: PresentationInviteNotificationProps) {
     return (
-        <div className="fixed bottom-6 right-6 z-[200] max-w-sm w-full bg-slate-900/95 border border-purple-500/30 rounded-3xl shadow-2xl overflow-hidden glass-morphism animate-in slide-in-from-bottom-10 duration-500">
+        <div className="fixed bottom-6 right-6 z-[300] max-w-sm w-full bg-slate-900/95 border border-purple-500/30 rounded-3xl shadow-2xl overflow-hidden glass-morphism animate-in slide-in-from-bottom-10 duration-500">
             <div className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 p-6">
                 <div className="flex items-start gap-4">
                     <div className="h-12 w-12 rounded-2xl bg-purple-600 flex items-center justify-center shadow-lg shadow-purple-600/40">
