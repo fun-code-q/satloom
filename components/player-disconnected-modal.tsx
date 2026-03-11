@@ -60,7 +60,7 @@ export function PlayerDisconnectedModal({
                         Connection Lost
                     </DialogTitle>
                     <DialogDescription className="text-gray-400">
-                        You've been disconnected from the game
+                        You&apos;ve been disconnected from the game
                     </DialogDescription>
                 </DialogHeader>
 
@@ -108,11 +108,9 @@ export function PlayerDisconnectedModal({
                     </div>
 
                     {/* Warning Message */}
-                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-                        <p className="text-sm text-red-300">
-                            ⚠️ If you don't reconnect within 5 minutes, you'll be removed from the game.
-                        </p>
-                    </div>
+                    <p className="text-sm text-red-300">
+                        ⚠️ If you don&apos;t reconnect within 5 minutes, you&apos;ll be removed from the game.
+                    </p>
 
                     {/* Action Buttons */}
                     <div className="flex gap-3">

@@ -608,7 +608,7 @@ export function TheaterFullscreen({
                       : isBuffering ? "Waiting for Host..."
                         : "Synchronizing..."}
                 </h3>
-                <p className="text-slate-400 text-sm mb-8">This won't take long</p>
+                <p className="text-slate-400 text-sm mb-8">This won&apos;t take long</p>
                 <Button
                   variant="ghost"
                   onClick={handleClose}

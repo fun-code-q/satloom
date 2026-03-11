@@ -19,7 +19,7 @@ export function OfflineIndicator({ pendingCount = 0, isSyncing = false, onSync }
     return (
         <div className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-500/30 text-amber-400 text-sm">
             <WifiOff className="w-4 h-4" />
-            <span>You're offline</span>
+            <span>You&apos;re offline</span>
 
             {pendingCount > 0 && (
                 <>
@@ -54,7 +54,7 @@ export function OfflineBanner({ pendingCount = 0, isSyncing = false, onSync }: O
     return (
         <div className="sticky top-0 z-40 flex items-center justify-center gap-2 px-4 py-2 bg-amber-500/90 text-white text-sm font-medium">
             <WifiOff className="w-4 h-4" />
-            <span>You're offline</span>
+            <span>You&apos;re offline</span>
 
             {pendingCount > 0 && (
                 <>

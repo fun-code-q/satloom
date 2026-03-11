@@ -213,7 +213,7 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
       <div className="h-full flex items-center justify-center bg-slate-900">
         <div className="text-white text-center">
           <div className="text-xl mb-4">Error: Invalid Room ID</div>
-          <div className="text-gray-400 mb-4">Room ID: "{roomId}"</div>
+          <div className="text-gray-400 mb-4">Room ID: &quot;{roomId}&quot;</div>
           <button onClick={onLeave} className="bg-cyan-500 hover:bg-cyan-600 px-4 py-2 rounded">
             Return to Home
           </button>

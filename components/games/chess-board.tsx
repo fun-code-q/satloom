@@ -384,7 +384,7 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose, onMinim
                         ) : (
                             <span className="text-slate-500 flex items-center gap-1.5">
                                 <div className="w-1.5 h-1.5 rounded-full bg-slate-600" />
-                                Opponent's Turn
+                                Opponent&apos;s Turn
                             </span>
                         )}
                     </div>

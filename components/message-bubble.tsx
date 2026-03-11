@@ -221,7 +221,7 @@ function MessageBubble({
 
         {message.event.description && (
           <div className="text-xs text-gray-400 line-clamp-3 mb-3 bg-slate-900/60 p-2.5 rounded-lg italic border border-slate-700/50">
-            "{message.event.description}"
+            &quot;{message.event.description}&quot;
           </div>
         )}
 

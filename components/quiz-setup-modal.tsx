@@ -82,7 +82,7 @@ export function QuizSetupModal({ isOpen, onClose, onStartQuiz }: QuizSetupModalP
               <div className="mb-6">
                 <h3 className="text-lg font-medium text-white mb-2">Enter your topic</h3>
                 <p className="text-gray-400 text-sm mb-4">
-                  Type any topic you're interested in (e.g., Science, History, Movies, Sports)
+                  Type any topic you&apos;re interested in (e.g., Science, History, Movies, Sports)
                 </p>
                 <Input
                   value={customTopic}

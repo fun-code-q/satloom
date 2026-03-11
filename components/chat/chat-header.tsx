@@ -399,7 +399,7 @@ export function ChatHeader({
                                                     </div>
                                                     {onlineUser?.mood?.text && (
                                                         <div className="bg-slate-700/50 px-3 py-1.5 rounded-lg text-sm text-gray-200 text-center italic w-full">
-                                                            "{onlineUser.mood.text}"
+                                                            &quot;{onlineUser.mood.text}&quot;
                                                         </div>
                                                     )}
                                                     <div className="w-full h-px bg-slate-700/50 my-1" />

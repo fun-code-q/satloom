@@ -254,7 +254,7 @@ export function TemplateModal({
                             </div>
                         ) : userTemplates.length === 0 ? (
                             <div className="text-center py-8 text-muted-foreground">
-                                <p>You haven't created any templates yet</p>
+                                <p>You haven&apos;t created any templates yet</p>
                                 <p className="text-sm mt-1">Create one from your current room!</p>
                             </div>
                         ) : (
