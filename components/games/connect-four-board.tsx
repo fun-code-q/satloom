@@ -378,6 +378,7 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
                     }}
                     initialGame="connect4"
                     hostName={game.players.red.id === currentUserId ? game.players.red.name : game.players.yellow.name}
+                    currentUserId={currentUserId}
                 />
             )}
         </div>

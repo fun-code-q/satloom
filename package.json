@@ -62,7 +62,7 @@
     "cmdk": "latest",
     "date-fns": "4.1.0",
     "embla-carousel-react": "latest",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "15.1.7",
     "firebase": "^12.9.0",
     "gif.js": "^0.2.0",
     "input-otp": "latest",

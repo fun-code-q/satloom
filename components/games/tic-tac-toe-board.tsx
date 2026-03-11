@@ -333,6 +333,7 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
                     }}
                     initialGame="tictactoe"
                     hostName={game.players.X.id === currentUserId ? game.players.X.name : game.players.O.name}
+                    currentUserId={currentUserId}
                 />
             )}
         </div>

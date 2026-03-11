@@ -429,6 +429,7 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose, onMinim
                     }}
                     initialGame="chess"
                     hostName={session.whitePlayer.id === currentUserId ? session.whitePlayer.name : session.blackPlayer.name}
+                    currentUserId={currentUserId}
                 />
             )}
         </div>

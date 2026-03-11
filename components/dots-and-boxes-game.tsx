@@ -189,6 +189,19 @@ export function DotsAndBoxesGameComponent({
             </div>
           </div>
         )}
+        {showSettingsModal && (
+          <PlaygroundSetupModal
+            isOpen={showSettingsModal}
+            onClose={() => setShowSettingsModal(false)}
+            onStartGame={(newConfig) => {
+              setShowSettingsModal(false)
+              restartGame()
+            }}
+            initialGame="dots"
+            hostName={isHost ? gameState.players[0].name : gameState.players[1].name}
+            currentUserId={currentUserId}
+          />
+        )}
       </div>
     </PrivacyShield>
   )
