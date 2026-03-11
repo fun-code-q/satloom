@@ -314,7 +314,7 @@ export function useChatCalls(params: UseChatCallsParams) {
     }, [params.setPlaygroundGame, params.setShowPlaygroundSetup])
 
     const handleStartPlayground = useCallback(async (config: GameConfig) => {
-        const gameId = `game_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        const gameId = (config as any).gameId || `game_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         const configWithId = { ...config, gameId }
         if (config.gameType === "single") {
             params.setPlaygroundConfig(configWithId as any)
@@ -334,12 +334,12 @@ export function useChatCalls(params: UseChatCallsParams) {
     const handleAcceptGameInvite = useCallback(async (guestName?: string) => {
         if (gameInvite) {
             const updatedConfig = { ...gameInvite.gameConfig } as any
-            if (guestName && updatedConfig.players && updatedConfig.players.length > 1) {
+            if (updatedConfig.players && updatedConfig.players.length > 1) {
                 const newPlayers = [...updatedConfig.players]
                 newPlayers[1] = {
                     ...newPlayers[1],
                     id: currentUserId,
-                    name: guestName,
+                    name: guestName || userProfile.name,
                     isComputer: false
                 }
                 updatedConfig.players = newPlayers

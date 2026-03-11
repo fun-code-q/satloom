@@ -20,7 +20,7 @@ export class DotsBoxesManager {
         if (!db) return false
 
         try {
-            const gameRef = ref(db, `games/${roomId}/${gameId}`)
+            const gameRef = ref(db, `rooms/${roomId}/games/dots/${gameId}`)
             const snapshot = await get(gameRef)
 
             if (!snapshot.exists()) {

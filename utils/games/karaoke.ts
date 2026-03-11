@@ -126,6 +126,8 @@ class KaraokeManager {
     private userName: string = "Anonymous"
     private unsubscribers: (() => void)[] = []
     private animationFrameId: number | null = null
+    private lastDbUpdateTime: number = 0
+    private lastLocalTime: number = 0
 
     private constructor() { }
 
@@ -351,32 +353,44 @@ class KaraokeManager {
     startTimeSync(): void {
         if (!this.roomId || !getFirebaseDatabase() || !this.state.isSinging) return
 
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId)
+        }
+
         const startTime = Date.now()
         const sessionStartOffset = this.state.session?.currentTime || 0
+        this.lastDbUpdateTime = startTime
 
-        const syncTime = () => {
-            if (!this.state.isSinging || this.state.session?.status !== "playing") return
+        const syncLoop = () => {
+            if (!this.state.isSinging || this.state.session?.status !== "playing") {
+                this.animationFrameId = null
+                return
+            }
 
-            const elapsed = Date.now() - startTime
+            const now = Date.now()
+            const elapsed = now - startTime
             const currentTime = sessionStartOffset + elapsed
 
+            // Update local state for immediate UI feedback (smooth lyrics)
             this.state.currentTime = currentTime
-            this.state.lyricsProgress = currentTime
 
-            // Update Firebase
-            if (getFirebaseDatabase()!) {
-                const sessionRef = ref(getFirebaseDatabase()!, `karaoke/${this.roomId}`)
-                update(sessionRef, { currentTime })
+            // Throttled Firebase update (every 1000ms)
+            if (now - this.lastDbUpdateTime >= 1000) {
+                const db = getFirebaseDatabase()
+                if (db && this.roomId) {
+                    const sessionRef = ref(db, `karaoke/${this.roomId}`)
+                    update(sessionRef, { currentTime })
+                    this.lastDbUpdateTime = now
+                }
             }
 
             // Check for lyrics progress
             this.updateLyricsProgress(currentTime)
 
-            // Continue syncing
-            this.animationFrameId = requestAnimationFrame(syncTime)
+            this.animationFrameId = requestAnimationFrame(syncLoop)
         }
 
-        syncTime()
+        syncLoop()
     }
 
     /**
@@ -512,16 +526,33 @@ class KaraokeManager {
         const sessionRef = ref(db, `karaoke/${roomId}`)
         const unsubscribe = onValue(sessionRef, (snapshot) => {
             const session = snapshot.val() as KaraokeSession | null
-            console.log(`[Karaoke] Session update for room ${roomId}:`, session?.status || "none")
+            const isHost = session?.hostId === this.userId
 
             if (session) {
                 this.state.isActive = true
                 this.state.session = session
+
+                // If not host, handle time sync with drift protection
+                if (!isHost && session.status === "playing") {
+                    const drift = Math.abs(session.currentTime - this.state.currentTime)
+                    if (drift > 2000) {
+                        console.log(`[Karaoke] Significant drift detected (${drift}ms), snapping to host time`)
+                        this.state.currentTime = session.currentTime
+                    }
+                    if (!this.animationFrameId) {
+                        this.startTimeSyncForAudience()
+                    }
+                }
+
                 this.state.isSinging = session.status === "playing"
             } else {
                 this.state.isActive = false
                 this.state.session = null
                 this.state.isSinging = false
+                if (this.animationFrameId) {
+                    cancelAnimationFrame(this.animationFrameId)
+                    this.animationFrameId = null
+                }
             }
 
             if (callback) callback(session)
@@ -530,6 +561,35 @@ class KaraokeManager {
 
         this.unsubscribers.push(unsubscribe)
         return unsubscribe
+    }
+
+    /**
+     * Clients also need to increment time locally between heartbeats
+     */
+    private startTimeSyncForAudience(): void {
+        if (this.animationFrameId) return
+
+        const syncLoop = () => {
+            if (!this.state.isActive || this.state.session?.status !== "playing" || this.state.session.hostId === this.userId) {
+                this.animationFrameId = null
+                return
+            }
+
+            // Increment local time by ~16.7ms (assuming 60fps)
+            // for more accuracy we could use Date.now() difference
+            if (this.lastLocalTime === 0) this.lastLocalTime = Date.now()
+            const now = Date.now()
+            const delta = now - this.lastLocalTime
+            this.lastLocalTime = now
+
+            this.state.currentTime += delta
+            this.updateLyricsProgress(this.state.currentTime)
+
+            this.animationFrameId = requestAnimationFrame(syncLoop)
+        }
+
+        this.lastLocalTime = Date.now()
+        syncLoop()
     }
 
     /**

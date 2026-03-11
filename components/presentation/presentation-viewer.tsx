@@ -7,7 +7,8 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Users, ChevronLeft, ChevronRight, Play, Pause, X, Monitor, Image, Video } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { createPeerConnection, getDisplayMedia, stopMediaStream } from "@/lib/webrtc"
+import { WebRTCManager } from "@/utils/infra/webrtc-manager"
+import { stopMediaStream } from "@/lib/webrtc"
 
 interface PresentationViewerProps {
     roomId: string
@@ -28,52 +29,15 @@ export function PresentationViewer({ roomId, userId, userName, presentationId, i
     const [screenStream, setScreenStream] = useState<MediaStream | null>(null)
 
     const localStreamRef = useRef<MediaStream | null>(null)
-    const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map())
     const connectedPeersRef = useRef<Set<string>>(new Set())
     const videoRef = useRef<HTMLVideoElement>(null)
 
-    const setupPeerConnection = useCallback((targetUserId: string, isInitiator: boolean) => {
-        if (peerConnectionsRef.current.has(targetUserId)) return peerConnectionsRef.current.get(targetUserId)!
-
-        const pc = createPeerConnection(
-            (state) => console.log(`Presentation PC to ${targetUserId}: ${state}`),
-            () => { },
-            (candidate) => {
-                if (candidate) {
-                    presentationModeManager.sendSignal(presentationId, "ice-candidate", candidate, userId, targetUserId)
-                }
-            },
-            (stream) => {
-                console.log("Received screen stream from host")
-                setScreenStream(stream)
-            }
-        )
-
-        if (localStreamRef.current) {
-            localStreamRef.current.getTracks().forEach(track => {
-                pc.addTrack(track, localStreamRef.current!)
-            })
-        }
-
-        peerConnectionsRef.current.set(targetUserId, pc)
-        connectedPeersRef.current.add(targetUserId)
-
-        if (isInitiator) {
-            pc.createOffer().then(async (offer) => {
-                await pc.setLocalDescription(offer)
-                presentationModeManager.sendSignal(presentationId, "offer", offer, userId, targetUserId)
-            })
-        }
-
-        return pc
-    }, [presentationId, userId])
+    // setupPeerConnection is handled by WebRTCManager
 
     // Cleanup WebRTC
     const cleanupWebRTC = useCallback(() => {
-        stopMediaStream(localStreamRef.current)
+        WebRTCManager.getInstance().cleanup()
         localStreamRef.current = null
-        peerConnectionsRef.current.forEach(pc => pc.close())
-        peerConnectionsRef.current.clear()
         connectedPeersRef.current.clear()
         setScreenStream(null)
     }, [])
@@ -92,24 +56,21 @@ export function PresentationViewer({ roomId, userId, userName, presentationId, i
 
         // Listen for signals
         const unsubscribeSignals = presentationModeManager.listenForSignals(presentationId, userId, async (type, payload, fromUserId) => {
-            let pc = peerConnectionsRef.current.get(fromUserId)
-            if (!pc) {
-                pc = setupPeerConnection(fromUserId, false)
-            }
+            const webrtc = WebRTCManager.getInstance()
 
-            try {
-                if (type === "offer") {
-                    await pc.setRemoteDescription(new RTCSessionDescription(payload))
-                    const answer = await pc.createAnswer()
-                    await pc.setLocalDescription(answer)
-                    presentationModeManager.sendSignal(presentationId, "answer", answer, userId, fromUserId)
-                } else if (type === "answer") {
-                    await pc.setRemoteDescription(new RTCSessionDescription(payload))
-                } else if (type === "ice-candidate") {
-                    await pc.addIceCandidate(new RTCIceCandidate(payload))
-                }
-            } catch (err) {
-                console.error("Error handling Presentation WebRTC signal:", err)
+            if (type === "offer") {
+                webrtc.initialize(
+                    fromUserId,
+                    localStreamRef.current || new MediaStream(),
+                    (s, uid) => { if (uid === fromUserId) setScreenStream(s) },
+                    (c, uid) => { if (uid === fromUserId) presentationModeManager.sendSignal(presentationId, "ice-candidate", c, userId, fromUserId) }
+                )
+                const answer = await webrtc.createAnswer(fromUserId, payload)
+                presentationModeManager.sendSignal(presentationId, "answer", answer, userId, fromUserId)
+            } else if (type === "answer") {
+                await webrtc.handleAnswer(fromUserId, payload)
+            } else if (type === "ice-candidate") {
+                await webrtc.addIceCandidate(fromUserId, payload)
             }
         })
 
@@ -119,39 +80,52 @@ export function PresentationViewer({ roomId, userId, userName, presentationId, i
             cleanupWebRTC()
             presentationModeManager.destroy()
         }
-    }, [roomId, userId, userName, presentationId, setupPeerConnection, cleanupWebRTC])
+    }, [roomId, userId, userName, presentationId, cleanupWebRTC])
 
     // Handle Screen Sharing Slide
     useEffect(() => {
         const startScreenShare = async () => {
+            const webrtc = WebRTCManager.getInstance()
             if (canControl && currentSlide?.type === "screen") {
                 if (!localStreamRef.current) {
                     try {
-                        const stream = await getDisplayMedia({ video: true, audio: true })
-                        localStreamRef.current = stream
-                        setScreenStream(stream)
+                        const stream = await webrtc.startScreenShare()
+                        if (stream) {
+                            localStreamRef.current = stream
+                            setScreenStream(stream)
+                        }
                     } catch (err) {
                         console.error("Failed to start screen share:", err)
                         return
                     }
                 }
 
-                // Initiate connection to all current viewers we haven't connected to yet
+                // Initiate connection to all current viewers
                 if (presentation?.viewers) {
-                    Object.keys(presentation.viewers).forEach(viewerId => {
-                        if (viewerId !== userId && !connectedPeersRef.current.has(viewerId)) {
+                    Object.keys(presentation.viewers).forEach(async (viewerId) => {
+                        if (viewerId !== userId && !connectedPeersRef.current.has(viewerId) && localStreamRef.current) {
                             console.log("Connecting to viewer:", viewerId)
-                            setupPeerConnection(viewerId, true)
+
+                            webrtc.initialize(
+                                viewerId,
+                                localStreamRef.current,
+                                (s, uid) => { if (uid === viewerId) setScreenStream(s) },
+                                (c, uid) => { if (uid === viewerId) presentationModeManager.sendSignal(presentationId, "ice-candidate", c, userId, viewerId) }
+                            )
+
+                            const offer = await webrtc.createOffer(viewerId)
+                            presentationModeManager.sendSignal(presentationId, "offer", offer, userId, viewerId)
+                            connectedPeersRef.current.add(viewerId)
                         }
                     })
                 }
-            } else if (currentSlide?.type !== "screen") {
+            } else if (currentSlide?.type !== "screen" && currentSlide) {
                 cleanupWebRTC()
             }
         }
 
         startScreenShare()
-    }, [currentSlide?.type, canControl, presentation?.viewers, userId, setupPeerConnection, cleanupWebRTC])
+    }, [currentSlide?.type, canControl, presentation?.viewers, userId, presentationId, cleanupWebRTC])
 
     // Attach stream to video element
     useEffect(() => {

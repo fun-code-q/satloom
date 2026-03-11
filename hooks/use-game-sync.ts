@@ -86,7 +86,7 @@ export function useGameSync({ gameConfig, roomId, currentUserId, onExit, isPause
 
     // Multiplayer updates
     useEffect(() => {
-        if (!game || !gameState || gameConfig.gameType === "single") return
+        if (!game || gameConfig.gameType === "single") return
 
         const unsubscribe = gameSignaling.listenForGame(roomId, gameId, (updatedState) => {
             setGameState(updatedState)

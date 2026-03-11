@@ -453,7 +453,7 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
                 </>
             )}
             <MediaRecorder isOpen={props.showMediaRecorder} onClose={() => props.setShowMediaRecorder(false)} mode={props.mediaRecorderMode} onMediaReady={props.handleMediaRecorded} onRecordingStart={() => { }} onRecordingEnd={props.handleStopMediaRecording} />
-            <PlaygroundSetupModal isOpen={props.showPlaygroundSetup} onClose={() => props.setShowPlaygroundSetup(false)} onStartGame={props.handleStartPlayground} initialGame={props.playgroundGame} hostName={userProfile.name} />
+            <PlaygroundSetupModal isOpen={props.showPlaygroundSetup} onClose={() => props.setShowPlaygroundSetup(false)} onStartGame={props.handleStartPlayground} initialGame={props.playgroundGame} hostName={userProfile.name} currentUserId={currentUserId} />
             <TheaterSetupModal isOpen={props.showTheaterSetup} onClose={() => props.setShowTheaterSetup(false)} onCreateSession={props.handleCreateTheaterSession} />
 
             {/* Overlays - Portalled to document.body so they are never clipped by overflow:hidden parents */}

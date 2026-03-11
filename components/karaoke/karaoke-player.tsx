@@ -23,16 +23,33 @@ export function KaraokePlayer({ session, onEnd, onMinimize }: KaraokePlayerProps
         next: null,
         progress: 0,
     })
+    const [playbackRate, setPlaybackRate] = useState(1.0)
+    const [currentTime, setCurrentTime] = useState(session.currentTime)
     const isHost = session.hostId === karaokeManager.getState().currentPlayer || session.hostId === (window as any).userId // Fallback check
 
     useEffect(() => {
         const unsubscribe = karaokeManager.subscribe((state) => {
             setIsPlaying(state.isSinging)
-            // If we're not the host, sync our local time to the session time
-            // but only if it drifts more than 2 seconds to avoid jitter
-            if (!isHost && state.session && Math.abs(state.session.currentTime - (karaokeManager as any).state.currentTime) > 2000) {
-                // The manager handles the internal state, we just need to notify listeners
+            setCurrentTime(state.currentTime)
+
+            // Fluid Catch-up logic for clients
+            if (!isHost && state.session && state.session.status === "playing") {
+                const drift = (state.session.currentTime - state.currentTime) / 1000 // drift in seconds
+
+                if (Math.abs(drift) > 2) {
+                    // Large drift - hard sync (karaokeManager does this internally too)
+                    setPlaybackRate(1.0)
+                } else if (drift > 0.3) {
+                    setPlaybackRate(1.05) // Speed up slightly
+                } else if (drift < -0.3) {
+                    setPlaybackRate(0.95) // Slow down slightly
+                } else {
+                    setPlaybackRate(1.0)
+                }
+            } else {
+                setPlaybackRate(1.0)
             }
+
             setLyrics(karaokeManager.getCurrentLyrics())
         })
 
@@ -169,8 +186,8 @@ export function KaraokePlayer({ session, onEnd, onMinimize }: KaraokePlayerProps
                         />
                     </div>
                     <div className="flex justify-between text-[10px] font-black text-white/30 tracking-widest px-1 uppercase">
-                        <span>{formatTime(session.currentTime)}</span>
-                        <span className="text-primary/40">Total Session</span>
+                        <span>{formatTime(currentTime)}</span>
+                        <span className="text-primary/40">Total Session {playbackRate !== 1.0 && `(Syncing ${playbackRate}x)`}</span>
                         <span>{formatTime(song.duration)}</span>
                     </div>
                 </div>
@@ -218,6 +235,7 @@ export function KaraokePlayer({ session, onEnd, onMinimize }: KaraokePlayerProps
                             url: song.audioUrl,
                             playing: isPlaying,
                             volume: isMuted ? 0 : 1,
+                            playbackRate: playbackRate,
                             onProgress: handleProgress,
                             onEnded: handleEndSession,
                             config: {

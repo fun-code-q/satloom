@@ -56,7 +56,8 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
 
   const {
     messages, onlineUsers, setMessages, setOnlineUsers, setReplyingTo, setCurrentUser, setRoomId,
-    hasUnreadNotes, hasUnreadTasks, setHasUnreadNotes, setHasUnreadTasks
+    hasUnreadNotes, hasUnreadTasks, setHasUnreadNotes, setHasUnreadTasks,
+    roomMembers, setRoomMembers,
   } = useChatStore()
 
   // Use modular hooks for state
@@ -92,7 +93,7 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
     showTheaterFullscreen, setShowTheaterFullscreen,
     isPlaygroundMinimized, setIsPlaygroundMinimized,
     isMoodSelectorOpen, setIsMoodSelectorOpen,
-    showEmojiPicker, setShowEmojiPicker, showChatSearch, setShowChatSearch
+    showEmojiPicker, setShowEmojiPicker, showChatSearch, setShowChatSearch,
   } = ui
 
   const [firebaseConnected, setFirebaseConnected] = useState(true)
@@ -187,7 +188,7 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
 
   useChatEffects({
     roomId, userProfile, currentUserId, themeContext,
-    messages, setMessages, setOnlineUsers, setReplyingTo,
+    messages, setMessages, setOnlineUsers, roomMembers, setRoomMembers, setReplyingTo,
     setIncomingCall, currentCall: feature.currentCall, setCurrentCall, setIsInCall, setShowAudioCall, setShowVideoCall,
     setCurrentQuizSession, setQuizAnswers, setQuizResults, setUserQuizAnswer,
     setShowQuizResults, setQuizTimeRemaining,
@@ -287,6 +288,16 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
           setShowChatSearch={setShowChatSearch}
           hasUnreadNotes={hasUnreadNotes}
           hasUnreadTasks={hasUnreadTasks}
+          roomMembers={roomMembers}
+          autoHide={!!(
+            showPlayground || activeGame ||
+            showTheaterFullscreen ||
+            showWhiteboard ||
+            showAudioCall || showVideoCall ||
+            showPresentationViewer ||
+            (currentKaraokeSession && !isKaraokeMinimized) ||
+            showBreakoutRooms
+          )}
         />
 
         <input

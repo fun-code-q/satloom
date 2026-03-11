@@ -62,7 +62,7 @@ export class GameSignaling {
       throw new Error("Firebase database not initialized")
     }
 
-    const gameRef = ref(getFirebaseDatabase()!, `games/${roomId}/${gameId}`)
+    const gameRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/dots/${gameId}`)
     const cleanedState = this.cleanGameState(gameState)
 
     // Add host status information
@@ -77,7 +77,7 @@ export class GameSignaling {
   async updateGame(roomId: string, gameId: string, gameState: GameState): Promise<void> {
     if (!getFirebaseDatabase()!) return
 
-    const gameRef = ref(getFirebaseDatabase()!, `games/${roomId}/${gameId}`)
+    const gameRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/dots/${gameId}`)
     const cleanedState = this.cleanGameState(gameState)
 
     await set(gameRef, {
@@ -90,7 +90,7 @@ export class GameSignaling {
   async setHostStatus(roomId: string, gameId: string, isActive: boolean): Promise<void> {
     if (!getFirebaseDatabase()!) return
 
-    const hostStatusRef = ref(getFirebaseDatabase()!, `games/${roomId}/${gameId}/hostActive`)
+    const hostStatusRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/dots/${gameId}/hostActive`)
     await set(hostStatusRef, isActive)
   }
 
@@ -101,7 +101,7 @@ export class GameSignaling {
       return () => { }
     }
 
-    const hostStatusRef = ref(getFirebaseDatabase()!, `games/${roomId}/${gameId}/hostActive`)
+    const hostStatusRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/dots/${gameId}/hostActive`)
 
     const unsubscribe = onValue(hostStatusRef, (snapshot) => {
       const isActive = snapshot.val()
@@ -116,7 +116,7 @@ export class GameSignaling {
   async sendMove(roomId: string, gameId: string, move: Move): Promise<void> {
     if (!getFirebaseDatabase()!) return
 
-    const moveRef = push(ref(getFirebaseDatabase()!, `games/${roomId}/${gameId}/moves`))
+    const moveRef = push(ref(getFirebaseDatabase()!, `rooms/${roomId}/games/dots/${gameId}/moves`))
     await set(moveRef, move)
   }
 
@@ -127,7 +127,7 @@ export class GameSignaling {
       return () => { }
     }
 
-    const gameRef = ref(getFirebaseDatabase()!, `games/${roomId}/${gameId}`)
+    const gameRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/dots/${gameId}`)
 
     const unsubscribe = onValue(gameRef, (snapshot) => {
       const gameState = snapshot.val()
@@ -149,7 +149,7 @@ export class GameSignaling {
       return () => { }
     }
 
-    const movesRef = ref(getFirebaseDatabase()!, `games/${roomId}/${gameId}/moves`)
+    const movesRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/dots/${gameId}/moves`)
 
     const unsubscribe = onValue(movesRef, (snapshot) => {
       const moves = snapshot.val()
@@ -170,7 +170,7 @@ export class GameSignaling {
   async endGame(roomId: string, gameId: string): Promise<void> {
     if (!getFirebaseDatabase()!) return
 
-    const gameRef = ref(getFirebaseDatabase()!, `games/${roomId}/${gameId}`)
+    const gameRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/dots/${gameId}`)
     await remove(gameRef)
   }
 

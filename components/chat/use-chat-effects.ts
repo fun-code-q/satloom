@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { ref, onValue, get } from "firebase/database"
+import { ref, onValue, get, set } from "firebase/database"
 import { getFirebaseDatabase } from "../../lib/firebase"
 import { NotificationSystem } from "@/utils/core/notification-system"
 import { MessageStorage } from "@/utils/infra/message-storage"
@@ -15,6 +15,7 @@ import { whiteboardSignaling } from "@/utils/infra/whiteboard-signaling"
 import { p2pFileTransfer } from "@/utils/infra/p2p-file-transfer"
 import { karaokeManager } from "@/utils/games/karaoke"
 import type { Message } from "../message-bubble"
+import type { RoomMember } from "@/stores/chat-store"
 
 interface UseChatEffectsParams {
     roomId: string
@@ -25,6 +26,8 @@ interface UseChatEffectsParams {
     messages: Message[]
     setMessages: (msgs: Message[]) => void
     setOnlineUsers: (users: UserPresence[]) => void
+    roomMembers: RoomMember[]
+    setRoomMembers: (members: RoomMember[]) => void
     setReplyingTo: (msg: Message | null) => void
     currentUserMood: { emoji: string; text: string } | null
     // State setters
@@ -76,7 +79,7 @@ interface UseChatEffectsParams {
 export function useChatEffects(params: UseChatEffectsParams) {
     const {
         roomId, userProfile, currentUserId, themeContext,
-        messages, setMessages, setOnlineUsers, setReplyingTo,
+        messages, setMessages, setOnlineUsers, roomMembers, setRoomMembers, setReplyingTo,
         setIncomingCall, currentCall, setCurrentCall, setIsInCall, setShowAudioCall, setShowVideoCall,
         setCurrentQuizSession, setQuizAnswers, setQuizResults, setUserQuizAnswer, setShowQuizResults, setQuizTimeRemaining,
         setCurrentTheaterSession, setTheaterInvite, setIsTheaterHost,
@@ -178,6 +181,7 @@ export function useChatEffects(params: UseChatEffectsParams) {
         setTheaterInvite(null)
         setIsTheaterHost(false)
         setOnlineUsers([])
+        setRoomMembers([])
         setGameInvite(null)
         setKaraokeInvite(null)
         prevOnlineUsersRef.current = []
@@ -202,6 +206,14 @@ export function useChatEffects(params: UseChatEffectsParams) {
             (cleanUserInfo as any).avatar = (userProfile as any).avatar
         }
         userPresence.setUserOnline(currentUserId, roomId, cleanUserInfo)
+
+        // Add to persistent members collection
+        const memberRef = ref(db, `rooms/${roomId}/members/${userProfile.name}`)
+        set(memberRef, {
+            name: userProfile.name,
+            avatar: userProfile.avatar || null,
+            joinedAt: Date.now()
+        })
 
         // Listen for messages
         const messageUnsubscribe = messageStorage.listenForMessages(roomId, async (newMessages) => {
@@ -354,6 +366,19 @@ export function useChatEffects(params: UseChatEffectsParams) {
             notificationSystem.whiteboardInvite(invite.hostName)
         })
 
+        // Listen for room members (persistent)
+        const membersRef = ref(db, `rooms/${roomId}/members`)
+        const membersUnsubscribe = onValue(membersRef, (snapshot) => {
+            const data = snapshot.val()
+            if (data) {
+                const membersList: RoomMember[] = Object.values(data)
+                setRoomMembers(membersList)
+                console.log(`ChatEffects: Syncing ${membersList.length} members for room ${roomId}`)
+            } else {
+                setRoomMembers([])
+            }
+        })
+
         // Karaoke Sessions
         const karaokeSessionUnsubscribe = karaokeManager.listenForSession(roomId, (session) => {
             setCurrentKaraokeSession(session)
@@ -406,6 +431,7 @@ export function useChatEffects(params: UseChatEffectsParams) {
             whiteboardUnsubscribe()
             notesUnsubscribe()
             tasksUnsubscribe()
+            membersUnsubscribe()
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
             if (quizTimerRef.current) clearInterval(quizTimerRef.current)
             setMessages([])

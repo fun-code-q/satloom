@@ -136,10 +136,11 @@ export function AudioCallModal({
     }
   }
 
-  // Effect 2: WebRTC Setup
+  // Effect 2: WebRTC Initialization (Runs once)
   useEffect(() => {
     if (!isOpen) {
       if (isInitializedRef.current) {
+        console.log("AudioCall: Cleaning up WebRTC")
         unsubscribeSignalsRef.current()
         WebRTCManager.getInstance().cleanup()
         isInitializedRef.current = false
@@ -153,43 +154,65 @@ export function AudioCallModal({
     isInitializedRef.current = true
 
     console.log("AudioCall: Initializing WebRTC")
+    const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.caller
+    if (!targetUserId) return
+
     webrtc.initialize(
+      targetUserId,
       localStream,
-      (s) => setRemoteStreamRef(s),
-      (c) => {
-        if (callData?.id) {
+      (s, uid) => {
+        if (uid === targetUserId) setRemoteStreamRef(s)
+      },
+      (c, uid) => {
+        if (callData?.id && uid === targetUserId) {
           callSignaling.sendSignal(roomId, callData.id, "ice-candidate", c, currentUserId)
         }
       }
     )
 
     unsubscribeSignalsRef.current = callSignaling.listenForSignals(roomId, callData.id, currentUserId, async (type, payload) => {
+      console.log(`AudioCall: Signal received (${type})`)
       if (type === "offer") {
         if (callData.status === "answered") {
-          const answer = await webrtc.createAnswer(payload)
+          const answer = await webrtc.createAnswer(targetUserId, payload)
           callSignaling.sendSignal(roomId, callData.id, "answer", answer, currentUserId)
         } else {
           pendingOfferRef.current = payload
         }
       } else if (type === "answer") {
-        await webrtc.handleAnswer(payload)
+        await webrtc.handleAnswer(targetUserId, payload)
       } else if (type === "ice-candidate") {
-        await webrtc.addIceCandidate(payload)
+        await webrtc.addIceCandidate(targetUserId, payload)
       }
     })
+  }, [isOpen, localStream, roomId, currentUserId, callData?.id]) // Removed callData.status to prevent re-init
 
+  // Effect 2.5: Handshake Action (Triggered on status change)
+  useEffect(() => {
+    if (!isOpen || !isInitializedRef.current || !callData) return
+
+    const webrtc = WebRTCManager.getInstance()
+
+    // If we are the caller and call just became answered, send the offer
     if (!isIncoming && callData.status === "answered") {
-      webrtc.createOffer().then(offer => {
+      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.caller
+      if (!targetUserId) return
+
+      console.log("AudioCall: Call answered, sending offer as caller")
+      webrtc.createOffer(targetUserId).then(offer => {
         callSignaling.sendSignal(roomId, callData.id, "offer", offer, currentUserId)
       }).catch(err => console.error("Error creating offer:", err))
     }
-  }, [isOpen, callData?.status, localStream, isIncoming, roomId, currentUserId, callData?.id])
+  }, [isOpen, callData?.status, isIncoming, roomId, currentUserId, callData?.id])
 
   // Effect 3: Handle pending offer
   useEffect(() => {
     if (isOpen && isIncoming && callData?.status === "answered" && pendingOfferRef.current) {
       const webrtc = WebRTCManager.getInstance()
-      webrtc.createAnswer(pendingOfferRef.current).then(answer => {
+      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.caller
+      if (!targetUserId) return
+
+      webrtc.createAnswer(targetUserId, pendingOfferRef.current).then(answer => {
         callSignaling.sendSignal(roomId, callData.id, "answer", answer, currentUserId)
         pendingOfferRef.current = null
       }).catch(err => console.error("Error answering pending offer:", err))

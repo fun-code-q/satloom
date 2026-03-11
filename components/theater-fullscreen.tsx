@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input"
 // @ts-ignore
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, X, Mic, MicOff, Users, MessageSquare, Smile, Film, Minimize2 } from "lucide-react"
 import { TheaterSignaling, type TheaterSession, type TheaterAction } from "@/utils/infra/theater-signaling"
-import { createPeerConnection } from "@/lib/webrtc"
 import { TheaterChatOverlay, type Message } from "./theater-chat-overlay"
 import { EmojiPicker } from "./emoji-picker"
 import { UserPresenceSystem } from "@/utils/infra/user-presence"
@@ -15,6 +14,7 @@ import { PrivacyShield } from "./privacy-shield"
 import { VideoStreamManager } from "@/utils/hardware/video-stream-manager"
 import { theaterQueue, type QueuedVideo } from "@/utils/infra/theater-queue-manager"
 import { theaterQuality } from "@/utils/infra/theater-quality-manager"
+import { WebRTCManager } from "@/utils/infra/webrtc-manager"
 import { Settings, List, ChevronRight, ChevronLeft, FastForward } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Slider } from "@/components/ui/slider"
@@ -73,9 +73,9 @@ export function TheaterFullscreen({
   const theaterSignaling = TheaterSignaling.getInstance()
   const userPresence = UserPresenceSystem.getInstance()
   const localStreamRef = useRef<MediaStream | null>(null)
-  const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map())
   const videoStreamManagerRef = useRef<VideoStreamManager | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const connectedPeersRef = useRef<Set<string>>(new Set())
   const [remoteMovieStream, setRemoteMovieStream] = useState<MediaStream | null>(null)
   const [localMovieStream, setLocalMovieStream] = useState<MediaStream | null>(null)
   const [transcodingProgress, setTranscodingProgress] = useState<number | null>(null)
@@ -97,32 +97,7 @@ export function TheaterFullscreen({
     }
   }, [])
 
-  // Setup Peer Connection for a specific user
-  const setupPeerConnection = (targetUserId: string, isInitiator: boolean) => {
-    if (peerConnectionsRef.current.has(targetUserId)) return peerConnectionsRef.current.get(targetUserId)!
-
-    const pc = createPeerConnection(
-      (state) => console.log(`Connection to ${targetUserId}: ${state}`),
-      (state) => console.log(`ICE to ${targetUserId}: ${state}`),
-      (candidate) => {
-        if (candidate) {
-          theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", candidate, currentUserId, targetUserId)
-        }
-      },
-      (stream) => {
-        console.log("Received remote stream from", targetUserId)
-        setRemoteMovieStream(stream)
-      }
-    )
-
-    // Add local stream if exists (for PTT or movie streaming)
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => pc.addTrack(track, localStreamRef.current!))
-    }
-
-    peerConnectionsRef.current.set(targetUserId, pc)
-    return pc
-  }
+  // No manual setupPeerConnection - handled by WebRTCManager
 
   // Handle pending file from setup
   useEffect(() => {
@@ -134,34 +109,34 @@ export function TheaterFullscreen({
 
   // Handle Incoming Signals
   useEffect(() => {
-    if (!session || !isOpen) return
+    if (!session) return
+    const webrtc = WebRTCManager.getInstance()
 
-    const unsubscribe = theaterSignaling.listenForSignals(roomId, session.id, currentUserId, async (type, payload, fromUserId) => {
-      console.log(`Received signal ${type} from ${fromUserId}`)
+    const unsubscribeSignals = theaterSignaling.listenForSignals(roomId, session.id, currentUserId, async (type, payload, fromUserId) => {
+      console.log(`Theater: Signal received (${type}) from ${fromUserId}`)
 
-      let pc = peerConnectionsRef.current.get(fromUserId)
-      if (!pc) {
-        pc = setupPeerConnection(fromUserId, false)
-      }
-
-      try {
-        if (type === "offer") {
-          await pc.setRemoteDescription(new RTCSessionDescription(payload))
-          const answer = await pc.createAnswer()
-          await pc.setLocalDescription(answer)
-          theaterSignaling.sendSignal(roomId, session.id, "answer", answer, currentUserId, fromUserId)
-        } else if (type === "answer") {
-          await pc.setRemoteDescription(new RTCSessionDescription(payload))
-        } else if (type === "ice-candidate") {
-          await pc.addIceCandidate(new RTCIceCandidate(payload))
-        }
-      } catch (err) {
-        console.error("Error handling WebRTC signal:", err)
+      if (type === "offer") {
+        const streamToUse = localMovieStream || localStreamRef.current || new MediaStream()
+        webrtc.initialize(
+          fromUserId,
+          streamToUse,
+          (s, uid) => { if (uid === fromUserId) setRemoteMovieStream(s) },
+          (c, uid) => { if (uid === fromUserId) theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", c, currentUserId, fromUserId) }
+        )
+        const answer = await webrtc.createAnswer(fromUserId, payload)
+        theaterSignaling.sendSignal(roomId, session.id, "answer", answer, currentUserId, fromUserId)
+      } else if (type === "answer") {
+        await webrtc.handleAnswer(fromUserId, payload)
+      } else if (type === "ice-candidate") {
+        await webrtc.addIceCandidate(fromUserId, payload)
       }
     })
 
-    return () => unsubscribe()
-  }, [session, isOpen, roomId, currentUserId])
+    return () => {
+      unsubscribeSignals()
+      webrtc.cleanup()
+    }
+  }, [session, isOpen, roomId, currentUserId, localMovieStream])
 
   // PTT Setup
   useEffect(() => {
@@ -239,12 +214,26 @@ export function TheaterFullscreen({
         }
       }
       // Handle Presence Sync / Auto-Join WebRTC
-      if (isHost && updatedSession.videoType === "webrtc" && !isMovieStreaming) {
-        // As host, if we are in webrtc mode, ensure we broadcast to everyone
-        // (Broadcast logic triggered by file selection usually)
-      } else if (!isHost && updatedSession.videoType === "webrtc") {
-        // As participant, if we notice host is streaming via webrtc, we might need to initiate?
-        // Usually the host initiates to each participant when they join or start stream
+      if (isHost && updatedSession.videoType === "webrtc" && localMovieStream) {
+        const webrtc = WebRTCManager.getInstance()
+        const currentParticipants = updatedSession.participants || []
+
+        currentParticipants.forEach(async (participantId: string) => {
+          if (participantId !== currentUserId && !connectedPeersRef.current.has(participantId)) {
+            console.log("Theater: New participant detected, initiating WebRTC:", participantId)
+
+            webrtc.initialize(
+              participantId,
+              localMovieStream,
+              (s, uid) => { if (uid === participantId) setRemoteMovieStream(s) },
+              (c, uid) => { if (uid === participantId) theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", c, currentUserId, participantId) }
+            )
+
+            const offer = await webrtc.createOffer(participantId)
+            theaterSignaling.sendSignal(roomId, session.id, "offer", offer, currentUserId, participantId)
+            connectedPeersRef.current.add(participantId)
+          }
+        })
       }
     })
 
@@ -393,6 +382,12 @@ export function TheaterFullscreen({
       setIsPushToTalkActive(active)
       setIsMicMuted(!active)
 
+      // Replace audio track in all active WebRTC connections
+      const audioTrack = localStreamRef.current.getAudioTracks()[0]
+      if (audioTrack) {
+        WebRTCManager.getInstance().replaceAudioTrack(audioTrack)
+      }
+
       // Update presence
       userPresence.setRecordingVoice(roomId, currentUserId, active).catch(err => {
         console.error("Error updating presence for Theater PTT:", err)
@@ -420,22 +415,18 @@ export function TheaterFullscreen({
       await theaterSignaling.createSession(roomId, currentUser, currentUserId, "local://stream", "webrtc")
 
       // Broadcast stream to all current participants
+      const webrtc = WebRTCManager.getInstance()
       session.participants.forEach(async (participantId) => {
         if (participantId === currentUserId) return
 
-        const pc = setupPeerConnection(participantId, true)
+        webrtc.initialize(
+          participantId,
+          stream,
+          (s, uid) => { if (uid === participantId) setRemoteMovieStream(s) },
+          (c, uid) => { if (uid === participantId) theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", c, currentUserId, participantId) }
+        )
 
-        // Remove old tracks if any
-        pc.getSenders().forEach(sender => pc.removeTrack(sender))
-
-        // Add movie tracks
-        stream.getTracks().forEach(track => {
-          track.contentHint = 'motion' // Optimize for video
-          pc.addTrack(track, stream)
-        })
-
-        const offer = await pc.createOffer()
-        await pc.setLocalDescription(offer)
+        const offer = await webrtc.createOffer(participantId)
         theaterSignaling.sendSignal(roomId, session.id, "offer", offer, currentUserId, participantId)
       })
 

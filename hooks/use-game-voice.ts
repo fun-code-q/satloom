@@ -3,6 +3,8 @@ import { createPeerConnection } from "@/lib/webrtc"
 import { NotificationSystem } from "@/utils/core/notification-system"
 import { UserPresenceSystem } from "@/utils/infra/user-presence"
 import { GameConfig } from "@/components/playground-setup-modal"
+import { ref, onValue, set, remove } from "firebase/database"
+import { getFirebaseDatabase } from "@/lib/firebase"
 
 interface UseGameVoiceProps {
     gameConfig: GameConfig
@@ -22,8 +24,18 @@ export function useGameVoice({ gameConfig, roomId, currentUserId }: UseGameVoice
     const notificationSystem = NotificationSystem.getInstance()
     const userPresence = UserPresenceSystem.getInstance()
 
-    const setupPeerConnection = useCallback((playerId: string) => {
-        const peerConnection = createPeerConnection()
+    const setupPeerConnection = useCallback((playerId: string, isInitiator: boolean) => {
+        if (peerConnectionsRef.current.has(playerId)) return
+
+        const peerConnection = createPeerConnection(
+            (state) => console.log(`Game Voice PC to ${playerId}: ${state}`),
+            () => { },
+            (candidate) => {
+                if (candidate) {
+                    sendSignal("ice-candidate", candidate, playerId)
+                }
+            }
+        )
 
         if (localStreamRef.current) {
             localStreamRef.current.getTracks().forEach((track) => {
@@ -32,14 +44,81 @@ export function useGameVoice({ gameConfig, roomId, currentUserId }: UseGameVoice
         }
 
         peerConnection.ontrack = (event) => {
+            console.log(`Game Voice: Received stream from ${playerId}`)
             const remoteAudio = new Audio()
             remoteAudio.srcObject = event.streams[0]
             remoteAudio.muted = isSpeakerMuted
-            remoteAudio.play()
+            remoteAudio.play().catch(e => console.warn("Game voice playback failed:", e))
         }
 
         peerConnectionsRef.current.set(playerId, peerConnection)
-    }, [isSpeakerMuted])
+
+        if (isInitiator) {
+            peerConnection.createOffer().then(async (offer) => {
+                await peerConnection.setLocalDescription(offer)
+                sendSignal("offer", offer, playerId)
+            })
+        }
+    }, [isSpeakerMuted, roomId, currentUserId])
+
+    const sendSignal = useCallback(async (type: string, payload: any, toUserId: string) => {
+        const db = getFirebaseDatabase()
+        if (!db) return
+        const signalId = `sig_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        const signalRef = ref(db, `rooms/${roomId}/gameVoiceSignals/${toUserId}/${signalId}`)
+        await set(signalRef, {
+            type,
+            payload,
+            fromUserId: currentUserId,
+            timestamp: Date.now()
+        })
+
+        // Auto-remove signal
+        setTimeout(async () => {
+            try { await remove(signalRef) } catch (e) { }
+        }, 10000)
+    }, [roomId, currentUserId])
+
+    useEffect(() => {
+        if (!isVoiceChatActive) return
+
+        const db = getFirebaseDatabase()
+        if (!db) return
+
+        const signalsRef = ref(db, `rooms/${roomId}/gameVoiceSignals/${currentUserId}`)
+        const unsubscribe = onValue(signalsRef, async (snapshot) => {
+            const signals = snapshot.val()
+            if (!signals) return
+
+            for (const [id, sig] of Object.entries(signals) as [string, any][]) {
+                let pc = peerConnectionsRef.current.get(sig.fromUserId)
+                if (!pc) {
+                    setupPeerConnection(sig.fromUserId, false)
+                    pc = peerConnectionsRef.current.get(sig.fromUserId)!
+                }
+
+                try {
+                    if (sig.type === "offer") {
+                        await pc.setRemoteDescription(new RTCSessionDescription(sig.payload))
+                        const answer = await pc.createAnswer()
+                        await pc.setLocalDescription(answer)
+                        sendSignal("answer", answer, sig.fromUserId)
+                    } else if (sig.type === "answer") {
+                        await pc.setRemoteDescription(new RTCSessionDescription(sig.payload))
+                    } else if (sig.type === "ice-candidate") {
+                        await pc.addIceCandidate(new RTCIceCandidate(sig.payload))
+                    }
+                } catch (err) {
+                    console.error("Game Voice signal error:", err)
+                }
+
+                // Remove signal after processing
+                remove(ref(db, `rooms/${roomId}/gameVoiceSignals/${currentUserId}/${id}`))
+            }
+        })
+
+        return () => unsubscribe()
+    }, [isVoiceChatActive, roomId, currentUserId, setupPeerConnection, sendSignal])
 
     const setupVoiceChat = useCallback(async () => {
         try {
@@ -54,7 +133,7 @@ export function useGameVoice({ gameConfig, roomId, currentUserId }: UseGameVoice
 
             gameConfig.players.forEach((player) => {
                 if (player.id !== currentUserId && !player.isComputer) {
-                    setupPeerConnection(player.id)
+                    setupPeerConnection(player.id, true)
                 }
             })
         } catch (error) {

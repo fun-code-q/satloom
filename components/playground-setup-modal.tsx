@@ -13,6 +13,7 @@ interface PlaygroundSetupModalProps {
   onStartGame: (config: GameConfig) => void
   initialGame?: "dots" | "chess" | "tictactoe" | "connect4"
   hostName: string
+  currentUserId: string
 }
 
 export interface GameConfig {
@@ -33,7 +34,8 @@ export interface GameConfig {
 
 const playerColors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#06b6d4"]
 
-export function PlaygroundSetupModal({ isOpen, onClose, onStartGame, initialGame = "dots", hostName }: PlaygroundSetupModalProps) {
+export function PlaygroundSetupModal(props: PlaygroundSetupModalProps) {
+  const { isOpen, onClose, onStartGame, initialGame = "dots", hostName, currentUserId } = props
   const [selectedGame, setSelectedGame] = useState<"dots" | "chess" | "tictactoe" | "connect4">(initialGame)
   const [gameType, setGameType] = useState<"single" | "double" | "multi">("single")
   const [gridSize, setGridSize] = useState(5)
@@ -124,7 +126,7 @@ export function PlaygroundSetupModal({ isOpen, onClose, onStartGame, initialGame
     setIsStarting(true)
 
     const players = playerNames.map((name, index) => ({
-      id: `player_${index}_${Date.now()}`,
+      id: index === 0 ? props.currentUserId : `player_${index}_${Date.now()}`,
       name: name || `Player ${index + 1}`,
       isComputer: computerPlayers[index],
       isHost: index === 0,
@@ -139,6 +141,7 @@ export function PlaygroundSetupModal({ isOpen, onClose, onStartGame, initialGame
       gridSize: selectedGame === "dots" ? gridSize : undefined,
       difficulty,
       voiceChatEnabled,
+      gameId: `${selectedGame}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     }
 
     // Simulate loading for better UX

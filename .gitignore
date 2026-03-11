@@ -53,3 +53,4 @@ next-env.d.ts
 *.log
 firebase-rules.json
 db-init.json
+/sat-loom-web-app v5 latest 1/

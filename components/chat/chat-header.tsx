@@ -8,6 +8,7 @@ import { UserActivityIndicators } from "../user-activity-indicators"
 import type { UserPresence } from "@/utils/infra/user-presence"
 import type { Message } from "../message-bubble"
 import type { MenuGroup } from "./chat-types"
+import type { RoomMember } from "@/stores/chat-store"
 import {
     Film, Gamepad2, Briefcase, Hammer, MoreVertical, Settings,
     Copy, Pin, X, Search,
@@ -63,6 +64,8 @@ interface ChatHeaderProps {
     setShowChatSearch: (val: boolean) => void
     hasUnreadNotes: boolean
     hasUnreadTasks: boolean
+    roomMembers: RoomMember[]
+    autoHide?: boolean
 }
 
 export function ChatHeader({
@@ -77,6 +80,8 @@ export function ChatHeader({
     firebaseConnected,
     showChatSearch, setShowChatSearch,
     hasUnreadNotes, hasUnreadTasks,
+    roomMembers,
+    autoHide = true,
 }: ChatHeaderProps) {
     const [isHeaderVisible, setIsHeaderVisible] = useState(true)
     const headerTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -97,19 +102,25 @@ export function ChatHeader({
     const resetHideTimer = useCallback(() => {
         setIsHeaderVisible(true)
         if (headerTimeoutRef.current) clearTimeout(headerTimeoutRef.current)
-        if (!anyMenuOpen) {
+
+        if (autoHide && !anyMenuOpen) {
             headerTimeoutRef.current = setTimeout(() => {
                 setIsHeaderVisible(false)
             }, 3000)
         }
-    }, [anyMenuOpen])
+    }, [anyMenuOpen, autoHide])
 
     useEffect(() => {
+        if (!autoHide) {
+            setIsHeaderVisible(true)
+            if (headerTimeoutRef.current) clearTimeout(headerTimeoutRef.current)
+            return
+        }
         resetHideTimer()
         return () => {
             if (headerTimeoutRef.current) clearTimeout(headerTimeoutRef.current)
         }
-    }, [resetHideTimer])
+    }, [resetHideTimer, autoHide])
 
     const handleMouseMove = () => resetHideTimer()
 
@@ -119,6 +130,7 @@ export function ChatHeader({
             <div
                 className="fixed top-0 left-0 right-0 h-4 z-[60]"
                 onMouseEnter={resetHideTimer}
+                onTouchStart={resetHideTimer}
             />
 
             <div
@@ -126,6 +138,7 @@ export function ChatHeader({
                     }`}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={resetHideTimer}
+                onTouchStart={resetHideTimer}
             >
                 {/* Header Background */}
                 <div className="bg-slate-900/60 backdrop-blur-md shadow-lg border-b border-white/5 flex flex-col">
@@ -340,62 +353,70 @@ export function ChatHeader({
                         </div>
                     )}
 
-                    {/* Online Users Bar */}
-                    {onlineUsers.length > 1 && (
+                    {/* Participants Bar (Persistent Members) */}
+                    {(roomMembers.length > 1) && (
                         <div className="px-3 py-2 bg-slate-800/50 border-b border-slate-700">
                             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide online-users-bar flex-nowrap">
-                                <span className="text-xs text-gray-400 whitespace-nowrap flex-shrink-0">Online:</span>
-                                {onlineUsers.map((user) => (
-                                    <Popover key={user.id}>
-                                        <PopoverTrigger asChild>
-                                            <button className="flex items-center gap-1.5 bg-slate-700/50 hover:bg-slate-700 rounded-full px-2.5 py-1.5 whitespace-nowrap flex-shrink-0 transition-colors haptic">
-                                                <Avatar className="w-5 h-5">
-                                                    <AvatarImage src={user.avatar} alt={user.name} />
-                                                    <AvatarFallback className="text-[10px] bg-slate-600">{user.name[0]}</AvatarFallback>
-                                                </Avatar>
-                                                <span className="text-xs text-white">{user.name}</span>
-                                                {user.mood && <span className="text-xs">{user.mood.emoji}</span>}
-                                            </button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-64 bg-slate-800 border-slate-700 p-0 overflow-hidden rounded-2xl shadow-2xl animate-in zoom-in-95" sideOffset={8}>
-                                            <div className="p-4 flex flex-col items-center gap-3">
-                                                <div className="relative">
-                                                    <Avatar className="w-20 h-20 border-4 border-slate-700 shadow-xl">
-                                                        <AvatarImage src={user.avatar} alt={user.name} />
-                                                        <AvatarFallback className="text-2xl bg-slate-700 text-white font-bold">{user.name[0]}</AvatarFallback>
+                                <span className="text-xs text-gray-400 whitespace-nowrap flex-shrink-0">Participants:</span>
+                                {roomMembers.map((member) => {
+                                    const onlineUser = onlineUsers.find(u => u.name === member.name)
+                                    const isOnline = !!onlineUser
+
+                                    return (
+                                        <Popover key={member.name}>
+                                            <PopoverTrigger asChild>
+                                                <button className={`flex items-center gap-1.5 bg-slate-700/50 hover:bg-slate-700 rounded-full px-2.5 py-1.5 whitespace-nowrap flex-shrink-0 transition-colors haptic ${!isOnline ? 'opacity-60 grayscale-[0.5]' : ''}`}>
+                                                    <Avatar className="w-5 h-5 relative">
+                                                        <AvatarImage src={member.avatar || onlineUser?.avatar} alt={member.name} />
+                                                        <AvatarFallback className="text-[10px] bg-slate-600">{member.name[0]}</AvatarFallback>
+                                                        {isOnline && (
+                                                            <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 border border-slate-800 rounded-full" />
+                                                        )}
                                                     </Avatar>
-                                                    {user.status === "online" && (
-                                                        <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-2 border-slate-800 rounded-full" />
-                                                    )}
-                                                </div>
-                                                <div className="text-center">
-                                                    <h3 className="text-lg font-bold text-white flex items-center justify-center gap-2">
-                                                        {user.name}
-                                                        {user.mood && <span title={user.mood.text}>{user.mood.emoji}</span>}
-                                                    </h3>
-                                                    <p className="text-xs text-gray-400 uppercase tracking-widest mt-1">
-                                                        {user.currentActivity ? user.currentActivity.replace("-", " ") : "In Chat"}
-                                                    </p>
-                                                </div>
-                                                {user.mood?.text && (
-                                                    <div className="bg-slate-700/50 px-3 py-1.5 rounded-lg text-sm text-gray-200 text-center italic w-full">
-                                                        "{user.mood.text}"
+                                                    <span className="text-xs text-white">{member.name}</span>
+                                                    {onlineUser?.mood && <span className="text-xs">{onlineUser.mood.emoji}</span>}
+                                                </button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-64 bg-slate-800 border-slate-700 p-0 overflow-hidden rounded-2xl shadow-2xl animate-in zoom-in-95" sideOffset={8}>
+                                                <div className="p-4 flex flex-col items-center gap-3">
+                                                    <div className="relative">
+                                                        <Avatar className="w-20 h-20 border-4 border-slate-700 shadow-xl">
+                                                            <AvatarImage src={member.avatar || onlineUser?.avatar} alt={member.name} />
+                                                            <AvatarFallback className="text-2xl bg-slate-700 text-white font-bold">{member.name[0]}</AvatarFallback>
+                                                        </Avatar>
+                                                        {isOnline && (
+                                                            <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-2 border-slate-800 rounded-full" />
+                                                        )}
                                                     </div>
-                                                )}
-                                                <div className="w-full h-px bg-slate-700/50 my-1" />
-                                                <div className="flex gap-2 w-full">
-                                                    <Button variant="ghost" className="flex-1 text-xs text-slate-300 hover:text-white hover:bg-slate-700 rounded-xl">View Profile</Button>
-                                                    <Button variant="ghost" className="flex-1 text-xs text-slate-300 hover:text-white hover:bg-slate-700 rounded-xl">Message</Button>
+                                                    <div className="text-center">
+                                                        <h3 className="text-lg font-bold text-white flex items-center justify-center gap-2">
+                                                            {member.name}
+                                                            {onlineUser?.mood && <span title={onlineUser.mood.text}>{onlineUser.mood.emoji}</span>}
+                                                        </h3>
+                                                        <p className="text-xs text-gray-400 uppercase tracking-widest mt-1">
+                                                            {isOnline ? (onlineUser.currentActivity ? onlineUser.currentActivity.replace("-", " ") : "In Chat") : "Offline"}
+                                                        </p>
+                                                    </div>
+                                                    {onlineUser?.mood?.text && (
+                                                        <div className="bg-slate-700/50 px-3 py-1.5 rounded-lg text-sm text-gray-200 text-center italic w-full">
+                                                            "{onlineUser.mood.text}"
+                                                        </div>
+                                                    )}
+                                                    <div className="w-full h-px bg-slate-700/50 my-1" />
+                                                    <div className="flex gap-2 w-full">
+                                                        <Button variant="ghost" className="flex-1 text-xs text-slate-300 hover:text-white hover:bg-slate-700 rounded-xl">View Profile</Button>
+                                                        <Button variant="ghost" className="flex-1 text-xs text-slate-300 hover:text-white hover:bg-slate-700 rounded-xl">Message</Button>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="absolute top-2 right-2">
-                                                <PopoverClose className="h-6 w-6 rounded-full flex items-center justify-center hover:bg-slate-700 text-gray-400 hover:text-white transition-colors">
-                                                    <X className="w-4 h-4" />
-                                                </PopoverClose>
-                                            </div>
-                                        </PopoverContent>
-                                    </Popover>
-                                ))}
+                                                <div className="absolute top-2 right-2">
+                                                    <PopoverClose className="h-6 w-6 rounded-full flex items-center justify-center hover:bg-slate-700 text-gray-400 hover:text-white transition-colors">
+                                                        <X className="w-4 h-4" />
+                                                    </PopoverClose>
+                                                </div>
+                                            </PopoverContent>
+                                        </Popover>
+                                    )
+                                })}
                             </div>
                         </div>
                     )}

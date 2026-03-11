@@ -1,12 +1,14 @@
 export class WebRTCManager {
     private static instance: WebRTCManager
-    private peerConnection: RTCPeerConnection | null = null
+    private peerConnections: Map<string, RTCPeerConnection> = new Map()
     private localStream: MediaStream | null = null
-    private remoteStream: MediaStream | null = null
+    private remoteStreams: Map<string, MediaStream> = new Map()
 
-    private onRemoteStreamCallback: ((stream: MediaStream) => void) | null = null
-    private onIceCandidateCallback: ((candidate: RTCIceCandidate) => void) | null = null
-    private iceCandidateBuffer: RTCIceCandidateInit[] = []
+    private onRemoteStream: ((stream: MediaStream, userId: string) => void) | null = null
+    private onIceCandidate: ((candidate: RTCIceCandidate, userId: string) => void) | null = null
+    private isCleanupInProgress = false
+    private onStateChange: ((state: RTCPeerConnectionState, userId: string) => void) | null = null
+    private iceCandidateBuffers: Map<string, RTCIceCandidateInit[]> = new Map()
 
     private config: RTCConfiguration = {
         iceServers: this.getIceServers(),
@@ -15,13 +17,8 @@ export class WebRTCManager {
         rtcpMuxPolicy: 'require',
     }
 
-    /**
-     * Get ICE servers from environment variables with fallback to defaults
-     */
     private getIceServers(): RTCIceServer[] {
         const servers: RTCIceServer[] = []
-
-        // Add STUN servers from environment
         const stunServers = [
             process.env.NEXT_PUBLIC_STUN_SERVER_1,
             process.env.NEXT_PUBLIC_STUN_SERVER_2,
@@ -33,12 +30,10 @@ export class WebRTCManager {
             process.env.NEXT_PUBLIC_STUN_SERVER_8,
         ].filter(Boolean) as string[]
 
-        // Add each STUN server
         stunServers.forEach(url => {
             servers.push({ urls: url })
         })
 
-        // Add TURN servers with credentials
         const turnConfigs = [
             {
                 url: process.env.NEXT_PUBLIC_TURN_SERVER_1,
@@ -67,16 +62,13 @@ export class WebRTCManager {
             }
         })
 
-        // Fallback to Google STUN if no servers configured
         if (servers.length === 0) {
-            console.warn('No ICE servers configured, using fallback Google STUN')
             servers.push(
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' }
             )
         }
 
-        console.log(`WebRTC configured with ${servers.length} ICE servers`)
         return servers
     }
 
@@ -91,131 +83,129 @@ export class WebRTCManager {
         return this.localStream
     }
 
-    get getRemoteStream() {
-        return this.remoteStream
+    getRemoteStream(userId: string) {
+        return this.remoteStreams.get(userId)
     }
 
     initialize(
+        targetUserId: string,
         localStream: MediaStream,
-        onRemoteStream: (stream: MediaStream) => void,
-        onIceCandidate: (candidate: RTCIceCandidate) => void
+        onRemoteStream: (stream: MediaStream, userId: string) => void,
+        onIceCandidate: (candidate: RTCIceCandidate, userId: string) => void,
+        onStateChange?: (state: RTCPeerConnectionState, userId: string) => void
     ) {
-        if (this.peerConnection) {
-            console.warn("WebRTCManager already initialized, cleaning up first")
-            this.cleanup()
-        }
+        if (this.isCleanupInProgress) return
 
         this.localStream = localStream
-        this.onRemoteStreamCallback = onRemoteStream
-        this.onIceCandidateCallback = onIceCandidate
+        this.onRemoteStream = onRemoteStream
+        this.onIceCandidate = onIceCandidate
+        this.onStateChange = onStateChange || null
 
-        this.peerConnection = new RTCPeerConnection(this.config)
+        if (this.peerConnections.has(targetUserId)) {
+            console.log(`WebRTCManager: Connection to ${targetUserId} already exists`)
+            return
+        }
 
-        // Add local tracks to connection
+        const pc = new RTCPeerConnection(this.config)
+        this.peerConnections.set(targetUserId, pc)
+
+        // Add local tracks
         this.localStream.getTracks().forEach(track => {
-            if (this.peerConnection && this.localStream) {
-                this.peerConnection.addTrack(track, this.localStream)
-            }
+            pc.addTrack(track, this.localStream!)
         })
 
         // Handle remote tracks
-        this.peerConnection.ontrack = (event) => {
+        pc.ontrack = (event) => {
             if (event.streams && event.streams[0]) {
-                this.remoteStream = event.streams[0]
-                if (this.onRemoteStreamCallback) {
-                    this.onRemoteStreamCallback(this.remoteStream)
+                this.remoteStreams.set(targetUserId, event.streams[0])
+                if (this.onRemoteStream) {
+                    this.onRemoteStream(event.streams[0], targetUserId)
                 }
             }
         }
 
         // Handle ICE candidates
-        this.peerConnection.onicecandidate = (event) => {
-            if (event.candidate && this.onIceCandidateCallback) {
-                this.onIceCandidateCallback(event.candidate)
+        pc.onicecandidate = (event) => {
+            if (event.candidate && this.onIceCandidate) {
+                this.onIceCandidate(event.candidate, targetUserId)
             }
         }
 
         // Connection state logging
-        this.peerConnection.onconnectionstatechange = () => {
-            const state = this.peerConnection?.connectionState
-            console.log("[WebRTC] Connection State Changed:", state)
-
-            if (state === "connected") {
-                console.log("[WebRTC] Successfully established peer connection")
-            } else if (state === "failed") {
-                console.error("[WebRTC] Connection failed. Check ICE servers and network configuration.")
-            } else if (state === "disconnected") {
-                console.warn("[WebRTC] Peer disconnected")
-            }
+        pc.onconnectionstatechange = () => {
+            const state = pc.connectionState
+            console.log(`[WebRTC] Connection ${targetUserId} State:`, state)
+            if (this.onStateChange) this.onStateChange(state, targetUserId)
         }
 
-        this.iceCandidateBuffer = []
+        this.iceCandidateBuffers.set(targetUserId, [])
     }
 
-    async createOffer(): Promise<RTCSessionDescriptionInit> {
-        if (!this.peerConnection) throw new Error("PeerConnection not initialized")
+    async createOffer(targetUserId: string): Promise<RTCSessionDescriptionInit> {
+        const pc = this.peerConnections.get(targetUserId)
+        if (!pc) throw new Error(`No PC for user ${targetUserId}`)
 
-        const offer = await this.peerConnection.createOffer()
-        await this.peerConnection.setLocalDescription(offer)
+        const offer = await pc.createOffer()
+        await pc.setLocalDescription(offer)
         return offer
     }
 
-    async createAnswer(remoteOffer: RTCSessionDescriptionInit): Promise<RTCSessionDescriptionInit> {
-        if (!this.peerConnection) throw new Error("PeerConnection not initialized")
+    async createAnswer(targetUserId: string, remoteOffer: RTCSessionDescriptionInit): Promise<RTCSessionDescriptionInit> {
+        const pc = this.peerConnections.get(targetUserId)
+        if (!pc) throw new Error(`No PC for user ${targetUserId}`)
 
-        await this.peerConnection.setRemoteDescription(new RTCSessionDescription(remoteOffer))
-        const answer = await this.peerConnection.createAnswer()
-        await this.peerConnection.setLocalDescription(answer)
+        await pc.setRemoteDescription(new RTCSessionDescription(remoteOffer))
+        const answer = await pc.createAnswer()
+        await pc.setLocalDescription(answer)
 
-        await this.processIceBuffer()
+        await this.processIceBuffer(targetUserId)
         return answer
     }
 
+    async handleAnswer(targetUserId: string, remoteAnswer: RTCSessionDescriptionInit) {
+        const pc = this.peerConnections.get(targetUserId)
+        if (!pc || pc.signalingState === "stable") return
 
-    async handleAnswer(remoteAnswer: RTCSessionDescriptionInit) {
-        if (!this.peerConnection) throw new Error("PeerConnection not initialized")
-        // Avoid setting if already set or stable to prevent errors in some race conditions
-        if (this.peerConnection.signalingState === "stable") return
-
-        await this.peerConnection.setRemoteDescription(new RTCSessionDescription(remoteAnswer))
-        await this.processIceBuffer()
+        await pc.setRemoteDescription(new RTCSessionDescription(remoteAnswer))
+        await this.processIceBuffer(targetUserId)
     }
 
-    async addIceCandidate(candidate: RTCIceCandidateInit) {
-        if (!this.peerConnection) return
+    async addIceCandidate(targetUserId: string, candidate: RTCIceCandidateInit) {
+        const pc = this.peerConnections.get(targetUserId)
+        if (!pc) return
 
-        if (!this.peerConnection.remoteDescription) {
-            console.log("WebRTC: Buffering ICE candidate until remote description is set")
-            this.iceCandidateBuffer.push(candidate)
+        if (!pc.remoteDescription) {
+            const buffer = this.iceCandidateBuffers.get(targetUserId) || []
+            buffer.push(candidate)
+            this.iceCandidateBuffers.set(targetUserId, buffer)
             return
         }
 
         try {
-            await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate))
+            await pc.addIceCandidate(new RTCIceCandidate(candidate))
         } catch (e) {
-            console.error("Error adding ICE candidate:", e)
+            console.error(`Error adding ICE to ${targetUserId}:`, e)
         }
     }
 
-    private async processIceBuffer() {
-        if (!this.peerConnection || !this.peerConnection.remoteDescription) return
+    private async processIceBuffer(targetUserId: string) {
+        const pc = this.peerConnections.get(targetUserId)
+        const buffer = this.iceCandidateBuffers.get(targetUserId)
+        if (!pc || !pc.remoteDescription || !buffer) return
 
-        console.log(`WebRTC: Processing ${this.iceCandidateBuffer.length} buffered ICE candidates`)
-        while (this.iceCandidateBuffer.length > 0) {
-            const candidate = this.iceCandidateBuffer.shift()
+        while (buffer.length > 0) {
+            const candidate = buffer.shift()
             if (candidate) {
                 try {
-                    await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate))
+                    await pc.addIceCandidate(new RTCIceCandidate(candidate))
                 } catch (e) {
-                    console.error("Error adding buffered ICE candidate:", e)
+                    console.error(`Error adding buffered ICE to ${targetUserId}:`, e)
                 }
             }
         }
     }
 
     async startScreenShare(): Promise<MediaStream | null> {
-        if (!this.peerConnection) return null
-
         try {
             const screenStream = await navigator.mediaDevices.getDisplayMedia({
                 video: { cursor: "always" } as any,
@@ -224,17 +214,13 @@ export class WebRTCManager {
 
             const videoTrack = screenStream.getVideoTracks()[0]
 
-            // Replace the video track in the peer connection
-            const sender = this.peerConnection.getSenders().find(s => s.track?.kind === 'video')
-            if (sender) {
-                await sender.replaceTrack(videoTrack)
+            // Replace track in all connections
+            for (const pc of this.peerConnections.values()) {
+                const sender = pc.getSenders().find(s => s.track?.kind === 'video')
+                if (sender) await sender.replaceTrack(videoTrack)
             }
 
-            // Listen for when user clicks "Stop Sharing" on the browser UI
-            videoTrack.onended = () => {
-                this.stopScreenShare()
-            }
-
+            videoTrack.onended = () => this.stopScreenShare()
             return screenStream
         } catch (error) {
             console.error("Error starting screen share:", error)
@@ -243,83 +229,72 @@ export class WebRTCManager {
     }
 
     async stopScreenShare(originalStream?: MediaStream) {
-        if (!this.peerConnection) return
-
         let streamToRevertTo = originalStream || this.localStream
-
         if (!streamToRevertTo || !streamToRevertTo.active) {
             try {
                 streamToRevertTo = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
             } catch (e) {
-                console.error("Failed to revert to camera:", e)
                 return
             }
         }
 
         const videoTrack = streamToRevertTo.getVideoTracks()[0]
-        const sender = this.peerConnection.getSenders().find(s => s.track?.kind === 'video')
-        if (sender && videoTrack) {
-            await sender.replaceTrack(videoTrack)
+        for (const pc of this.peerConnections.values()) {
+            const sender = pc.getSenders().find(s => s.track?.kind === 'video')
+            if (sender && videoTrack) await sender.replaceTrack(videoTrack)
         }
 
         this.localStream = streamToRevertTo
         return streamToRevertTo
     }
 
-    cleanup() {
-        if (this.peerConnection) {
-            this.peerConnection.close()
-            this.peerConnection = null
-        }
+    cleanup(targetUserId?: string) {
+        if (targetUserId) {
+            const pc = this.peerConnections.get(targetUserId)
+            if (pc) {
+                pc.close()
+                this.peerConnections.delete(targetUserId)
+                this.remoteStreams.delete(targetUserId)
+                this.iceCandidateBuffers.delete(targetUserId)
+            }
+        } else {
+            this.peerConnections.forEach(pc => pc.close())
+            this.peerConnections.clear()
+            this.remoteStreams.clear()
+            this.iceCandidateBuffers.clear()
 
-        // Stop all tracks in local stream
-        if (this.localStream) {
-            this.localStream.getTracks().forEach(track => {
-                track.stop()
-                console.log(`WebRTC: Stopped local track: ${track.kind}`)
-            })
-            this.localStream = null
+            if (this.localStream) {
+                this.localStream.getTracks().forEach(track => track.stop())
+                this.localStream = null
+            }
+            this.onRemoteStream = null
+            this.onIceCandidate = null
+            this.onStateChange = null
         }
-
-        // Stop all tracks in remote stream
-        if (this.remoteStream) {
-            this.remoteStream.getTracks().forEach(track => {
-                track.stop()
-                console.log(`WebRTC: Stopped remote track: ${track.kind}`)
-            })
-            this.remoteStream = null
-        }
-
-        this.onRemoteStreamCallback = null
-        this.onIceCandidateCallback = null
     }
+
     async getDevices() {
         try {
             const devices = await navigator.mediaDevices.enumerateDevices()
             return devices.filter(device => device.kind === "audioinput" || device.kind === "videoinput")
         } catch (error) {
-            console.error("Error enumerating devices:", error)
             return []
         }
     }
 
     async switchMicrophone(deviceId: string) {
-        if (!this.peerConnection) return
-
         try {
             const newStream = await navigator.mediaDevices.getUserMedia({
                 audio: { deviceId: { exact: deviceId } },
                 video: false
             })
-
             const audioTrack = newStream.getAudioTracks()[0]
 
-            const sender = this.peerConnection.getSenders().find(s => s.track?.kind === 'audio')
-            if (sender) {
-                await sender.replaceTrack(audioTrack)
+            for (const pc of this.peerConnections.values()) {
+                const sender = pc.getSenders().find(s => s.track?.kind === 'audio')
+                if (sender) await sender.replaceTrack(audioTrack)
             }
 
-            // Update local stream
             if (this.localStream) {
                 const oldTrack = this.localStream.getAudioTracks()[0]
                 if (oldTrack) oldTrack.stop()
@@ -332,19 +307,14 @@ export class WebRTCManager {
     }
 
     async replaceAudioTrack(newAudioTrack: MediaStreamTrack) {
-        if (!this.peerConnection) return
-
-        const sender = this.peerConnection.getSenders().find(s => s.track?.kind === 'audio')
-        if (sender) {
-            await sender.replaceTrack(newAudioTrack)
+        for (const pc of this.peerConnections.values()) {
+            const sender = pc.getSenders().find(s => s.track?.kind === 'audio')
+            if (sender) await sender.replaceTrack(newAudioTrack)
         }
     }
 
     async switchCamera(newStreamOrDeviceId: MediaStream | string) {
-        if (!this.peerConnection) return
-
         let newStream: MediaStream
-
         if (typeof newStreamOrDeviceId === 'string') {
             try {
                 newStream = await navigator.mediaDevices.getUserMedia({
@@ -352,7 +322,6 @@ export class WebRTCManager {
                     audio: true
                 })
             } catch (e) {
-                console.error("Error getting new camera stream:", e)
                 return
             }
         } else {
@@ -362,9 +331,9 @@ export class WebRTCManager {
         const videoTrack = newStream.getVideoTracks()[0]
         if (!videoTrack) return
 
-        const sender = this.peerConnection.getSenders().find(s => s.track?.kind === 'video')
-        if (sender) {
-            await sender.replaceTrack(videoTrack)
+        for (const pc of this.peerConnections.values()) {
+            const sender = pc.getSenders().find(s => s.track?.kind === 'video')
+            if (sender) await sender.replaceTrack(videoTrack)
         }
 
         if (this.localStream) {
@@ -379,35 +348,30 @@ export class WebRTCManager {
         }
     }
 
-    async getConnectionStats() {
-        if (!this.peerConnection) return null
+    async getConnectionStats(targetUserId: string) {
+        const pc = this.peerConnections.get(targetUserId)
+        if (!pc) return null
 
         try {
-            const stats = await this.peerConnection.getStats()
+            const stats = await pc.getStats()
             let packetLoss = 0
             let rtt = 0
             let jitter = 0
 
             stats.forEach(report => {
-                // Video inbound stats
                 if (report.type === 'inbound-rtp' && report.kind === 'video') {
                     const lost = report.packetsLost || 0
                     const received = report.packetsReceived || 0
-                    if (lost + received > 0) {
-                        packetLoss = (lost / (lost + received)) * 100
-                    }
-                    jitter = (report.jitter || 0) * 1000 // Convert to ms
+                    if (lost + received > 0) packetLoss = (lost / (lost + received)) * 100
+                    jitter = (report.jitter || 0) * 1000
                 }
-
-                // Connection pair stats for latency
                 if (report.type === 'candidate-pair' && report.state === 'succeeded') {
-                    rtt = (report.currentRoundTripTime || 0) * 1000 // Convert to ms
+                    rtt = (report.currentRoundTripTime || 0) * 1000
                 }
             })
 
             return { packetLoss, rtt, jitter }
         } catch (error) {
-            console.error("Error getting WebRTC stats:", error)
             return null
         }
     }

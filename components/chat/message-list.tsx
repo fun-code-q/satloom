@@ -55,7 +55,7 @@ export function MessageList({
     getUserColor,
     showSearch
 }: MessageListProps) {
-    const { messages, currentUser, onlineUsers, roomId, replyingTo, setReplyingTo, searchQuery } = useChatStore()
+    const { messages, currentUser, onlineUsers, roomMembers, roomId, replyingTo, setReplyingTo, searchQuery } = useChatStore()
     const parentRef = useRef<HTMLDivElement>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -177,7 +177,10 @@ export function MessageList({
                                             isOwnMessage={msg.sender === currentUser?.name}
                                             userColor={getUserColor(msg.sender)}
                                             currentUser={currentUser?.name || ""}
-                                            userAvatar={onlineUsers.find((u) => u.name === msg.sender)?.avatar}
+                                            userAvatar={
+                                                roomMembers.find((m) => m.name === msg.sender)?.avatar ||
+                                                onlineUsers.find((u) => u.name === msg.sender)?.avatar
+                                            }
                                             onReply={onReply}
                                             onReact={onReact}
                                             onDelete={onDelete}

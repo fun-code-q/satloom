@@ -130,10 +130,12 @@ export function VideoCallModal({
     }
 
     const interval = setInterval(async () => {
-      const stats = await WebRTCManager.getInstance().getConnectionStats()
+      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.caller
+      if (!targetUserId) return
+
+      const stats = await WebRTCManager.getInstance().getConnectionStats(targetUserId)
       if (stats) {
         setConnectionStats((prev) => {
-          // Only update if stats actually changed to prevent unnecessary re-renders
           if (prev?.rtt === stats.rtt && prev?.packetLoss === stats.packetLoss) return prev
           return stats
         })
@@ -154,21 +156,24 @@ export function VideoCallModal({
     return () => clearInterval(interval)
   }, [isOpen, callData?.status])
 
-  const onRemoteStreamRef = useRef<(stream: MediaStream) => void>(() => { })
+  const onRemoteStreamRef = useRef<(stream: MediaStream, userId: string) => void>(() => { })
   const onIceCandidateRef = useRef<(candidate: RTCIceCandidate) => void>(() => { })
   const isInitializedRef = useRef(false)
 
   useEffect(() => {
-    onRemoteStreamRef.current = (stream) => {
-      console.log("VideoCall: Remote stream received")
-      updateRemoteStream(stream)
+    const targetUserId = callData?.participants.find(p => p !== currentUserId) || callData?.caller
+    onRemoteStreamRef.current = (stream: MediaStream, userId: string) => {
+      if (userId === targetUserId) {
+        console.log("VideoCall: Remote stream received")
+        updateRemoteStream(stream)
+      }
     }
-    onIceCandidateRef.current = (candidate) => {
+    onIceCandidateRef.current = (candidate: RTCIceCandidate) => {
       if (callData?.id) {
         callSignaling.sendSignal(roomId, callData.id, "ice-candidate", candidate, currentUserId)
       }
     }
-  }, [callData?.id, roomId, currentUserId])
+  }, [callData?.id, roomId, currentUserId, callData?.participants, callData?.caller])
 
   // Effect 1: Media Setup
   useEffect(() => {
@@ -218,7 +223,7 @@ export function VideoCallModal({
     }
   }, [isOpen])
 
-  // Effect 2: WebRTC Setup
+  // Effect 2: WebRTC Initialization (Runs once)
   const unsubscribeSignalsRef = useRef<() => void>(() => { })
 
   useEffect(() => {
@@ -237,44 +242,63 @@ export function VideoCallModal({
     const webrtc = WebRTCManager.getInstance()
     isInitializedRef.current = true
 
+    const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.caller
+    if (!targetUserId) return
+
     console.log("VideoCall: Initializing WebRTC and Signal Listeners")
     webrtc.initialize(
+      targetUserId,
       localStream,
-      (s) => onRemoteStreamRef.current(s),
-      (c) => onIceCandidateRef.current(c)
+      (s, uid) => onRemoteStreamRef.current(s, uid),
+      (c, uid) => { if (uid === targetUserId) onIceCandidateRef.current(c) }
     )
 
     unsubscribeSignalsRef.current = callSignaling.listenForSignals(roomId, callData.id, currentUserId, async (type, payload) => {
       console.log(`VideoCall: Signal received (${type})`)
+      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.caller
+      if (!targetUserId) return
+
       if (type === "offer") {
-        // We wait for status to be "answered" before answering an offer
         if (callData.status === "answered") {
-          const answer = await webrtc.createAnswer(payload)
+          const answer = await webrtc.createAnswer(targetUserId, payload)
           callSignaling.sendSignal(roomId, callData.id, "answer", answer, currentUserId)
         } else {
-          // Store offer to handle once answered
           pendingOfferRef.current = payload
         }
       } else if (type === "answer") {
-        await webrtc.handleAnswer(payload)
+        await webrtc.handleAnswer(targetUserId, payload)
       } else if (type === "ice-candidate") {
-        await webrtc.addIceCandidate(payload)
+        await webrtc.addIceCandidate(targetUserId, payload)
       }
     })
+  }, [isOpen, localStream, roomId, currentUserId, callData?.id]) // Removed callData.status to prevent re-init
 
-    // If we are the caller and it's already answered (re-entry) or just became answered
+  // Effect 2.5: Handshake Action (Triggered on status change)
+  useEffect(() => {
+    if (!isOpen || !isInitializedRef.current || !callData) return
+
+    const webrtc = WebRTCManager.getInstance()
+
+    // If we are the caller and call just became answered, send the offer
     if (!isIncoming && callData.status === "answered") {
-      webrtc.createOffer().then(offer => {
+      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.caller
+      if (!targetUserId) return
+
+      console.log("VideoCall: Call answered, sending offer as caller")
+      webrtc.createOffer(targetUserId).then(offer => {
         callSignaling.sendSignal(roomId, callData.id, "offer", offer, currentUserId)
       }).catch(err => console.error("Error creating offer:", err))
     }
-  }, [isOpen, callData?.status, localStream, isIncoming, roomId, currentUserId, callData?.id])
+  }, [isOpen, callData?.status, isIncoming, roomId, currentUserId, callData?.id])
 
   // Effect 3: Handle pending offer when call is answered
   useEffect(() => {
     if (isOpen && isIncoming && callData?.status === "answered" && pendingOfferRef.current) {
       const webrtc = WebRTCManager.getInstance()
-      webrtc.createAnswer(pendingOfferRef.current).then(answer => {
+      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.caller
+      if (!targetUserId) return
+
+      webrtc.createAnswer(targetUserId, pendingOfferRef.current).then(answer => {
         callSignaling.sendSignal(roomId, callData.id, "answer", answer, currentUserId)
         pendingOfferRef.current = null
       }).catch(err => console.error("Error answering pending offer:", err))
@@ -372,88 +396,29 @@ export function VideoCallModal({
   }
 
   const handleToggleScreenShare = async () => {
+    const webrtc = WebRTCManager.getInstance()
     if (isScreenSharing) {
-      // Restore camera
       setIsScreenSharing(false)
-      const savedCamera = cameraStreamRef.current
-      if (savedCamera && savedCamera.active) {
-        if (localVideoRef.current) localVideoRef.current.srcObject = savedCamera
-        setLocalStream(savedCamera)
-        // Also restore in WebRTC if peer exists
-        const videoTrack = savedCamera.getVideoTracks()[0]
-        if (videoTrack) {
-          const webrtc = WebRTCManager.getInstance()
-          try { await webrtc.stopScreenShare(savedCamera) } catch { /* no peer — ok */ }
-        }
-      } else {
-        // Fallback: re-acquire camera
-        try {
-          const cam = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-          if (localVideoRef.current) localVideoRef.current.srcObject = cam
-          setLocalStream(cam)
-        } catch { /* permissions denied */ }
+      const restoredStream = await webrtc.stopScreenShare(cameraStreamRef.current || undefined)
+      if (restoredStream) {
+        updateLocalStream(restoredStream)
+        if (localVideoRef.current) localVideoRef.current.srcObject = restoredStream
       }
-      return
-    }
-
-    // --- Start Screen Share ---
-    if (!navigator.mediaDevices?.getDisplayMedia) {
-      toast.error(
-        "Screen sharing isn't supported on this device. It's available on desktop browsers and some Android browsers.",
-        { duration: 5000 }
-      )
       return
     }
 
     try {
-      // Save current camera stream so we can restore it later
       if (localVideoRef.current?.srcObject) {
         cameraStreamRef.current = localVideoRef.current.srcObject as MediaStream
       }
 
-      // Directly request screen capture — works even without a WebRTC peer
-      const screenStream = await navigator.mediaDevices.getDisplayMedia({
-        video: { cursor: "always" } as any,
-        audio: false,
-      })
-
-      const videoTrack = screenStream.getVideoTracks()[0]
-      if (!videoTrack) return
-
-      // Immediately show it in local PiP — always works
-      setIsScreenSharing(true)
-      if (localVideoRef.current) localVideoRef.current.srcObject = screenStream
-      setLocalStream(screenStream)
-
-      // Also push into WebRTC peer connection if one exists (so remote user sees it too)
-      try {
-        const webrtc = WebRTCManager.getInstance()
-        const sender = (webrtc as any).peerConnection?.getSenders?.().find((s: RTCRtpSender) => s.track?.kind === "video")
-        if (sender) await sender.replaceTrack(videoTrack)
-      } catch { /* No peer yet — local preview still works */ }
-
-      // When the browser "Stop Sharing" bar is clicked, restore camera
-      videoTrack.onended = async () => {
-        setIsScreenSharing(false)
-        const savedCamera = cameraStreamRef.current
-        if (savedCamera && savedCamera.active) {
-          if (localVideoRef.current) localVideoRef.current.srcObject = savedCamera
-          setLocalStream(savedCamera)
-          // Restore in WebRTC
-          const camTrack = savedCamera.getVideoTracks()[0]
-          try {
-            const webrtc = WebRTCManager.getInstance()
-            const sender = (webrtc as any).peerConnection?.getSenders?.().find((s: RTCRtpSender) => s.track?.kind === "video")
-            if (sender && camTrack) await sender.replaceTrack(camTrack)
-          } catch { /* ok */ }
-        }
+      const screenStream = await webrtc.startScreenShare()
+      if (screenStream) {
+        setIsScreenSharing(true)
+        updateLocalStream(screenStream)
+        if (localVideoRef.current) localVideoRef.current.srcObject = screenStream
       }
     } catch (err: any) {
-      if (err?.name === "NotAllowedError") return // User cancelled or denied — silent
-      if (err?.name === "NotSupportedError" || err?.name === "TypeError") {
-        toast.error("Screen sharing is not supported on this browser or device. Try Chrome on desktop.", { duration: 5000 })
-        return
-      }
       console.error("Screen share failed:", err)
       toast.error("Screen sharing failed. Please try again.")
     }

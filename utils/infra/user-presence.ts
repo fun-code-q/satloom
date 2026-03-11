@@ -88,7 +88,10 @@ export class UserPresenceSystem {
       // Set up disconnect handler
       try {
         const disconnectRef = onDisconnect(userRef)
-        await disconnectRef.remove()
+        await disconnectRef.update({
+          status: "offline",
+          lastSeen: Date.now()
+        })
       } catch (disconnectError) {
         console.warn("Could not set up disconnect handler:", disconnectError)
       }
