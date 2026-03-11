@@ -68,7 +68,7 @@ export function UserMoodSelector({ currentMood, onMoodChange, open, onOpenChange
                     )}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-64 bg-slate-900 border-slate-700 p-3 shadow-2xl z-[100]">
+            <PopoverContent className="w-64 bg-slate-900 border-slate-700 p-3 shadow-2xl z-[300]">
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
                         <h4 className="text-sm font-semibold text-slate-200">Set Status</h4>

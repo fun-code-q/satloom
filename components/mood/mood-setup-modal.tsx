@@ -20,6 +20,7 @@ export function MoodSetupModal({ isOpen, onClose, roomId }: MoodSetupModalProps)
     const [currentSongUrl, setCurrentSongUrl] = useState("")
     const [playlist, setPlaylist] = useState<string[]>([])
     const [isLoading, setIsLoading] = useState(false)
+    const [songAdded, setSongAdded] = useState(false)
 
     // Load implementation existing mood settings
     useEffect(() => {
@@ -52,6 +53,7 @@ export function MoodSetupModal({ isOpen, onClose, roomId }: MoodSetupModalProps)
 
         setPlaylist([...playlist, currentSongUrl.trim()])
         setCurrentSongUrl("")
+        setSongAdded(true)
     }
 
     const handleRemoveSong = (index: number) => {
@@ -72,8 +74,8 @@ export function MoodSetupModal({ isOpen, onClose, roomId }: MoodSetupModalProps)
                 backgroundImage: backgroundImage.trim() || null,
                 playlist: playlist,
                 updatedAt: Date.now(),
-                // If saving with songs, broadcast the magic trigger to all clients
-                ...(hasSongs && { magicSongTrigger: Date.now() })
+                // If saving with songs AND a new song was added this session, broadcast the magic trigger
+                ...(songAdded && hasSongs && { magicSongTrigger: Date.now() })
             })
             toast.success("Mood updated for everyone!")
             onClose()

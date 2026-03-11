@@ -97,7 +97,7 @@ export function KaraokePlayer({ session, onEnd, onMinimize }: KaraokePlayerProps
     const progress = song.duration > 0 ? (session.currentTime / song.duration) * 100 : 0
 
     return (
-        <div className="fixed inset-0 bg-[#020617] z-50 flex flex-col overflow-hidden">
+        <div className="fixed inset-0 bg-[#020617] z-[510] flex flex-col overflow-hidden">
             {/* Stage Visual Effects */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 blur-[120px] rounded-full animate-pulse" />

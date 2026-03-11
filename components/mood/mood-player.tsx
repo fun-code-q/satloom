@@ -5,6 +5,7 @@ import { getFirebaseDatabase } from "@/lib/firebase"
 import { ref, onValue } from "firebase/database"
 import { NotificationSystem } from "@/utils/core/notification-system"
 import { Sparkles, Music } from "lucide-react"
+import { toast } from "sonner"
 
 interface MoodPlayerProps {
     roomId: string
@@ -80,18 +81,14 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
         audio.load()
 
         try {
+            console.log("MoodPlayer: Attempting to play magic song:", playlist[0])
             await audio.play()
             setIsPlaying(true)
             setCurrentSongIndex(0)
+            toast.success("Magic is starting! 🎶")
         } catch (e) {
-            console.log("MoodPlayer: Autoplay blocked after magic yes — retrying...")
-            // Since user just clicked, autoplay should work. But just in case:
-            try {
-                await audio.play()
-                setIsPlaying(true)
-            } catch (err) {
-                console.error("MoodPlayer: Still failed:", err)
-            }
+            console.error("MoodPlayer: Autoplay blocked or failed:", e)
+            toast.error("Audio playback failed. Please check your browser permissions.")
         }
     }
 

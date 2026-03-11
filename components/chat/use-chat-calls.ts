@@ -98,6 +98,7 @@ interface UseChatCallsParams {
     setPresentationInvite: (val: any) => void
     quizTimerRef: React.MutableRefObject<any>
     handleCopyRoomLink: () => void
+    setPendingScreenStream: (stream: MediaStream | null) => void
 }
 
 export function useChatCalls(params: UseChatCallsParams) {
@@ -224,6 +225,50 @@ export function useChatCalls(params: UseChatCallsParams) {
     }, [roomId, currentUserId, currentCall, userProfile.name])
 
     const [pendingMediaFile, setPendingMediaFile] = useState<File | null>(null)
+
+    const handleStartScreenShareStandalone = useCallback(async () => {
+        try {
+            console.log("Starting standalone screen share...")
+            notificationSystem.info("Requesting screen capture...")
+
+            const stream = await navigator.mediaDevices.getDisplayMedia({
+                video: { cursor: "always" } as any,
+                audio: true
+            })
+
+            const sessionId = await theaterSignaling.createSession(
+                roomId,
+                userProfile.name,
+                currentUserId,
+                "screen://share",
+                "webrtc"
+            )
+
+            await theaterSignaling.sendInvite(
+                roomId,
+                sessionId,
+                userProfile.name,
+                currentUserId,
+                "Screen Share Session"
+            )
+
+            params.setPendingScreenStream(stream)
+
+            const session = theaterSignaling.getCurrentSession()
+            if (session) {
+                params.setCurrentTheaterSession(session)
+                params.setIsTheaterHost(true)
+                params.setShowTheaterFullscreen(true)
+                userPresence.updateActivity(roomId, currentUserId, "theater")
+            }
+
+            telemetry.logEvent('screen_share_started', roomId, currentUserId, userProfile.name)
+            notificationSystem.success("Screen sharing started!")
+        } catch (error) {
+            console.error("Error starting screen share:", error)
+            // notificationSystem.error("Failed to start screen share")
+        }
+    }, [roomId, userProfile.name, currentUserId, params])
 
     // --- Theater handlers ---
     const handleStartTheater = useCallback(() => {
@@ -585,7 +630,7 @@ export function useChatCalls(params: UseChatCallsParams) {
                     if (params.isInCall) {
                         notificationSystem.info("Click the 'Monitor' icon inside the call window to share your screen.")
                     } else {
-                        notificationSystem.info("Start a Video Call first to share your screen.")
+                        handleStartScreenShareStandalone()
                     }
                 }
             },
@@ -649,7 +694,7 @@ export function useChatCalls(params: UseChatCallsParams) {
         handleStartAudioCall,
         handleAnswerCall, handleDeclineCall, handleEndCall,
         handleStartVideoCall, handleAnswerVideoCall, handleEndVideoCall,
-        handleSwitchCallType,
+        handleSwitchCallType, handleStartScreenShareStandalone,
         // Theater handlers
         handleStartTheater, handleCreateTheaterSession,
         handleAcceptTheaterInvite, handleDeclineTheaterInvite, handleExitTheater,

@@ -233,6 +233,8 @@ interface ChatModalsProps {
     setPresentationInvite: (val: any) => void
     handleAcceptPresentationInvite: () => void
     handleDeclinePresentationInvite: () => void
+    pendingScreenStream: MediaStream | null
+    setPendingScreenStream: (stream: MediaStream | null) => void
 }
 
 export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps) {
@@ -371,7 +373,7 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
 
             {/* PRODUCTIVITY MODALS - Portalled for true layout independence */}
             {props.showSharedNotes && renderModal(
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+                <div className="fixed inset-0 z-[520] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
                     <div className="w-full max-w-2xl mx-4 bg-slate-900/95 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[85vh] glass-morphism animate-in zoom-in-95 duration-200">
                         <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/80 backdrop-blur-md">
                             <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-widest flex items-center gap-3">
@@ -390,7 +392,7 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
             )}
 
             {props.showSharedTaskList && renderModal(
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+                <div className="fixed inset-0 z-[520] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
                     <div className="w-full max-w-2xl mx-4 bg-slate-900/95 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[85vh] glass-morphism animate-in zoom-in-95 duration-200">
                         <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/80 backdrop-blur-md">
                             <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-widest flex items-center gap-3">
@@ -457,7 +459,7 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
 
             {/* Overlays - Portalled to document.body so they are never clipped by overflow:hidden parents */}
             {props.showPlayground && !props.isPlaygroundMinimized && props.playgroundConfig && renderModal(
-                <div className="fixed inset-0 z-[200] bg-slate-900 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[500] bg-slate-900 flex items-center justify-center p-4">
                     {props.playgroundConfig.selectedGame === "dots" && (
                         <DotsAndBoxesGameComponent gameConfig={props.playgroundConfig} roomId={roomId} currentUserId={currentUserId} onExit={props.handleExitPlayground} onMinimize={() => props.setIsPlaygroundMinimized(true)} />
                     )}
@@ -485,12 +487,14 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
                     messages={messages as any[]}
                     pendingFile={props.pendingMediaFile}
                     onFileProcessed={() => props.setPendingMediaFile(null)}
+                    pendingScreenStream={props.pendingScreenStream}
+                    onScreenStreamProcessed={() => props.setPendingScreenStream(null)}
                 />
             )}
 
             {/* Popups */}
             {props.showLeaveConfirmation && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[110]">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[650]">
                     <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700 text-center max-w-md mx-4">
                         <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                             <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -533,13 +537,13 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
             {props.showMafiaSetup && (
                 <MafiaSetupModal onClose={() => props.setShowMafiaSetup(false)} onStartSession={(config) => { props.setMafiaConfig(config); props.setShowMafiaSetup(false); props.setShowMafiaGame(true) }} />
             )}
-            {props.showMafiaGame && props.mafiaConfig && (
+            {props.showMafiaGame && props.mafiaConfig && renderModal(
                 <MafiaGame config={props.mafiaConfig} roomId={roomId} userId={currentUserId} userName={userProfile.name} isHost={isHost} onClose={() => { props.setShowMafiaGame(false); props.setMafiaConfig(null) }} />
             )}
 
             {/* Random Match */}
             {props.showRandomMatch && (
-                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[120] p-4 backdrop-blur-sm">
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[600] p-4 backdrop-blur-sm">
                     <div className="relative">
                         <Button variant="ghost" size="icon" className="absolute -top-4 -right-4 text-white hover:bg-slate-700 bg-slate-800 rounded-full h-8 w-8 z-10 border border-slate-600 shadow-xl" onClick={() => props.setShowRandomMatch(false)}>
                             <X className="h-4 w-4" />
@@ -550,7 +554,9 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
             )}
 
             <BingoSetupModal isOpen={props.showBingoSetup} onClose={() => props.setShowBingoSetup(false)} roomId={roomId} userId={currentUserId} userName={userProfile.name} />
-            {props.showBingoGame && <BingoGame roomId={roomId} userId={currentUserId} userName={userProfile.name} />}
+            {props.showBingoGame && renderModal(
+                <BingoGame roomId={roomId} userId={currentUserId} userName={userProfile.name} />
+            )}
             <PresentationSetupModal
                 isOpen={props.showPresentationSetup}
                 onClose={() => props.setShowPresentationSetup(false)}
@@ -589,7 +595,7 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
 
             {/* Active Game Boards (Join existing) - portalled to body */}
             {props.activeGame && renderModal(
-                <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-[510] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     {props.activeGame.type === "chess" && (
                         <ChessBoard
                             gameConfig={{

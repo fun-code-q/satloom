@@ -57,12 +57,12 @@ export class GameSignaling {
   }
 
   // Create a new game
-  async createGame(roomId: string, gameId: string, gameState: GameState): Promise<void> {
+  async createGame(roomId: string, gameId: string, gameState: GameState, gameType: string = 'dots'): Promise<void> {
     if (!getFirebaseDatabase()!) {
       throw new Error("Firebase database not initialized")
     }
 
-    const gameRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/dots/${gameId}`)
+    const gameRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/${gameType}/${gameId}`)
     const cleanedState = this.cleanGameState(gameState)
 
     // Add host status information
@@ -74,34 +74,34 @@ export class GameSignaling {
   }
 
   // Update game state
-  async updateGame(roomId: string, gameId: string, gameState: GameState): Promise<void> {
+  async updateGame(roomId: string, gameId: string, gameState: Partial<GameState>, gameType: string = 'dots'): Promise<void> {
     if (!getFirebaseDatabase()!) return
 
-    const gameRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/dots/${gameId}`)
-    const cleanedState = this.cleanGameState(gameState)
+    const gameRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/${gameType}/${gameId}`)
+    const cleanedState = this.cleanGameState(gameState as GameState)
 
-    await set(gameRef, {
+    await update(gameRef, {
       ...cleanedState,
       lastUpdated: serverTimestamp(),
     })
   }
 
   // Set host status (active/inactive)
-  async setHostStatus(roomId: string, gameId: string, isActive: boolean): Promise<void> {
+  async setHostStatus(roomId: string, gameId: string, isActive: boolean, gameType: string = 'dots'): Promise<void> {
     if (!getFirebaseDatabase()!) return
 
-    const hostStatusRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/dots/${gameId}/hostActive`)
+    const hostStatusRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/${gameType}/${gameId}/hostActive`)
     await set(hostStatusRef, isActive)
   }
 
   // Listen for host status changes
-  listenForHostStatus(roomId: string, gameId: string, onStatusChange: (isActive: boolean) => void) {
+  listenForHostStatus(roomId: string, gameId: string, onStatusChange: (isActive: boolean) => void, gameType: string = 'dots') {
     if (!getFirebaseDatabase()!) {
       console.warn("Firebase database not initialized, host status listening disabled")
       return () => { }
     }
 
-    const hostStatusRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/dots/${gameId}/hostActive`)
+    const hostStatusRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/${gameType}/${gameId}/hostActive`)
 
     const unsubscribe = onValue(hostStatusRef, (snapshot) => {
       const isActive = snapshot.val()
@@ -113,21 +113,21 @@ export class GameSignaling {
   }
 
   // Send a move
-  async sendMove(roomId: string, gameId: string, move: Move): Promise<void> {
+  async sendMove(roomId: string, gameId: string, move: Move, gameType: string = 'dots'): Promise<void> {
     if (!getFirebaseDatabase()!) return
 
-    const moveRef = push(ref(getFirebaseDatabase()!, `rooms/${roomId}/games/dots/${gameId}/moves`))
+    const moveRef = push(ref(getFirebaseDatabase()!, `rooms/${roomId}/games/${gameType}/${gameId}/moves`))
     await set(moveRef, move)
   }
 
   // Listen for game updates
-  listenForGame(roomId: string, gameId: string, onUpdate: (gameState: GameState) => void) {
+  listenForGame(roomId: string, gameId: string, onUpdate: (gameState: GameState) => void, gameType: string = 'dots') {
     if (!getFirebaseDatabase()!) {
       console.warn("Firebase database not initialized, game listening disabled")
       return () => { }
     }
 
-    const gameRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/dots/${gameId}`)
+    const gameRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/${gameType}/${gameId}`)
 
     const unsubscribe = onValue(gameRef, (snapshot) => {
       const gameState = snapshot.val()
@@ -143,13 +143,13 @@ export class GameSignaling {
   }
 
   // Listen for moves
-  listenForMoves(roomId: string, gameId: string, onMove: (move: Move) => void) {
+  listenForMoves(roomId: string, gameId: string, onMove: (move: Move) => void, gameType: string = 'dots') {
     if (!getFirebaseDatabase()!) {
       console.warn("Firebase database not initialized, move listening disabled")
       return () => { }
     }
 
-    const movesRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/dots/${gameId}/moves`)
+    const movesRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/${gameType}/${gameId}/moves`)
 
     const unsubscribe = onValue(movesRef, (snapshot) => {
       const moves = snapshot.val()
@@ -167,10 +167,10 @@ export class GameSignaling {
   }
 
   // End game
-  async endGame(roomId: string, gameId: string): Promise<void> {
+  async endGame(roomId: string, gameId: string, gameType: string = 'dots'): Promise<void> {
     if (!getFirebaseDatabase()!) return
 
-    const gameRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/dots/${gameId}`)
+    const gameRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/${gameType}/${gameId}`)
     await remove(gameRef)
   }
 

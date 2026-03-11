@@ -57,6 +57,12 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
                 if (gameState) {
                     setGame(gameState)
                     setLoading(false)
+
+                    // If I am the guest and I haven't joined yet, join now
+                    const isGuest = gameConfig.players[1]?.id === currentUserId
+                    if (isGuest && gameState.players.O.id === "waiting" && gameState.status === "waiting") {
+                        manager.joinGame(roomId, gameId, currentUserId, gameConfig.players[1].name)
+                    }
                 } else if (isHostPlayer) {
                     // Only HOST creates the game session in Firebase
                     manager.createGame(roomId, currentUserId, gameConfig.players[0].name, undefined, gameId).then(newGame => {

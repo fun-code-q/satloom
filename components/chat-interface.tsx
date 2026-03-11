@@ -23,6 +23,8 @@ import { ChatHeader } from "./chat/chat-header"
 import { ChatModals } from "./chat/chat-modals"
 import { MoodPlayer } from "./mood/mood-player"
 import { KaraokePlayer } from "./karaoke/karaoke-player"
+import { Soundboard } from "./soundboard"
+import { soundboard } from "@/utils/games/soundboard"
 import { FilePreviewModal } from "./chat/file-preview-modal"
 import {
   MessageSquare, Users, Settings, Gamepad2, Film, Music, Palette, Phone, Video, Monitor,
@@ -140,12 +142,26 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
     }
   }, [onlineUsers, userProfile.name, onLeave])
 
+
+
   const themeContext = useTheme()
   const userPresence = UserPresenceSystem.getInstance()
   const currentUserId = useRef(userPresence.createUniqueUserId(userProfile.name)).current
 
+  // --- Soundboard Global Initialization ---
+  React.useEffect(() => {
+    if (firebaseConnected && roomId && currentUserId) {
+      soundboard.initialize(roomId, currentUserId, userProfile.name)
+      const unsubHotkeys = soundboard.setupHotkeys()
+      return () => {
+        unsubHotkeys()
+      }
+    }
+  }, [firebaseConnected, roomId, currentUserId, userProfile.name])
+
   // Room host status (basic check, could be improved)
   const [isHost, setIsHost] = useState(false)
+  const [pendingScreenStream, setPendingScreenStream] = useState<MediaStream | null>(null)
 
   // --- Custom Hooks ---
   const handlers = useChatHandlers({
@@ -195,7 +211,8 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
     setShowGifAvatar, setShowHostPassword,
     setShowSettings, setShowMoodSetup,
     setShowPrivacyPolicy, setShowTermsOfService,
-    setShowAbout, quizTimerRef, handleCopyRoomLink: handlers.handleCopyRoomLink
+    setShowAbout, quizTimerRef, handleCopyRoomLink: handlers.handleCopyRoomLink,
+    setPendingScreenStream
   })
 
   useChatEffects({
@@ -480,6 +497,8 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
           handleConfirmLeave={handlers.handleConfirmLeave}
           handleCancelLeave={handlers.handleCancelLeave}
           handleCreateTheaterSession={calls.handleCreateTheaterSession}
+          pendingScreenStream={pendingScreenStream}
+          setPendingScreenStream={setPendingScreenStream}
         />
       </div>
 

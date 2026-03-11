@@ -19,6 +19,7 @@ export type TelemetryEventType =
     | 'whiteboard_started'
     | 'presentation_started'
     | 'call_started'
+    | 'screen_share_started'
     | 'call_ended'
     | 'call_type_switched'
     | 'message_sent'

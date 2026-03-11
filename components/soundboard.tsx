@@ -22,19 +22,15 @@ export function Soundboard({ isOpen, onClose, roomId, userId, userName }: Soundb
 
     useEffect(() => {
         if (isOpen) {
-            soundboard.initialize(roomId, userId, userName)
-            const unsubHotkeys = soundboard.setupHotkeys()
-
             const unsubState = soundboard.subscribe((state) => {
                 setSoundState(state)
             })
 
             return () => {
                 unsubState()
-                unsubHotkeys()
             }
         }
-    }, [isOpen, roomId, userId, userName])
+    }, [isOpen])
 
     const handlePlaySound = useCallback(
         async (soundId: string) => {
@@ -59,7 +55,7 @@ export function Soundboard({ isOpen, onClose, roomId, userId, userName }: Soundb
 
             {/* Popup */}
             <div
-                className="fixed bottom-28 md:bottom-20 left-4 right-4 md:left-auto md:right-8 z-50 bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-3xl p-4 md:p-5 shadow-2xl w-auto md:w-[410px] flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-300"
+                className="fixed bottom-28 md:bottom-20 left-4 right-4 md:left-auto md:right-8 z-[600] bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-3xl p-4 md:p-5 shadow-2xl w-auto md:w-[410px] flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-300"
                 onClick={(e) => e.stopPropagation()}
             >
 

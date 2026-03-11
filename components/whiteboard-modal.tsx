@@ -245,7 +245,7 @@ export function WhiteboardModal({ isOpen, onClose, roomId, currentUser, currentU
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-3xl p-6 animate-in fade-in duration-500">
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-950/80 backdrop-blur-3xl p-6 animate-in fade-in duration-500">
             <div className="bg-slate-900/50 border border-white/10 rounded-[40px] shadow-2xl w-full max-w-6xl h-[85vh] flex flex-col overflow-hidden relative backdrop-blur-md">
                 {/* Decorative gradients */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 blur-[100px] pointer-events-none" />

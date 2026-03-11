@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 // @ts-ignore
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, X, Mic, MicOff, Users, MessageSquare, Smile, Film, Minimize2 } from "lucide-react"
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, X, Mic, MicOff, Users, MessageSquare, Smile, Film, Minimize2, Monitor } from "lucide-react"
 import { TheaterSignaling, type TheaterSession, type TheaterAction } from "@/utils/infra/theater-signaling"
 import { TheaterChatOverlay, type Message } from "./theater-chat-overlay"
 import { EmojiPicker } from "./emoji-picker"
@@ -35,6 +35,8 @@ interface TheaterFullscreenProps {
   pendingFile?: File | null
   onFileProcessed?: () => void
   onMinimize?: () => void
+  pendingScreenStream?: MediaStream | null
+  onScreenStreamProcessed?: () => void
 }
 
 export function TheaterFullscreen({
@@ -49,6 +51,8 @@ export function TheaterFullscreen({
   pendingFile,
   onFileProcessed,
   onMinimize,
+  pendingScreenStream,
+  onScreenStreamProcessed,
 }: TheaterFullscreenProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
@@ -106,6 +110,66 @@ export function TheaterFullscreen({
       onFileProcessed()
     }
   }, [isOpen, isHost, pendingFile, onFileProcessed])
+
+  // Handle pending screen stream
+  useEffect(() => {
+    if (isOpen && isHost && pendingScreenStream && onScreenStreamProcessed) {
+      handleScreenStreamReady(pendingScreenStream)
+      onScreenStreamProcessed()
+    }
+  }, [isOpen, isHost, pendingScreenStream, onScreenStreamProcessed])
+
+  const handleScreenStreamReady = async (stream: MediaStream) => {
+    setLocalMovieStream(stream)
+
+    // Update session to webrtc mode if not already
+    if (session.videoType !== "webrtc") {
+      await theaterSignaling.createSession(roomId, currentUser, currentUserId, "screen://share", "webrtc")
+    }
+
+    // Broadcast stream to all current participants
+    const webrtc = WebRTCManager.getInstance()
+    const participants = session.participants || []
+
+    participants.forEach(async (participantId: string) => {
+      if (participantId === currentUserId) return
+
+      webrtc.initialize(
+        participantId,
+        stream,
+        (s, uid) => { if (uid === participantId) setRemoteMovieStream(s) },
+        (c, uid) => { if (uid === participantId) theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", c, currentUserId, participantId) }
+      )
+
+      const offer = await webrtc.createOffer(participantId)
+      theaterSignaling.sendSignal(roomId, session.id, "offer", offer, currentUserId, participantId)
+    })
+
+    setIsBuffering(false)
+    setIsPlaying(true)
+
+    // Handle track ended
+    const videoTrack = stream.getVideoTracks()[0]
+    if (videoTrack) {
+      videoTrack.onended = () => {
+        setLocalMovieStream(null)
+        setIsPlaying(false)
+        // Optionally close the session or just stop sharing
+      }
+    }
+  }
+
+  const handleStartScreenShare = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { cursor: "always" } as any,
+        audio: true
+      })
+      handleScreenStreamReady(stream)
+    } catch (err) {
+      console.error("Screen share error:", err)
+    }
+  }
 
   // Handle Incoming Signals
   useEffect(() => {
@@ -520,7 +584,7 @@ export function TheaterFullscreen({
   return (
     <PrivacyShield>
       <div
-        className="fixed inset-0 bg-black z-50 flex flex-col"
+        className="fixed inset-0 bg-black z-[500] flex flex-col"
         onMouseMove={() => setShowControls(true)}
         onMouseLeave={() => setShowControls(false)}
       >
@@ -698,6 +762,15 @@ export function TheaterFullscreen({
                     title="Stream local movie"
                   >
                     <Film className="w-5 h-5 text-white" />
+                  </Button>
+                  <Button
+                    variant={"ghost" as any}
+                    size={"icon" as any}
+                    className="w-10 h-10 rounded-full bg-slate-700 hover:bg-slate-600"
+                    onClick={handleStartScreenShare}
+                    title="Share your screen"
+                  >
+                    <Monitor className="w-5 h-5 text-white" />
                   </Button>
                 </>
               )}

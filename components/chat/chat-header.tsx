@@ -193,7 +193,7 @@ export function ChatHeader({
                                             <Film className="w-5 h-5" />
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" side="bottom" className="bg-slate-800 border-slate-700 text-white min-w-56 animate-none rounded-xl shadow-2xl" sideOffset={5}>
+                                    <DropdownMenuContent align="end" side="bottom" className="bg-slate-800 border-slate-700 text-white min-w-56 animate-none rounded-xl shadow-2xl z-[300]" sideOffset={5}>
                                         <DropdownMenuLabel className="text-xs text-slate-400 uppercase tracking-wider px-2 py-1.5 font-semibold">{mediaGroup.label}</DropdownMenuLabel>
                                         {mediaGroup.items.map((item, i) => (
                                             <DropdownMenuItem key={i} onClick={item.action} className="hover:bg-slate-700 cursor-pointer min-h-[44px] haptic flex items-center gap-3 px-3 transition-colors">
@@ -210,7 +210,7 @@ export function ChatHeader({
                                             <Gamepad2 className="w-5 h-5" />
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" side="bottom" className="bg-slate-800 border-slate-700 text-white min-w-56 animate-none rounded-xl shadow-2xl" sideOffset={5}>
+                                    <DropdownMenuContent align="end" side="bottom" className="bg-slate-800 border-slate-700 text-white min-w-56 animate-none rounded-xl shadow-2xl z-[300]" sideOffset={5}>
                                         <DropdownMenuLabel className="text-xs text-slate-400 uppercase tracking-wider px-2 py-1.5 font-semibold">{gamesGroup.label}</DropdownMenuLabel>
                                         {gamesGroup.items.map((item, i) => (
                                             <DropdownMenuItem key={i} onClick={item.action} className="hover:bg-slate-700 cursor-pointer min-h-[44px] haptic flex items-center gap-3 px-3 transition-colors">
@@ -230,7 +230,7 @@ export function ChatHeader({
                                             )}
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" side="bottom" className="bg-slate-800 border-slate-700 text-white min-w-56 animate-none rounded-xl shadow-2xl" sideOffset={5}>
+                                    <DropdownMenuContent align="end" side="bottom" className="bg-slate-800 border-slate-700 text-white min-w-56 animate-none rounded-xl shadow-2xl z-[300]" sideOffset={5}>
                                         <DropdownMenuLabel className="text-xs text-slate-400 uppercase tracking-wider px-2 py-1.5 font-semibold">{productivityGroup.label}</DropdownMenuLabel>
                                         {productivityGroup.items.map((item, i) => (
                                             <DropdownMenuItem key={i} onClick={item.action} className="hover:bg-slate-700 cursor-pointer min-h-[44px] haptic flex items-center justify-between px-3 transition-colors">
@@ -254,7 +254,7 @@ export function ChatHeader({
                                             <Hammer className="w-5 h-5" />
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" side="bottom" className="bg-slate-800 border-slate-700 text-white min-w-56 animate-none rounded-xl shadow-2xl" sideOffset={5}>
+                                    <DropdownMenuContent align="end" side="bottom" className="bg-slate-800 border-slate-700 text-white min-w-56 animate-none rounded-xl shadow-2xl z-[300]" sideOffset={5}>
                                         <DropdownMenuLabel className="text-xs text-slate-400 uppercase tracking-wider px-2 py-1.5 font-semibold">{settingsGroup.label}</DropdownMenuLabel>
                                         {settingsGroup.items.map((item, i) => (
                                             <DropdownMenuItem key={i} onClick={item.action} className="hover:bg-slate-700 cursor-pointer min-h-[44px] haptic flex items-center gap-3 px-3 transition-colors">
@@ -271,7 +271,7 @@ export function ChatHeader({
                                             <Settings className="w-5 h-5" />
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" side="bottom" className="bg-slate-800 border-slate-700 text-white min-w-56 animate-none rounded-xl shadow-2xl" sideOffset={5}>
+                                    <DropdownMenuContent align="end" side="bottom" className="bg-slate-800 border-slate-700 text-white min-w-56 animate-none rounded-xl shadow-2xl z-[300]" sideOffset={5}>
                                         <DropdownMenuLabel className="text-xs text-slate-400 uppercase tracking-wider px-2 py-1.5 font-semibold">{appSettingsGroup.label}</DropdownMenuLabel>
                                         {appSettingsGroup.items.map((item, i) => (
                                             <DropdownMenuItem key={i} onClick={item.action} className="hover:bg-slate-700 cursor-pointer min-h-[44px] haptic flex items-center gap-3 px-3 transition-colors">
@@ -292,7 +292,7 @@ export function ChatHeader({
                                         )}
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" side="bottom" className="bg-slate-800 border-slate-700 text-white min-w-[280px] sm:min-w-64 max-h-[85vh] overflow-y-auto animate-none rounded-2xl shadow-2xl" sideOffset={8}>
+                                <DropdownMenuContent align="end" side="bottom" className="bg-slate-800 border-slate-700 text-white min-w-[280px] sm:min-w-64 max-h-[85vh] overflow-y-auto animate-none rounded-2xl shadow-2xl z-[300]" sideOffset={8}>
                                     {/* Mobile Only Quick Actions */}
                                     <div className="md:hidden">
                                         <DropdownMenuLabel className="text-[10px] text-cyan-400 uppercase tracking-widest px-3 py-2 font-bold opacity-80">Quick Toolset</DropdownMenuLabel>
@@ -386,7 +386,7 @@ export function ChatHeader({
                                                     {onlineUser?.mood && <span className="text-xs">{onlineUser.mood.emoji}</span>}
                                                 </button>
                                             </PopoverTrigger>
-                                            <PopoverContent className="w-64 bg-slate-800 border-slate-700 p-0 overflow-hidden rounded-2xl shadow-2xl animate-in zoom-in-95" sideOffset={8}>
+                                            <PopoverContent className="w-64 bg-slate-800 border-slate-700 p-0 overflow-hidden rounded-2xl shadow-2xl animate-in zoom-in-95 z-[300]" sideOffset={8}>
                                                 <div className="p-4 flex flex-col items-center gap-3">
                                                     <div className="relative">
                                                         <Avatar className="w-20 h-20 border-4 border-slate-700 shadow-xl">
