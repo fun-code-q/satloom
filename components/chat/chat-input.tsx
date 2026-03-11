@@ -58,7 +58,7 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
     const isMobile = useIsMobile()
 
     // Virtual keyboard
-    const { isEnabled: isKeyboardEnabled, toggleEnabled: toggleKeyboard } = useVirtualKeyboardStore()
+    const { isEnabled: isKeyboardEnabled, isVisible: isKeyboardVisible, toggleEnabled: toggleKeyboard } = useVirtualKeyboardStore()
 
     const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
     const messageStorage = MessageStorage.getInstance()
@@ -270,6 +270,18 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
     const [showMobileReactions, setShowMobileReactions] = useState(false)
 
     if (isMobile) {
+        // Hide bottom input controls when virtual keyboard is visible
+        if (isKeyboardEnabled && isKeyboardVisible) {
+            return (
+                <div className="flex flex-col bg-slate-900/95 border-t border-slate-700 backdrop-blur-md z-30 flex-shrink-0 pb-safe">
+                    <div className="px-4 py-2 bg-cyan-500/20 border-t border-cyan-500/30 flex items-center justify-center gap-2">
+                        <Keyboard className="w-4 h-4 text-cyan-400" />
+                        <span className="text-sm text-cyan-400">Virtual Keyboard Active</span>
+                    </div>
+                </div>
+            )
+        }
+
         return (
             <div className="flex flex-col bg-slate-900/95 border-t border-slate-700 backdrop-blur-md z-30 flex-shrink-0 pb-safe">
                 {/* Recording indicator */}
@@ -290,7 +302,6 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                             </Button>
                         </div>
                         <div className="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-hide">
-                            {/* Re-using ReactionRain logic but simplified for mobile row */}
                             <ReactionRain roomId={roomId || ""} userId={currentUserId} inline={true} />
                         </div>
                     </div>
@@ -327,7 +338,7 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                     </div>
                 )}
 
-                {/* Attachment menu popup - now absolute above input */}
+                {/* Attachment menu popup */}
                 {showAttachments && (
                     <div className="absolute bottom-full mb-3 left-3 right-3 z-[70] animate-in slide-in-from-bottom-2 duration-200">
                         <div className="shadow-2xl rounded-3xl overflow-hidden border border-slate-700/50">
@@ -373,7 +384,6 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                         handleSendMessage()
                     }}
                 >
-                    {/* Attachment button */}
                     <Button
                         variant="ghost"
                         size="icon"
@@ -383,7 +393,6 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                         <Plus className={`w-5 h-5 transition-transform ${showAttachments ? 'rotate-45' : ''}`} />
                     </Button>
 
-                    {/* Text input */}
                     <div className="flex-1 relative">
                         <Input
                             ref={inputRef}
@@ -392,13 +401,12 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                             onKeyPress={handleKeyPress}
                             placeholder={isRecording ? "Recording..." : "Type a message..."}
                             disabled={isRecording}
-                            inputMode={isKeyboardEnabled ? "none" : undefined}
+                            inputMode={(isKeyboardEnabled && isKeyboardVisible) ? "none" : undefined}
                             className="bg-slate-700 border-slate-600 text-white placeholder:text-gray-400 h-10 pr-10 rounded-full"
                         />
                     </div>
 
                     <div className="flex items-center gap-1">
-                        {/* Emoji button next to mic */}
                         <Button
                             variant="ghost"
                             size="icon"
@@ -408,7 +416,6 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                             <Smile className={`w-5 h-5 ${showEmojiPicker ? 'text-cyan-400' : ''}`} />
                         </Button>
 
-                        {/* Virtual keyboard toggle */}
                         <Button
                             variant="ghost"
                             size="icon"
@@ -419,7 +426,6 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                             <Keyboard className="w-5 h-5" />
                         </Button>
 
-                        {/* Action button - mic or send */}
                         {message.trim() ? (
                             <Button
                                 type="submit"
@@ -447,7 +453,6 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                     onEmojiSelect={handleEmojiSelect}
                 />
 
-                {/* Vanish Mode Modal for Mobile */}
                 <VanishModeModal
                     isOpen={showVanishModal}
                     onClose={() => setShowVanishModal(false)}

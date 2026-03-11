@@ -11,19 +11,21 @@ import {
     type KeyboardKeyData,
     type KeyboardLayout,
 } from './types'
-import { Settings, X } from 'lucide-react'
+import { Settings, X, Send, Plus, Smile, Mic, Paperclip, Keyboard as KeyboardIcon } from 'lucide-react'
 import { KeyboardSettings } from '@/components/virtual-keyboard/keyboard-settings'
 import { cn } from '@/lib/utils'
 
 interface VirtualKeyboardProps {
     inputRef?: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>
     onTextChange?: (text: string) => void
+    onSend?: () => void
     initialValue?: string
 }
 
 export function VirtualKeyboard({
     inputRef,
     onTextChange,
+    onSend,
     initialValue = ''
 }: VirtualKeyboardProps) {
     const isMobile = useIsMobile()
@@ -54,9 +56,15 @@ export function VirtualKeyboard({
     const [nativeKeyboardHeight, setNativeKeyboardHeight] = useState(0)
     const [isDragging, setIsDragging] = useState(false)
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+    const [dragDirection, setDragDirection] = useState<'horizontal' | 'vertical' | null>(null)
+    const [headerMessage, setHeaderMessage] = useState('')
     const inputValueRef = useRef(initialValue)
     const shiftTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const keyboardRef = useRef<HTMLDivElement>(null)
+    const fabRef = useRef<HTMLDivElement>(null)
+
+    // Dragging threshold to determine direction
+    const DRAG_THRESHOLD = 10
 
     // Auto-show when input is focused
     useEffect(() => {
@@ -71,7 +79,68 @@ export function VirtualKeyboard({
         return () => input.removeEventListener('focus', handleFocus)
     }, [inputRef, isEnabled, setVisible])
 
-    // Dragging Logic
+    // FAB (Floating Action Button) Dragging Logic
+    const handleFabPointerDown = (e: React.PointerEvent) => {
+        if (!isFloating) return
+        setIsDragging(true)
+        const rect = fabRef.current?.getBoundingClientRect()
+        if (rect) {
+            setDragOffset({
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            })
+        }
+        setDragDirection(null)
+            ; (e.target as HTMLElement).setPointerCapture(e.pointerId)
+    }
+
+    const handleFabPointerMove = (e: React.PointerEvent) => {
+        if (!isDragging || !isFloating) return
+
+        const rect = fabRef.current?.getBoundingClientRect()
+        if (!rect) return
+
+        const deltaX = e.clientX - dragOffset.x - coords.x
+        const deltaY = e.clientY - dragOffset.y - coords.y
+
+        // Determine drag direction on first movement beyond threshold
+        if (!dragDirection) {
+            if (Math.abs(deltaX) > DRAG_THRESHOLD) {
+                setDragDirection('horizontal')
+            } else if (Math.abs(deltaY) > DRAG_THRESHOLD) {
+                setDragDirection('vertical')
+            }
+            return
+        }
+
+        // Calculate new position based on drag direction
+        let newX = coords.x
+        let newY = coords.y
+
+        if (dragDirection === 'horizontal') {
+            newX = e.clientX - dragOffset.x
+        } else {
+            newY = e.clientY - dragOffset.y
+        }
+
+        // Constrain to viewport bounds
+        const viewportWidth = window.innerWidth
+        const viewportHeight = window.innerHeight
+        const fabSize = 56 // FAB button size
+
+        newX = Math.max(0, Math.min(viewportWidth - fabSize, newX))
+        newY = Math.max(0, Math.min(viewportHeight - fabSize, newY))
+
+        setCoords({ x: newX, y: newY })
+    }
+
+    const handleFabPointerUp = (e: React.PointerEvent) => {
+        setIsDragging(false)
+        setDragDirection(null)
+            ; (e.target as HTMLElement).releasePointerCapture(e.pointerId)
+    }
+
+    // Keyboard Dragging Logic (constrained to single axis)
     const handlePointerDown = (e: React.PointerEvent) => {
         if (!isFloating) return
         setIsDragging(true)
@@ -82,19 +151,94 @@ export function VirtualKeyboard({
                 y: e.clientY - rect.top
             })
         }
-        ; (e.target as HTMLElement).setPointerCapture(e.pointerId)
+        setDragDirection(null)
+            ; (e.target as HTMLElement).setPointerCapture(e.pointerId)
     }
 
     const handlePointerMove = (e: React.PointerEvent) => {
         if (!isDragging || !isFloating) return
-        const x = e.clientX - dragOffset.x
-        const y = e.clientY - dragOffset.y
-        setCoords({ x, y })
+
+        const rect = keyboardRef.current?.getBoundingClientRect()
+        if (!rect) return
+
+        const deltaX = e.clientX - dragOffset.x - coords.x
+        const deltaY = e.clientY - dragOffset.y - coords.y
+
+        // Determine drag direction on first movement beyond threshold
+        if (!dragDirection) {
+            if (Math.abs(deltaX) > DRAG_THRESHOLD) {
+                setDragDirection('horizontal')
+            } else if (Math.abs(deltaY) > DRAG_THRESHOLD) {
+                setDragDirection('vertical')
+            }
+            return
+        }
+
+        // Calculate new position based on drag direction only
+        let newX = coords.x
+        let newY = coords.y
+
+        if (dragDirection === 'horizontal') {
+            newX = e.clientX - dragOffset.x
+        } else {
+            newY = e.clientY - dragOffset.y
+        }
+
+        // Constrain to viewport bounds
+        const viewportWidth = window.innerWidth
+        const viewportHeight = window.innerHeight
+        const keyboardWidth = (viewportWidth * width) / 100
+        const keyboardHeight = height
+
+        newX = Math.max(0, Math.min(viewportWidth - keyboardWidth, newX))
+        newY = Math.max(0, Math.min(viewportHeight - keyboardHeight, newY))
+
+        setCoords({ x: newX, y: newY })
     }
 
     const handlePointerUp = (e: React.PointerEvent) => {
         setIsDragging(false)
+        setDragDirection(null)
             ; (e.target as HTMLElement).releasePointerCapture(e.pointerId)
+    }
+
+    // Handle send from keyboard header
+    const handleKeyboardSend = useCallback(() => {
+        // Update input with current message
+        if (inputRef && 'current' in inputRef && inputRef.current) {
+            inputRef.current.value = inputValueRef.current
+            inputRef.current.dispatchEvent(new Event('input', { bubbles: true }))
+        }
+
+        // Trigger onSend callback
+        onSend?.()
+
+        // Also trigger form submission
+        if (inputRef && 'current' in inputRef && inputRef.current) {
+            const form = inputRef.current.closest('form')
+            if (form) {
+                form.requestSubmit()
+            }
+        }
+
+        // Clear message
+        setHeaderMessage('')
+        inputValueRef.current = ''
+        onTextChange?.('')
+    }, [onSend, onTextChange, inputRef])
+
+    // Handle header input change
+    const handleHeaderInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = e.target.value
+        setHeaderMessage(newValue)
+        inputValueRef.current = newValue
+        onTextChange?.(newValue)
+
+        // Sync with actual input if available
+        if (inputRef && 'current' in inputRef && inputRef.current) {
+            inputRef.current.value = newValue
+            inputRef.current.dispatchEvent(new Event('input', { bubbles: true }))
+        }
     }
 
     // Get current layout
@@ -281,8 +425,44 @@ export function VirtualKeyboard({
     // Only render on mobile
     if (!isMobile) return null
 
-    // Don't render if not enabled
+    // Don't render if not enabled - but show FAB if enabled but not visible
     if (!isEnabled) return null
+
+    // Show FAB (Floating Action Button) when keyboard is not visible
+    if (!isVisible) {
+        return (
+            <>
+                {/* FAB Button - Shows when keyboard is hidden but enabled */}
+                <div
+                    ref={fabRef}
+                    onPointerDown={handleFabPointerDown}
+                    onPointerMove={handleFabPointerMove}
+                    onPointerUp={handleFabPointerUp}
+                    onClick={() => setVisible(true)}
+                    className={cn(
+                        'fixed z-[999] flex items-center justify-center cursor-pointer',
+                        'bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700',
+                        'rounded-full shadow-lg transition-all duration-200',
+                        'w-14 h-14',
+                        isDragging ? 'scale-110' : 'scale-100'
+                    )}
+                    style={{
+                        left: coords.x || 16,
+                        top: coords.y || window.innerHeight - 100,
+                    }}
+                    role="button"
+                    aria-label="Open virtual keyboard"
+                >
+                    <KeyboardIcon className="w-6 h-6 text-white" />
+                </div>
+
+                {/* Settings Panel */}
+                {showSettings && (
+                    <KeyboardSettings onClose={() => setShowSettings(false)} />
+                )}
+            </>
+        )
+    }
 
     return (
         <>
@@ -294,7 +474,7 @@ export function VirtualKeyboard({
                     'fixed z-[1000] transition-all duration-300 backdrop-blur-xl border border-white/10 overflow-hidden',
                     'flex flex-col rounded-2xl select-none',
                     isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none translate-y-4',
-                    isDragging ? 'scale-[1.02] rotate-1' : 'scale-100 rotate-0'
+                    isDragging ? 'scale-[1.02]' : 'scale-100'
                 )}
                 style={{
                     ...getPositionStyles(),
@@ -305,36 +485,95 @@ export function VirtualKeyboard({
                 role="keyboard"
                 aria-label="Virtual keyboard"
             >
-                {/* Minimal Header / Drag Handle */}
+                {/* Header with input, send button, and controls */}
+                <div
+                    className={cn(
+                        "flex items-center gap-2 px-3 py-2 bg-white/5 border-b border-white/10",
+                        isFloating ? "cursor-move" : ""
+                    )}
+                    onPointerDown={isFloating ? handlePointerDown : undefined}
+                >
+                    {/* Attachment button */}
+                    <button
+                        type="button"
+                        className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                        aria-label="Add attachment"
+                    >
+                        <Paperclip className="w-4 h-4 text-white/70" />
+                    </button>
+
+                    {/* Message input field */}
+                    <input
+                        type="text"
+                        value={headerMessage}
+                        onChange={handleHeaderInputChange}
+                        placeholder="Type a message..."
+                        className="flex-1 bg-white/10 border border-white/10 rounded-full px-4 py-2 text-white text-sm placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                        inputMode="none"
+                    />
+
+                    {/* Emoji button */}
+                    <button
+                        type="button"
+                        className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                        aria-label="Add emoji"
+                    >
+                        <Smile className="w-4 h-4 text-white/70" />
+                    </button>
+
+                    {/* Mic button */}
+                    <button
+                        type="button"
+                        className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                        aria-label="Record voice"
+                    >
+                        <Mic className="w-4 h-4 text-white/70" />
+                    </button>
+
+                    {/* Send button */}
+                    <button
+                        type="button"
+                        onClick={handleKeyboardSend}
+                        disabled={!headerMessage.trim()}
+                        className={cn(
+                            "p-2 rounded-full transition-colors",
+                            headerMessage.trim()
+                                ? "bg-cyan-500 hover:bg-cyan-400"
+                                : "bg-white/10 cursor-not-allowed"
+                        )}
+                        aria-label="Send message"
+                    >
+                        <Send className="w-4 h-4 text-white" />
+                    </button>
+
+                    {/* Settings button */}
+                    <button
+                        type="button"
+                        onClick={() => setShowSettings(true)}
+                        className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                    >
+                        <Settings className="w-3.5 h-3.5 text-white/60" />
+                    </button>
+
+                    {/* Close button - Now calls toggleEnabled to fully disable */}
+                    <button
+                        type="button"
+                        onClick={() => toggleEnabled()}
+                        className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                    >
+                        <X className="w-3.5 h-3.5 text-white/60" />
+                    </button>
+                </div>
+
+                {/* Minimal Drag Handle */}
                 <div
                     onPointerDown={handlePointerDown}
                     className={cn(
-                        "flex items-center justify-between px-4 py-2 cursor-move active:cursor-grabbing",
+                        "flex items-center justify-center py-1 cursor-move active:cursor-grabbing",
                         isFloating ? "bg-white/5" : "bg-transparent"
                     )}
                 >
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-1 bg-white/20 rounded-full" />
-                        <span className="text-[10px] text-white/40 font-bold uppercase tracking-widest">
-                            {layout}
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => setShowSettings(true)}
-                            className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
-                        >
-                            <Settings className="w-3.5 h-3.5 text-white/60" />
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setVisible(false)}
-                            className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
-                        >
-                            <X className="w-3.5 h-3.5 text-white/60" />
-                        </button>
-                    </div>
+                    <div className="w-8 h-1 bg-white/20 rounded-full" />
                 </div>
 
                 {/* Keyboard rows */}

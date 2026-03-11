@@ -93,7 +93,7 @@ export function KeyboardSettings({ onClose }: KeyboardSettingsProps) {
     }
 
     return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50">
             <div
                 className="bg-slate-800 rounded-lg w-full max-w-sm max-h-[90vh] overflow-y-auto mx-4 shadow-xl"
                 role="dialog"
