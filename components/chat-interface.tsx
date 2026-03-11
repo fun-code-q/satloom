@@ -23,6 +23,7 @@ import { ChatHeader } from "./chat/chat-header"
 import { ChatModals } from "./chat/chat-modals"
 import { MoodPlayer } from "./mood/mood-player"
 import { KaraokePlayer } from "./karaoke/karaoke-player"
+import { FilePreviewModal } from "./chat/file-preview-modal"
 import {
   MessageSquare, Users, Settings, Gamepad2, Film, Music, Palette, Phone, Video, Monitor,
   Camera, Zap, Ghost, Dices, Shuffle, Calendar, BarChart2,
@@ -131,6 +132,14 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
     if (userProfile && userProfile.name) setCurrentUser({ name: userProfile.name, avatar: userProfile.avatar })
   }, [roomId, userProfile, setRoomId, setCurrentUser])
 
+  React.useEffect(() => {
+    const me = onlineUsers.find(u => u.name === userProfile.name)
+    if (me?.isKicked) {
+      alert("You have been kicked from the room by the host.")
+      onLeave()
+    }
+  }, [onlineUsers, userProfile.name, onLeave])
+
   const themeContext = useTheme()
   const userPresence = UserPresenceSystem.getInstance()
   const currentUserId = useRef(userPresence.createUniqueUserId(userProfile.name)).current
@@ -143,6 +152,7 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
     roomId, userProfile, currentUserId, isHost, onLeave,
     setReplyingTo, setShowMediaRecorder, setMediaRecorderMode,
     setShowLeaveConfirmation, setPasswordValidated, setCurrentUserMood, fileInputRef,
+    setPendingChatFile: feature.setPendingChatFile
   })
 
   const calls = useChatCalls({
@@ -159,6 +169,8 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
     quizTimeRemaining: feature.quizTimeRemaining,
     userQuizAnswer: feature.userQuizAnswer,
     currentKaraokeSession: feature.currentKaraokeSession,
+    karaokeInvite: feature.karaokeInvite,
+    setKaraokeInvite: feature.setKaraokeInvite,
     presentationInvite: feature.presentationInvite,
     playgroundGame,
     setShowAudioCall, setShowVideoCall, setIsInCall,
@@ -282,7 +294,9 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
           setIsAppMenuOpen={setIsAppMenuOpen}
           onlineUsers={onlineUsers}
           currentUserId={currentUserId}
+          currentUserName={userProfile.name}
           pinnedMessage={pinnedMessage}
+          onKickUser={handlers.handleKickUser}
           firebaseConnected={firebaseConnected}
           showChatSearch={showChatSearch}
           setShowChatSearch={setShowChatSearch}
@@ -453,6 +467,8 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
           setIsKaraokeMinimized={ui.setIsKaraokeMinimized}
           karaokeInvite={karaokeInvite}
           setKaraokeInvite={setKaraokeInvite}
+          handleAcceptKaraokeInvite={calls.handleAcceptKaraokeInvite}
+          handleDeclineKaraokeInvite={calls.handleDeclineKaraokeInvite}
           handleStartKaraoke={calls.handleStartKaraoke}
           handleExitKaraoke={calls.handleExitKaraoke}
           showMafiaGame={showMafiaGame}
@@ -475,6 +491,13 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
           onMinimize={() => setIsKaraokeMinimized(true)}
         />
       )}
+
+      {/* File Preview before sending */}
+      <FilePreviewModal
+        fileData={feature.pendingChatFile}
+        onClose={() => feature.setPendingChatFile(null)}
+        onSend={handlers.handleSendFile}
+      />
     </PrivacyShield>
   )
 }

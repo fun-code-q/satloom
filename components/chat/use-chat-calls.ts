@@ -43,6 +43,8 @@ interface UseChatCallsParams {
     currentQuizSession: QuizSession | null
     quizTimeRemaining: number
     userQuizAnswer: string
+    karaokeInvite: any
+    setKaraokeInvite: (invite: any) => void
     currentKaraokeSession: any
     presentationInvite: { presentationId: string; hostName: string; hostId: string } | null
     playgroundGame: "dots" | "chess" | "tictactoe" | "connect4"
@@ -406,6 +408,7 @@ export function useChatCalls(params: UseChatCallsParams) {
             if (session) {
                 params.setCurrentKaraokeSession(session)
                 await karaokeManager.startSession()
+                await karaokeManager.broadcastInvite(song)
                 telemetry.logEvent('karaoke_started', roomId, currentUserId, userProfile.name, { song: song.title })
                 notificationSystem.success(`Karaoke started: ${song.title}`)
             }
@@ -415,9 +418,32 @@ export function useChatCalls(params: UseChatCallsParams) {
         }
     }, [roomId, currentUserId, userProfile.name])
 
-    const handleExitKaraoke = useCallback(() => {
+    const handleExitKaraoke = useCallback(async () => {
+        if (params.currentKaraokeSession?.hostId === currentUserId) {
+            await karaokeManager.endSession()
+        } else {
+            await karaokeManager.leaveSession(currentUserId)
+        }
         params.setCurrentKaraokeSession(null)
         notificationSystem.success("Karaoke ended")
+    }, [params.currentKaraokeSession, currentUserId])
+
+    const handleAcceptKaraokeInvite = useCallback(async () => {
+        if (!params.karaokeInvite) return
+        try {
+            karaokeManager.initialize(roomId, currentUserId, userProfile.name)
+            await karaokeManager.joinSession(currentUserId, userProfile.name, "audience")
+            params.setKaraokeInvite(null)
+            userPresence.updateActivity(roomId, currentUserId, "theater")
+            notificationSystem.success("Joined Karaoke")
+        } catch (error) {
+            console.error("Error joining karaoke:", error)
+            notificationSystem.error("Failed to join karaoke")
+        }
+    }, [roomId, currentUserId, userProfile.name, params.karaokeInvite])
+
+    const handleDeclineKaraokeInvite = useCallback(() => {
+        params.setKaraokeInvite(null)
     }, [])
 
     // --- Quiz handlers ---
@@ -631,7 +657,7 @@ export function useChatCalls(params: UseChatCallsParams) {
         listenForGameInvites, sendGameInvite,
         handleStartPlayground, handleAcceptGameInvite, handleDeclineGameInvite, handleExitPlayground, handleOpenPlayground,
         // Karaoke handlers
-        handleStartKaraoke, handleExitKaraoke,
+        handleStartKaraoke, handleExitKaraoke, handleAcceptKaraokeInvite, handleDeclineKaraokeInvite,
         // Quiz handlers
         startQuizTimer, handleStartQuiz, handleQuizAnswer,
         handleNextQuestion, handleQuizFinished, handleExitQuiz, handleQuizTimeout,

@@ -258,8 +258,8 @@ export function WhiteboardModal({ isOpen, onClose, roomId, currentUser, currentU
                             <Palette className="h-5 w-5 text-cyan-400" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-black text-white tracking-tighter uppercase">Collaborative Space</h2>
-                            <p className="text-[10px] text-white/30 font-bold tracking-widest uppercase">REAL-TIME WHITEBOARD</p>
+                            <h2 className="text-base sm:text-lg md:text-xl font-black text-white tracking-tighter uppercase whitespace-nowrap">Collaborative Space</h2>
+                            <p className="text-[9px] md:text-[10px] text-white/30 font-bold tracking-widest uppercase">REAL-TIME WHITEBOARD</p>
                         </div>
                     </div>
 

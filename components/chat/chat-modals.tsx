@@ -175,6 +175,8 @@ interface ChatModalsProps {
     handleExitKaraoke: () => void
     karaokeInvite: KaraokeInvite | null
     setKaraokeInvite: (val: KaraokeInvite | null) => void
+    handleAcceptKaraokeInvite: () => void
+    handleDeclineKaraokeInvite: () => void
     // Mafia
     showMafiaSetup: boolean
     setShowMafiaSetup: (val: boolean) => void
@@ -262,7 +264,7 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
 
     return (
         <>
-            <div className="flex-1 min-h-0 relative flex flex-col overflow-hidden z-[10] pt-[76px]">
+            <div className="flex-1 min-h-0 relative flex flex-col overflow-hidden z-[10]">
                 {/* Message List */}
                 <MessageList
                     onReply={props.handleReply}
@@ -423,11 +425,8 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
             {props.karaokeInvite && renderModal(
                 <KaraokeInviteNotification
                     invite={props.karaokeInvite}
-                    onAccept={async () => {
-                        await props.handleStartKaraoke(props.karaokeInvite!.song)
-                        props.setKaraokeInvite(null)
-                    }}
-                    onDecline={() => props.setKaraokeInvite(null)}
+                    onAccept={props.handleAcceptKaraokeInvite}
+                    onDecline={props.handleDeclineKaraokeInvite}
                 />
             )}
             {props.whiteboardInvite && renderModal(

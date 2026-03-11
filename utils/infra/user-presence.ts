@@ -12,6 +12,7 @@ export interface UserPresence {
   isRecordingVoice?: boolean
   isRecordingVideo?: boolean
   isSendingFile?: boolean
+  isKicked?: boolean
   mood?: {
     emoji: string
     text: string
@@ -208,6 +209,18 @@ export class UserPresenceSystem {
       await set(statusRef, status)
     } catch (error) {
       console.error("Error setting user status:", error)
+    }
+  }
+
+  // Kick user from room
+  async kickUser(roomId: string, userId: string) {
+    try {
+      if (!getFirebaseDatabase()) return
+
+      const kickRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/presence/${userId}/isKicked`)
+      await set(kickRef, true)
+    } catch (error) {
+      console.error("Error kicking user:", error)
     }
   }
 

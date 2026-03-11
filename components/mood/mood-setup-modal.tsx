@@ -67,14 +67,13 @@ export function MoodSetupModal({ isOpen, onClose, roomId }: MoodSetupModalProps)
 
         try {
             const moodRef = ref(db, `rooms/${roomId}/mood`)
+            const hasSongs = playlist.length > 0
             await update(moodRef, {
                 backgroundImage: backgroundImage.trim() || null,
                 playlist: playlist,
-                // If we are just setting it up, we might want to reset the index or keep it
-                // For simplicity, if the playlist changed, let's keep the current index unless it's out of bounds, 
-                // but the player component handles the logic better. 
-                // We just save the data here.
-                updatedAt: Date.now()
+                updatedAt: Date.now(),
+                // If saving with songs, broadcast the magic trigger to all clients
+                ...(hasSongs && { magicSongTrigger: Date.now() })
             })
             toast.success("Mood updated for everyone!")
             onClose()

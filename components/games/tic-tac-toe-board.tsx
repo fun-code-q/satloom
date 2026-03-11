@@ -52,16 +52,19 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
             setGame(initialGame)
             setLoading(false)
         } else {
+            const isHostPlayer = gameConfig.players[0]?.id === currentUserId
             const unsubscribe = manager.listenForGameUpdates(roomId, gameId, (gameState) => {
                 if (gameState) {
                     setGame(gameState)
                     setLoading(false)
-                } else if (gameConfig.players.find(p => p.id === currentUserId)?.isHost) {
+                } else if (isHostPlayer) {
+                    // Only HOST creates the game session in Firebase
                     manager.createGame(roomId, currentUserId, gameConfig.players[0].name, undefined, gameId).then(newGame => {
                         if (newGame) setGame(newGame)
                         setLoading(false)
                     })
                 }
+                // Guests stay in loading state until host creates the game
             })
             return () => unsubscribe()
         }

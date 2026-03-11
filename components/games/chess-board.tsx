@@ -60,15 +60,18 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose, onMinim
             setSession(initialSession)
             initEngine(initialSession.fen)
         } else {
+            const isHostPlayer = gameConfig.players[0]?.id === currentUserId
             const unsubscribe = manager.listenForGameUpdates(roomId, gameId, (newSession) => {
                 if (newSession) {
                     setSession(newSession)
                     initEngine(newSession.fen)
-                } else if (gameConfig.players.find(p => p.id === currentUserId)?.isHost) {
+                } else if (isHostPlayer) {
+                    // Only HOST creates the game session in Firebase
                     manager.createGame(roomId, currentUserId, gameConfig.players[0].name, undefined, gameId).then(game => {
                         if (game) setSession(game)
                     })
                 }
+                // Guests stay in loading state until host creates the game
             })
             return () => unsubscribe()
         }

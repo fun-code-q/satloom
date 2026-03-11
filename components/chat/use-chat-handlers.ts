@@ -25,6 +25,7 @@ interface UseChatHandlersParams {
     setPasswordValidated: (val: boolean) => void
     setCurrentUserMood: (mood: { emoji: string; text: string } | null) => void
     fileInputRef: React.RefObject<HTMLInputElement | null>
+    setPendingChatFile: (data: { type: string; file: File } | null) => void
 }
 
 export function useChatHandlers({
@@ -40,6 +41,7 @@ export function useChatHandlers({
     setPasswordValidated,
     setCurrentUserMood,
     fileInputRef,
+    setPendingChatFile,
 }: UseChatHandlersParams) {
     const notificationSystem = NotificationSystem.getInstance()
     const messageStorage = MessageStorage.getInstance()
@@ -128,52 +130,62 @@ export function useChatHandlers({
             }
 
             if (file instanceof File) {
-                const validation = await SecurityUtils.validateFile(file)
-                if (!validation.valid) {
-                    notificationSystem.error(validation.error || "Invalid file")
-                    return
-                }
-
-                const MAX_SIZE = 50 * 1024 * 1024
-                if (file.size > MAX_SIZE) {
-                    notificationSystem.error("File too large (Max 50MB)")
-                    return
-                }
-
-                const localPreviewUrl = URL.createObjectURL(file)
-                notificationSystem.info(`Preparing ${file.name} for P2P sharing...`)
-                userPresence.setSendingFile(roomId, currentUserId, true)
-
-                const fileId = p2pFileTransfer.registerFile(file)
-
-                const p2pMessage = {
-                    text: `Shared a file: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`,
-                    sender: userProfile.name,
-                    roomId: roomId,
-                    timestamp: Date.now(),
-                    file: {
-                        url: localPreviewUrl,
-                        name: file.name,
-                        size: file.size,
-                        type: file.type,
-                        encrypted: true,
-                        p2p: true,
-                        fileId: fileId,
-                        senderId: userProfile.name
-                    }
-                }
-
-                await messageStorage.sendMessage(roomId, p2pMessage as any, currentUserId)
-                userPresence.setSendingFile(roomId, currentUserId, false)
-                telemetry.logEvent('file_shared', roomId, currentUserId, userProfile.name, { fileName: file.name, fileSize: file.size })
-                notificationSystem.success("File ready for P2P download")
+                setPendingChatFile({ type, file })
             }
         } catch (error) {
             console.error("Error handling file select:", error)
+            notificationSystem.error("Failed to prepare file")
+        }
+    }, [setPendingChatFile, fileInputRef, notificationSystem])
+
+    const handleSendFile = useCallback(async (file: File) => {
+        try {
+            const validation = await SecurityUtils.validateFile(file)
+            if (!validation.valid) {
+                notificationSystem.error(validation.error || "Invalid file")
+                return
+            }
+
+            const MAX_SIZE = 50 * 1024 * 1024
+            if (file.size > MAX_SIZE) {
+                notificationSystem.error("File too large (Max 50MB)")
+                return
+            }
+
+            const localPreviewUrl = URL.createObjectURL(file)
+            notificationSystem.info(`Preparing ${file.name} for P2P sharing...`)
+            userPresence.setSendingFile(roomId, currentUserId, true)
+
+            const fileId = p2pFileTransfer.registerFile(file)
+
+            const p2pMessage = {
+                text: `Shared a file: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`,
+                sender: userProfile.name,
+                roomId: roomId,
+                timestamp: Date.now(),
+                file: {
+                    url: localPreviewUrl,
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    encrypted: true,
+                    p2p: true,
+                    fileId: fileId,
+                    senderId: userProfile.name
+                }
+            }
+
+            await messageStorage.sendMessage(roomId, p2pMessage as any, currentUserId)
+            userPresence.setSendingFile(roomId, currentUserId, false)
+            telemetry.logEvent('file_shared', roomId, currentUserId, userProfile.name, { fileName: file.name, fileSize: file.size })
+            notificationSystem.success("File ready for P2P download")
+            setPendingChatFile(null)
+        } catch (error) {
+            console.error("Error sending file:", error)
             userPresence.setSendingFile(roomId, currentUserId, false)
             notificationSystem.error("Failed to share file")
         }
-    }, [roomId, userProfile.name, fileInputRef, messageStorage, notificationSystem])
+    }, [roomId, currentUserId, userProfile.name, setPendingChatFile, messageStorage, notificationSystem, userPresence])
 
     const handleMediaRecorded = useCallback((file: File, type: string) => {
         handleFileSelect(type, file)
@@ -316,6 +328,17 @@ export function useChatHandlers({
         }
     }, [roomId, currentUserId, setCurrentUserMood, userPresence, notificationSystem])
 
+    const handleKickUser = useCallback(async (userId: string) => {
+        try {
+            await userPresence.kickUser(roomId, userId)
+            notificationSystem.success("User kicked from the room")
+            telemetry.logEvent('user_kicked', roomId, currentUserId, userProfile.name, { targetUserId: userId })
+        } catch (error) {
+            console.error("Error kicking user:", error)
+            notificationSystem.error("Failed to kick user")
+        }
+    }, [roomId, currentUserId, userProfile.name, userPresence, notificationSystem])
+
     return {
         handleReply,
         handleReact,
@@ -327,6 +350,7 @@ export function useChatHandlers({
         handlePinMessage,
         handleUnpinMessage,
         handleFileSelect,
+        handleSendFile,
         handleMediaRecorded,
         handleStartMediaRecording,
         handleStopMediaRecording,
@@ -335,5 +359,6 @@ export function useChatHandlers({
         handleCancelLeave,
         handleCopyRoomLink,
         handleMoodChange,
+        handleKickUser,
     }
 }

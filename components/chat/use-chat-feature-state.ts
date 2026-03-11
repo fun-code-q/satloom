@@ -55,6 +55,9 @@ export function useChatFeatureState(initialAvatar?: string) {
     const [passwordValidated, setPasswordValidated] = useState(false)
     const [roomIsProtected, setRoomIsProtected] = useState(false)
 
+    // Pending file for preview
+    const [pendingChatFile, setPendingChatFile] = useState<{ type: string; file: File } | null>(null)
+
     return {
         incomingCall, setIncomingCall,
         currentCall, setCurrentCall,
@@ -85,5 +88,6 @@ export function useChatFeatureState(initialAvatar?: string) {
         pinnedMessage, setPinnedMessage,
         passwordValidated, setPasswordValidated,
         roomIsProtected, setRoomIsProtected,
+        pendingChatFile, setPendingChatFile,
     }
 }

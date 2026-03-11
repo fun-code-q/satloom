@@ -27,7 +27,8 @@ export type TelemetryEventType =
     | 'poll_created'
     | 'link_shared'
     | 'vibe_changed'
-    | 'whiteboard_updated';
+    | 'whiteboard_updated'
+    | 'user_kicked';
 
 export interface TelemetryEvent {
     id?: string;

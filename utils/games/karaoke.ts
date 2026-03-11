@@ -223,6 +223,21 @@ class KaraokeManager {
     }
 
     /**
+     * Leave an existing session
+     */
+    async leaveSession(playerId: string): Promise<boolean> {
+        if (!this.roomId || !getFirebaseDatabase()!) return false
+        try {
+            const playerRef = ref(getFirebaseDatabase()!, `karaoke/${this.roomId}/players/${playerId}`)
+            await remove(playerRef)
+            return true
+        } catch (error) {
+            console.error("Failed to leave karaoke session:", error)
+            return false
+        }
+    }
+
+    /**
      * Start the session
      */
     async startSession(): Promise<boolean> {

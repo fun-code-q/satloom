@@ -37,9 +37,9 @@ export function useGameSync({ gameConfig, roomId, currentUserId, onExit, isPause
 
     // Initialize game
     useEffect(() => {
-        const isHostPlayer = currentUserId === gameConfig.players[0].id
+        const isHostPlayer = currentUserId === gameConfig.players[0]?.id
         setIsHost(isHostPlayer)
-        setHostId(gameConfig.players[0].id)
+        setHostId(gameConfig.players[0]?.id || "")
 
         const players: Player[] = gameConfig.players.map((p, index) => ({
             ...p,
@@ -57,12 +57,13 @@ export function useGameSync({ gameConfig, roomId, currentUserId, onExit, isPause
         const newGame = new DotsAndBoxesGame(gameId, roomId, players, gameConfig.gridSize, gameConfig.voiceChatEnabled)
         setGame(newGame)
 
+        // CRITICAL: Only the HOST initializes and creates the game in Firebase.
+        // Guests ONLY listen for updates — never start a fresh game themselves.
         if (isHostPlayer) {
             newGame.startGame()
             const updatedState = newGame.getGameState()
             setGameState(updatedState)
 
-            // In single player mode, it's always the host's turn first
             if (gameConfig.gameType === "single") {
                 setIsMyTurn(true)
             }
@@ -71,6 +72,7 @@ export function useGameSync({ gameConfig, roomId, currentUserId, onExit, isPause
                 gameSignaling.createGame(roomId, gameId, updatedState)
             }
         }
+        // Guests start in loading state waiting for Firebase updates (handled in Multiplayer updates effect)
 
         gameSignaling.listenForHostStatus(roomId, gameId, (isHostActive) => {
             if (!isHostActive && !isHostPlayer) {

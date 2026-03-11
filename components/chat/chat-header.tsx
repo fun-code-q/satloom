@@ -19,6 +19,7 @@ import {
 } from "../ui/dropdown-menu"
 import { Popover, PopoverContent, PopoverTrigger, PopoverClose } from "../ui/popover"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
+import { UserPresenceSystem } from "@/utils/infra/user-presence"
 
 interface ChatHeaderProps {
     roomId: string
@@ -55,8 +56,11 @@ interface ChatHeaderProps {
     // Online users
     onlineUsers: UserPresence[]
     currentUserId: string
+    currentUserName: string
     // Pinned message
     pinnedMessage: Message | null
+    // Kick user
+    onKickUser?: (userId: string) => void
     // Status
     firebaseConnected: boolean
     // Search
@@ -76,7 +80,7 @@ export function ChatHeader({
     isMenuOpen, setIsMenuOpen, isMediaMenuOpen, setIsMediaMenuOpen,
     isGamesMenuOpen, setIsGamesMenuOpen, isProductivityMenuOpen, setIsProductivityMenuOpen,
     isSettingsMenuOpen, setIsSettingsMenuOpen, isAppMenuOpen, setIsAppMenuOpen,
-    onlineUsers, currentUserId, pinnedMessage,
+    onlineUsers, currentUserId, currentUserName, pinnedMessage, onKickUser,
     firebaseConnected,
     showChatSearch, setShowChatSearch,
     hasUnreadNotes, hasUnreadTasks,
@@ -85,6 +89,7 @@ export function ChatHeader({
 }: ChatHeaderProps) {
     const [isHeaderVisible, setIsHeaderVisible] = useState(true)
     const headerTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+    const userPresence = UserPresenceSystem.getInstance()
 
     // Sync sub-menus on main menu close
     useEffect(() => {
@@ -128,13 +133,13 @@ export function ChatHeader({
         <>
             {/* Invisible hover zone at the top to re-summon the header */}
             <div
-                className="fixed top-0 left-0 right-0 h-4 z-[60]"
+                className="fixed top-0 left-0 right-0 h-4 z-[250]"
                 onMouseEnter={resetHideTimer}
                 onTouchStart={resetHideTimer}
             />
 
             <div
-                className={`absolute top-0 left-0 right-0 z-40 transition-transform duration-500 ease-in-out ${isHeaderVisible || anyMenuOpen ? "translate-y-0" : "-translate-y-full"
+                className={`absolute top-0 left-0 right-0 z-[250] transition-transform duration-500 ease-in-out ${isHeaderVisible || anyMenuOpen ? "translate-y-0" : "-translate-y-full"
                     }`}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={resetHideTimer}
@@ -282,7 +287,7 @@ export function ChatHeader({
                                     <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 bg-white/5 rounded-xl h-10 w-10 transition-colors relative" title="Game Controls & Tools">
                                         <MoreVertical className="w-5 h-5" />
                                         {(hasUnreadNotes || hasUnreadTasks) && (
-                                            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse" />
+                                            <span className="md:hidden absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse" />
                                         )}
                                     </Button>
                                 </DropdownMenuTrigger>
@@ -406,10 +411,25 @@ export function ChatHeader({
                                                         </div>
                                                     )}
                                                     <div className="w-full h-px bg-slate-700/50 my-1" />
-                                                    <div className="flex gap-2 w-full">
-                                                        <Button variant="ghost" className="flex-1 text-xs text-slate-300 hover:text-white hover:bg-slate-700 rounded-xl">View Profile</Button>
-                                                        <Button variant="ghost" className="flex-1 text-xs text-slate-300 hover:text-white hover:bg-slate-700 rounded-xl">Message</Button>
-                                                    </div>
+                                                    {isHost && member.name !== currentUserName && (
+                                                        <div className="flex gap-2 w-full mt-2">
+                                                            <Button
+                                                                variant="destructive"
+                                                                className="flex-1 text-xs text-white bg-red-500/80 hover:bg-red-600 rounded-xl flex items-center justify-center gap-1.5"
+                                                                onClick={() => {
+                                                                    if (onKickUser) {
+                                                                        const targetUserId = onlineUser ? userPresence.createUniqueUserId(member.name) : ""
+                                                                        if (targetUserId) {
+                                                                            onKickUser(targetUserId)
+                                                                        }
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <X className="w-3.5 h-3.5" />
+                                                                Kick from Room
+                                                            </Button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div className="absolute top-2 right-2">
                                                     <PopoverClose className="h-6 w-6 rounded-full flex items-center justify-center hover:bg-slate-700 text-gray-400 hover:text-white transition-colors">

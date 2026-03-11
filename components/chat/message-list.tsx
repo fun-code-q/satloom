@@ -154,6 +154,7 @@ export function MessageList({
                                 height: `${rowVirtualizer.getTotalSize()}px`,
                                 width: "100%",
                                 position: "relative",
+                                marginTop: "90px" // Forces space above the first message to clear the glass header
                             }}
                         >
                             {rowVirtualizer.getVirtualItems().map((virtualItem) => {
