@@ -252,18 +252,18 @@ export function WhiteboardModal({ isOpen, onClose, roomId, currentUser, currentU
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/5 blur-[100px] pointer-events-none" />
 
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 px-10 border-b border-white/5 z-10">
-                    <div className="flex items-center gap-4">
-                        <div className="h-10 w-10 rounded-xl bg-cyan-500/20 flex items-center justify-center border border-cyan-500/30 shadow-lg shadow-cyan-500/10">
-                            <Palette className="h-5 w-5 text-cyan-400" />
+                <div className="flex items-center justify-between p-3 sm:p-6 sm:px-10 border-b border-white/5 z-10 gap-2">
+                    <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+                        <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-cyan-500/20 flex items-center justify-center border border-cyan-500/30 shadow-lg shadow-cyan-500/10 flex-shrink-0">
+                            <Palette className="h-4 w-4 sm:h-5 sm:w-5 text-cyan-400" />
                         </div>
-                        <div>
-                            <h2 className="text-base sm:text-lg md:text-xl font-black text-white tracking-tighter uppercase whitespace-nowrap">Collaborative Space</h2>
-                            <p className="text-[9px] md:text-[10px] text-white/30 font-bold tracking-widest uppercase">REAL-TIME WHITEBOARD</p>
+                        <div className="min-w-0">
+                            <h2 className="text-xs sm:text-lg md:text-xl font-black text-white tracking-tighter uppercase truncate">Collaborative Space</h2>
+                            <p className="hidden sm:block text-[9px] md:text-[10px] text-white/30 font-bold tracking-widest uppercase">REAL-TIME WHITEBOARD</p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
                         {onMinimize && (
                             <Button
                                 variant="ghost"
@@ -273,10 +273,10 @@ export function WhiteboardModal({ isOpen, onClose, roomId, currentUser, currentU
                                         whiteboardSignaling.broadcastInvite(roomId, currentUser, currentUserName || "Someone")
                                     }
                                 }}
-                                className="h-10 w-10 rounded-xl bg-white/5 hover:bg-cyan-500/20 text-cyan-400 transition-all border border-white/5 mr-2"
+                                className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-white/5 hover:bg-cyan-500/20 text-cyan-400 transition-all border border-white/5"
                                 title="Invite others"
                             >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                 </svg>
                             </Button>
@@ -286,10 +286,10 @@ export function WhiteboardModal({ isOpen, onClose, roomId, currentUser, currentU
                                 variant="ghost"
                                 size="icon"
                                 onClick={onMinimize}
-                                className="h-10 w-10 rounded-xl bg-white/5 hover:bg-cyan-500/20 text-white transition-all border border-white/5"
+                                className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-white/5 hover:bg-cyan-500/20 text-white transition-all border border-white/5"
                                 title="Minimize"
                             >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                 </svg>
                             </Button>
@@ -298,9 +298,10 @@ export function WhiteboardModal({ isOpen, onClose, roomId, currentUser, currentU
                             variant="ghost"
                             size="icon"
                             onClick={onClose}
-                            className="h-10 w-10 rounded-xl bg-white/5 hover:bg-red-500 text-white transition-all border border-white/5"
+                            className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-white/5 hover:bg-red-500 text-white transition-all border border-white/5"
+                            title="Close"
                         >
-                            <X className="w-5 h-5" />
+                            <X className="w-4 h-4 sm:w-5 sm:h-5" />
                         </Button>
                     </div>
                 </div>
