@@ -139,6 +139,7 @@ export function ChatHeader({
             />
 
             <div
+                data-chat-header
                 className={`absolute top-0 left-0 right-0 z-[250] transition-transform duration-500 ease-in-out ${isHeaderVisible || anyMenuOpen ? "translate-y-0" : "-translate-y-full"
                     }`}
                 onMouseMove={handleMouseMove}

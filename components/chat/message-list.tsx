@@ -6,7 +6,7 @@ import { QuizQuestionBubble } from "@/components/quiz-question-bubble"
 import { QuizResultsBubble } from "@/components/quiz-results-bubble"
 import { useChatStore } from "@/stores/chat-store"
 import { QuizAnswer, QuizResult, QuizSession } from "@/utils/games/quiz-system"
-import { useEffect, useRef, useCallback } from "react"
+import { useEffect, useRef, useCallback, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
 import { useVirtualizer } from "@tanstack/react-virtual"
@@ -58,6 +58,33 @@ export function MessageList({
     const { messages, currentUser, onlineUsers, roomMembers, roomId, replyingTo, setReplyingTo, searchQuery } = useChatStore()
     const parentRef = useRef<HTMLDivElement>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
+    const [headerHeight, setHeaderHeight] = useState(120) // Safe default — updated by ResizeObserver
+
+    // Dynamically measure actual header height so first message is never hidden beneath it
+    useEffect(() => {
+        // The chat header renders as position:absolute within the parent container
+        // We target it by its known z-index class or data attribute
+        const updateHeight = () => {
+            // Use the stable data attribute added to the chat header
+            const header = document.querySelector('[data-chat-header]') as HTMLElement
+            if (header) {
+                setHeaderHeight(header.offsetHeight + 8) // +8px breathing room
+            }
+        }
+
+        updateHeight()
+
+        const observer = new ResizeObserver(updateHeight)
+        const header = document.querySelector('[data-chat-header]') as HTMLElement
+        if (header) observer.observe(header)
+
+        // Also update on window resize (mobile orientation changes)
+        window.addEventListener('resize', updateHeight)
+        return () => {
+            observer.disconnect()
+            window.removeEventListener('resize', updateHeight)
+        }
+    }, [])
 
     // Filter messages based on search query
     const filteredMessages = messages.filter((msg) =>
@@ -132,7 +159,8 @@ export function MessageList({
             {/* Chat Messages Area */}
             <div
                 ref={parentRef}
-                className="flex-1 p-4 overflow-y-auto message-list"
+                className="flex-1 px-4 pb-4 overflow-y-auto message-list"
+                style={{ paddingTop: `${headerHeight}px` }}
             >
                 {filteredMessages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 animate-in fade-in zoom-in duration-1000 p-8">
@@ -154,7 +182,6 @@ export function MessageList({
                                 height: `${rowVirtualizer.getTotalSize()}px`,
                                 width: "100%",
                                 position: "relative",
-                                marginTop: "90px" // Forces space above the first message to clear the glass header
                             }}
                         >
                             {rowVirtualizer.getVirtualItems().map((virtualItem) => {
