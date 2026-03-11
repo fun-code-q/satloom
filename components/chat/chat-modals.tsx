@@ -262,7 +262,7 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
 
     return (
         <>
-            <div className="flex-1 min-h-0 relative flex flex-col overflow-hidden z-[10]">
+            <div className="flex-1 min-h-0 relative flex flex-col overflow-hidden z-[10] pt-[76px]">
                 {/* Message List */}
                 <MessageList
                     onReply={props.handleReply}
@@ -353,7 +353,7 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
             </div>
 
             {/* Message Input - Sits at its own level */}
-            <div className="relative z-[45]">
+            <div className="relative z-[45]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
                 <ChatInput
                     onFileSelect={props.handleFileSelect}
                     // @ts-ignore

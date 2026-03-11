@@ -279,8 +279,11 @@ export function ChatHeader({
                             {/* Mobile Combined Menu + Universal More Options */}
                             <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 bg-white/5 rounded-xl h-10 w-10 transition-colors" title="Game Controls & Tools">
+                                    <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 bg-white/5 rounded-xl h-10 w-10 transition-colors relative" title="Game Controls & Tools">
                                         <MoreVertical className="w-5 h-5" />
+                                        {(hasUnreadNotes || hasUnreadTasks) && (
+                                            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse" />
+                                        )}
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" side="bottom" className="bg-slate-800 border-slate-700 text-white min-w-[280px] sm:min-w-64 max-h-[85vh] overflow-y-auto animate-none rounded-2xl shadow-2xl" sideOffset={8}>

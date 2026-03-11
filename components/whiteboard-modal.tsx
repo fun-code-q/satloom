@@ -306,8 +306,8 @@ export function WhiteboardModal({ isOpen, onClose, roomId, currentUser, currentU
                 </div>
 
                 {/* Toolbar */}
-                <div className="flex items-center justify-center gap-4 p-4 z-10 bg-white/2">
-                    <div className="flex items-center gap-2 p-1.5 bg-slate-800/50 border border-white/5 rounded-2xl backdrop-blur-xl shadow-xl">
+                <div className="flex items-center justify-start sm:justify-center gap-2 sm:gap-4 p-2 sm:p-4 z-10 bg-white/2 overflow-x-auto overflow-y-hidden w-full no-scrollbar">
+                    <div className="flex items-center gap-2 p-1.5 bg-slate-800/50 border border-white/5 rounded-2xl backdrop-blur-xl shadow-xl flex-shrink-0">
                         {/* Color Picker Container */}
                         <Popover>
                             <PopoverTrigger asChild>
