@@ -54,7 +54,7 @@ export interface PlayedSound {
 class SoundboardManager {
     private static instance: SoundboardManager
     private audioContext: AudioContext | null = null
-    private audioElements: Map<string, HTMLAudioElement> = new Map()
+    private audioBuffers: Map<string, AudioBuffer> = new Map()
     private state: SoundboardState = {
         isPlaying: false,
         currentSound: null,
@@ -68,8 +68,7 @@ class SoundboardManager {
     private lastPlayedTimestamp: number = Date.now()
 
     private constructor() {
-        console.log("[Soundboard] Constructor called, starting preload...")
-        this.preloadSounds()
+        console.log("[Soundboard] Constructor called, waiting for interaction to init AudioContext...")
     }
 
     static getInstance(): SoundboardManager {
@@ -91,52 +90,59 @@ class SoundboardManager {
         this.userId = userId
         this.userName = userName
 
+        // Preload sounds if not already done
+        this.preloadSounds()
+
         // Listen for remote sounds
         this.listenToRemoteSounds()
+
+        // Global click listener to resume/init audio context
+        if (typeof window !== "undefined") {
+            const resumeAudio = async () => {
+                if (!this.audioContext) {
+                    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+                }
+                if (this.audioContext.state === 'suspended') {
+                    await this.audioContext.resume()
+                }
+            }
+            document.addEventListener("click", resumeAudio, { once: false })
+        }
     }
 
     /**
-     * Preload all sounds
+     * Preload all sounds using AudioContext
      */
-    private preloadSounds(): void {
-        if (typeof window === "undefined") return
+    private async preloadSounds(): Promise<void> {
+        if (typeof window === "undefined" || this.audioBuffers.size > 0) return
 
-        console.log("[Soundboard] Preloading sounds...")
+        console.log("[Soundboard] Preloading sounds into AudioBuffers...")
 
-        DEFAULT_SOUNDS.forEach((sound) => {
-            // Skip preloading for synth sounds - these use Web Audio API
-            if (["celebration", "laughter", "applause", "correct", "wrong"].includes(sound.id)) {
-                return
+        // We need a temporary context if the main one isn't ready, 
+        // but decoding usually works better on the actual context.
+        if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+        }
+
+        const loadSound = async (sound: SoundEffect) => {
+            // Skip placeholders that use synth logic
+            const synthSounds = ["celebration", "laughter", "applause", "correct", "wrong"]
+            if (synthSounds.includes(sound.id)) return
+
+            try {
+                const response = await fetch(sound.audioUrl)
+                const arrayBuffer = await response.arrayBuffer()
+                const audioBuffer = await this.audioContext!.decodeAudioData(arrayBuffer)
+                this.audioBuffers.set(sound.id, audioBuffer)
+                console.log(`[Soundboard] Decoded: ${sound.id}`)
+            } catch (err) {
+                console.error(`[Soundboard] Failed to load/decode ${sound.id}:`, err)
             }
+        }
 
-            const audio = new Audio(sound.audioUrl)
-            audio.preload = "auto"
-            audio.volume = this.state.volume
-
-            // Add error handling for audio loading
-            audio.addEventListener('error', (e) => {
-                console.error(`[Soundboard] Error loading sound ${sound.id}:`, e)
-            })
-
-            this.audioElements.set(sound.id, audio)
-
-            audio.addEventListener("ended", () => {
-                this.setState({ isPlaying: false, currentSound: null })
-            })
-        })
-
-        console.log(`[Soundboard] Preloaded ${this.audioElements.size} audio files`)
-
-        // Initialize AudioContext on user interaction (required for Web Audio API)
-        document.addEventListener(
-            "click",
-            () => {
-                if (!this.audioContext) {
-                    this.audioContext = new AudioContext()
-                }
-            },
-            { once: true }
-        )
+        // Load all concurrently
+        await Promise.all(DEFAULT_SOUNDS.map(loadSound))
+        console.log(`[Soundboard] Preloaded ${this.audioBuffers.size} audio buffers`)
     }
 
     private listenToRemoteSounds(): void {
@@ -168,52 +174,27 @@ class SoundboardManager {
     }
 
     /**
-     * Get or create audio element for a sound
+     * Play a sound locally using AudioContext
      */
-    private getAudioElement(soundId: string): HTMLAudioElement | null {
-        const synthSounds = ["celebration", "laughter", "applause", "correct", "wrong"]
+    private async playSoundLocally(soundId: string): Promise<void> {
+        if (typeof window === "undefined") return
 
-        // Don't return audio element for synth sounds
-        if (synthSounds.includes(soundId)) {
-            return null
+        // Ensure Context is ready
+        if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
         }
 
-        // Return existing audio element if available
-        const existingAudio = this.audioElements.get(soundId)
-        if (existingAudio) {
-            return existingAudio
+        if (this.audioContext.state === 'suspended') {
+            await this.audioContext.resume()
         }
 
-        // Fallback: Create audio element on-demand if not preloaded
-        const sound = DEFAULT_SOUNDS.find(s => s.id === soundId)
-        if (sound) {
-            console.warn(`[Soundboard] Audio not preloaded for ${soundId}, creating on-demand...`)
-            const audio = new Audio(sound.audioUrl)
-            audio.volume = this.state.volume
-            this.audioElements.set(soundId, audio)
-
-            audio.addEventListener("ended", () => {
-                this.setState({ isPlaying: false, currentSound: null })
-            })
-
-            return audio
-        }
-
-        console.error(`[Soundboard] Sound not found: ${soundId}`)
-        return null
-    }
-
-    /**
-     * Play a sound locally
-     */
-    private playSoundLocally(soundId: string): void {
         const synthSounds = ["celebration", "laughter", "applause", "correct", "wrong"]
 
         if (synthSounds.includes(soundId)) {
             this.playSynthSound(soundId)
             this.setState({ isPlaying: true, currentSound: soundId })
 
-            // Auto-reset state after a duration
+            // Auto-reset state
             const duration = DEFAULT_SOUNDS.find(s => s.id === soundId)?.duration || 1000
             setTimeout(() => {
                 this.setState({ isPlaying: false, currentSound: null })
@@ -221,30 +202,42 @@ class SoundboardManager {
             return
         }
 
-        const audio = this.getAudioElement(soundId)
-        if (audio) {
+        const buffer = this.audioBuffers.get(soundId)
+        if (buffer) {
             try {
-                audio.currentTime = 0
-                audio.volume = this.state.volume
-                const playPromise = audio.play()
+                const source = this.audioContext.createBufferSource()
+                source.buffer = buffer
 
-                if (playPromise !== undefined) {
-                    playPromise.catch((err) => {
-                        console.error(`[Soundboard] Playback failed for ${soundId}:`, err)
-                        // Try to recreate and play again as fallback
-                        this.audioElements.delete(soundId)
-                        const retryAudio = this.getAudioElement(soundId)
-                        if (retryAudio) {
-                            retryAudio.play().catch((e) => console.error(`[Soundboard] Retry failed:`, e))
-                        }
-                    })
-                }
+                const gainNode = this.audioContext.createGain()
+                gainNode.gain.setValueAtTime(this.state.volume, this.audioContext.currentTime)
+
+                source.connect(gainNode)
+                gainNode.connect(this.audioContext.destination)
+
+                source.start(0)
                 this.setState({ isPlaying: true, currentSound: soundId })
+
+                source.onended = () => {
+                    this.setState({ isPlaying: false, currentSound: null })
+                }
             } catch (err) {
-                console.error(`[Soundboard] Error playing sound ${soundId}:`, err)
+                console.error(`[Soundboard] Error playing AudioBuffer ${soundId}:`, err)
             }
         } else {
-            console.error(`[Soundboard] Could not get audio element for: ${soundId}`)
+            console.warn(`[Soundboard] Buffer missing for ${soundId}, attempting dynamic load...`)
+            // Try to load it on the fly
+            const sound = DEFAULT_SOUNDS.find(s => s.id === soundId)
+            if (sound) {
+                try {
+                    const response = await fetch(sound.audioUrl)
+                    const arrayBuffer = await response.arrayBuffer()
+                    const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer)
+                    this.audioBuffers.set(soundId, audioBuffer)
+                    this.playSoundLocally(soundId)
+                } catch (e) {
+                    console.error(`[Soundboard] Dynamic load failed for ${soundId}:`, e)
+                }
+            }
         }
     }
 
@@ -252,11 +245,7 @@ class SoundboardManager {
      * Play synthesized sound using Web Audio API
      */
     private playSynthSound(soundId: string): void {
-        if (typeof window === "undefined") return
-
-        if (!this.audioContext) {
-            this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-        }
+        if (!this.audioContext) return
 
         const ctx = this.audioContext
         const now = ctx.currentTime
@@ -323,8 +312,8 @@ class SoundboardManager {
      * Play a sound and broadcast to room
      */
     async playSound(soundId: string): Promise<void> {
-        // Play locally first for instant feedback
-        this.playSoundLocally(soundId)
+        // Play locally first
+        await this.playSoundLocally(soundId)
 
         // Broadcast to room
         if (this.roomId && getFirebaseDatabase()!) {
@@ -345,9 +334,6 @@ class SoundboardManager {
      */
     setVolume(volume: number): void {
         const vol = Math.max(0, Math.min(1, volume))
-        this.audioElements.forEach((audio) => {
-            audio.volume = vol
-        })
         this.setState({ volume: vol })
     }
 
@@ -427,15 +413,15 @@ class SoundboardManager {
      * Clean up
      */
     destroy(): void {
-        this.audioElements.forEach((audio) => {
-            audio.pause()
-            audio.src = ""
-        })
-        this.audioElements.clear()
+        this.audioBuffers.clear()
         this.unsubscribers.forEach((unsub) => unsub())
         this.unsubscribers = []
         this.roomId = null
         this.userId = null
+        if (this.audioContext) {
+            this.audioContext.close()
+            this.audioContext = null
+        }
     }
 }
 
