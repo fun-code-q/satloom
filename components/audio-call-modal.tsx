@@ -167,6 +167,12 @@ export function AudioCallModal({
         if (callData?.id && uid === targetUserId) {
           callSignaling.sendSignal(roomId, callData.id, "ice-candidate", c, currentUserId)
         }
+      },
+      (state, uid) => {
+        console.log(`[AudioCall] WebRTC state for ${uid}: ${state}`)
+        if (state === "failed") {
+          console.error("[AudioCall] Connection failed. Check network/ICE servers.")
+        }
       }
     )
 
@@ -255,7 +261,7 @@ export function AudioCallModal({
     if (onAnswer) {
       onAnswer()
     } else if (callData) {
-      await callSignaling.answerCall(roomId, callData.id, currentUserId)
+      await callSignaling.answerCall(roomId, callData.id, currentUserId, currentUser)
     }
   }
 
@@ -364,7 +370,22 @@ export function AudioCallModal({
 
   if (!isOpen) return null
 
-  const otherParticipant = callData?.participants.find((p) => p !== currentUserId) || callData?.caller || "Unknown"
+  const getOtherParticipantName = () => {
+    if (!callData) return "Unknown"
+    const otherId = callData.participants.find((p) => p !== currentUserId) || (callData.callerId !== currentUserId ? callData.callerId : null)
+
+    if (otherId && callData.participantNames?.[otherId]) {
+      return callData.participantNames[otherId]
+    }
+
+    if (callData.callerId !== currentUserId) {
+      return callData.caller
+    }
+
+    return "Waiting..."
+  }
+
+  const otherParticipant = getOtherParticipantName()
 
   if (isMinimized) {
     return (

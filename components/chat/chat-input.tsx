@@ -4,7 +4,7 @@
 import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Mic, Video, Camera, Smile, Send, Plus, X, EyeOff, Eye, Music2, BarChart2, HelpCircle, Palette, Keyboard } from "lucide-react"
+import { Mic, Video, Camera, Smile, Send, Plus, X, EyeOff, Eye, Music2, BarChart2, HelpCircle, Palette, Keyboard, Sparkles } from "lucide-react"
 import { EmojiPicker } from "@/components/emoji-picker"
 import { PollCreator } from "./poll-creator"
 import { EventCreator } from "./event-creator"
@@ -33,6 +33,18 @@ interface ChatInputProps {
     onStartVideoCall: () => void
     currentUserId: string
     inputRef: React.RefObject<HTMLInputElement | null>
+    showPollCreator: boolean
+    setShowPollCreator: (val: boolean) => void
+    showEventCreator: boolean
+    setShowEventCreator: (val: boolean) => void
+    showVanishModal: boolean
+    setShowVanishModal: (val: boolean) => void
+    vanishMode: VanishModeType
+    setVanishMode: (val: VanishModeType) => void
+    vanishDuration: number
+    setVanishDuration: (val: number) => void
+    showMobileReactions: boolean
+    setShowMobileReactions: (val: boolean) => void
 }
 
 interface PendingMessage {
@@ -44,17 +56,34 @@ interface PendingMessage {
     status: 'sending' | 'sent' | 'failed'
 }
 
-export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodTrigger, onSoundboard, onStartAudioCall, onStartVideoCall, currentUserId, inputRef }: ChatInputProps) {
+export function ChatInput({
+    onFileSelect,
+    onStartRecording,
+    onQuizStart,
+    onMoodTrigger,
+    onSoundboard,
+    onStartAudioCall,
+    onStartVideoCall,
+    currentUserId,
+    inputRef,
+    showPollCreator,
+    setShowPollCreator,
+    showEventCreator,
+    setShowEventCreator,
+    showVanishModal,
+    setShowVanishModal,
+    vanishMode,
+    setVanishMode,
+    vanishDuration,
+    setVanishDuration,
+    showMobileReactions,
+    setShowMobileReactions,
+}: ChatInputProps) {
     const { roomId, currentUser, replyingTo, setReplyingTo, setIsTyping, isTyping } = useChatStore()
     const [message, setMessage] = useState("")
     const [showEmojiPicker, setShowEmojiPicker] = useState(false)
-    const [showPollCreator, setShowPollCreator] = useState(false)
-    const [showEventCreator, setShowEventCreator] = useState(false)
     const [showAttachments, setShowAttachments] = useState(false)
     const [isRecording, setIsRecording] = useState(false)
-    const [showVanishModal, setShowVanishModal] = useState(false)
-    const [vanishMode, setVanishMode] = useState<VanishModeType>("off")
-    const [vanishDuration, setVanishDuration] = useState(30000)
     const isMobile = useIsMobile()
 
     // Virtual keyboard
@@ -267,7 +296,6 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
         }
     }, [isRecording, roomId, currentUserId])
 
-    const [showMobileReactions, setShowMobileReactions] = useState(false)
 
     if (isMobile) {
         // Hide bottom input controls when virtual keyboard is visible
@@ -325,18 +353,7 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                     </div>
                 )}
 
-                {/* Poll/Event Creator Mobile Popups */}
-                {showPollCreator && (
-                    <div className="absolute bottom-full mb-2 left-2 right-2 z-50 shadow-2xl">
-                        <PollCreator onSend={handleSendPoll} onCancel={() => setShowPollCreator(false)} />
-                    </div>
-                )}
-
-                {showEventCreator && (
-                    <div className="absolute bottom-full mb-2 left-2 right-2 z-50 shadow-2xl">
-                        <EventCreator onSend={handleSendEvent} onCancel={() => setShowEventCreator(false)} />
-                    </div>
-                )}
+                {/* Poll/Event Creator Modals are handled by ChatModals */}
 
                 {/* Attachment menu popup */}
                 {showAttachments && (
@@ -398,10 +415,15 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                             ref={inputRef}
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
+                            onFocus={() => {
+                                if (isMobile) {
+                                    toggleKeyboard()
+                                }
+                            }}
                             onKeyPress={handleKeyPress}
                             placeholder={isRecording ? "Recording..." : "Type a message..."}
                             disabled={isRecording}
-                            inputMode={(isKeyboardEnabled && isKeyboardVisible) ? "none" : undefined}
+                            inputMode={isMobile ? "none" : undefined}
                             className="bg-slate-700 border-slate-600 text-white placeholder:text-gray-400 h-10 pr-10 rounded-full"
                         />
                     </div>
@@ -453,23 +475,20 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                     onEmojiSelect={handleEmojiSelect}
                 />
 
-                <VanishModeModal
-                    isOpen={showVanishModal}
-                    onClose={() => setShowVanishModal(false)}
-                    onVanishModeSelect={(mode, duration) => {
-                        setVanishMode(mode)
-                        setVanishDuration(duration)
-                    }}
-                    currentMode={vanishMode}
-                    currentDuration={vanishDuration}
-                />
+                {/* Vanish Mode Modal is handled by ChatModals */}
             </div>
         )
     }
 
     // Desktop layout
+    const { isEnabled: isVKeyboardEnabled } = useVirtualKeyboardStore()
+
+    if (isVKeyboardEnabled && isMobile) {
+        return null;
+    }
+
     return (
-        <div className="flex flex-col gap-2 z-30 flex-shrink-0 p-4 relative">
+        <div className="relative w-full max-w-4xl mx-auto">
             {/* Reply indicator */}
             {replyingTo && (
                 <div className="px-2 py-1.5 bg-slate-800/60 rounded-lg flex items-center justify-between">
@@ -488,32 +507,7 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                 </div>
             )}
 
-            {/* Poll/Event Creator Desktop Backdrop */}
-            {(showPollCreator || showEventCreator) && (
-                <div
-                    className="fixed inset-0 z-40"
-                    onClick={(e) => {
-                        e.stopPropagation()
-                        setShowPollCreator(false)
-                        setShowEventCreator(false)
-                    }}
-                    role="button"
-                    tabIndex={-1}
-                />
-            )}
-
-            {/* Poll/Event Creator Desktop Popups */}
-            {showPollCreator && (
-                <div className="absolute bottom-[72px] left-4 z-50 w-[340px] shadow-2xl">
-                    <PollCreator onSend={handleSendPoll} onCancel={() => setShowPollCreator(false)} />
-                </div>
-            )}
-
-            {showEventCreator && (
-                <div className="absolute bottom-[72px] left-4 z-50 w-[340px] shadow-2xl">
-                    <EventCreator onSend={handleSendEvent} onCancel={() => setShowEventCreator(false)} />
-                </div>
-            )}
+            {/* Poll/Event Modals are handled by ChatModals */}
 
 
             {/* Main input area */}
@@ -572,7 +566,19 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                 )}
 
                 {/* Reaction Emoji Menu */}
-                <ReactionRain roomId={roomId || ""} userId={currentUserId} />
+                {isMobile ? (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-gray-400 hover:text-white hover:bg-slate-700 h-10 w-10 flex-shrink-0 haptic"
+                        onClick={() => setShowMobileReactions(!showMobileReactions)}
+                        title="React to room"
+                    >
+                        <Sparkles className="w-5 h-5" />
+                    </Button>
+                ) : (
+                    <ReactionRain roomId={roomId || ""} userId={currentUserId} />
+                )}
 
                 <Button
                     variant="ghost"
@@ -600,17 +606,7 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                 onEmojiSelect={handleEmojiSelect}
             />
 
-            {/* Vanish Mode Modal */}
-            <VanishModeModal
-                isOpen={showVanishModal}
-                onClose={() => setShowVanishModal(false)}
-                onVanishModeSelect={(mode, duration) => {
-                    setVanishMode(mode)
-                    setVanishDuration(duration)
-                }}
-                currentMode={vanishMode}
-                currentDuration={vanishDuration}
-            />
+            {/* Vanish Mode Modal is handled by ChatModals */}
         </div>
     )
 }

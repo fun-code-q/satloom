@@ -451,7 +451,7 @@ class AdminCentral {
             await remove(ref(db, `telemetry/${roomId}`));
 
             // Remove calls
-            await remove(ref(db, `calls/${roomId}`));
+            await remove(ref(db, `rooms/${roomId}/calls`));
 
             // Remove games
             await remove(ref(db, `games/${roomId}`));

@@ -48,6 +48,10 @@ import { VirtualKeyboard } from "../virtual-keyboard"
 import { ChatInput } from "./chat-input"
 import { MessageList } from "./message-list"
 import { BaseModal } from "../base-modal"
+import { PollCreator } from "./poll-creator"
+import { EventCreator } from "./event-creator"
+import { VanishModeModal } from "../vanish-mode-modal"
+import { VanishModeType } from "@/utils/infra/vanish-mode"
 import type { CallData } from "@/utils/infra/call-signaling"
 import type { TheaterSession, TheaterInvite } from "@/utils/infra/theater-signaling"
 import type { QuizSession, QuizAnswer, QuizResult } from "@/utils/games/quiz-system"
@@ -103,6 +107,9 @@ interface ChatModalsProps {
     handleDeclineCall: () => void
     handleStartAudioCall: () => void
     handleStartVideoCall: () => void
+    handleSendMessage: (text: string) => void
+    handleSendPoll: (question: string, options: string[]) => void
+    handleSendEvent: (eventData: any) => void
     // Settings & About
     showSettings: boolean
     setShowSettings: (val: boolean) => void
@@ -198,6 +205,18 @@ interface ChatModalsProps {
     setShowBingoSetup: (val: boolean) => void
     showBingoGame: boolean
     showPresentationSetup: boolean
+    showPollCreator: boolean
+    setShowPollCreator: (val: boolean) => void
+    showEventCreator: boolean
+    setShowEventCreator: (val: boolean) => void
+    showVanishModal: boolean
+    setShowVanishModal: (val: boolean) => void
+    showMobileReactions: boolean
+    setShowMobileReactions: (val: boolean) => void
+    vanishMode: VanishModeType
+    setVanishMode: (val: VanishModeType) => void
+    vanishDuration: number
+    setVanishDuration: (val: number) => void
     setShowPresentationSetup: (val: boolean) => void
     showPresentationViewer: boolean
     setShowPresentationViewer: (val: boolean) => void
@@ -362,7 +381,6 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
             <div className="relative z-[45]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
                 <ChatInput
                     onFileSelect={props.handleFileSelect}
-                    // @ts-ignore
                     onStartRecording={props.handleStartMediaRecording}
                     onQuizStart={() => props.setShowQuizSetup(true)}
                     onMoodTrigger={() => props.setShowMoodSetup(true)}
@@ -371,11 +389,35 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
                     onStartVideoCall={props.handleStartVideoCall}
                     currentUserId={currentUserId}
                     inputRef={keyboardInputRef}
+                    showPollCreator={props.showPollCreator}
+                    setShowPollCreator={props.setShowPollCreator}
+                    showEventCreator={props.showEventCreator}
+                    setShowEventCreator={props.setShowEventCreator}
+                    showVanishModal={props.showVanishModal}
+                    setShowVanishModal={props.setShowVanishModal}
+                    vanishMode={props.vanishMode}
+                    setVanishMode={props.setVanishMode}
+                    vanishDuration={props.vanishDuration}
+                    setVanishDuration={props.setVanishDuration}
+                    showMobileReactions={props.showMobileReactions}
+                    setShowMobileReactions={props.setShowMobileReactions}
                 />
             </div>
 
             {/* Global Virtual Keyboard */}
-            <VirtualKeyboard inputRef={keyboardInputRef} />
+            <VirtualKeyboard
+                inputRef={keyboardInputRef}
+                onFileSelect={props.handleFileSelect}
+                onStartRecording={props.handleStartMediaRecording}
+                onPollCreate={() => props.setShowPollCreator(true)}
+                onEventCreate={() => props.setShowEventCreator(true)}
+                onVanishMode={() => props.setShowVanishModal(true)}
+                onSoundboard={() => props.setShowSoundboard(true)}
+                onMoodTrigger={() => props.setShowMoodSetup(true)}
+                onReactRoom={() => props.setShowMobileReactions(true)}
+                onStartVideoCall={props.handleStartVideoCall}
+                onStartAudioCall={props.handleStartAudioCall}
+            />
 
             {/* PRODUCTIVITY MODALS - Portalled for true layout independence */}
             {props.showSharedNotes && renderModal(
@@ -652,6 +694,52 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
 
             {/* Password Entry Gate */}
             <PasswordEntryModal isOpen={props.roomIsProtected && !props.passwordValidated} roomId={roomId} onSuccess={() => props.setPasswordValidated(true)} onCancel={onLeave} />
+
+            {/* Expanded Chat Tools */}
+            {props.showPollCreator && (
+                <div className="fixed inset-0 z-[520] flex items-center justify-center bg-black/60 backdrop-blur-md">
+                    <PollCreator
+                        onSend={(question, options) => {
+                            props.handleSendPoll(question, options)
+                            props.setShowPollCreator(false)
+                        }}
+                        onCancel={() => props.setShowPollCreator(false)}
+                    />
+                </div>
+            )}
+
+            {props.showEventCreator && (
+                <div className="fixed inset-0 z-[520] flex items-center justify-center bg-black/60 backdrop-blur-md">
+                    <EventCreator
+                        onSend={(data) => {
+                            props.handleSendEvent(data)
+                            props.setShowEventCreator(false)
+                        }}
+                        onCancel={() => props.setShowEventCreator(false)}
+                    />
+                </div>
+            )}
+
+            <VanishModeModal
+                isOpen={props.showVanishModal}
+                onClose={() => props.setShowVanishModal(false)}
+                currentMode={props.vanishMode}
+                currentDuration={props.vanishDuration}
+                onVanishModeSelect={(mode, duration) => {
+                    props.setVanishMode(mode)
+                    props.setVanishDuration(duration)
+                }}
+            />
+            {props.showMobileReactions && (
+                <div className="fixed bottom-0 left-0 right-0 z-[600] animate-in slide-in-from-bottom duration-300">
+                    <ReactionRain roomId={roomId} userId={currentUserId} inline={true} />
+                    <div className="absolute top-0 right-4 p-2">
+                        <Button variant="ghost" size="icon" onClick={() => props.setShowMobileReactions(false)} className="h-8 w-8 text-white bg-black/20 rounded-full">
+                            <X className="w-4 h-4" />
+                        </Button>
+                    </div>
+                </div>
+            )}
         </>
     )
 })

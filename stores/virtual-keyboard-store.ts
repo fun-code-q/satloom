@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { VirtualKeyboardSettings, KeyboardTheme, KeyboardLayout, KeyboardPosition } from '@/components/virtual-keyboard/types'
-import { DEFAULT_KEYBOARD_SETTINGS } from '@/components/virtual-keyboard/types'
+import type { VirtualKeyboardSettings, KeyboardTheme, KeyboardLayout, KeyboardPosition } from '../components/virtual-keyboard/types'
+import { DEFAULT_KEYBOARD_SETTINGS } from '../components/virtual-keyboard/types'
 
 interface VirtualKeyboardState extends VirtualKeyboardSettings {
     // Actions
@@ -22,6 +22,7 @@ interface VirtualKeyboardState extends VirtualKeyboardSettings {
     setHapticFeedback: (enabled: boolean) => void
     setIsFloating: (isFloating: boolean) => void
     setCoords: (coords: { x: number; y: number }) => void
+    setResizing: (isResizing: boolean) => void
     updateSettings: (settings: Partial<VirtualKeyboardSettings>) => void
     resetToDefaults: () => void
 }
@@ -82,6 +83,8 @@ export const useVirtualKeyboardStore = create<VirtualKeyboardState>()(
 
             setCoords: (coords: { x: number; y: number }) => set({ coords }),
 
+            setResizing: (isResizing: boolean) => set({ isResizing } as any),
+
             updateSettings: (settings: Partial<VirtualKeyboardSettings>) => set((state) => ({ ...state, ...settings })),
 
             resetToDefaults: () => set({ ...DEFAULT_KEYBOARD_SETTINGS }),
@@ -103,6 +106,7 @@ export const useVirtualKeyboardStore = create<VirtualKeyboardState>()(
                 showNumbersRow: state.showNumbersRow,
                 hapticFeedback: state.hapticFeedback,
                 isFloating: state.isFloating,
+                isResizing: state.isResizing,
                 coords: state.coords,
             }),
         }

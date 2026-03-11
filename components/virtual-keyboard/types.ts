@@ -1,5 +1,5 @@
 // Virtual Keyboard Types
-// Diagnostic: This version uses NO literal escaped double quotes.
+// Diagnostic: Clean version with all layouts and categories.
 
 export type KeyboardTheme = "dark" | "light" | "transparent";
 export type KeyboardLayout = "qwerty" | "numeric" | "symbols";
@@ -40,6 +40,7 @@ export interface VirtualKeyboardSettings {
     showNumbersRow: boolean;
     hapticFeedback: boolean;
     isFloating: boolean;
+    isResizing: boolean;
     coords: { x: number; y: number };
 }
 
@@ -58,6 +59,7 @@ export const DEFAULT_KEYBOARD_SETTINGS: VirtualKeyboardSettings = {
     showNumbersRow: true,
     hapticFeedback: true,
     isFloating: false,
+    isResizing: false,
     coords: { x: 0, y: 0 },
 };
 
@@ -200,45 +202,3 @@ export const SYMBOLS_LAYOUT: KeyboardKeyData[][] = [
         { display: "\u21B5", value: "enter", type: "enter", width: "w-20" }
     ]
 ];
-
-// PADDING TO REACH 220 LINES
-// 1
-// 2
-// 3
-// 4
-// 5
-// 6
-// 7
-// 8
-// 9
-// 10
-// 11
-// 12
-// 13
-// 14
-// 15
-// 16
-// 17
-// 18
-// 19
-// 20
-// 21
-// 22
-// 23
-// 24
-// 25
-// 26
-// 27
-// 28
-// 29
-// 30
-// 31
-// 32
-// 33
-// 34
-// 35
-// 36
-// 37
-// 38
-// 39
-// 40

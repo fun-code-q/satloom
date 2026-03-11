@@ -47,6 +47,76 @@ export function useChatHandlers({
     const messageStorage = MessageStorage.getInstance()
     const userPresence = UserPresenceSystem.getInstance()
 
+    const handleSendMessage = useCallback(async (text: string) => {
+        if (!text.trim() || !roomId || !currentUserId) return
+        try {
+            const cleanedText = SecurityUtils.cleanText(text.trim())
+            if (!cleanedText) return
+
+            const newMessage = {
+                text: cleanedText,
+                sender: userProfile.name,
+                roomId: roomId,
+                timestamp: Date.now(),
+            }
+
+            await messageStorage.sendMessage(roomId, newMessage as any, currentUserId)
+        } catch (error) {
+            console.error("Error sending message:", error)
+            notificationSystem.error("Failed to send message")
+        }
+    }, [roomId, currentUserId, userProfile.name, messageStorage, notificationSystem])
+
+    const handleSendPoll = useCallback(async (question: string, options: string[]) => {
+        if (!roomId || !currentUserId) return
+        try {
+            const pollMessage = {
+                text: "📊 Poll: " + question,
+                sender: userProfile.name,
+                timestamp: new Date(),
+                type: 'poll',
+                poll: {
+                    question,
+                    options: options.map(opt => ({ text: opt, votes: [] })),
+                    isOpen: true
+                }
+            }
+
+            await messageStorage.sendMessage(roomId, pollMessage as any, currentUserId)
+            telemetry.logEvent('poll_created', roomId, userProfile.name, userProfile.name, { question })
+            notificationSystem.success("Poll sent!")
+        } catch (error) {
+            console.error("Error sending poll:", error)
+            notificationSystem.error("Failed to send poll")
+        }
+    }, [roomId, currentUserId, userProfile.name, messageStorage, notificationSystem])
+
+    const handleSendEvent = useCallback(async (eventData: any) => {
+        if (!roomId || !currentUserId) return
+        try {
+            const eventMessage = {
+                text: "📅 Event: " + eventData.title,
+                sender: userProfile.name,
+                timestamp: new Date(),
+                type: 'event',
+                event: {
+                    ...eventData,
+                    attendees: {
+                        going: [currentUserId],
+                        maybe: [],
+                        notGoing: []
+                    }
+                }
+            }
+
+            await messageStorage.sendMessage(roomId, eventMessage as any, currentUserId)
+            notificationSystem.success("Event sent!")
+        } catch (error) {
+            console.error("Error sending event:", error)
+            notificationSystem.error("Failed to send event")
+        }
+    }, [roomId, currentUserId, userProfile.name, messageStorage, notificationSystem])
+
     const handleReply = useCallback((messageToReply: Message) => {
         setReplyingTo(messageToReply)
     }, [setReplyingTo])
@@ -221,7 +291,7 @@ export function useChatHandlers({
                 if (db) {
                     const roomRef = ref(db, `rooms/${roomId}`)
                     await remove(roomRef)
-                    const callsRef = ref(db, `calls/${roomId}`)
+                    const callsRef = ref(db, `rooms/${roomId}/calls`)
                     await remove(callsRef)
                     const gamesRef = ref(db, `games/${roomId}`)
                     await remove(gamesRef)
@@ -340,6 +410,9 @@ export function useChatHandlers({
     }, [roomId, currentUserId, userProfile.name, userPresence, notificationSystem])
 
     return {
+        handleSendMessage,
+        handleSendPoll,
+        handleSendEvent,
         handleReply,
         handleReact,
         handleDeleteMessage,

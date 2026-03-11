@@ -31,8 +31,10 @@ import {
   Camera, Zap, Ghost, Dices, Shuffle, Calendar, BarChart2,
   MonitorPlay, FileText, CheckSquare, Globe, Share2,
   Briefcase, Link, Shield, ShieldCheck, Info, BellRing, UserPlus,
-  Mic
+  Mic, Maximize, X
 } from "lucide-react"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { Button } from "@/components/ui/button"
 
 interface ChatInterfaceProps {
   roomId: string
@@ -97,6 +99,10 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
     isPlaygroundMinimized, setIsPlaygroundMinimized,
     isMoodSelectorOpen, setIsMoodSelectorOpen,
     showEmojiPicker, setShowEmojiPicker, showChatSearch, setShowChatSearch,
+    showPollCreator, setShowPollCreator,
+    showEventCreator, setShowEventCreator,
+    showVanishModal, setShowVanishModal,
+    showMobileReactions, setShowMobileReactions,
   } = ui
 
   const [firebaseConnected, setFirebaseConnected] = useState(true)
@@ -143,7 +149,11 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
   }, [onlineUsers, userProfile.name, onLeave])
 
   // --- Screen Wake Lock & Fullscreen Persistence ---
+  const isMobile = useIsMobile()
   const wakeLockRef = useRef<any>(null)
+  const wasFullscreenRef = useRef(false)
+  const [showFullscreenRestore, setShowFullscreenRestore] = useState(false)
+
   React.useEffect(() => {
     const requestWakeLock = async () => {
       try {
@@ -158,21 +168,42 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible') {
         await requestWakeLock()
-        // Note: Re-entering fullscreen usually requires a user gesture
-        // We can't auto-force it, but we can remind the user or try
-      } else if (wakeLockRef.current) {
-        await wakeLockRef.current.release()
-        wakeLockRef.current = null
+
+        // If they were in fullscreen before, show the restore button
+        if (wasFullscreenRef.current && !document.fullscreenElement && isMobile) {
+          setShowFullscreenRestore(true)
+        }
+      } else {
+        // App is hidden - track if they were in fullscreen
+        wasFullscreenRef.current = !!document.fullscreenElement
+
+        if (wakeLockRef.current) {
+          await wakeLockRef.current.release()
+          wakeLockRef.current = null
+        }
+      }
+    }
+
+    const handleFullscreenChange = () => {
+      // If user manually enters fullscreen, clear the restore prompt
+      if (document.fullscreenElement) {
+        setShowFullscreenRestore(false)
+        wasFullscreenRef.current = true
+      } else {
+        wasFullscreenRef.current = false
       }
     }
 
     requestWakeLock()
     document.addEventListener('visibilitychange', handleVisibilityChange)
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
       if (wakeLockRef.current) wakeLockRef.current.release()
     }
-  }, [])
+  }, [isMobile])
 
 
 
@@ -292,6 +323,34 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
         {/* Mood Player - invisible audio component */}
         <MoodPlayer roomId={roomId} />
 
+        {/* Fullscreen Restore Prompt */}
+        {showFullscreenRestore && (
+          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[1000] animate-in slide-in-from-top-10 duration-500">
+            <Button
+              onClick={() => {
+                if (document.documentElement.requestFullscreen) {
+                  document.documentElement.requestFullscreen().then(() => {
+                    setShowFullscreenRestore(false)
+                  })
+                }
+              }}
+              className="bg-cyan-500 hover:bg-cyan-600 text-white shadow-2xl rounded-full px-6 py-3 flex items-center gap-3 border border-cyan-400/50 backdrop-blur-md"
+            >
+              <Maximize className="w-5 h-5" />
+              <span className="font-bold uppercase tracking-widest text-xs">Restore Fullscreen</span>
+              <div
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors ml-2"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowFullscreenRestore(false)
+                }}
+              >
+                <X className="w-4 h-4 opacity-50 hover:opacity-100" />
+              </div>
+            </Button>
+          </div>
+        )}
+
         {/* Karaoke Restore Button */}
         {feature.currentKaraokeSession && isKaraokeMinimized && (
           <div className="fixed bottom-24 right-6 z-50 animate-in slide-in-from-right-10 duration-500">
@@ -311,7 +370,6 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
             </button>
           </div>
         )}
-
 
         <ChatHeader
           roomId={roomId}
@@ -390,6 +448,9 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
           handleCopyMessage={handlers.handleCopyMessage}
           handleVote={handlers.handleVote}
           handleRSVP={handlers.handleRSVP}
+          handleSendMessage={handlers.handleSendMessage}
+          handleSendPoll={handlers.handleSendPoll}
+          handleSendEvent={handlers.handleSendEvent}
           handlePinMessage={handlers.handlePinMessage}
           handleQuizAnswer={calls.handleQuizAnswer}
           handleExitQuiz={calls.handleExitQuiz}
@@ -482,6 +543,18 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
           setShowSharedTaskList={setShowSharedTaskList}
           showBreakoutRooms={showBreakoutRooms}
           setShowBreakoutRooms={setShowBreakoutRooms}
+          showPollCreator={showPollCreator}
+          setShowPollCreator={setShowPollCreator}
+          showEventCreator={showEventCreator}
+          setShowEventCreator={setShowEventCreator}
+          showVanishModal={showVanishModal}
+          setShowVanishModal={setShowVanishModal}
+          showMobileReactions={showMobileReactions}
+          setShowMobileReactions={setShowMobileReactions}
+          vanishMode={feature.vanishMode}
+          setVanishMode={feature.setVanishMode}
+          vanishDuration={feature.vanishDuration}
+          setVanishDuration={feature.setVanishDuration}
           showBurnerLink={showBurnerLink}
           setShowBurnerLink={setShowBurnerLink}
           showGifAvatar={showGifAvatar}
@@ -532,23 +605,23 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
           pendingScreenStream={pendingScreenStream}
           setPendingScreenStream={setPendingScreenStream}
         />
-      </div>
 
-      {/* Karaoke Stage */}
-      {feature.currentKaraokeSession && !isKaraokeMinimized && (
-        <KaraokePlayer
-          session={feature.currentKaraokeSession}
-          onEnd={calls.handleExitKaraoke}
-          onMinimize={() => setIsKaraokeMinimized(true)}
+        {/* Karaoke Stage */}
+        {feature.currentKaraokeSession && !isKaraokeMinimized && (
+          <KaraokePlayer
+            session={feature.currentKaraokeSession}
+            onEnd={calls.handleExitKaraoke}
+            onMinimize={() => setIsKaraokeMinimized(true)}
+          />
+        )}
+
+        {/* File Preview before sending */}
+        <FilePreviewModal
+          fileData={feature.pendingChatFile}
+          onClose={() => feature.setPendingChatFile(null)}
+          onSend={handlers.handleSendFile}
         />
-      )}
-
-      {/* File Preview before sending */}
-      <FilePreviewModal
-        fileData={feature.pendingChatFile}
-        onClose={() => feature.setPendingChatFile(null)}
-        onSend={handlers.handleSendFile}
-      />
+      </div>
     </PrivacyShield>
   )
 }

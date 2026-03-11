@@ -47,6 +47,10 @@ export function useChatUIState() {
     const [showBreakoutRooms, setShowBreakoutRooms] = useState(false)
     const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false)
     const [showTermsOfService, setShowTermsOfService] = useState(false)
+    const [showPollCreator, setShowPollCreator] = useState(false)
+    const [showEventCreator, setShowEventCreator] = useState(false)
+    const [showVanishModal, setShowVanishModal] = useState(false)
+    const [showMobileReactions, setShowMobileReactions] = useState(false)
 
     // Mood & Emoji
     const [isMoodSelectorOpen, setIsMoodSelectorOpen] = useState(false)
@@ -109,6 +113,10 @@ export function useChatUIState() {
         showBreakoutRooms, setShowBreakoutRooms,
         showPrivacyPolicy, setShowPrivacyPolicy,
         showTermsOfService, setShowTermsOfService,
+        showPollCreator, setShowPollCreator,
+        showEventCreator, setShowEventCreator,
+        showVanishModal, setShowVanishModal,
+        showMobileReactions, setShowMobileReactions,
         playgroundGame, setPlaygroundGame,
         showPlaygroundSetup, setShowPlaygroundSetup,
         showPlayground, setShowPlayground,

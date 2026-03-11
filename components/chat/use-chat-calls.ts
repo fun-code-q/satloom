@@ -120,7 +120,8 @@ export function useChatCalls(params: UseChatCallsParams) {
         try {
             console.log("Starting audio call...")
             notificationSystem.info("Initializing audio call...")
-            const callId = await callSignaling.startCall(roomId, userProfile.name, currentUserId, "audio")
+            // Target all users in the room if no specific user is selected (room-wide call)
+            const callId = await callSignaling.startCall(roomId, currentUserId, userProfile.name, "audio", "all")
             console.log("Audio call started with ID:", callId)
             telemetry.logEvent('call_started', roomId, currentUserId, userProfile.name, { type: 'audio' })
             params.setShowAudioCall(true)
@@ -138,8 +139,8 @@ export function useChatCalls(params: UseChatCallsParams) {
             params.setCurrentCall(incomingCall)
             params.setIncomingCall(null)
 
-            // Accept the signaling immediately
-            callSignaling.answerCall(roomId, incomingCall.id, currentUserId)
+            // Accept the signaling immediately with our name
+            callSignaling.answerCall(roomId, incomingCall.id, currentUserId, userProfile.name)
 
             if (incomingCall.type === "video") {
                 params.setShowVideoCall(true)
@@ -174,7 +175,7 @@ export function useChatCalls(params: UseChatCallsParams) {
         try {
             console.log("Starting video call...")
             notificationSystem.info("Initializing video call...")
-            const callId = await callSignaling.startCall(roomId, userProfile.name, currentUserId, "video")
+            const callId = await callSignaling.startCall(roomId, currentUserId, userProfile.name, "video", "all")
             console.log("Video call started with ID:", callId)
             telemetry.logEvent('call_started', roomId, currentUserId, userProfile.name, { type: 'video' })
             params.setShowVideoCall(true)
@@ -192,8 +193,8 @@ export function useChatCalls(params: UseChatCallsParams) {
             params.setCurrentCall(incomingCall)
             params.setIncomingCall(null)
 
-            // Accept the signaling immediately
-            callSignaling.answerCall(roomId, incomingCall.id, currentUserId)
+            // Accept the signaling immediately with our name
+            callSignaling.answerCall(roomId, incomingCall.id, currentUserId, userProfile.name)
 
             params.setShowVideoCall(true)
             params.setIsInCall(true)

@@ -14,13 +14,16 @@ const getDb = () => {
 
 export interface CallData {
   id: string
-  roomId: string
   callerId: string
   caller: string
   type: "audio" | "video"
-  status: "ringing" | "answered" | "ended"
+  status: "ringing" | "answered" | "ended" | "missed"
+  roomId: string
   participants: string[]
+  participantNames?: Record<string, string>
   timestamp: number
+  offer?: any
+  answer?: any
 }
 
 export class CallSignaling {
@@ -34,23 +37,32 @@ export class CallSignaling {
     return CallSignaling.instance
   }
 
-  async startCall(roomId: string, callerName: string, callerId: string, type: "audio" | "video"): Promise<string> {
+  async startCall(
+    roomId: string,
+    callerId: string,
+    callerName: string,
+    type: "audio" | "video",
+    targetUserId: string,
+  ): Promise<string> {
     try {
-      const db = getDb()
-      if (!db) throw new Error("Database not initialized")
+      const db = getFirebaseDatabase()
+      if (!db) throw new Error("Firebase not initialized")
 
-      const callsRef = ref(db, `calls/${roomId}`)
+      const callsRef = ref(db, `rooms/${roomId}/calls`)
       const newCallRef = push(callsRef)
       const callId = newCallRef.key!
 
       const callData: CallData = {
         id: callId,
-        roomId,
         callerId,
         caller: callerName,
         type,
         status: "ringing",
+        roomId,
         participants: [callerId],
+        participantNames: {
+          [callerId]: callerName
+        },
         timestamp: Date.now(),
       }
 
@@ -62,7 +74,7 @@ export class CallSignaling {
         try {
           const db = getDb()
           if (!db) return
-          const callRef = ref(db, `calls/${roomId}/${callId}`)
+          const callRef = ref(db, `rooms/${roomId}/calls/${callId}`)
           const snapshot = await get(callRef)
           if (snapshot.exists() && snapshot.val().status === "ringing") {
             await this.endCall(roomId, callId)
@@ -79,24 +91,30 @@ export class CallSignaling {
     }
   }
 
-  async answerCall(roomId: string, callId: string, userId: string): Promise<void> {
+  async answerCall(roomId: string, callId: string, userId: string, userName?: string): Promise<void> {
     try {
       const db = getDb()
       if (!db) return
 
-      const callRef = ref(db, `calls/${roomId}/${callId}`)
+      const callRef = ref(db, `rooms/${roomId}/calls/${callId}`)
       const snapshot = await get(callRef)
 
       if (snapshot.exists()) {
-        const callData = snapshot.val()
+        const callData = snapshot.val() as CallData
         const updatedParticipants = [...callData.participants]
         if (!updatedParticipants.includes(userId)) {
           updatedParticipants.push(userId)
         }
 
+        const updatedNames = { ...(callData.participantNames || {}) }
+        if (userName) {
+          updatedNames[userId] = userName
+        }
+
         await update(callRef, {
           status: "answered",
           participants: updatedParticipants,
+          participantNames: updatedNames
         })
 
         console.log("Call answered:", callId)
@@ -112,7 +130,7 @@ export class CallSignaling {
       const db = getDb()
       if (!db) return
 
-      const callRef = ref(db, `calls/${roomId}/${callId}`)
+      const callRef = ref(db, `rooms/${roomId}/calls/${callId}`)
       await update(callRef, { status: "ended" })
 
       console.log("Call ended:", callId)
@@ -122,7 +140,7 @@ export class CallSignaling {
         try {
           const dbCleanup = getDb()
           if (!dbCleanup) return
-          await remove(ref(dbCleanup, `calls/${roomId}/${callId}`))
+          await remove(ref(dbCleanup, `rooms/${roomId}/calls/${callId}`))
         } catch (error) {
           console.error("Error removing call data:", error)
         }
@@ -138,7 +156,7 @@ export class CallSignaling {
       const db = getDb()
       if (!db) return
 
-      const callRef = ref(db, `calls/${roomId}/${callId}`)
+      const callRef = ref(db, `rooms/${roomId}/calls/${callId}`)
       await update(callRef, { type })
 
       console.log(`Call type switched to ${type}:`, callId)
@@ -157,7 +175,7 @@ export class CallSignaling {
     const db = getDb()
     if (!db) return () => { }
 
-    const callsRef = ref(db, `calls/${roomId}`)
+    const callsRef = ref(db, `rooms/${roomId}/calls`)
     const STALE_THRESHOLD = 5 * 60 * 1000 // 5 minutes
 
     const unsubscribe = onValue(callsRef, (snapshot: any) => {
@@ -195,7 +213,7 @@ export class CallSignaling {
   async sendSignal(roomId: string, callId: string, type: "offer" | "answer" | "ice-candidate", payload: any, senderId: string) {
     const db = getDb()
     if (!db) return
-    const signalRef = ref(db, `calls/${roomId}/${callId}/signals`)
+    const signalRef = ref(db, `rooms/${roomId}/calls/${callId}/signals`)
     await push(signalRef, {
       type,
       payload,
@@ -207,7 +225,7 @@ export class CallSignaling {
   listenForSignals(roomId: string, callId: string, currentUserId: string, onSignal: (type: string, payload: any) => void): () => void {
     const db = getDb()
     if (!db) return () => { }
-    const signalsRef = ref(db, `calls/${roomId}/${callId}/signals`)
+    const signalsRef = ref(db, `rooms/${roomId}/calls/${callId}/signals`)
 
     const unsubscribe = onChildAdded(signalsRef, (snapshot: any) => {
       const data = snapshot.val()
@@ -217,7 +235,6 @@ export class CallSignaling {
       }
     })
 
-    // Store listener if needed for cleanup, but onChildAdded returns unsubscribe
     return unsubscribe
   }
 

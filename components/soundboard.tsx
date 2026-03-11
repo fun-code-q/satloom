@@ -34,6 +34,16 @@ export function Soundboard({ isOpen, onClose, roomId, userId, userName }: Soundb
 
     const handlePlaySound = useCallback(
         async (soundId: string) => {
+            // Browsers require a user interaction to resume AudioContext
+            try {
+                const ctx = (soundboard as any).audioContext as AudioContext | null
+                if (ctx && ctx.state === 'suspended') {
+                    await ctx.resume()
+                }
+            } catch (e) {
+                console.error("Failed to resume AudioContext:", e)
+            }
+
             await soundboard.playSound(soundId)
         },
         [soundboard]

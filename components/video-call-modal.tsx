@@ -250,7 +250,13 @@ export function VideoCallModal({
       targetUserId,
       localStream,
       (s, uid) => onRemoteStreamRef.current(s, uid),
-      (c, uid) => { if (uid === targetUserId) onIceCandidateRef.current(c) }
+      (c, uid) => { if (uid === targetUserId) onIceCandidateRef.current(c) },
+      (state, uid) => {
+        console.log(`[VideoCall] WebRTC state for ${uid}: ${state}`)
+        if (state === "failed") {
+          console.error("[VideoCall] Connection failed. Check network/ICE servers.")
+        }
+      }
     )
 
     unsubscribeSignalsRef.current = callSignaling.listenForSignals(roomId, callData.id, currentUserId, async (type, payload) => {
@@ -351,7 +357,7 @@ export function VideoCallModal({
     if (onAnswer) {
       onAnswer()
     } else if (callData) {
-      await callSignaling.answerCall(roomId, callData.id, currentUserId)
+      await callSignaling.answerCall(roomId, callData.id, currentUserId, currentUser)
     }
   }
 
@@ -557,7 +563,22 @@ export function VideoCallModal({
 
   if (!isOpen) return null
 
-  const otherParticipant = callData?.participants.find((p) => p !== currentUserId) || callData?.caller || "Unknown"
+  const getOtherParticipantName = () => {
+    if (!callData) return "Unknown"
+    const otherId = callData.participants.find((p) => p !== currentUserId) || (callData.callerId !== currentUserId ? callData.callerId : null)
+
+    if (otherId && callData.participantNames?.[otherId]) {
+      return callData.participantNames[otherId]
+    }
+
+    if (callData.callerId !== currentUserId) {
+      return callData.caller
+    }
+
+    return "Waiting..."
+  }
+
+  const otherParticipant = getOtherParticipantName()
 
   if (isMinimized) {
     return (

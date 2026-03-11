@@ -2,6 +2,7 @@ import { useState } from "react"
 import { CallData } from "@/utils/infra/call-signaling"
 import { TheaterSession, TheaterInvite } from "@/utils/infra/theater-signaling"
 import { KaraokeInvite } from "@/utils/games/karaoke"
+import { VanishModeType } from "@/utils/infra/vanish-mode"
 import { QuizSession, QuizAnswer, QuizResult } from "@/utils/games/quiz-system"
 import { GameInvite } from "@/utils/infra/game-signaling"
 import { WhiteboardInvite } from "@/utils/infra/whiteboard-signaling"
@@ -46,6 +47,8 @@ export function useChatFeatureState(initialAvatar?: string) {
     const [currentPresentationId, setCurrentPresentationId] = useState<string | null>(null)
     const [presentationInvite, setPresentationInvite] = useState<{ presentationId: string; hostName: string; hostId: string } | null>(null)
     const [whiteboardInvite, setWhiteboardInvite] = useState<WhiteboardInvite | null>(null)
+    const [vanishMode, setVanishMode] = useState<VanishModeType>("off")
+    const [vanishDuration, setVanishDuration] = useState(30000)
 
     // Pinned Message
     const [pinnedMessageId, setPinnedMessageId] = useState<string | null>(null)
@@ -89,5 +92,7 @@ export function useChatFeatureState(initialAvatar?: string) {
         passwordValidated, setPasswordValidated,
         roomIsProtected, setRoomIsProtected,
         pendingChatFile, setPendingChatFile,
+        vanishMode, setVanishMode,
+        vanishDuration, setVanishDuration,
     }
 }

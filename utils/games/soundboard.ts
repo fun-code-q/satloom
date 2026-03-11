@@ -188,20 +188,6 @@ class SoundboardManager {
             await this.audioContext.resume()
         }
 
-        const synthSounds = ["celebration", "laughter", "applause", "correct", "wrong"]
-
-        if (synthSounds.includes(soundId)) {
-            this.playSynthSound(soundId)
-            this.setState({ isPlaying: true, currentSound: soundId })
-
-            // Auto-reset state
-            const duration = DEFAULT_SOUNDS.find(s => s.id === soundId)?.duration || 1000
-            setTimeout(() => {
-                this.setState({ isPlaying: false, currentSound: null })
-            }, duration)
-            return
-        }
-
         const buffer = this.audioBuffers.get(soundId)
         if (buffer) {
             try {
@@ -221,23 +207,12 @@ class SoundboardManager {
                     this.setState({ isPlaying: false, currentSound: null })
                 }
             } catch (err) {
-                console.error(`[Soundboard] Error playing AudioBuffer ${soundId}:`, err)
+                console.error(`[Soundboard] Error playing AudioBuffer ${soundId}, falling back to synth:`, err)
+                this.playSynthSound(soundId)
             }
         } else {
-            console.warn(`[Soundboard] Buffer missing for ${soundId}, attempting dynamic load...`)
-            // Try to load it on the fly
-            const sound = DEFAULT_SOUNDS.find(s => s.id === soundId)
-            if (sound) {
-                try {
-                    const response = await fetch(sound.audioUrl)
-                    const arrayBuffer = await response.arrayBuffer()
-                    const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer)
-                    this.audioBuffers.set(soundId, audioBuffer)
-                    this.playSoundLocally(soundId)
-                } catch (e) {
-                    console.error(`[Soundboard] Dynamic load failed for ${soundId}:`, e)
-                }
-            }
+            console.warn(`[Soundboard] Buffer missing for ${soundId}, playing synth version...`)
+            this.playSynthSound(soundId)
         }
     }
 
@@ -251,9 +226,127 @@ class SoundboardManager {
         const now = ctx.currentTime
         const gainNode = ctx.createGain()
         gainNode.connect(ctx.destination)
-        gainNode.gain.setValueAtTime(this.state.volume * 0.3, now)
+        gainNode.gain.setValueAtTime(this.state.volume * 0.4, now)
 
-        if (soundId === "celebration") {
+        this.setState({ isPlaying: true, currentSound: soundId })
+
+        // Find duration for state reset
+        const sound = DEFAULT_SOUNDS.find(s => s.id === soundId)
+        const duration = sound?.duration || 1000
+
+        if (soundId === "bruh") {
+            // Low thud synth
+            const osc = ctx.createOscillator()
+            osc.type = "sine"
+            osc.frequency.setValueAtTime(150, now)
+            osc.frequency.exponentialRampToValueAtTime(40, now + 0.3)
+            osc.connect(gainNode)
+            osc.start(now)
+            osc.stop(now + 0.4)
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4)
+        } else if (soundId === "wow") {
+            // "Wow" - high rising pitch
+            const osc = ctx.createOscillator()
+            osc.type = "sine"
+            osc.frequency.setValueAtTime(300, now)
+            osc.frequency.exponentialRampToValueAtTime(600, now + 0.2)
+            osc.frequency.exponentialRampToValueAtTime(500, now + 0.4)
+            osc.connect(gainNode)
+            osc.start(now)
+            osc.stop(now + 0.5)
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5)
+        } else if (soundId === "airhorn") {
+            // Aggressive sawtooth blasts
+            for (let i = 0; i < 3; i++) {
+                const osc = ctx.createOscillator()
+                const start = now + (i * 0.2)
+                osc.type = "sawtooth"
+                osc.frequency.setValueAtTime(440 + (i * 10), start)
+                osc.connect(gainNode)
+                osc.start(start)
+                osc.stop(start + 0.15)
+            }
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.8)
+        } else if (soundId === "vineboom") {
+            // Deep 808-style drop
+            const osc = ctx.createOscillator()
+            osc.type = "sine"
+            osc.frequency.setValueAtTime(60, now)
+            osc.frequency.exponentialRampToValueAtTime(30, now + 0.8)
+            osc.connect(gainNode)
+            osc.start(now)
+            osc.stop(now + 1.0)
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 1.0)
+        } else if (soundId === "sad-violin") {
+            // High wavering pitch
+            const osc = ctx.createOscillator()
+            osc.type = "triangle"
+            osc.frequency.setValueAtTime(880, now)
+            for (let i = 0; i < 10; i++) {
+                osc.frequency.linearRampToValueAtTime(880 + (i % 2 === 0 ? 20 : -20), now + (i * 0.1))
+            }
+            osc.connect(gainNode)
+            osc.start(now)
+            osc.stop(now + 1.2)
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 1.2)
+        } else if (soundId === "crickets") {
+            // Chirping noise
+            for (let i = 0; i < 5; i++) {
+                const start = now + (i * 0.4)
+                const osc = ctx.createOscillator()
+                osc.type = "sine"
+                osc.frequency.setValueAtTime(4000, start)
+                osc.connect(gainNode)
+                osc.start(start)
+                osc.stop(start + 0.1)
+            }
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 2.0)
+        } else if (soundId === "rimshot") {
+            // Snare-like noise burst then tap
+            const noise = ctx.createOscillator()
+            noise.type = "square"
+            noise.frequency.setValueAtTime(1000, now)
+            noise.connect(gainNode)
+            noise.start(now)
+            noise.stop(now + 0.05)
+
+            const tap = ctx.createOscillator()
+            tap.type = "sine"
+            tap.frequency.setValueAtTime(200, now + 0.1)
+            tap.connect(gainNode)
+            tap.start(now + 0.1)
+            tap.stop(now + 0.15)
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3)
+        } else if (soundId === "trombone") {
+            // Falling saw wave
+            const osc = ctx.createOscillator()
+            osc.type = "sawtooth"
+            osc.frequency.setValueAtTime(220, now)
+            osc.frequency.exponentialRampToValueAtTime(110, now + 0.8)
+            osc.connect(gainNode)
+            osc.start(now)
+            osc.stop(now + 1.0)
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 1.0)
+        } else if (soundId === "cartoon-boing") {
+            // Rising sine
+            const osc = ctx.createOscillator()
+            osc.type = "sine"
+            osc.frequency.setValueAtTime(200, now)
+            osc.frequency.exponentialRampToValueAtTime(800, now + 0.3)
+            osc.connect(gainNode)
+            osc.start(now)
+            osc.stop(now + 0.4)
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4)
+        } else if (soundId === "punch") {
+            // Low freq impact
+            const osc = ctx.createOscillator()
+            osc.type = "square"
+            osc.frequency.setValueAtTime(80, now)
+            osc.connect(gainNode)
+            osc.start(now)
+            osc.stop(now + 0.05)
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1)
+        } else if (soundId === "celebration") {
             // Arpeggio synthesis
             for (let i = 0; i < 4; i++) {
                 const osc = ctx.createOscillator()
@@ -306,6 +399,11 @@ class SoundboardManager {
             osc.stop(now + 0.6)
             gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.6)
         }
+
+        // Auto-reset state
+        setTimeout(() => {
+            this.setState({ isPlaying: false, currentSound: null })
+        }, duration)
     }
 
     /**
