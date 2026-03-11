@@ -468,8 +468,15 @@ export function useChatEffects(params: UseChatEffectsParams) {
             if (snapshot.exists()) {
                 const moodData = snapshot.val()
                 setMoodBackgroundImage(moodData.backgroundImage || null)
-                setMoodBackgroundMusic(moodData.backgroundMusic || null)
                 setMoodPlaylist(moodData.playlist || [])
+
+                // If there's a playlist, we can potentially use the first song as 'current' music
+                // but MoodPlayer handles the actual playback of the playlist.
+                if (moodData.playlist && moodData.playlist.length > 0) {
+                    setMoodBackgroundMusic(moodData.playlist[0])
+                } else {
+                    setMoodBackgroundMusic(null)
+                }
             } else {
                 setMoodBackgroundImage(null)
                 setMoodBackgroundMusic(null)

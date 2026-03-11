@@ -224,6 +224,9 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
   return (
     <PrivacyShield>
       <div className="h-full flex flex-col relative overflow-hidden bg-slate-950">
+        {/* Room Background */}
+        <SpaceBackground backgroundImage={feature.moodBackgroundImage} />
+
         {/* Mood Player */}
         <MoodPlayer roomId={roomId} />
 

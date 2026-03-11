@@ -49,12 +49,12 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
         if (!playlist || playlist.length === 0) {
             if (audioRef.current) {
                 audioRef.current.pause()
+                audioRef.current.src = ""
                 audioRef.current = null
             }
             return
         }
 
-        // Initialize audio if not exists
         if (!audioRef.current) {
             audioRef.current = new Audio()
             audioRef.current.volume = volume
@@ -62,38 +62,35 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
 
         const audio = audioRef.current
 
-        // Play current song
         const playSong = async (index: number) => {
-            if (index >= playlist.length) index = 0 // Loop back
+            if (index < 0 || index >= playlist.length) index = 0
 
             const src = playlist[index]
             if (audio.src !== src) {
+                console.log("MoodPlayer: Playing song:", src)
                 audio.src = src
-                try {
-                    await audio.play()
-                    setCurrentSongIndex(index)
-                } catch (e) {
-                    console.log("Auto-play failed (likely interaction needed), will retry on interaction")
+                audio.load() // Explicitly load
+            }
 
-                    // Unlock audio on first user interaction
-                    const unlockAudio = async () => {
-                        try {
-                            await audio.play()
-                            window.removeEventListener("click", unlockAudio)
-                            window.removeEventListener("keydown", unlockAudio)
-                        } catch (err) {
-                            console.error("Manual play failed:", err)
-                        }
+            try {
+                await audio.play()
+                setCurrentSongIndex(index)
+            } catch (e) {
+                console.log("MoodPlayer: Auto-play blocked, waiting for interaction...")
+                const unlock = async () => {
+                    try {
+                        await audio.play()
+                        window.removeEventListener("click", unlock)
+                        window.removeEventListener("touchstart", unlock)
+                    } catch (err) {
+                        console.error("MoodPlayer: Manual play failed:", err)
                     }
-                    window.addEventListener("click", unlockAudio)
-                    window.addEventListener("keydown", unlockAudio)
                 }
-            } else if (audio.paused) {
-                audio.play().catch(e => console.error("Play failed:", e))
+                window.addEventListener("click", unlock)
+                window.addEventListener("touchstart", unlock)
             }
         }
 
-        // Handle song end -> Next song
         const handleEnded = () => {
             const nextIndex = (currentSongIndex + 1) % playlist.length
             playSong(nextIndex)
@@ -101,13 +98,15 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
 
         audio.addEventListener("ended", handleEnded)
 
-        // Initial play
-        playSong(currentSongIndex)
+        // Only trigger play if paused or source changed
+        if (audio.paused || audio.src !== playlist[currentSongIndex]) {
+            playSong(currentSongIndex)
+        }
 
         return () => {
             audio.removeEventListener("ended", handleEnded)
         }
-    }, [playlist, currentSongIndex]) // Dependencies: when playlist updates or index changes
+    }, [playlist, currentSongIndex])
 
     // 3. Volume Ducking Logic
     useEffect(() => {

@@ -15,6 +15,7 @@ import type { GameInvite } from "@/utils/infra/game-signaling"
 import { ChessManager } from "@/utils/games/chess-manager"
 import { TicTacToeManager } from "@/utils/games/tic-tac-toe"
 import { ConnectFourManager } from "@/utils/games/connect-four"
+import { DotsBoxesManager } from "@/utils/games/dots-boxes-manager"
 import type { MenuGroup } from "./chat-types"
 import { telemetry } from "@/utils/core/telemetry"
 import {
@@ -354,6 +355,8 @@ export function useChatCalls(params: UseChatCallsParams) {
                         await TicTacToeManager.getInstance().joinGame(roomId, gameInvite.gameId, currentUserId, guestName || userProfile.name, userProfile.avatar)
                     } else if (type === "connect4") {
                         await ConnectFourManager.getInstance().joinGame(roomId, gameInvite.gameId, currentUserId, guestName || userProfile.name, userProfile.avatar)
+                    } else if (type === "dots") {
+                        await DotsBoxesManager.getInstance().joinGame(roomId, gameInvite.gameId, currentUserId, guestName || userProfile.name, userProfile.avatar)
                     }
                 }
             } catch (error) {
