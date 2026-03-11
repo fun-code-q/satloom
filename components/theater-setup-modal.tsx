@@ -77,7 +77,7 @@ export function TheaterSetupModal({ isOpen, onClose, onCreateSession }: TheaterS
         const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/
         const match = processedUrl.match(youtubeRegex)
         if (match) {
-          processedUrl = `https://www.youtube.com/embed/${match[1]}?enablejsapi=1&origin=${window.location.origin}`
+          processedUrl = `https://www.youtube.com/embed/${match[1]}?enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : '*'}`
         }
       } else if (selectedType === "vimeo") {
         const vimeoRegex = /vimeo\.com\/(\d+)/
@@ -97,6 +97,9 @@ export function TheaterSetupModal({ isOpen, onClose, onCreateSession }: TheaterS
         if (match) {
           processedUrl = `https://www.dailymotion.com/video/${match[1]}`
         }
+      } else if (selectedType === "archive") {
+        // Archive.org - use the URL directly as-is (react-player supports it)
+        // No transformation needed
       }
 
       onCreateSession(processedUrl, selectedType)

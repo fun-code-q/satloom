@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { DotsAndBoxesGame, type GameState, type Player } from "@/utils/games/dots-and-boxes-game"
 import { GameSignaling } from "@/utils/infra/game-signaling"
+import { DotsBoxesManager } from "@/utils/games/dots-boxes-manager"
 import { GameSounds } from "@/utils/games/game-sounds"
 import { NotificationSystem } from "@/utils/core/notification-system"
 import { GameConfig } from "@/components/playground-setup-modal"
@@ -27,6 +28,7 @@ export function useGameSync({ gameConfig, roomId, currentUserId, onExit, isPause
     ).current
 
     const gameSignaling = GameSignaling.getInstance()
+    const dotsBoxesManager = DotsBoxesManager.getInstance()
     const gameSounds = GameSounds.getInstance()
     const notificationSystem = NotificationSystem.getInstance()
 
@@ -71,8 +73,20 @@ export function useGameSync({ gameConfig, roomId, currentUserId, onExit, isPause
             if (gameConfig.gameType !== "single") {
                 gameSignaling.createGame(roomId, gameId, updatedState)
             }
+        } else {
+            // Guest: Try to join the game after a short delay to ensure host has created it
+            // The Multiplayer updates effect will handle receiving game state
+            setTimeout(async () => {
+                if (gameConfig.players[1] && !isHostPlayer) {
+                    await dotsBoxesManager.joinGame(
+                        roomId,
+                        gameId,
+                        currentUserId,
+                        gameConfig.players[1].name
+                    )
+                }
+            }, 1500)
         }
-        // Guests start in loading state waiting for Firebase updates (handled in Multiplayer updates effect)
 
         gameSignaling.listenForHostStatus(roomId, gameId, (isHostActive) => {
             if (!isHostActive && !isHostPlayer) {
@@ -91,11 +105,22 @@ export function useGameSync({ gameConfig, roomId, currentUserId, onExit, isPause
         if (!game || gameConfig.gameType === "single") return
 
         const unsubscribe = gameSignaling.listenForGame(roomId, gameId, (updatedState) => {
-            setGameState(updatedState)
-            game.updateGameState(updatedState)
-            const currentPlayer = updatedState.players[updatedState.currentPlayerIndex]
-            setIsMyTurn(currentPlayer.id === currentUserId)
-            if (updatedState.moveCount > 0) setIsFirstMove(false)
+            // Only update if we have valid state and it's different from current
+            if (updatedState && updatedState.moveCount >= 0) {
+                setGameState(updatedState)
+                // Update the local game instance with the new state
+                game.updateGameState(updatedState)
+
+                // Check if it's this player's turn
+                const currentPlayer = updatedState.players[updatedState.currentPlayerIndex]
+                if (currentPlayer) {
+                    setIsMyTurn(currentPlayer.id === currentUserId)
+                }
+
+                if (updatedState.moveCount > 0) {
+                    setIsFirstMove(false)
+                }
+            }
         })
 
         return () => unsubscribe()

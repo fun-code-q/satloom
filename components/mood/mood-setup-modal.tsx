@@ -144,7 +144,7 @@ export function MoodSetupModal({ isOpen, onClose, roomId }: MoodSetupModalProps)
                             <Input
                                 value={currentSongUrl}
                                 onChange={(e) => setCurrentSongUrl(e.target.value)}
-                                placeholder="Paste MP3/Audio URL"
+                                placeholder="Paste YouTube or MP3 URL"
                                 className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 flex-1"
                                 onKeyDown={(e) => e.key === "Enter" && handleAddSong()}
                             />

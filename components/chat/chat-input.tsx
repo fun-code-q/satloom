@@ -324,7 +324,7 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
 
                 {/* Attachment menu popup - now absolute above input */}
                 {showAttachments && (
-                    <div className="absolute bottom-full mb-3 left-3 right-3 z-50 animate-in slide-in-from-bottom-2 duration-200">
+                    <div className="absolute bottom-full mb-3 left-3 right-3 z-[70] animate-in slide-in-from-bottom-2 duration-200">
                         <div className="shadow-2xl rounded-3xl overflow-hidden border border-slate-700/50">
                             <AttachmentMenu
                                 isMobile={true}

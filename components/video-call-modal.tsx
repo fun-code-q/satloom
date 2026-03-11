@@ -130,7 +130,7 @@ export function VideoCallModal({
     }
 
     const interval = setInterval(async () => {
-      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.caller
+      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.callerId
       if (!targetUserId) return
 
       const stats = await WebRTCManager.getInstance().getConnectionStats(targetUserId)
@@ -242,7 +242,7 @@ export function VideoCallModal({
     const webrtc = WebRTCManager.getInstance()
     isInitializedRef.current = true
 
-    const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.caller
+    const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.callerId
     if (!targetUserId) return
 
     console.log("VideoCall: Initializing WebRTC and Signal Listeners")
@@ -255,7 +255,7 @@ export function VideoCallModal({
 
     unsubscribeSignalsRef.current = callSignaling.listenForSignals(roomId, callData.id, currentUserId, async (type, payload) => {
       console.log(`VideoCall: Signal received (${type})`)
-      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.caller
+      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.callerId
       if (!targetUserId) return
 
       if (type === "offer") {
@@ -281,7 +281,7 @@ export function VideoCallModal({
 
     // If we are the caller and call just became answered, send the offer
     if (!isIncoming && callData.status === "answered") {
-      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.caller
+      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.callerId
       if (!targetUserId) return
 
       console.log("VideoCall: Call answered, sending offer as caller")
@@ -295,7 +295,7 @@ export function VideoCallModal({
   useEffect(() => {
     if (isOpen && isIncoming && callData?.status === "answered" && pendingOfferRef.current) {
       const webrtc = WebRTCManager.getInstance()
-      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.caller
+      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.callerId
       if (!targetUserId) return
 
       webrtc.createAnswer(targetUserId, pendingOfferRef.current).then(answer => {

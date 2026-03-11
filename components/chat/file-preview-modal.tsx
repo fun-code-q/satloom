@@ -47,7 +47,7 @@ export function FilePreviewModal({ fileData, onClose, onSend }: FilePreviewModal
     }
 
     return (
-        <div className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[1200] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
             <div className="bg-slate-900 border border-slate-700/50 rounded-3xl overflow-hidden w-full max-w-md shadow-2xl flex flex-col relative">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-800/50">

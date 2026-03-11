@@ -657,6 +657,34 @@ export function TheaterFullscreen({
               onEnded={() => setIsPlaying(false)}
               onBuffer={() => setIsBuffering(true)}
               onBufferEnd={() => setIsBuffering(false)}
+              config={{
+                youtube: {
+                  playerVars: {
+                    showinfo: 0,
+                    controls: 1,
+                    modestbranding: 1,
+                    rel: 0,
+                    enablejsapi: 1
+                  }
+                },
+                vimeo: {
+                  playerOptions: {
+                    responsive: true,
+                    autoplay: true
+                  }
+                },
+                twitch: {
+                  options: {
+                    muted: isMuted
+                  }
+                },
+                dailymotion: {
+                  playerParams: {
+                    start: 0,
+                    mute: isMuted
+                  }
+                }
+              } as any}
             />
           )}
 

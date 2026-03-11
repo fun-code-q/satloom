@@ -306,7 +306,7 @@ export function AttachmentMenu({
       <Button
         variant="ghost"
         size="icon"
-        className="text-gray-400 hover:text-white hover:bg-slate-700 relative z-50"
+        className="text-gray-400 hover:text-white hover:bg-slate-700 relative z-[70]"
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
@@ -321,7 +321,7 @@ export function AttachmentMenu({
 
       {isOpen && (
         <div
-          className="absolute bottom-14 left-0 z-50 bg-slate-800/95 backdrop-blur-sm border border-slate-600 rounded-2xl p-4 shadow-2xl"
+          className="absolute bottom-14 left-0 z-[70] bg-slate-800/95 backdrop-blur-sm border border-slate-600 rounded-2xl p-4 shadow-2xl"
           role="menu"
           aria-label="Attachment options"
         >

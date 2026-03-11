@@ -1,6 +1,7 @@
 import { getFirebaseDatabase } from "@/lib/firebase"
 import { ref, set, onValue, remove, push, serverTimestamp, get, update, onChildAdded, onChildRemoved } from "firebase/database"
 import type { GameState, Move, Player } from "@/utils/games/dots-and-boxes-game"
+import { UserPresenceSystem } from "./user-presence"
 
 // Game Invitation Interface
 export interface GameInvite {
@@ -482,6 +483,10 @@ export class GameSignaling {
       readyPlayers: lobby.readyPlayers.filter(id => id !== playerId),
       lastUpdated: Date.now(),
     })
+
+    // Also kick the user from the room via user presence
+    const userPresenceSystem = UserPresenceSystem.getInstance()
+    await userPresenceSystem.kickUser(roomId, playerId)
   }
 
   /**
