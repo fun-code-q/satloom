@@ -37,20 +37,27 @@ export function SharedNotesPanel({ roomId, userId, userName }: SharedNotesPanelP
     const [newTitle, setNewTitle] = useState("")
     const [newColor, setNewColor] = useState(NOTE_COLORS[0])
 
+    const lastInitializedRoom = React.useRef<string | null>(null)
+
     useEffect(() => {
-        sharedNotesManager.initialize(roomId, userId, userName)
-        sharedNotesManager.initializeNotes()
+        if (lastInitializedRoom.current !== roomId) {
+            lastInitializedRoom.current = roomId
+            sharedNotesManager.initialize(roomId, userId, userName)
+            sharedNotesManager.initializeNotes()
+            sharedNotesManager.listenForNotes()
+        }
 
         const unsubscribe = sharedNotesManager.subscribe((state) => {
             setNotes(sharedNotesManager.getSortedNotes())
             setActiveNoteId(state.activeNoteId)
         })
 
-        sharedNotesManager.listenForNotes()
-
         return () => {
             unsubscribe()
-            sharedNotesManager.destroy()
+            if (lastInitializedRoom.current === roomId) {
+                lastInitializedRoom.current = null
+                sharedNotesManager.destroy()
+            }
         }
     }, [roomId, userId, userName])
 

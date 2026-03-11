@@ -30,9 +30,15 @@ export function SharedTaskListPanel({ roomId, userId, userName }: SharedTaskList
     const [newTaskPriority, setNewTaskPriority] = useState<TaskItem["priority"]>("medium")
     const [isAdding, setIsAdding] = useState(false)
 
+    const lastInitializedRoom = React.useRef<string | null>(null)
+
     useEffect(() => {
-        taskListManager.initialize(roomId, userId, userName)
-        taskListManager.initializeTaskList()
+        if (lastInitializedRoom.current !== roomId) {
+            lastInitializedRoom.current = roomId
+            taskListManager.initialize(roomId, userId, userName)
+            taskListManager.initializeTaskList()
+            taskListManager.listenForTasks()
+        }
 
         const unsubscribe = taskListManager.subscribe((state) => {
             setTasks(taskListManager.getFilteredTasks())
@@ -40,11 +46,12 @@ export function SharedTaskListPanel({ roomId, userId, userName }: SharedTaskList
             setSortBy(state.sortBy)
         })
 
-        taskListManager.listenForTasks()
-
         return () => {
             unsubscribe()
-            taskListManager.destroy()
+            if (lastInitializedRoom.current === roomId) {
+                lastInitializedRoom.current = null
+                taskListManager.destroy()
+            }
         }
     }, [roomId, userId, userName])
 

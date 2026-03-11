@@ -78,6 +78,10 @@ export function LandingPage({ onCreateRoom, onJoinRoom, error, initialRoomId }: 
     >
       <SpaceBackground />
 
+      <div className="absolute top-0 left-0 right-0 p-4 z-40 flex items-center justify-center md:justify-start">
+        <AnimatedLogo />
+      </div>
+
       <div className="w-full max-w-md mx-auto z-10">
         {/* Main Content Card */}
         <div

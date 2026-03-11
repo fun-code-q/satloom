@@ -77,17 +77,26 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
                 setCurrentSongIndex(index)
             } catch (e) {
                 console.log("MoodPlayer: Auto-play blocked, waiting for interaction...")
-                const unlock = async () => {
+
+                // Use a named handler so we can properly remove it after success
+                const unlockAudio = async () => {
                     try {
                         await audio.play()
-                        window.removeEventListener("click", unlock)
-                        window.removeEventListener("touchstart", unlock)
+                        setCurrentSongIndex(index)
+                        console.log("MoodPlayer: Unlocked and playing via user interaction")
+                        // Remove from all sources after successful play
+                        window.removeEventListener("click", unlockAudio, { capture: true })
+                        window.removeEventListener("touchstart", unlockAudio, { capture: true })
+                        document.removeEventListener("click", unlockAudio, { capture: true })
                     } catch (err) {
                         console.error("MoodPlayer: Manual play failed:", err)
                     }
                 }
-                window.addEventListener("click", unlock)
-                window.addEventListener("touchstart", unlock)
+
+                // Add to both window and document at capture phase for broadest coverage
+                window.addEventListener("click", unlockAudio, { capture: true, once: false })
+                window.addEventListener("touchstart", unlockAudio, { capture: true, once: false })
+                document.addEventListener("click", unlockAudio, { capture: true, once: false })
             }
         }
 
@@ -107,6 +116,7 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
             audio.removeEventListener("ended", handleEnded)
         }
     }, [playlist, currentSongIndex])
+
 
     // 3. Volume Ducking Logic
     useEffect(() => {

@@ -233,7 +233,7 @@ interface ChatModalsProps {
     handleDeclinePresentationInvite: () => void
 }
 
-export function ChatModals(props: ChatModalsProps) {
+export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps) {
     const {
         roomId, userProfile, currentUserId, isHost, onLeave, messages,
     } = props
@@ -262,7 +262,7 @@ export function ChatModals(props: ChatModalsProps) {
 
     return (
         <>
-            <div className="flex-1 min-h-0 relative flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 relative flex flex-col overflow-hidden z-[10]">
                 {/* Message List */}
                 <MessageList
                     onReply={props.handleReply}
@@ -456,9 +456,9 @@ export function ChatModals(props: ChatModalsProps) {
             <PlaygroundSetupModal isOpen={props.showPlaygroundSetup} onClose={() => props.setShowPlaygroundSetup(false)} onStartGame={props.handleStartPlayground} initialGame={props.playgroundGame} hostName={userProfile.name} />
             <TheaterSetupModal isOpen={props.showTheaterSetup} onClose={() => props.setShowTheaterSetup(false)} onCreateSession={props.handleCreateTheaterSession} />
 
-            {/* Overlays */}
-            {props.showPlayground && !props.isPlaygroundMinimized && props.playgroundConfig && (
-                <div className="fixed inset-0 z-50 bg-slate-900 flex items-center justify-center p-4">
+            {/* Overlays - Portalled to document.body so they are never clipped by overflow:hidden parents */}
+            {props.showPlayground && !props.isPlaygroundMinimized && props.playgroundConfig && renderModal(
+                <div className="fixed inset-0 z-[200] bg-slate-900 flex items-center justify-center p-4">
                     {props.playgroundConfig.selectedGame === "dots" && (
                         <DotsAndBoxesGameComponent gameConfig={props.playgroundConfig} roomId={roomId} currentUserId={currentUserId} onExit={props.handleExitPlayground} onMinimize={() => props.setIsPlaygroundMinimized(true)} />
                     )}
@@ -588,9 +588,9 @@ export function ChatModals(props: ChatModalsProps) {
             <BreakoutRoomsModal isOpen={props.showBreakoutRooms} onClose={() => props.setShowBreakoutRooms(false)} roomId={roomId} currentUserId={currentUserId} currentUserName={userProfile.name} />
             <PrivacyTermsModal isOpen={props.showPrivacyPolicy || props.showTermsOfService} onClose={() => { props.setShowPrivacyPolicy(false); props.setShowTermsOfService(false) }} type={props.showPrivacyPolicy ? "privacy" : "terms"} />
 
-            {/* Active Game Boards (Join existing) */}
-            {props.activeGame && (
-                <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            {/* Active Game Boards (Join existing) - portalled to body */}
+            {props.activeGame && renderModal(
+                <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     {props.activeGame.type === "chess" && (
                         <ChessBoard
                             gameConfig={{
@@ -643,4 +643,4 @@ export function ChatModals(props: ChatModalsProps) {
             <PasswordEntryModal isOpen={props.roomIsProtected && !props.passwordValidated} roomId={roomId} onSuccess={() => props.setPasswordValidated(true)} onCancel={onLeave} />
         </>
     )
-}
+})

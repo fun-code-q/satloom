@@ -57,8 +57,12 @@ export function useOfflineSupport({
     // Save to localStorage when queue changes
     useEffect(() => {
         const messages = Array.from(messageQueueRef.current.values())
-        localStorage.setItem("satloom-offline-queue", JSON.stringify(messages))
         setPendingMessages(messages)
+        try {
+            localStorage.setItem("satloom-offline-queue", JSON.stringify(messages))
+        } catch (error) {
+            console.error("Failed to save offline queue (Quota exceeded?):", error)
+        }
     }, [messageQueueRef.current.size])
 
     // Listen for online/offline events

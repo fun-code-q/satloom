@@ -53,7 +53,6 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
     const [showVanishModal, setShowVanishModal] = useState(false)
     const [vanishMode, setVanishMode] = useState<VanishModeType>("off")
     const [vanishDuration, setVanishDuration] = useState(30000)
-    const [pendingMessages, setPendingMessages] = useState<Map<string, PendingMessage>>(new Map())
     const isMobile = useIsMobile()
 
     const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -61,49 +60,6 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
     const userPresence = UserPresenceSystem.getInstance()
     const notificationSystem = NotificationSystem.getInstance()
     const lastSentTimeRef = useRef<number>(0)
-
-    // Generate unique temporary ID for send-indicator tracking
-    const generateTempId = useCallback(() => {
-        return 'temp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9)
-    }, [])
-
-    // Track send status locally (does NOT write to Zustand store to avoid ghost messages)
-    // Firebase listener is the single source of truth for the message list.
-    const addOptimisticMessage = useCallback((text: string, sender: string): string => {
-        const tempId = generateTempId()
-        const pendingMsg: PendingMessage = {
-            id: tempId,
-            tempId,
-            text,
-            sender,
-            timestamp: new Date(),
-            status: 'sending'
-        }
-        setPendingMessages(prev => new Map(prev).set(tempId, pendingMsg))
-        return tempId
-    }, [generateTempId])
-
-    // Update message status
-    const updateMessageStatus = useCallback((tempId: string, status: 'sent' | 'failed') => {
-        setPendingMessages(prev => {
-            const newMap = new Map(prev)
-            const msg = newMap.get(tempId)
-            if (msg) {
-                msg.status = status
-                newMap.set(tempId, msg)
-            }
-            return newMap
-        })
-    }, [])
-
-    // Remove pending message
-    const removePendingMessage = useCallback((tempId: string) => {
-        setPendingMessages(prev => {
-            const newMap = new Map(prev)
-            newMap.delete(tempId)
-            return newMap
-        })
-    }, [])
 
     const handleSendMessage = async () => {
         if (!message.trim() || !roomId || !currentUser) return
@@ -147,9 +103,6 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
             setIsTyping(false)
             userPresence.setTyping(roomId, currentUserId, false)
 
-            // Add optimistic message
-            tempId = addOptimisticMessage(cleanedMessage, currentUser.name)
-
             const encryptionManager = EncryptionManager.getInstance()
             const encryptedText = await encryptionManager.encrypt(cleanedMessage, roomId)
 
@@ -171,10 +124,7 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
             }
 
             // Send to server
-            const sendPromise = messageStorage.sendMessage(roomId, newMessage, currentUserId)
-
-            // Await the send result
-            await sendPromise
+            await messageStorage.sendMessage(roomId, newMessage, currentUserId)
 
             // Log telemetry
             telemetry.logEvent('message_sent', roomId, currentUser.name, currentUser.name, { length: cleanedMessage.length })
@@ -186,23 +136,11 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                 telemetry.logEvent('link_shared', roomId, currentUser.name, currentUser.name, { url: urls[0], count: urls.length })
             }
 
-            // Update status to sent
-            updateMessageStatus(tempId, 'sent')
-
             // Haptic feedback for successful send
             notificationSystem.newMessage(currentUser.name, cleanedMessage)
 
-            // Remove from pending after a short delay (for visual transition)
-            setTimeout(() => {
-                removePendingMessage(tempId)
-            }, 2000)
-
         } catch (error) {
             console.error("Error sending message:", error)
-
-            if (tempId) {
-                updateMessageStatus(tempId, 'failed')
-            }
 
             notificationSystem.error("Failed to send message")
         }
@@ -309,13 +247,6 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
             if (typingTimeoutRef.current) {
                 clearTimeout(typingTimeoutRef.current)
             }
-        }
-    }, [])
-
-    // Cleanup pending messages on unmount
-    useEffect(() => {
-        return () => {
-            setPendingMessages(new Map())
         }
     }, [])
 
@@ -430,7 +361,13 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                 )}
 
                 {/* Mobile input row */}
-                <div className="flex items-end gap-2 p-3">
+                <form
+                    className="flex items-end gap-2 p-3"
+                    onSubmit={(e) => {
+                        e.preventDefault()
+                        handleSendMessage()
+                    }}
+                >
                     {/* Attachment button */}
                     <Button
                         variant="ghost"
@@ -467,7 +404,7 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                         {/* Action button - mic or send */}
                         {message.trim() ? (
                             <Button
-                                onClick={handleSendMessage}
+                                type="submit"
                                 size="icon"
                                 className="h-10 w-10 rounded-full bg-cyan-500 hover:bg-cyan-600 text-white shrink-0"
                             >
@@ -484,12 +421,24 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                             </Button>
                         )}
                     </div>
-                </div>
+                </form>
 
                 <EmojiPicker
                     isOpen={showEmojiPicker}
                     onClose={() => setShowEmojiPicker(false)}
                     onEmojiSelect={handleEmojiSelect}
+                />
+
+                {/* Vanish Mode Modal for Mobile */}
+                <VanishModeModal
+                    isOpen={showVanishModal}
+                    onClose={() => setShowVanishModal(false)}
+                    onVanishModeSelect={(mode, duration) => {
+                        setVanishMode(mode)
+                        setVanishDuration(duration)
+                    }}
+                    currentMode={vanishMode}
+                    currentDuration={vanishDuration}
                 />
             </div>
         )
@@ -545,7 +494,13 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
 
 
             {/* Main input area */}
-            <div className="flex items-center gap-3">
+            <form
+                className="flex items-center gap-3"
+                onSubmit={(e) => {
+                    e.preventDefault()
+                    handleSendMessage()
+                }}
+            >
                 <div className="flex items-center gap-1 shrink-0">
                     <AttachmentMenu
                         onFileSelect={onFileSelect}
@@ -606,14 +561,14 @@ export function ChatInput({ onFileSelect, onStartRecording, onQuizStart, onMoodT
                 </Button>
 
                 <Button
-                    onClick={handleSendMessage}
+                    type="submit"
                     className="bg-[#2196F3] hover:bg-blue-500 h-[44px] w-[44px] rounded-full p-0 flex-shrink-0 ml-2 shadow-lg"
                     disabled={!message.trim()}
                     title="Send Message"
                 >
                     <Send className="w-5 h-5 mr-1" />
                 </Button>
-            </div>
+            </form>
 
             <EmojiPicker
                 isOpen={showEmojiPicker}
