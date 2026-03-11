@@ -223,11 +223,11 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
 
   return (
     <PrivacyShield>
-      <div className="h-full flex flex-col relative overflow-hidden bg-slate-950">
-        {/* Room Background */}
+      <div className="h-full flex flex-col relative overflow-hidden">
+        {/* Room Background - renders below all content */}
         <SpaceBackground backgroundImage={feature.moodBackgroundImage} />
 
-        {/* Mood Player */}
+        {/* Mood Player - invisible audio component */}
         <MoodPlayer roomId={roomId} />
 
         {/* Karaoke Restore Button */}

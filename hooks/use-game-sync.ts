@@ -62,6 +62,11 @@ export function useGameSync({ gameConfig, roomId, currentUserId, onExit, isPause
             const updatedState = newGame.getGameState()
             setGameState(updatedState)
 
+            // In single player mode, it's always the host's turn first
+            if (gameConfig.gameType === "single") {
+                setIsMyTurn(true)
+            }
+
             if (gameConfig.gameType !== "single") {
                 gameSignaling.createGame(roomId, gameId, updatedState)
             }
@@ -107,6 +112,11 @@ export function useGameSync({ gameConfig, roomId, currentUserId, onExit, isPause
                 if (game.makeComputerMove()) {
                     const updatedState = game.getGameState()
                     setGameState(updatedState)
+                    // After computer moves, check if next player is human
+                    const nextPlayer = updatedState.players[updatedState.currentPlayerIndex]
+                    if (!nextPlayer.isComputer) {
+                        setIsMyTurn(true)
+                    }
                     gameSounds.playLineDrawn()
                     if (updatedState.lastMove && updatedState.lastMove.boxesCompleted > 0) {
                         gameSounds.playBoxCompleted()
@@ -127,7 +137,11 @@ export function useGameSync({ gameConfig, roomId, currentUserId, onExit, isPause
             const updatedState = game.getGameState()
             setGameState(updatedState)
 
-            if (gameConfig.gameType !== "single") {
+            if (gameConfig.gameType === "single") {
+                // In single player, after human moves, check if it's still human's turn (box completed = same player)
+                const nextPlayer = updatedState.players[updatedState.currentPlayerIndex]
+                setIsMyTurn(!nextPlayer.isComputer)
+            } else {
                 gameSignaling.updateGame(roomId, gameId, updatedState)
                 if (isFirstMove) setIsFirstMove(false)
             }

@@ -348,14 +348,14 @@ export function useChatCalls(params: UseChatCallsParams) {
             // Register guest in the database session
             try {
                 if (gameInvite.gameId) {
-                    const type = updatedConfig.gameType || params.playgroundGame
-                    if (type === "chess") {
+                    const gameType = updatedConfig.selectedGame || params.playgroundGame
+                    if (gameType === "chess") {
                         await ChessManager.getInstance().joinGame(roomId, gameInvite.gameId, currentUserId, guestName || userProfile.name, userProfile.avatar)
-                    } else if (type === "tictactoe") {
+                    } else if (gameType === "tictactoe") {
                         await TicTacToeManager.getInstance().joinGame(roomId, gameInvite.gameId, currentUserId, guestName || userProfile.name, userProfile.avatar)
-                    } else if (type === "connect4") {
+                    } else if (gameType === "connect4") {
                         await ConnectFourManager.getInstance().joinGame(roomId, gameInvite.gameId, currentUserId, guestName || userProfile.name, userProfile.avatar)
-                    } else if (type === "dots") {
+                    } else if (gameType === "dots") {
                         await DotsBoxesManager.getInstance().joinGame(roomId, gameInvite.gameId, currentUserId, guestName || userProfile.name, userProfile.avatar)
                     }
                 }

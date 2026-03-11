@@ -81,18 +81,24 @@ export function SpaceBackground({ backgroundImage }: SpaceBackgroundProps) {
   return (
     <>
       {backgroundImage && (
-        <div className="fixed inset-0 -z-20 transition-all duration-1000 ease-in-out">
+        <div
+          className="absolute inset-0 transition-all duration-1000 ease-in-out"
+          style={{ zIndex: 0 }}
+        >
           <img
             src={backgroundImage}
             alt="Mood Background"
             className="w-full h-full object-cover"
           />
+          {/* Dark overlay so text remains readable */}
+          <div className="absolute inset-0 bg-black/40" />
         </div>
       )}
       <canvas
         ref={canvasRef}
-        className="fixed inset-0 -z-10"
+        className="absolute inset-0"
         style={{
+          zIndex: 1,
           background: backgroundImage
             ? "transparent"
             : "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)"
