@@ -546,14 +546,6 @@ export function AudioCallModal({
                 : "Connecting..."}
           </p>
 
-          {/* Show Hang up even during connecting */}
-          {!isIncoming && callData?.status !== "answered" && (
-            <div className="flex justify-center mb-6">
-              <Button onClick={() => handleEndCall()} className="bg-red-500 hover:bg-red-600 text-white rounded-full w-16 h-16 shadow-lg">
-                <PhoneOff className="w-6 h-6" />
-              </Button>
-            </div>
-          )}
 
           {/* Incoming Call Actions */}
           {isIncoming && callData?.status === "ringing" && (

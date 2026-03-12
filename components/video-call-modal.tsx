@@ -775,16 +775,6 @@ export function VideoCallModal({
                       : "Calling..."
                     : "Connecting..."}
                 </p>
-                {!isIncoming && (
-                  <div className="flex justify-center">
-                    <Button
-                      onClick={handleEndCall}
-                      className="bg-red-500 hover:bg-red-600 text-white rounded-full w-14 h-14 shadow-xl"
-                    >
-                      <PhoneOff className="w-6 h-6" />
-                    </Button>
-                  </div>
-                )}
               </div>
             </div>
           )}
