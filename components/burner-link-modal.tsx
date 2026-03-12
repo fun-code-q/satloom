@@ -166,6 +166,8 @@ export function BurnerLinkModal({ isOpen, onClose, roomId, userId }: BurnerLinkM
                             </Label>
                             {linkType === "text" ? (
                                 <Textarea
+                                    id="burner-content-text"
+                                    name="burner-content"
                                     value={content}
                                     onChange={(e) => setContent(e.target.value)}
                                     placeholder="Enter your secret message..."
@@ -174,6 +176,8 @@ export function BurnerLinkModal({ isOpen, onClose, roomId, userId }: BurnerLinkM
                                 />
                             ) : (
                                 <Input
+                                    id="burner-content-url"
+                                    name="burner-url"
                                     value={content}
                                     onChange={(e) => setContent(e.target.value)}
                                     placeholder="https://example.com"
@@ -227,6 +231,8 @@ export function BurnerLinkModal({ isOpen, onClose, roomId, userId }: BurnerLinkM
                                 Password (optional)
                             </Label>
                             <Input
+                                id="burner-password"
+                                name="burner-password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="Leave empty for no password"
@@ -253,6 +259,8 @@ export function BurnerLinkModal({ isOpen, onClose, roomId, userId }: BurnerLinkM
                                     </div>
                                     <div className="flex gap-2">
                                         <Input
+                                            id="burner-new-link"
+                                            name="burner-new-link"
                                             value={newLink}
                                             readOnly
                                             className="bg-slate-700 border-slate-600 text-sm"
@@ -333,6 +341,8 @@ export function BurnerLinkModal({ isOpen, onClose, roomId, userId }: BurnerLinkM
                             <Label className="text-slate-300">Enter Link Code</Label>
                             <div className="flex gap-2 mt-1">
                                 <Input
+                                    id="burner-view-code"
+                                    name="burner-code"
                                     value={viewCode}
                                     onChange={(e) => setViewCode(e.target.value.toUpperCase())}
                                     placeholder="XXXXXX"

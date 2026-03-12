@@ -27,6 +27,8 @@ export function ChatSearch() {
             <div className="relative group">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-cyan-400 transition-colors" />
                 <Input
+                    id="chat-search-input"
+                    name="chat-search"
                     className="pl-10 pr-10 py-5 bg-white/5 border-white/10 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 text-white placeholder:text-gray-500 rounded-xl transition-all h-9"
                     placeholder="Search in chat..."
                     value={localQuery}

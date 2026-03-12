@@ -178,6 +178,8 @@ export function ProfileModal({ isOpen, onClose, onSave, defaultProfile }: Profil
             </Button>
 
             <Input
+              id="profile-name-input"
+              name="username"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="bg-slate-700 border-slate-600 text-white min-h-[44px] text-base"

@@ -214,6 +214,8 @@ export function useChatEffects(params: UseChatEffectsParams) {
             name: userProfile.name,
             avatar: userProfile.avatar || null,
             joinedAt: Date.now()
+        }).catch(err => {
+            console.warn("ChatInterface: Failed to register member (possibly permission denied):", err)
         })
 
         // Listen for messages

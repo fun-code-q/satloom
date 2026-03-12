@@ -113,6 +113,8 @@ export function MoodSetupModal({ isOpen, onClose, roomId }: MoodSetupModalProps)
                             Background Image
                         </Label>
                         <Input
+                            id="mood-background-image"
+                            name="background-image"
                             value={backgroundImage}
                             onChange={(e) => setBackgroundImage(e.target.value)}
                             placeholder="Paste image URL (e.g., https://...)"
@@ -142,6 +144,8 @@ export function MoodSetupModal({ isOpen, onClose, roomId }: MoodSetupModalProps)
 
                         <div className="flex gap-2">
                             <Input
+                                id="mood-song-url"
+                                name="song-url"
                                 value={currentSongUrl}
                                 onChange={(e) => setCurrentSongUrl(e.target.value)}
                                 placeholder="Paste YouTube or MP3 URL"

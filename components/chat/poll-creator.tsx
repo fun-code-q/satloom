@@ -66,6 +66,8 @@ export function PollCreator({ onSend, onCancel }: PollCreatorProps) {
                 <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">The Question</label>
                     <Input
+                        id="poll-question"
+                        name="poll-question"
                         value={question}
                         onChange={(e) => setQuestion(e.target.value)}
                         placeholder="What's on your mind?"
@@ -80,6 +82,8 @@ export function PollCreator({ onSend, onCancel }: PollCreatorProps) {
                         {options.map((option, index) => (
                             <div key={index} className="flex gap-2 group animate-in slide-in-from-left-2 duration-200" style={{ animationDelay: `${index * 50}ms` }}>
                                 <Input
+                                    id={`poll-option-${index}`}
+                                    name={`poll-option-${index}`}
                                     value={option}
                                     onChange={(e) => handleOptionChange(index, e.target.value)}
                                     placeholder={`Option ${index + 1}`}

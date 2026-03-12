@@ -96,6 +96,8 @@ export function PasswordEntryModal({ isOpen, roomId, onSuccess, onCancel }: Pass
                     {/* PIN Input */}
                     <div>
                         <Input
+                            id="room-pin-input"
+                            name="room-pin"
                             type="password"
                             maxLength={6}
                             value={pin}

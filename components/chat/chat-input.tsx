@@ -416,6 +416,8 @@ export function ChatInput({
 
                     <div className="flex-1 relative">
                         <Input
+                            id="mobile-chat-input"
+                            name="message"
                             ref={inputRef}
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
@@ -532,6 +534,8 @@ export function ChatInput({
                 </div>
 
                 <Input
+                    id="desktop-chat-input"
+                    name="message"
                     ref={inputRef}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}

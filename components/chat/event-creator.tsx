@@ -61,6 +61,8 @@ export function EventCreator({ onSend, onCancel }: EventCreatorProps) {
                 <div>
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1 block mb-1">Event Title</label>
                     <Input
+                        id="event-title"
+                        name="title"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         placeholder="What's happening?"
@@ -74,6 +76,8 @@ export function EventCreator({ onSend, onCancel }: EventCreatorProps) {
                             <Calendar className="w-3 h-3" /> Date
                         </label>
                         <Input
+                            id="event-date"
+                            name="date"
                             type="date"
                             value={date}
                             onChange={(e) => setDate(e.target.value)}
@@ -85,6 +89,8 @@ export function EventCreator({ onSend, onCancel }: EventCreatorProps) {
                             <Clock className="w-3 h-3" /> Time
                         </label>
                         <Input
+                            id="event-time"
+                            name="time"
                             type="time"
                             value={time}
                             onChange={(e) => setTime(e.target.value)}
@@ -98,6 +104,8 @@ export function EventCreator({ onSend, onCancel }: EventCreatorProps) {
                         <MapPin className="w-3 h-3" /> Location (Optional)
                     </label>
                     <Input
+                        id="event-location"
+                        name="location"
                         value={location}
                         onChange={(e) => setLocation(e.target.value)}
                         placeholder="Where is it?"
@@ -110,6 +118,8 @@ export function EventCreator({ onSend, onCancel }: EventCreatorProps) {
                         <AlignLeft className="w-3 h-3" /> Description (Optional)
                     </label>
                     <Textarea
+                        id="event-description"
+                        name="description"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder="Add some details..."

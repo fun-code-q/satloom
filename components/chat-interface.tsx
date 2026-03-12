@@ -464,6 +464,8 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
         />
 
         <input
+          id="chat-file-input"
+          name="chat-file"
           type="file"
           ref={fileInputRef}
           className="hidden"

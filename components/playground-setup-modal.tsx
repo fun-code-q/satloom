@@ -329,6 +329,8 @@ export function PlaygroundSetupModal(props: PlaygroundSetupModalProps) {
 
                   <div className="flex-1">
                     <Input
+                      id={`player-name-${index}`}
+                      name={`player-name-${index}`}
                       value={name}
                       onChange={(e) => handlePlayerNameChange(index, e.target.value)}
                       className="bg-slate-600 border-slate-500 text-white"

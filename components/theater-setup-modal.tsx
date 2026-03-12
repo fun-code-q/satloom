@@ -171,6 +171,8 @@ export function TheaterSetupModal({ isOpen, onClose, onCreateSession }: TheaterS
             ) : (
               <div className="relative flex items-center">
                 <Input
+                  id="theater-video-url"
+                  name="video-url"
                   value={videoUrl}
                   onChange={(e) => setVideoUrl(e.target.value)}
                   placeholder={
@@ -183,6 +185,8 @@ export function TheaterSetupModal({ isOpen, onClose, onCreateSession }: TheaterS
                   className="bg-slate-700 border-slate-600 text-white placeholder-gray-400 pr-12 h-12 rounded-xl"
                 />
                 <input
+                  id="theater-file-input"
+                  name="theater-file"
                   type="file"
                   ref={fileInputRef}
                   className="hidden"

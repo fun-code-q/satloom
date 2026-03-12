@@ -85,6 +85,8 @@ export function QuizSetupModal({ isOpen, onClose, onStartQuiz }: QuizSetupModalP
                   Type any topic you&apos;re interested in (e.g., Science, History, Movies, Sports)
                 </p>
                 <Input
+                  id="quiz-topic-input"
+                  name="quiz-topic"
                   value={customTopic}
                   onChange={(e) => setCustomTopic(e.target.value)}
                   placeholder="Enter topic..."

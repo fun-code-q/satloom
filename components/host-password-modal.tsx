@@ -156,6 +156,8 @@ export function HostPasswordModal({
                             <div>
                                 <label className="block text-xs text-gray-400 mb-1">New PIN (4-6 digits)</label>
                                 <Input
+                                    id="host-pin-input"
+                                    name="host-pin"
                                     type="password"
                                     maxLength={6}
                                     value={pin}
@@ -169,6 +171,8 @@ export function HostPasswordModal({
                             <div>
                                 <label className="block text-xs text-gray-400 mb-1">Confirm PIN</label>
                                 <Input
+                                    id="host-confirm-pin"
+                                    name="host-confirm-pin"
                                     type="password"
                                     maxLength={6}
                                     value={confirmPin}
@@ -184,6 +188,8 @@ export function HostPasswordModal({
                                     Hint (optional, shown to guests)
                                 </label>
                                 <Input
+                                    id="host-hint-input"
+                                    name="host-hint"
                                     type="text"
                                     value={hint}
                                     onChange={(e) => setHint(e.target.value)}
