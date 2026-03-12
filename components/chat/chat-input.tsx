@@ -301,6 +301,7 @@ export function ChatInput({
 
     if (isMobile) {
         // Hide bottom input controls when virtual keyboard is visible
+        /*
         if (isKeyboardEnabled && isKeyboardVisible) {
             return (
                 <div className="flex flex-col bg-slate-900/95 border-t border-slate-700 backdrop-blur-md z-30 flex-shrink-0 pb-safe">
@@ -311,6 +312,7 @@ export function ChatInput({
                 </div>
             )
         }
+        */
 
         return (
             <div className="flex flex-col bg-slate-900/95 border-t border-slate-700 backdrop-blur-md z-30 flex-shrink-0 pb-safe">
@@ -417,15 +419,9 @@ export function ChatInput({
                             ref={inputRef}
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
-                            onFocus={() => {
-                                if (isMobile) {
-                                    toggleKeyboard()
-                                }
-                            }}
                             onKeyPress={handleKeyPress}
                             placeholder={isRecording ? "Recording..." : "Type a message..."}
                             disabled={isRecording}
-                            inputMode={isMobile ? "none" : undefined}
                             className="bg-slate-700 border-slate-600 text-white placeholder:text-gray-400 h-10 pr-10 rounded-full"
                         />
                     </div>
@@ -440,6 +436,8 @@ export function ChatInput({
                             <Smile className={`w-5 h-5 ${showEmojiPicker ? 'text-cyan-400' : ''}`} />
                         </Button>
 
+                        {/* Virtual Keyboard Toggle - Temporarily disabled */}
+                        {/* 
                         <Button
                             variant="ghost"
                             size="icon"
@@ -449,6 +447,7 @@ export function ChatInput({
                         >
                             <Keyboard className="w-5 h-5" />
                         </Button>
+                        */}
 
                         {message.trim() ? (
                             <Button

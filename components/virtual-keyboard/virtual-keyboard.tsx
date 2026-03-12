@@ -617,7 +617,7 @@ export function VirtualKeyboard({
                                 ref={(el) => {
                                     if (el && isEnabled) {
                                         // Auto focus when keyboard is enabled
-                                        setTimeout(() => el.focus(), 100)
+                                        setTimeout(() => el.focus({ preventScroll: true }), 100)
                                     }
                                 }}
                                 type="text"

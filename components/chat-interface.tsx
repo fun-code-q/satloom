@@ -316,7 +316,7 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
 
   return (
     <PrivacyShield>
-      <div className="h-full flex flex-col relative overflow-hidden">
+      <div className="fixed inset-0 flex flex-col overflow-hidden safe-area-top safe-area-bottom">
         {/* Room Background - renders below all content */}
         <SpaceBackground backgroundImage={feature.moodBackgroundImage} />
 
