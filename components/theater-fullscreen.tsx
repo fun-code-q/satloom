@@ -568,6 +568,22 @@ export function TheaterFullscreen({
     if (type === "soundcloud") {
       return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23ff5500&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true`
     }
+    if (type === "archive") {
+      // Handle archive.org URLs - convert /details/ to /embed/
+      if (url.includes("/details/")) {
+        return url.replace("/details/", "/embed/")
+      }
+      // If already an embed URL, use as-is
+      if (url.includes("/embed/")) {
+        return url
+      }
+      // Try to construct embed URL from item ID
+      const itemMatch = url.match(/archive\.org\/([a-zA-Z0-9_-]+)/)
+      if (itemMatch) {
+        return `https://archive.org/embed/${itemMatch[1]}`
+      }
+      return url
+    }
     return url
   }
 
@@ -870,7 +886,7 @@ export function TheaterFullscreen({
         {/* Video Container */}
         <div className="flex-1 relative bg-black flex items-center justify-center">
           <div className="w-full h-full relative flex items-center justify-center">
-            {["youtube", "vimeo", "twitch", "dailymotion", "soundcloud"].includes(session.videoType) ? (
+            {["youtube", "vimeo", "twitch", "dailymotion", "soundcloud", "archive"].includes(session.videoType) ? (
               <iframe
                 ref={iframeRef}
                 src={getEmbedUrl(session.videoUrl || "", session.videoType)}
