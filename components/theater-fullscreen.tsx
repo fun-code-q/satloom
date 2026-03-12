@@ -19,9 +19,6 @@ import { Settings, List, ChevronRight, ChevronLeft, FastForward } from "lucide-r
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Slider } from "@/components/ui/slider"
 import { Badge } from "@/components/ui/badge"
-import dynamic from 'next/dynamic'
-
-const ReactPlayer = dynamic(() => import('react-player'), { ssr: false }) as any
 
 interface TheaterFullscreenProps {
   isOpen: boolean
@@ -73,7 +70,7 @@ export function TheaterFullscreen({
   const [qualitySettings, setQualitySettings] = useState(theaterQuality.getSettings())
   const [canReactPlayerPlay, setCanReactPlayerPlay] = useState(true)
 
-  const playerRef = useRef<any>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const controlsTimeoutRef = useRef<any>(null)
   const theaterSignaling = TheaterSignaling.getInstance()
@@ -105,6 +102,22 @@ export function TheaterFullscreen({
       unsubscribeQuality()
     }
   }, [])
+
+  // Sync volume changes to video element
+  useEffect(() => {
+    const video = videoRef.current
+    if (video) {
+      video.volume = isMuted ? 0 : volume
+    }
+  }, [volume, isMuted])
+
+  // Sync playbackRate changes to video element
+  useEffect(() => {
+    const video = videoRef.current
+    if (video) {
+      video.playbackRate = playbackRate
+    }
+  }, [playbackRate])
 
   // No manual setupPeerConnection - handled by WebRTCManager
 
@@ -302,7 +315,9 @@ export function TheaterFullscreen({
           if (Math.abs(drift) > 2) {
             // Large drift: Hard seek
             console.log("[TheaterSync] Large drift detected, seeking to", updatedSession.currentTime)
-            playerRef.current?.seekTo(updatedSession.currentTime, 'seconds')
+            if (videoRef.current) {
+              videoRef.current.currentTime = updatedSession.currentTime
+            }
             setPlaybackRate(1.0)
           } else if (drift > 0.5) {
             // Behind by 0.5s - 2s: Speed up slightly
@@ -343,28 +358,21 @@ export function TheaterFullscreen({
     return () => unsubscribe()
   }, [session, roomId, currentUserId, onClose, isHost, currentTime])
 
-  // Effect to Check Playability (ReactPlayer.canPlay doesn't work on dynamic components)
+  // Effect to determine if we can use native video element
   useEffect(() => {
     if (!session.videoUrl || session.videoType === "webrtc") {
-      console.log("Playability check skipped: no URL or webrtc type")
+      console.log("Video type check: webrtc or no URL")
       return
     }
 
-    console.log("Checking playability for:", session.videoUrl)
-    // Dynamic import to get the static method on the client
-    import("react-player").then((RP) => {
-      if (RP.default && typeof RP.default.canPlay === "function") {
-        const playable = RP.default.canPlay(session.videoUrl)
-        console.log("Playability result:", playable, "for URL:", session.videoUrl)
-        setCanReactPlayerPlay(playable)
-      } else {
-        console.log("canPlay method not found, defaulting to false")
-        setCanReactPlayerPlay(false)
-      }
-    }).catch(err => {
-      console.error("Error checking playability:", err)
-      setCanReactPlayerPlay(false) // Fallback to iframe
-    })
+    console.log("Checking video type:", session.videoType)
+    // For direct video types, we can use native video element
+    if (session.videoType === "direct") {
+      setCanReactPlayerPlay(true)
+    } else {
+      // For other types (youtube, vimeo, etc.), use iframe
+      setCanReactPlayerPlay(false)
+    }
   }, [session.videoUrl, session.videoType])
 
   // ... (keep Auto-hide controls)
@@ -393,22 +401,26 @@ export function TheaterFullscreen({
         }
         break
       case "play":
-        if (playerRef.current) {
+        if (videoRef.current) {
           setIsPlaying(true)
           if (action.currentTime !== undefined) {
             // Only seek if significantly different to avoid jitter
-            if (Math.abs(playerRef.current.getCurrentTime() - action.currentTime) > 0.5) {
-              playerRef.current.seekTo(action.currentTime, 'seconds')
+            if (Math.abs(videoRef.current.currentTime - action.currentTime) > 0.5) {
+              videoRef.current.currentTime = action.currentTime
             }
           }
+          videoRef.current.play().catch(e => console.error("Play error:", e))
         }
         break
       case "pause":
+        if (videoRef.current) {
+          videoRef.current.pause()
+        }
         setIsPlaying(false)
         break
       case "seek":
-        if (playerRef.current && action.currentTime !== undefined) {
-          playerRef.current.seekTo(action.currentTime, 'seconds')
+        if (videoRef.current && action.currentTime !== undefined) {
+          videoRef.current.currentTime = action.currentTime
           setCurrentTime(action.currentTime)
         }
         break
@@ -431,13 +443,31 @@ export function TheaterFullscreen({
   }
 
   const handlePlay = async () => {
-    if (!isHost) return
+    console.log("handlePlay called, isHost:", isHost, "isPlaying:", isPlaying)
+    if (!isHost) {
+      console.log("Not host, ignoring play click")
+      return
+    }
+
+    const video = videoRef.current
+    if (!video) {
+      console.log("No video ref!")
+      return
+    }
+
+    console.log("Attempting to toggle play/pause")
+    // Toggle play/pause on the video element
+    if (isPlaying) {
+      video.pause()
+    } else {
+      video.play().catch(e => console.error("Play error:", e))
+    }
 
     // Toggle play/pause
     const newIsPlaying = !isPlaying
     setIsPlaying(newIsPlaying)
 
-    const time = playerRef.current ? playerRef.current.getCurrentTime() : 0
+    const time = video.currentTime
 
     await theaterSignaling.sendAction(
       roomId,
@@ -452,7 +482,10 @@ export function TheaterFullscreen({
   const handleSeek = async (newTime: number) => {
     if (!isHost) return
 
-    playerRef.current?.seekTo(newTime, 'seconds')
+    const video = videoRef.current
+    if (video) {
+      video.currentTime = newTime
+    }
     setCurrentTime(newTime)
     await theaterSignaling.sendAction(roomId, session.id, "seek", newTime, currentUserId, currentUser)
   }
@@ -484,7 +517,7 @@ export function TheaterFullscreen({
 
   const handleBufferEnd = () => {
     if (isHost && isBuffering) {
-      const time = playerRef.current ? playerRef.current.getCurrentTime() : 0
+      const time = videoRef.current ? videoRef.current.currentTime : 0
       theaterSignaling.sendAction(roomId, session.id, "play", time, currentUserId, currentUser)
       setIsBuffering(false)
     }
@@ -650,9 +683,10 @@ export function TheaterFullscreen({
   return (
     <PrivacyShield>
       <div
-        className="fixed inset-0 bg-black z-[500] flex flex-col"
+        className="fixed inset-0 bg-black z-[500] flex flex-col overflow-hidden select-none"
         onMouseMove={() => setShowControls(true)}
         onMouseLeave={() => setShowControls(false)}
+        onTouchStart={() => setShowControls(true)}
       >
         {/* Video Container */}
         <div className="flex-1 relative bg-black flex items-center justify-center">
@@ -710,8 +744,6 @@ export function TheaterFullscreen({
             </div>
           ) : (
             <div className="w-full h-full relative">
-              {/* DEBUG: Log session data for troubleshooting */}
-              {process.env.NODE_ENV === 'development' && (console.log("Theater session:", { videoUrl: session.videoUrl, videoType: session.videoType, status: session.status, canReactPlayerPlay, playerReady }), null)}
 
               {/* Click blockers for sync enforcement (like Player.html) */}
               <div className="absolute inset-0 z-10 cursor-default" onClick={(e) => {
@@ -725,48 +757,43 @@ export function TheaterFullscreen({
               </div>
 
               {canReactPlayerPlay ? (
-                <ReactPlayer
-                  ref={playerRef}
-                  url={session.videoUrl}
-                  width="100%"
-                  height="100%"
-                  playing={isPlaying}
-                  volume={isMuted ? 0 : volume}
-                  playbackRate={playbackRate}
-                  onReady={() => {
-                    console.log("ReactPlayer onReady fired!")
-                    setPlayerReady(true)
+                <video
+                  ref={videoRef}
+                  src={session.videoUrl}
+                  className="w-full h-full object-contain"
+                  autoPlay={isPlaying}
+                  muted={isMuted}
+                  onLoadedMetadata={(e) => {
+                    const video = e.target as HTMLVideoElement;
+                    console.log("Video loaded metadata, duration:", video.duration, "isHost:", isHost);
+                    setDuration(video.duration || 0);
+                    setPlayerReady(true);
+                    console.log("Player ready set to true");
                   }}
-                  onProgress={handleProgress as any}
-                  onDuration={setDuration}
-                  onEnded={() => setIsPlaying(false)}
-                  onBuffer={() => {
-                    console.log("ReactPlayer onBuffer")
-                    setIsBuffering(true)
+                  onPlay={() => {
+                    setIsPlaying(true);
+                    console.log("Video play event");
                   }}
-                  onBufferEnd={() => {
-                    console.log("ReactPlayer onBufferEnd")
-                    setIsBuffering(false)
+                  onPause={() => {
+                    setIsPlaying(false);
+                    console.log("Video pause event");
                   }}
-                  onError={(error: any) => console.error("ReactPlayer error:", error)}
-                  config={{
-                    youtube: {
-                      playerVars: {
-                        showinfo: 0,
-                        controls: 0, // Disable native controls for better sync
-                        modestbranding: 1,
-                        rel: 0,
-                        enablejsapi: 1
-                      }
-                    },
-                    vimeo: {
-                      playerOptions: {
-                        responsive: true,
-                        autoplay: true,
-                        controls: false
-                      }
-                    },
-                  } as any}
+                  onEnded={() => {
+                    setIsPlaying(false);
+                    console.log("Video ended event");
+                  }}
+                  onTimeUpdate={(e) => {
+                    setCurrentTime((e.target as HTMLVideoElement).currentTime);
+                  }}
+                  onWaiting={() => {
+                    setIsBuffering(true);
+                    console.log("Video buffering...", "isHost:", isHost);
+                  }}
+                  onCanPlay={() => {
+                    setIsBuffering(false);
+                    console.log("Video can play", "isHost:", isHost);
+                  }}
+                  onError={(e) => console.error("Video error:", e)}
                 />
               ) : (
                 <iframe
@@ -823,26 +850,22 @@ export function TheaterFullscreen({
           )}
         </div>
 
-        {/* Controls */}
+        {/* Controls Overlay */}
         <div
-          className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0"
-            }`}
+          className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent p-4 sm:p-6 transition-opacity duration-300 z-50 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}
         >
-          {/* Progress Bar */}
-          <div className="mb-4">
-            <div className="flex items-center gap-2 text-white text-sm mb-2">
-              <span>{formatTime(currentTime)}</span>
-              <span>/</span>
-              <span>{formatTime(duration)}</span>
+          {/* Progress Bar Area */}
+          <div className="space-y-1 mb-4">
+            <div className="flex items-center justify-between text-white/90 text-[10px] sm:text-xs px-0.5">
+              <span className="font-medium bg-black/40 px-2 py-0.5 rounded-full">{formatTime(currentTime)}</span>
+              <span className="font-medium bg-black/40 px-2 py-0.5 rounded-full tracking-wider">{formatTime(duration)}</span>
             </div>
-            <div className="relative group">
-              <div className="w-full h-1 bg-gray-600 rounded group-hover:h-2 transition-all">
+            <div className="relative group py-2">
+              <div className="w-full h-1 bg-white/20 rounded-full group-hover:h-1.5 transition-all overflow-hidden">
                 <div
-                  className="h-full bg-cyan-400 rounded relative"
+                  className="h-full bg-cyan-400 rounded-full relative shadow-[0_0_10px_rgba(34,211,238,0.5)]"
                   style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
-                >
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 shadow" />
-                </div>
+                />
               </div>
               {isHost && (
                 <input
@@ -856,18 +879,62 @@ export function TheaterFullscreen({
                     setIsDragging(false)
                     handleSeek(currentTime)
                   }}
+                  onTouchStart={() => setIsDragging(true)}
+                  onTouchEnd={() => {
+                    setIsDragging(false)
+                    handleSeek(currentTime)
+                  }}
                   onChange={(e) => setCurrentTime(Number(e.target.value))}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  className="absolute inset-x-0 -top-1 bottom-0 w-full opacity-0 cursor-pointer z-10"
                 />
               )}
             </div>
           </div>
 
-          {/* Control Buttons */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          {/* Buttons & Tools Bar Area */}
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+            {/* Left/Middle Section: Playback & Action Tools */}
+            <div className="flex items-center gap-3 w-full lg:w-auto overflow-x-auto no-scrollbar py-1">
+              {/* Playback Controls (Host Only) */}
+              {isHost ? (
+                <div className="flex items-center gap-1.5 bg-white/5 p-1 rounded-full border border-white/5">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full hover:bg-white/10"
+                    onClick={() => handleSkip(-10)}
+                  >
+                    <SkipBack className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                  </Button>
+
+                  <Button
+                    variant={"ghost" as any}
+                    size={"icon" as any}
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-cyan-400 hover:bg-cyan-500 shadow-lg shadow-cyan-400/20"
+                    onClick={handlePlay}
+                  >
+                    {isPlaying ? <Pause className="w-5 h-5 sm:w-6 sm:h-6 text-black" /> : <Play className="w-5 h-5 sm:w-6 sm:h-6 text-black" />}
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full hover:bg-white/10"
+                    onClick={() => handleSkip(10)}
+                  >
+                    <SkipForward className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-gray-400 text-[10px] sm:text-xs bg-white/5 px-3 py-1.5 rounded-full border border-white/5 whitespace-nowrap">
+                  <Users className="w-3 h-3 sm:w-4 sm:h-4 text-cyan-400" />
+                  <span>Governed by Host</span>
+                </div>
+              )}
+
+              {/* Action Tools */}
               {isHost && (
-                <>
+                <div className="flex items-center gap-2">
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -878,251 +945,181 @@ export function TheaterFullscreen({
                   <Button
                     variant={"ghost" as any}
                     size={"icon" as any}
-                    className="w-10 h-10 rounded-full bg-slate-700 hover:bg-slate-600"
+                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/5"
                     onClick={() => fileInputRef.current?.click()}
-                    title="Stream local movie"
                   >
-                    <Film className="w-5 h-5 text-white" />
+                    <Film className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                   </Button>
                   <Button
                     variant={"ghost" as any}
                     size={"icon" as any}
-                    className="w-10 h-10 rounded-full bg-slate-700 hover:bg-slate-600"
+                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/5"
                     onClick={handleStartScreenShare}
-                    title="Share your screen"
                   >
-                    <Monitor className="w-5 h-5 text-white" />
+                    <Monitor className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                   </Button>
-                </>
-              )}
-            </div>
-
-            <div className="flex items-center gap-4">
-              {/* Chat Toggle */}
-              <Button
-                variant={"ghost" as any}
-                size={"icon" as any}
-                className={`w-10 h-10 rounded-full ${showChat ? "bg-cyan-500 hover:bg-cyan-600" : "bg-slate-700 hover:bg-slate-600"}`}
-                onClick={() => setShowChat(!showChat)}
-              >
-                <MessageSquare className="w-5 h-5 text-white" />
-              </Button>
-
-              {/* Emoji Reaction Button */}
-              <Button
-                variant={"ghost" as any}
-                size={"icon" as any}
-                className={`w-10 h-10 rounded-full ${showEmojiPicker ? "bg-cyan-500 hover:bg-cyan-600" : "bg-slate-700 hover:bg-slate-600"}`}
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              >
-                <Smile className="w-5 h-5 text-white" />
-              </Button>
-
-              {/* Playlist Toggle */}
-              <Button
-                variant={"ghost" as any}
-                size={"icon" as any}
-                className={`w-10 h-10 rounded-full ${showPlaylist ? "bg-cyan-500 hover:bg-cyan-600" : "bg-slate-700 hover:bg-slate-600"}`}
-                onClick={() => setShowPlaylist(!showPlaylist)}
-              >
-                <List className="w-5 h-5 text-white" />
-              </Button>
-
-              {/* Push to Talk */}
-              <Button
-                variant={"ghost" as any}
-                size={"icon" as any}
-                className={`w-10 h-10 rounded-full relative transition-all ${isPushToTalkActive ? "bg-green-500 scale-110 shadow-[0_0_15px_rgba(34,197,94,0.6)]" : "bg-slate-700 hover:bg-slate-600"
-                  }`}
-                onMouseDown={() => handlePushToTalk(true)}
-                onMouseUp={() => handlePushToTalk(false)}
-                onMouseLeave={() => handlePushToTalk(false)}
-                onTouchStart={(e) => {
-                  e.preventDefault()
-                  handlePushToTalk(true)
-                }}
-                onTouchEnd={() => handlePushToTalk(false)}
-                title="Hold to Talk (Space/V)"
-              >
-                {isMicMuted ? (
-                  <MicOff className="w-5 h-5 text-white" />
-                ) : (
-                  <div className="flex items-center justify-center">
-                    <AudioVisualizer stream={localStreamRef.current} width={30} height={20} barColor="#ffffff" />
-                    <Mic className="w-5 h-5 text-white absolute" />
-                  </div>
-                )}
-
-                {isPushToTalkActive && (
-                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-green-500 text-white text-[10px] px-2 py-1 rounded shadow-lg whitespace-nowrap animate-bounce">
-                    Speaking...
-                  </div>
-                )}
-              </Button>
-
-              {/* Playback Controls (Host Only) */}
-              {isHost ? (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-10 h-10 rounded-full bg-slate-700 hover:bg-slate-600"
-                    onClick={() => handleSkip(-10)}
-                  >
-                    <SkipBack className="w-5 h-5 text-white" />
-                  </Button>
-
-                  <Button
-                    variant={"ghost" as any}
-                    size={"icon" as any}
-                    className="w-12 h-12 rounded-full bg-cyan-500 hover:bg-cyan-600"
-                    onClick={handlePlay}
-                  >
-                    {isPlaying ? <Pause className="w-6 h-6 text-white" /> : <Play className="w-6 h-6 text-white" />}
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-10 h-10 rounded-full bg-slate-700 hover:bg-slate-600"
-                    onClick={() => handleSkip(10)}
-                  >
-                    <SkipForward className="w-5 h-5 text-white" />
-                  </Button>
-                </>
-              ) : (
-                <div className="flex items-center gap-2 text-gray-400 text-sm">
-                  <Users className="w-4 h-4" />
-                  <span>Host controls playback</span>
                 </div>
               )}
             </div>
 
-            <div className="flex items-center gap-4">
-              {/* Volume Control */}
-              <div className="flex items-center gap-2 group">
+            {/* Right Section: Interaction & Settings */}
+            <div className="flex items-center justify-between lg:justify-end gap-3 w-full lg:w-auto">
+              <div className="flex items-center gap-1.5 bg-white/5 p-1 rounded-full border border-white/5">
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600"
-                  onClick={toggleMute}
+                  variant={"ghost" as any}
+                  size={"icon" as any}
+                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${showChat ? "bg-cyan-500 text-white" : "hover:bg-white/10 text-white/70"}`}
+                  onClick={() => setShowChat(!showChat)}
                 >
-                  {isMuted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
+                  <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
-                <div className="w-0 overflow-hidden group-hover:w-20 transition-all duration-300">
-                  <input
-                    type="range"
-                    min={0}
-                    max={1}
-                    step={0.1}
-                    value={isMuted ? 0 : volume}
-                    onChange={(e) => {
-                      const newVol = Number(e.target.value)
-                      setVolume(newVol)
-                      setIsMuted(newVol === 0)
-                    }}
-                    className="w-20 h-1 bg-gray-600 rounded appearance-none cursor-pointer"
-                  />
+
+                <Button
+                  variant={"ghost" as any}
+                  size={"icon" as any}
+                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${showEmojiPicker ? "bg-cyan-500 text-white" : "hover:bg-white/10 text-white/70"}`}
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                >
+                  <Smile className="w-4 h-4 sm:w-5 sm:h-5" />
+                </Button>
+
+                <Button
+                  variant={"ghost" as any}
+                  size={"icon" as any}
+                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${showPlaylist ? "bg-cyan-500 text-white" : "hover:bg-white/10 text-white/70"}`}
+                  onClick={() => setShowPlaylist(!showPlaylist)}
+                >
+                  <List className="w-4 h-4 sm:w-5 sm:h-5" />
+                </Button>
+
+                <Button
+                  variant={"ghost" as any}
+                  size={"icon" as any}
+                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-all ${isPushToTalkActive ? "bg-green-500 scale-110 shadow-[0_0_15px_rgba(34,197,94,0.6)]" : "hover:bg-white/10 text-white/70"}`}
+                  onMouseDown={() => handlePushToTalk(true)}
+                  onMouseUp={() => handlePushToTalk(false)}
+                  onMouseLeave={() => handlePushToTalk(false)}
+                  onTouchStart={(e) => {
+                    e.preventDefault()
+                    handlePushToTalk(true)
+                  }}
+                  onTouchEnd={() => handlePushToTalk(false)}
+                >
+                  {isMicMuted ? <MicOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Mic className="w-4 h-4 sm:w-5 sm:h-5" />}
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-2 sm:gap-4">
+                {/* Volume (Desktop Only) */}
+                <div className="hidden md:flex items-center gap-2 group">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-8 h-8 rounded-full hover:bg-white/10"
+                    onClick={toggleMute}
+                  >
+                    {isMuted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
+                  </Button>
+                  <div className="w-0 overflow-hidden group-hover:w-24 transition-all duration-300">
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.1}
+                      value={isMuted ? 0 : volume}
+                      onChange={(e) => {
+                        const newVol = Number(e.target.value)
+                        setVolume(newVol)
+                        setIsMuted(newVol === 0)
+                      }}
+                      className="w-24 h-1 bg-white/20 rounded-full appearance-none cursor-pointer"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* Participants Count */}
-              <div className="flex items-center gap-1 text-white text-sm bg-slate-800/50 px-2 py-1 rounded-full border border-slate-700">
-                <Users className="w-3 h-3" />
-                <span>{session.participants.length}</span>
-              </div>
+                {/* Settings Popover */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"ghost" as any}
+                      size={"icon" as any}
+                      className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/5"
+                    >
+                      <Settings className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 bg-slate-900/95 border-slate-700 backdrop-blur-xl text-white p-4 rounded-3xl shadow-2xl">
+                    <div className="space-y-6">
+                      <h4 className="font-bold text-cyan-400 flex items-center gap-2">
+                        <Settings className="w-4 h-4" /> Theater Settings
+                      </h4>
+                      {/* Speed */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-[10px] font-bold text-gray-400">
+                          <span>PLAYBACK SPEED</span>
+                          <span className="text-cyan-400">{playbackRate}x</span>
+                        </div>
+                        <Slider
+                          value={[playbackRate]}
+                          min={0.5}
+                          max={2.0}
+                          step={0.1}
+                          onValueChange={([val]) => {
+                            setPlaybackRate(val)
+                            if (isHost) {
+                              theaterQuality.setPlaybackSpeed(val)
+                              theaterSignaling.syncPlaybackRate(roomId, session.id, val, currentUserId, currentUser)
+                            }
+                          }}
+                        />
+                      </div>
+                      {/* Quality */}
+                      <div className="space-y-3">
+                        <div className="text-[10px] font-bold text-gray-400">QUALITY</div>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {['360p', '720p', '1080p'].map(q => (
+                            <Button
+                              key={q}
+                              variant="ghost"
+                              size="sm"
+                              className={`text-[10px] h-7 rounded-lg border border-white/5 ${qualitySettings.preferredQuality === q ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' : 'text-white/40'}`}
+                              onClick={() => theaterQuality.setQuality(q as any)}
+                            >
+                              {q}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
 
-              {/* Settings Popover */}
-              <Popover>
-                <PopoverTrigger asChild>
+                {/* Minimize & Exit */}
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <Button
                     variant={"ghost" as any}
                     size={"icon" as any}
-                    className="w-10 h-10 rounded-full bg-slate-700 hover:bg-slate-600 border border-slate-600"
+                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/5"
+                    onClick={onMinimize}
                   >
-                    <Settings className="w-5 h-5 text-white" />
+                    <Minimize2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64 bg-slate-900/95 border-slate-700 backdrop-blur-xl text-white p-4 rounded-3xl shadow-2xl">
-                  <div className="space-y-6">
-                    <h4 className="font-bold text-cyan-400 flex items-center gap-2">
-                      <Settings className="w-4 h-4" /> Theater Settings
-                    </h4>
-
-                    {/* Playback Speed */}
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between text-xs font-bold text-gray-400 hover:text-white transition-colors">
-                        <span>PLAYBACK SPEED</span>
-                        <span className="text-cyan-400">{playbackRate}x</span>
-                      </div>
-                      <Slider
-                        value={[playbackRate]}
-                        min={0.5}
-                        max={2.0}
-                        step={0.1}
-                        onValueChange={([val]) => {
-                          setPlaybackRate(val)
-                          if (isHost) {
-                            theaterQuality.setPlaybackSpeed(val)
-                            theaterSignaling.syncPlaybackRate(roomId, session.id, val, currentUserId, currentUser)
-                          }
-                        }}
-                        className="cursor-pointer"
-                      />
-                    </div>
-
-                    {/* Quality Selection */}
-                    <div className="space-y-3">
-                      <div className="text-xs font-bold text-gray-400">QUALITY</div>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {['360p', '720p', '1080p'].map(q => (
-                          <Button
-                            key={q}
-                            variant="ghost"
-                            size="sm"
-                            className={`text-[10px] h-7 rounded-lg border border-white/5 ${qualitySettings.preferredQuality === q ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' : 'text-white/40'}`}
-                            onClick={() => theaterQuality.setQuality(q as any)}
-                          >
-                            {q}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-white/30 font-medium">
-                      <span>March 2026 Enhanced Sync</span>
-                      <Badge variant="outline" className="text-[8px] h-4 border-cyan-500/20 text-cyan-500/50">v4.2</Badge>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              {/* Minimize Button */}
-              <Button
-                variant={"ghost" as any}
-                size={"icon" as any}
-                className="w-10 h-10 rounded-full bg-slate-700 hover:bg-slate-600 transition-all hover:scale-110 border border-slate-600"
-                onClick={onMinimize}
-              >
-                <Minimize2 className="w-5 h-5 text-white" />
-              </Button>
-
-              {/* Exit Button */}
-              <Button
-                variant={"ghost" as any}
-                size={"icon" as any}
-                className="w-10 h-10 rounded-full bg-red-500 hover:bg-red-600 transition-all hover:scale-110 shadow-lg shadow-red-500/20"
-                onClick={handleClose}
-              >
-                <X className="w-5 h-5 text-white" />
-              </Button>
+                  <Button
+                    variant={"ghost" as any}
+                    size={"icon" as any}
+                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20"
+                    onClick={handleClose}
+                  >
+                    <X className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-
         {/* Playlist Sidebar */}
         <div
-          className={`absolute top-0 right-0 bottom-0 w-80 bg-slate-900/40 backdrop-blur-3xl border-l border-white/10 z-40 transition-transform duration-500 ease-out shadow-[-20px_0_50px_rgba(0,0,0,0.5)] ${showPlaylist ? "translate-x-0" : "translate-x-full"}`}
+          className={`fixed sm:absolute top-0 right-0 bottom-0 w-full sm:w-80 bg-slate-950/95 sm:bg-slate-900/40 backdrop-blur-3xl border-l border-white/10 z-[60] transition-transform duration-500 ease-out shadow-[-20px_0_50px_rgba(0,0,0,0.5)] ${showPlaylist ? "translate-x-0" : "translate-x-full"}`}
         >
           <div className="flex flex-col h-full">
             <div className="p-6 border-b border-white/5 flex items-center justify-between">
@@ -1243,6 +1240,6 @@ export function TheaterFullscreen({
           onEmojiSelect={handleReaction}
         />
       </div>
-    </PrivacyShield>
+    </PrivacyShield >
   )
 }

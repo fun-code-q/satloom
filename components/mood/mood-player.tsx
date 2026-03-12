@@ -106,15 +106,21 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
             <>
                 {/* Hidden ReactPlayer - render even when popup is shown so it can start playing when user clicks Yes */}
                 {playlist.length > 0 && (
-                    <div className="w-0 h-0 overflow-hidden absolute invisible">
+                    <div className="fixed bottom-4 left-4 w-1 h-1 overflow-hidden" style={{ opacity: 0, pointerEvents: 'none' }}>
                         <ReactPlayer
                             {...({
                                 url: playlist[currentSongIndex] || playlist[0],
                                 playing: isPlaying,
                                 volume: BASE_VOLUME,
-                                width: 0,
-                                height: 0,
-                                style: { opacity: 0, position: 'absolute', visibility: 'hidden' },
+                                width: 1,
+                                height: 1,
+                                playsInline: true,
+                                onReady: () => {
+                                    console.log("MoodPlayer ready, isPlaying:", isPlaying)
+                                },
+                                onPlay: () => console.log("MoodPlayer playing"),
+                                onPause: () => console.log("MoodPlayer paused"),
+                                onError: (error: any) => console.error("MoodPlayer error:", error),
                                 onEnded: handlePlayerEnded,
                                 config: {
                                     youtube: {

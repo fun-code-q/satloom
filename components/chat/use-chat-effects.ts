@@ -574,6 +574,9 @@ export function useChatEffects(params: UseChatEffectsParams) {
     // Sync current user mood change
     useEffect(() => {
         if (!roomId || !currentUserId) return
-        userPresence.setUserMood(roomId, currentUserId, currentUserMood || undefined)
+        // Only set mood if it's a valid value (not undefined/null)
+        if (currentUserMood) {
+            userPresence.setUserMood(roomId, currentUserId, currentUserMood)
+        }
     }, [currentUserMood, roomId, currentUserId])
 }

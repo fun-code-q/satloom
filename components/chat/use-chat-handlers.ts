@@ -388,8 +388,9 @@ export function useChatHandlers({
     const handleMoodChange = useCallback(async (mood: { emoji: string; text: string } | null) => {
         setCurrentUserMood(mood)
         try {
-            await userPresence.setUserMood(roomId, currentUserId, mood || undefined)
+            // Only set mood if it's a valid value
             if (mood) {
+                await userPresence.setUserMood(roomId, currentUserId, mood)
                 telemetry.logEvent('vibe_changed', roomId, currentUserId, userProfile.name, { emoji: mood.emoji, status: mood.text })
                 notificationSystem.success(`Status updated to: ${mood.emoji} ${mood.text}`)
             }
