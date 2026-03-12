@@ -91,6 +91,7 @@ export function TheaterFullscreen({
 
   // Initialize VideoStreamManager and Queue
   useEffect(() => {
+    console.log("TheaterFullscreen mounted, initializing...")
     videoStreamManagerRef.current = new VideoStreamManager()
 
     // Subscribe to queue changes
@@ -98,6 +99,7 @@ export function TheaterFullscreen({
     const unsubscribeQuality = theaterQuality.subscribe(setQualitySettings)
 
     return () => {
+      console.log("TheaterFullscreen cleanup")
       videoStreamManagerRef.current?.cleanup()
       unsubscribeQueue()
       unsubscribeQuality()
@@ -109,6 +111,7 @@ export function TheaterFullscreen({
   // Handle pending file from setup
   useEffect(() => {
     if (isOpen && isHost && pendingFile && onFileProcessed) {
+      console.log("Handling pending file:", pendingFile.name)
       handleFileSelect(undefined, pendingFile)
       onFileProcessed()
     }
@@ -342,14 +345,20 @@ export function TheaterFullscreen({
 
   // Effect to Check Playability (ReactPlayer.canPlay doesn't work on dynamic components)
   useEffect(() => {
-    if (!session.videoUrl || session.videoType === "webrtc") return
+    if (!session.videoUrl || session.videoType === "webrtc") {
+      console.log("Playability check skipped: no URL or webrtc type")
+      return
+    }
 
+    console.log("Checking playability for:", session.videoUrl)
     // Dynamic import to get the static method on the client
     import("react-player").then((RP) => {
       if (RP.default && typeof RP.default.canPlay === "function") {
         const playable = RP.default.canPlay(session.videoUrl)
+        console.log("Playability result:", playable, "for URL:", session.videoUrl)
         setCanReactPlayerPlay(playable)
       } else {
+        console.log("canPlay method not found, defaulting to false")
         setCanReactPlayerPlay(false)
       }
     }).catch(err => {
@@ -701,6 +710,9 @@ export function TheaterFullscreen({
             </div>
           ) : (
             <div className="w-full h-full relative">
+              {/* DEBUG: Log session data for troubleshooting */}
+              {process.env.NODE_ENV === 'development' && (console.log("Theater session:", { videoUrl: session.videoUrl, videoType: session.videoType, status: session.status, canReactPlayerPlay, playerReady }), null)}
+
               {/* Click blockers for sync enforcement (like Player.html) */}
               <div className="absolute inset-0 z-10 cursor-default" onClick={(e) => {
                 // If not host, clicking should do nothing. If host, clicking toggles playback.
@@ -721,12 +733,22 @@ export function TheaterFullscreen({
                   playing={isPlaying}
                   volume={isMuted ? 0 : volume}
                   playbackRate={playbackRate}
-                  onReady={() => setPlayerReady(true)}
+                  onReady={() => {
+                    console.log("ReactPlayer onReady fired!")
+                    setPlayerReady(true)
+                  }}
                   onProgress={handleProgress as any}
                   onDuration={setDuration}
                   onEnded={() => setIsPlaying(false)}
-                  onBuffer={() => setIsBuffering(true)}
-                  onBufferEnd={() => setIsBuffering(false)}
+                  onBuffer={() => {
+                    console.log("ReactPlayer onBuffer")
+                    setIsBuffering(true)
+                  }}
+                  onBufferEnd={() => {
+                    console.log("ReactPlayer onBufferEnd")
+                    setIsBuffering(false)
+                  }}
+                  onError={(error: any) => console.error("ReactPlayer error:", error)}
                   config={{
                     youtube: {
                       playerVars: {
