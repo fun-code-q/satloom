@@ -278,7 +278,7 @@ export function useChatCalls(params: UseChatCallsParams) {
 
     const handleCreateTheaterSession = useCallback(async (
         videoUrl: string,
-        videoType: "direct" | "youtube" | "vimeo" | "twitch" | "dailymotion" | "archive" | "webrtc",
+        videoType: "direct" | "youtube" | "vimeo" | "twitch" | "dailymotion" | "archive" | "soundcloud" | "webrtc",
         file?: File
     ) => {
         try {

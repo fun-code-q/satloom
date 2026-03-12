@@ -140,7 +140,7 @@ interface ChatModalsProps {
     currentTheaterSession: TheaterSession | null
     isTheaterHost: boolean
     theaterInvite: TheaterInvite | null
-    handleCreateTheaterSession: (videoUrl: string, videoType: "direct" | "youtube" | "vimeo" | "twitch" | "dailymotion" | "archive" | "webrtc", file?: File) => void
+    handleCreateTheaterSession: (videoUrl: string, videoType: "direct" | "youtube" | "vimeo" | "twitch" | "dailymotion" | "archive" | "soundcloud" | "webrtc", file?: File) => void
     handleAcceptTheaterInvite: () => void
     handleDeclineTheaterInvite: () => void
     handleExitTheater: () => void
