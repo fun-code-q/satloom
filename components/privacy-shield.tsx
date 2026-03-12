@@ -59,12 +59,14 @@ export function PrivacyShield({
                 return false
             }
 
-            // Block DevTools shortcuts
+            // Block DevTools shortcuts (Disabled for debugging)
+            /*
             if (e.key === "F12" ||
                 ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C"))) {
                 e.preventDefault()
                 return false
             }
+            */
         }
 
         const handleContextMenu = (e: MouseEvent) => {

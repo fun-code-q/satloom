@@ -15,58 +15,18 @@ export function ClientSecurity() {
             })
         }
 
-        // === 2. BLOCK DEVTOOLS SHORTCUTS ===
+        // === 2. BLOCK DEVTOOLS SHORTCUTS (Disabled for debugging) ===
         const handleKeyDown = (e: KeyboardEvent) => {
+            return true;
+            /*
             // F12
             if (e.key === "F12") {
                 e.preventDefault()
                 e.stopPropagation()
                 return false
             }
-
-            // Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C (Windows/Linux)
-            if (e.ctrlKey && e.shiftKey && ["I", "i", "J", "j", "C", "c"].includes(e.key)) {
-                e.preventDefault()
-                e.stopPropagation()
-                return false
-            }
-
-            // Ctrl+U (view source)
-            if (e.ctrlKey && (e.key === "u" || e.key === "U")) {
-                e.preventDefault()
-                e.stopPropagation()
-                return false
-            }
-
-            // Cmd+Option+I, Cmd+Option+J (macOS)
-            if (e.metaKey && e.altKey && ["I", "i", "J", "j"].includes(e.key)) {
-                e.preventDefault()
-                e.stopPropagation()
-                return false
-            }
-
-            // PrintScreen key - clear clipboard
-            if (e.key === "PrintScreen") {
-                e.preventDefault()
-                try {
-                    navigator.clipboard.writeText("")
-                } catch (err) { }
-                return false
-            }
-
-            // Ctrl+P (Print)
-            if (e.ctrlKey && (e.key === "p" || e.key === "P")) {
-                e.preventDefault()
-                e.stopPropagation()
-                return false
-            }
-
-            // Ctrl+S (Save page)
-            if (e.ctrlKey && (e.key === "s" || e.key === "S")) {
-                e.preventDefault()
-                e.stopPropagation()
-                return false
-            }
+            ...
+            */
         }
 
         // === 3. BLOCK RIGHT-CLICK CONTEXT MENU ===
@@ -75,12 +35,11 @@ export function ClientSecurity() {
             return false
         }
 
-        // === 4. DEVTOOLS DETECTION (debugger-based) ===
-        // Skip on mobile devices as dimensions vary frequently (address bar, keyboard)
-        // causing false positives for devtools detection.
+        // === 4. DEVTOOLS DETECTION (Disabled for debugging) ===
+        let devtoolsInterval: NodeJS.Timeout | null = null
+        /*
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
 
-        let devtoolsInterval: NodeJS.Timeout | null = null
         if (process.env.NODE_ENV === "production" && !isMobile) {
             devtoolsInterval = setInterval(() => {
                 const threshold = 160
@@ -92,6 +51,7 @@ export function ClientSecurity() {
                 }
             }, 1000)
         }
+        */
 
         // === 5. BLOCK DRAG (prevents drag-to-save images) ===
         const handleDragStart = (e: DragEvent) => {
