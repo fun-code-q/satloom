@@ -916,6 +916,18 @@ export function TheaterFullscreen({
               />
             )}
 
+            {/* Click Shield - Prevents direct interaction with iframes/video */}
+            <div
+              className="absolute inset-0 z-40 cursor-default bg-transparent"
+              onClick={() => {
+                if (isHost) {
+                  handlePlay();
+                }
+              }}
+              onDoubleClick={toggleFullscreen}
+              title={isHost ? "Click to play/pause" : "Governed by Host"}
+            />
+
             {isHost && !localMovieStream && session.videoType === "webrtc" && (
               <div className="absolute inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-md z-20">
                 <div className="text-center p-12 rounded-[40px] bg-slate-800/80 border border-slate-700 shadow-2xl max-w-md animate-in fade-in zoom-in duration-500">
@@ -1308,7 +1320,7 @@ export function TheaterFullscreen({
         </div>
         {/* Playlist Sidebar */}
         <div
-          className={`fixed sm:absolute top-0 right-0 bottom-0 w-full sm:w-80 bg-slate-950/95 sm:bg-slate-900/40 backdrop-blur-3xl border-l border-white/10 z-[60] transition-transform duration-500 ease-out shadow-[-20px_0_50px_rgba(0,0,0,0.5)] ${showPlaylist ? "translate-x-0" : "translate-x-full"}`}
+          className={`fixed sm:absolute top-0 right-0 bottom-0 w-full sm:w-80 bg-slate-950/95 sm:bg-slate-900/40 backdrop-blur-3xl border-l border-white/10 z-[70] transition-transform duration-500 ease-out shadow-[-20px_0_50px_rgba(0,0,0,0.5)] ${showPlaylist ? "translate-x-0" : "translate-x-full"}`}
         >
           <div className="flex flex-col h-full">
             <div className="p-6 border-b border-white/5 flex items-center justify-between">
