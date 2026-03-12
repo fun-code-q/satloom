@@ -73,7 +73,8 @@ export class ConnectFourManager {
                 rematches: [],
             }
 
-            await set(ref(getFirebaseDatabase()!, `rooms/${roomId}/games/connect4/${gameId}`), game)
+            const sanitizedGame = JSON.parse(JSON.stringify(game))
+            await set(ref(getFirebaseDatabase()!, `rooms/${roomId}/games/connect4/${gameId}`), sanitizedGame)
             return game
         } catch (error) {
             console.error("Failed to create Connect Four game:", error)
@@ -109,7 +110,8 @@ export class ConnectFourManager {
             game.status = "in_progress"
             game.updatedAt = Date.now()
 
-            await set(gameRef, game)
+            const sanitizedGame = JSON.parse(JSON.stringify(game))
+            await set(gameRef, sanitizedGame)
             return true
         } catch (error) {
             console.error("Failed to join game:", error)
@@ -182,7 +184,8 @@ export class ConnectFourManager {
             }
 
             game.updatedAt = Date.now()
-            await set(gameRef, game)
+            const sanitizedGame = JSON.parse(JSON.stringify(game))
+            await set(gameRef, sanitizedGame)
 
             return { success: true }
         } catch (error) {

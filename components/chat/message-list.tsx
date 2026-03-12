@@ -87,9 +87,13 @@ export function MessageList({
     }, [])
 
     // Filter messages based on search query
-    const filteredMessages = messages.filter((msg) =>
-        msg.text.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    const filteredMessages = messages.filter((msg) => {
+        const messageText = msg.text?.toLowerCase() || ""
+        return (
+            messageText.includes(searchQuery.toLowerCase()) ||
+            msg.sender?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+    })
 
     // Auto-scroll to bottom when new messages arrive
     const scrollToBottom = useCallback(() => {
@@ -127,9 +131,9 @@ export function MessageList({
         if (!currentQuizSession) return []
 
         // Include all participants, even if they're not currently online
-        return currentQuizSession.participants.map((participantId) => {
+        return (currentQuizSession.participants || []).map((participantId) => {
             const user = onlineUsers.find((u) => u.id === participantId)
-            const hasAnswered = quizAnswers.some(
+            const hasAnswered = (quizAnswers || []).some(
                 (a) =>
                     a.playerId === participantId &&
                     a.questionId === currentQuizSession.questions[currentQuizSession.currentQuestionIndex]?.id,
@@ -246,7 +250,7 @@ export function MessageList({
                                     }
                                     answers={
                                         showQuizResults
-                                            ? quizAnswers.filter(
+                                            ? (quizAnswers || []).filter(
                                                 (a) =>
                                                     a.questionId === currentQuizSession.questions[currentQuizSession.currentQuestionIndex].id,
                                             )
@@ -256,7 +260,7 @@ export function MessageList({
                             )}
 
                         {/* Quiz Results */}
-                        {currentQuizSession && currentQuizSession.status === "finished" && quizResults.length > 0 && (
+                        {currentQuizSession && currentQuizSession.status === "finished" && (quizResults || []).length > 0 && (
                             <QuizResultsBubble results={quizResults} totalQuestions={currentQuizSession.totalQuestions} />
                         )}
 
@@ -297,7 +301,7 @@ export function MessageList({
                             <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"></div>
                         </div>
                         <span className="text-xs font-medium text-cyan-400/90 ml-2">
-                            {onlineUsers
+                            {(onlineUsers || [])
                                 .filter((u) => u.isTyping && u.name !== currentUser?.name)
                                 .map((u) => u.name)
                                 .join(", ")}{" "}

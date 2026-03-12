@@ -92,9 +92,8 @@ export function QuizQuestionBubble({
           <div className="flex items-center gap-3">
             {/* Timer */}
             <div
-              className={`flex items-center gap-2 px-3 py-1 rounded-full ${
-                timeRemaining <= 5 ? "bg-red-500/20 text-red-300 animate-pulse" : "bg-slate-700/50 text-gray-300"
-              }`}
+              className={`flex items-center gap-2 px-3 py-1 rounded-full ${timeRemaining <= 5 ? "bg-red-500/20 text-red-300 animate-pulse" : "bg-slate-700/50 text-gray-300"
+                }`}
             >
               <Clock className="w-4 h-4" />
               <span className="font-mono font-bold">{timeRemaining}s</span>
@@ -140,9 +139,8 @@ export function QuizQuestionBubble({
           <h2 className="text-xl font-medium text-white leading-relaxed">{question.question}</h2>
         </div>
 
-        {/* Answer Options */}
         <div className="grid gap-3 mb-6">
-          {question.options.map((option, index) => {
+          {(question.options || []).map((option, index) => {
             const stats = getAnswerStats(option)
             const isCorrect = showResults && option === correctAnswer
             const isUserAnswer = option === userAnswer
@@ -152,22 +150,20 @@ export function QuizQuestionBubble({
                 key={index}
                 onClick={() => handleAnswerClick(option)}
                 disabled={!!userAnswer || showResults}
-                className={`w-full p-4 rounded-xl border-2 text-left transition-all duration-200 ${getAnswerStyle(option)} ${
-                  !userAnswer && !showResults ? "cursor-pointer" : "cursor-default"
-                }`}
+                className={`w-full p-4 rounded-xl border-2 text-left transition-all duration-200 ${getAnswerStyle(option)} ${!userAnswer && !showResults ? "cursor-pointer" : "cursor-default"
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-bold ${
-                        showResults && isCorrect
+                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-bold ${showResults && isCorrect
                           ? "border-green-400 bg-green-500"
                           : showResults && isUserAnswer && !isCorrect
                             ? "border-red-400 bg-red-500"
                             : isUserAnswer
                               ? "border-purple-400 bg-purple-500"
                               : "border-gray-400"
-                      }`}
+                        }`}
                     >
                       {String.fromCharCode(65 + index)}
                     </div>
@@ -190,9 +186,8 @@ export function QuizQuestionBubble({
                   <div className="mt-2">
                     <div className="w-full bg-slate-600 rounded-full h-1">
                       <div
-                        className={`h-1 rounded-full transition-all duration-500 ${
-                          isCorrect ? "bg-green-400" : "bg-gray-400"
-                        }`}
+                        className={`h-1 rounded-full transition-all duration-500 ${isCorrect ? "bg-green-400" : "bg-gray-400"
+                          }`}
                         style={{ width: `${stats.percentage}%` }}
                       />
                     </div>
@@ -217,12 +212,11 @@ export function QuizQuestionBubble({
               Answered: {participants.filter((p) => p.hasAnswered).length}/{participants.length}
             </span>
             <div className="flex -space-x-1">
-              {participants.slice(0, 3).map((participant, index) => (
+              {(participants || []).slice(0, 3).map((participant, index) => (
                 <div
                   key={participant.id}
-                  className={`w-6 h-6 rounded-full border-2 border-slate-800 flex items-center justify-center text-xs font-bold ${
-                    participant.hasAnswered ? "bg-green-500 text-white" : "bg-gray-600 text-gray-300"
-                  }`}
+                  className={`w-6 h-6 rounded-full border-2 border-slate-800 flex items-center justify-center text-xs font-bold ${participant.hasAnswered ? "bg-green-500 text-white" : "bg-gray-600 text-gray-300"
+                    }`}
                   title={participant.name}
                 >
                   {participant.name[0]}

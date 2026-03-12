@@ -10,11 +10,11 @@ interface QuizResultsBubbleProps {
 
 export function QuizResultsBubble({ results, totalQuestions }: QuizResultsBubbleProps) {
   // Sort results by score (descending), then by average time (ascending)
-  const sortedResults = [...results].sort((a, b) => {
+  const sortedResults = [...(results || [])].sort((a, b) => {
     if (b.score !== a.score) {
-      return b.score - a.score
+      return (b.score || 0) - (a.score || 0)
     }
-    return a.averageTime - b.averageTime
+    return (a.averageTime || 0) - (b.averageTime || 0)
   })
 
   const winner = sortedResults[0]
@@ -92,15 +92,14 @@ export function QuizResultsBubble({ results, totalQuestions }: QuizResultsBubble
             return (
               <div
                 key={result.playerId}
-                className={`flex items-center justify-between p-4 rounded-xl border-2 ${
-                  rank === 1
+                className={`flex items-center justify-between p-4 rounded-xl border-2 ${rank === 1
                     ? "bg-yellow-500/10 border-yellow-400/30"
                     : rank === 2
                       ? "bg-gray-500/10 border-gray-400/30"
                       : rank === 3
                         ? "bg-amber-600/10 border-amber-500/30"
                         : "bg-slate-700/30 border-slate-600/30"
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
@@ -122,15 +121,14 @@ export function QuizResultsBubble({ results, totalQuestions }: QuizResultsBubble
                     {result.score}/{totalQuestions}
                   </div>
                   <div
-                    className={`text-sm font-medium ${
-                      percentage >= 80
+                    className={`text-sm font-medium ${percentage >= 80
                         ? "text-green-400"
                         : percentage >= 60
                           ? "text-yellow-400"
                           : percentage >= 40
                             ? "text-orange-400"
                             : "text-red-400"
-                    }`}
+                      }`}
                   >
                     {percentage}%
                   </div>

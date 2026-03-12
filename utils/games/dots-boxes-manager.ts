@@ -58,10 +58,15 @@ export class DotsBoxesManager {
             }
 
             // Update the game state with the new players list
-            await update(gameRef, {
+            const updateData = {
                 players,
                 lastUpdated: Date.now()
-            })
+            }
+
+            // Sanitize to remove undefined
+            const sanitizedData = JSON.parse(JSON.stringify(updateData))
+
+            await update(gameRef, sanitizedData)
 
             console.log(`DotsBoxesManager: Player ${playerName} joined game ${gameId}`)
             return true

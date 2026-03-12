@@ -46,7 +46,10 @@ export class ChessManager {
             updatedAt: Date.now(),
             rematches: []
         }
-        await set(ref(getFirebaseDatabase()!, `rooms/${roomId}/games/chess/${gameId}`), game)
+
+        // Sanitize to remove undefined
+        const sanitizedGame = JSON.parse(JSON.stringify(game))
+        await set(ref(getFirebaseDatabase()!, `rooms/${roomId}/games/chess/${gameId}`), sanitizedGame)
         return game
     }
 
@@ -62,7 +65,10 @@ export class ChessManager {
         game.blackPlayer = { id: playerId, name: playerName, ...(avatar && { avatar }) }
         game.status = "in_progress"
         game.updatedAt = Date.now()
-        await set(gameRef, game)
+
+        // Sanitize to remove undefined
+        const sanitizedGame = JSON.parse(JSON.stringify(game))
+        await set(gameRef, sanitizedGame)
         return true
     }
 
@@ -70,16 +76,18 @@ export class ChessManager {
         if (!getFirebaseDatabase()!) return false
         const gameRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/chess/${gameId}`)
 
-        // Toggle turn calc (simple version, better to rely on FEN but for UI display...)
-        // Actually FEN contains the turn. We can parse it if needed.
-
-        await update(gameRef, {
+        const updateData: any = {
             fen,
             status,
-            winner,
-            lastMove,
+            winner: winner || null,
+            lastMove: lastMove || null,
             updatedAt: Date.now()
-        })
+        }
+
+        // Sanitize to remove undefined
+        const sanitizedData = JSON.parse(JSON.stringify(updateData))
+
+        await update(gameRef, sanitizedData)
         return true
     }
 

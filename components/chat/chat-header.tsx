@@ -443,12 +443,12 @@ export function ChatHeader({
                     )}
 
                     {/* Participants Bar (Persistent Members) */}
-                    {(roomMembers.length > 1) && (
+                    {(roomMembers?.length > 1) && (
                         <div className="px-3 py-2 bg-slate-800/50 border-b border-slate-700">
                             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide online-users-bar flex-nowrap">
                                 <span className="text-xs text-gray-400 whitespace-nowrap flex-shrink-0">Participants:</span>
-                                {roomMembers.map((member) => {
-                                    const onlineUser = onlineUsers.find(u => u.name === member.name)
+                                {(roomMembers || []).map((member) => {
+                                    const onlineUser = (onlineUsers || []).find(u => u.name === member.name)
                                     const isOnline = !!onlineUser
 
                                     return (

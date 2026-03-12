@@ -270,16 +270,16 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose, onMinim
             {/* Players Area */}
             <div className="grid grid-cols-2 gap-2 sm:gap-4 w-full">
                 <PlayerPanel
-                    name={session.blackPlayer.name}
+                    name={session?.blackPlayer?.name || "Black"}
                     color="black"
                     active={turn === "black"}
-                    captured={board.flat().filter(p => p && p.color === 'white' && p.type !== 'king').length}
+                    captured={(board || []).flat().filter(p => p && p.color === 'white' && p.type !== 'king').length}
                 />
                 <PlayerPanel
-                    name={session.whitePlayer.name}
+                    name={session?.whitePlayer?.name || "White"}
                     color="white"
                     active={turn === "white"}
-                    captured={board.flat().filter(p => p && p.color === 'black' && p.type !== 'king').length}
+                    captured={(board || []).flat().filter(p => p && p.color === 'black' && p.type !== 'king').length}
                 />
             </div>
 
@@ -298,9 +298,9 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose, onMinim
                             {(myColor === "white" ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0]).map(row =>
                                 (myColor === "white" ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0]).map(col => {
                                     const isBlackSquare = (row + col) % 2 === 1
-                                    const piece = board[row][col]
+                                    const piece = board?.[row]?.[col]
                                     const isSelected = selectedSquare?.row === row && selectedSquare?.col === col
-                                    const isValidMove = validMoves.some(m => m.row === row && m.col === col)
+                                    const isValidMove = (validMoves || []).some(m => m.row === row && m.col === col)
 
                                     return (
                                         <div

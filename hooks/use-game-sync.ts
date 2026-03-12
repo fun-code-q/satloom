@@ -43,10 +43,10 @@ export function useGameSync({ gameConfig, roomId, currentUserId, onExit, isPause
         setIsHost(isHostPlayer)
         setHostId(gameConfig.players[0]?.id || "")
 
-        const players: Player[] = gameConfig.players.map((p, index) => ({
+        const players: Player[] = (gameConfig.players || []).map((p, index) => ({
             ...p,
             id: p.id || (index === 0 ? currentUserId : `guest_${Date.now()}`),
-            initials: p.name.substring(0, 2).toUpperCase(),
+            initials: (p.name || "UN").substring(0, 2).toUpperCase(),
             color: p.color || (index === 0 ? "#3b82f6" : "#ef4444"),
             isComputer: p.isComputer ?? false,
             isHost: index === 0,

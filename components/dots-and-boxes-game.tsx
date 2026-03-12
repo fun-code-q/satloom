@@ -148,7 +148,7 @@ export function DotsAndBoxesGameComponent({
 
         {/* Footer / Scores */}
         <div className="p-3 sm:p-4 bg-slate-800 border-t border-slate-700 flex justify-center gap-3 sm:gap-6 overflow-x-auto scrollbar-hide flex-shrink-0">
-          {gameState.players.map((player) => (
+          {(gameState.players || []).map((player) => (
             <div key={player.id} className={`flex items-center gap-2 sm:gap-3 p-2 px-3 sm:px-4 rounded-xl transition-all flex-shrink-0 ${player.id === currentPlayer.id ? "bg-slate-700 ring-2 ring-cyan-500/50" : "bg-slate-900/30"}`}>
               <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm" style={{ backgroundColor: player.color }}>
                 {player.initials}

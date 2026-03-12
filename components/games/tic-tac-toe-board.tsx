@@ -243,14 +243,14 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
 
             {/* Players */}
             <div className="flex justify-between w-full items-center px-4 py-3 bg-white/5 rounded-2xl">
-                <PlayerInfo name={game.players.X.name || "X"} symbol="X" active={game.currentPlayer === "X" && game.status === "in_progress"} color="text-cyan-400" />
+                <PlayerInfo name={game?.players?.X?.name || "X"} symbol="X" active={game?.currentPlayer === "X" && game?.status === "in_progress"} color="text-cyan-400" />
                 <div className="text-slate-600 font-bold italic">VS</div>
-                <PlayerInfo name={game.players.O.name || "O"} symbol="O" active={game.currentPlayer === "O" && game.status === "in_progress"} color="text-pink-400" />
+                <PlayerInfo name={game?.players?.O?.name || "O"} symbol="O" active={game?.currentPlayer === "O" && game?.status === "in_progress"} color="text-pink-400" />
             </div>
 
             {/* Board */}
             <div className="grid grid-cols-3 gap-3 bg-slate-800/50 p-3 rounded-2xl relative">
-                {game.board.map((cell, i) => (
+                {(game?.board || []).map((cell, i) => (
                     <button
                         key={i}
                         onClick={() => handleCellClick(i)}

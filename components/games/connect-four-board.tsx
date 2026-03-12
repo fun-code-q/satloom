@@ -270,9 +270,9 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
 
             {/* Players */}
             <div className="flex justify-between w-full items-center px-4 py-3 bg-white/5 rounded-2xl">
-                <C4PlayerBadge name={game.players.red.name || "Red"} color="red" active={game.currentPlayer === "red" && game.status === "in_progress"} />
+                <C4PlayerBadge name={game?.players?.red?.name || "Red"} color="red" active={game?.currentPlayer === "red"} />
                 <div className="text-slate-600 font-bold italic text-xs uppercase tracking-tighter">VS</div>
-                <C4PlayerBadge name={game.players.yellow.name || "Yellow"} color="yellow" active={game.currentPlayer === "yellow" && game.status === "in_progress"} />
+                <C4PlayerBadge name={game?.players?.yellow?.name || "Yellow"} color="yellow" active={game?.currentPlayer === "yellow"} />
             </div>
 
             {/* Game Board */}
@@ -281,10 +281,10 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
                 <div className="flex gap-2 sm:gap-4 px-2 mb-2 h-8">
                     {Array(7).fill(0).map((_, i) => (
                         <div key={i} className="flex-1 flex justify-center">
-                            {hoverColumn === i && isMyTurn && !game.board[0][i] && !isPaused && (
+                            {hoverColumn === i && isMyTurn && !(game?.board?.[0]?.[i]) && !isPaused && (
                                 <ChevronDown className={cn(
                                     "w-6 h-6 animate-bounce",
-                                    game.currentPlayer === "red" ? "text-red-500" : "text-yellow-400"
+                                    game?.currentPlayer === "red" ? "text-red-500" : "text-yellow-400"
                                 )} />
                             )}
                         </div>
@@ -293,9 +293,9 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
 
                 {/* Grid */}
                 <div className="grid grid-rows-6 gap-2 sm:gap-4">
-                    {game.board.map((row, r) => (
+                    {(game?.board || []).map((row, r) => (
                         <div key={r} className="flex gap-2 sm:gap-4">
-                            {row.map((cell, c) => (
+                            {(row || []).map((cell, c) => (
                                 <div
                                     key={c}
                                     onMouseEnter={() => setHoverColumn(c)}

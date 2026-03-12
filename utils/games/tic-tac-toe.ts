@@ -68,7 +68,8 @@ export class TicTacToeManager {
                 rematches: [],
             }
 
-            await set(ref(getFirebaseDatabase()!, `rooms/${roomId}/games/tictactoe/${gameId}`), game)
+            const sanitizedGame = JSON.parse(JSON.stringify(game))
+            await set(ref(getFirebaseDatabase()!, `rooms/${roomId}/games/tictactoe/${gameId}`), sanitizedGame)
             return game
         } catch (error) {
             console.error("Failed to create Tic-Tac-Toe game:", error)
@@ -98,7 +99,8 @@ export class TicTacToeManager {
             game.status = "in_progress"
             game.updatedAt = Date.now()
 
-            await set(gameRef, game)
+            const sanitizedGame = JSON.parse(JSON.stringify(game))
+            await set(gameRef, sanitizedGame)
             return true
         } catch (error) {
             console.error("Failed to join game:", error)
@@ -153,7 +155,8 @@ export class TicTacToeManager {
             }
 
             game.updatedAt = Date.now()
-            await set(gameRef, game)
+            const sanitizedGame = JSON.parse(JSON.stringify(game))
+            await set(gameRef, sanitizedGame)
 
             return { success: true }
         } catch (error) {
