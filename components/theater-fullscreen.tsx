@@ -106,8 +106,22 @@ export function TheaterFullscreen({
     const unsubscribeQuality = theaterQuality.subscribe(setQualitySettings)
 
     // Track participants
-    const unsubscribePresence = userPresence.listenForPresence(roomId, (users) => {
+    const unsubscribePresence = userPresence.listenForPresence(roomId, (users: any[]) => {
       setParticipantsCount(users.length)
+
+      // Host Handover Logic
+      if (session && session.hostId && users.length > 0) {
+        const currentHostGone = !users.find(u => u.uid === session.hostId)
+        if (currentHostGone) {
+          console.log("[TheaterHandover] Host is gone, electing new host...")
+          // Elect the earliest joiner as the new host
+          const sortedUsers = [...users].sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0))
+          if (sortedUsers[0].uid === currentUserId) {
+            console.log("[TheaterHandover] I am the earliest joiner. Taking over host role.");
+            theaterSignaling.transferHost(roomId, session.id, currentUserId, currentUser);
+          }
+        }
+      }
     })
 
     const handleFullscreenChange = () => {
@@ -363,34 +377,34 @@ export function TheaterFullscreen({
     }
   }, [])
 
-  // PTT Setup
+  // PTT Setup - Only request when actually needed
+  const setupMic = async () => {
+    if (localStreamRef.current) return localStreamRef.current
+    try {
+      console.log("[Theater] Requesting mic access for PTT/Sync...")
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      localStreamRef.current = stream
+      // Mic starts muted until pressed
+      stream.getAudioTracks().forEach(track => track.enabled = false)
+      setIsMicMuted(true)
+      return stream
+    } catch (err) {
+      console.error("Failed to get microphone for Theater:", err)
+      return null
+    }
+  }
+
   useEffect(() => {
-    const setupMic = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-        localStreamRef.current = stream
-        // Mic starts muted
-        stream.getAudioTracks().forEach(track => track.enabled = false)
-        setIsMicMuted(true)
-      } catch (err) {
-        console.error("Failed to get microphone for Theater:", err)
-      }
-    }
-
-    if (isOpen) {
-      setupMic()
-    }
-
     return () => {
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(track => {
           track.stop()
-          console.log(`Theater: Stopped PTT mic track: ${track.kind}`)
+          console.log(`Theater: Released mic track: ${track.kind}`)
         })
         localStreamRef.current = null
       }
     }
-  }, [isOpen])
+  }, [])
 
   // Listen for theater session updates
   useEffect(() => {
@@ -417,24 +431,28 @@ export function TheaterFullscreen({
             if (action.currentTime !== undefined) {
               if (Math.abs(currentTime - action.currentTime) > 1) {
                 if (videoRef.current) videoRef.current.currentTime = action.currentTime
-                if (["youtube", "vimeo"].includes(session.videoType)) {
-                  syncIframePlayer("seek", action.currentTime)
-                  syncIframePlayer("play")
+                syncIframePlayer("seek", action.currentTime)
+                syncIframePlayer("play")
+                if (session.videoType === "webrtc" && videoStreamManagerRef.current) {
+                  videoStreamManagerRef.current.syncPlayback('seek', action.currentTime)
+                  videoStreamManagerRef.current.syncPlayback('play')
                 }
               }
             }
             break
           case "pause":
             setIsPlaying(false)
-            if (["youtube", "vimeo"].includes(session.videoType)) {
-              syncIframePlayer("pause")
+            syncIframePlayer("pause")
+            if (session.videoType === "webrtc" && videoStreamManagerRef.current) {
+              videoStreamManagerRef.current.syncPlayback('pause')
             }
             break
           case "seek":
             if (action.currentTime !== undefined) {
               if (videoRef.current) videoRef.current.currentTime = action.currentTime
-              if (["youtube", "vimeo"].includes(session.videoType)) {
-                syncIframePlayer("seek", action.currentTime)
+              syncIframePlayer("seek", action.currentTime)
+              if (session.videoType === "webrtc" && videoStreamManagerRef.current) {
+                videoStreamManagerRef.current.syncPlayback('seek', action.currentTime)
               }
               setCurrentTime(action.currentTime)
             }
@@ -590,16 +608,32 @@ export function TheaterFullscreen({
   const syncIframePlayer = (action: 'play' | 'pause' | 'seek', time?: number) => {
     if (!iframeRef.current) return
     const iframe = iframeRef.current
+    const type = session.videoType
 
-    if (session.videoType === "youtube") {
+    if (type === "youtube") {
       const msg = action === 'play' ? '{"event":"command","func":"playVideo","args":""}' :
         action === 'pause' ? '{"event":"command","func":"pauseVideo","args":""}' :
           `{"event":"command","func":"seekTo","args":[${time}, true]}`
       iframe.contentWindow?.postMessage(msg, '*')
-    } else if (session.videoType === "vimeo") {
+    } else if (type === "vimeo") {
       const msg = action === 'play' ? '{"method":"play"}' :
         action === 'pause' ? '{"method":"pause"}' :
           `{"method":"seekTo","value":${time}}`
+      iframe.contentWindow?.postMessage(msg, '*')
+    } else if (type === "dailymotion") {
+      const msg = action === 'play' ? '{"command":"play"}' :
+        action === 'pause' ? '{"command":"pause"}' :
+          `{"command":"seek","parameters":[${time}]}`
+      iframe.contentWindow?.postMessage(msg, '*')
+    } else if (type === "soundcloud") {
+      const msg = action === 'play' ? '{"method":"play"}' :
+        action === 'pause' ? '{"method":"pause"}' :
+          `{"method":"seekTo","value":${(time || 0) * 1000}}` // SoundCloud uses ms
+      iframe.contentWindow?.postMessage(msg, '*')
+    } else if (type === "twitch") {
+      const msg = action === 'play' ? '{"command":"play"}' :
+        action === 'pause' ? '{"command":"pause"}' :
+          `{"command":"seek","args":[${time}]}`
       iframe.contentWindow?.postMessage(msg, '*')
     }
   }
@@ -624,20 +658,16 @@ export function TheaterFullscreen({
     const newIsPlaying = !isPlaying
     setIsPlaying(newIsPlaying)
 
-    if (["youtube", "vimeo"].includes(session.videoType)) {
-      syncIframePlayer(newIsPlaying ? "play" : "pause")
+    if (session.videoType === "webrtc" && videoStreamManagerRef.current) {
+      videoStreamManagerRef.current.syncPlayback(newIsPlaying ? 'play' : 'pause')
     }
-
-    // Use the currentTime state which is updated by onProgress
-    // This is more reliable than the ref when using dynamic imports
-    const time = currentTime
 
     try {
       await theaterSignaling.sendAction(
         roomId,
         session.id,
         newIsPlaying ? "play" : "pause",
-        time,
+        currentTime,
         currentUserId,
         currentUser
       )
@@ -653,9 +683,11 @@ export function TheaterFullscreen({
       videoRef.current.currentTime = newTime
     }
 
-    if (["youtube", "vimeo"].includes(session.videoType)) {
-      syncIframePlayer("seek", newTime)
+    if (session.videoType === "webrtc" && videoStreamManagerRef.current) {
+      videoStreamManagerRef.current.syncPlayback('seek', newTime)
     }
+
+    syncIframePlayer("seek", newTime)
 
     setCurrentTime(newTime)
     await theaterSignaling.sendAction(roomId, session.id, "seek", newTime, currentUserId, currentUser)
@@ -714,16 +746,21 @@ export function TheaterFullscreen({
     setIsMuted(!isMuted)
   }
 
-  const handlePushToTalk = (active: boolean) => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getAudioTracks().forEach((track) => {
+  const handlePushToTalk = async (active: boolean) => {
+    let stream = localStreamRef.current
+    if (active && !stream) {
+      stream = await setupMic()
+    }
+
+    if (stream) {
+      stream.getAudioTracks().forEach((track) => {
         track.enabled = active
       })
       setIsPushToTalkActive(active)
       setIsMicMuted(!active)
 
       // Replace audio track in all active WebRTC connections
-      const audioTrack = localStreamRef.current.getAudioTracks()[0]
+      const audioTrack = stream.getAudioTracks()[0]
       if (audioTrack) {
         WebRTCManager.getInstance().replaceAudioTrack(audioTrack)
       }
@@ -891,7 +928,7 @@ export function TheaterFullscreen({
                 ref={iframeRef}
                 src={getEmbedUrl(session.videoUrl || "", session.videoType)}
                 className="w-full h-full border-0"
-                allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                allow="autoplay; fullscreen; picture-in-picture; encrypted-media; microphone"
                 allowFullScreen
                 onLoad={() => setPlayerReady(true)}
               />

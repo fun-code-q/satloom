@@ -172,6 +172,21 @@ export class TheaterSignaling {
     await set(timeRef, currentTime)
   }
 
+  // Explicitly set session status
+  async setStatus(roomId: string, sessionId: string, status: TheaterSession["status"]) {
+    if (!getFirebaseDatabase()!) return
+    const statusRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}/status`)
+    await set(statusRef, status)
+  }
+
+  // Transfer host ownership
+  async transferHost(roomId: string, sessionId: string, newHostId: string, newHostName: string) {
+    if (!getFirebaseDatabase()!) return
+    const sessionPath = `rooms/${roomId}/theater/${sessionId}`
+    await set(ref(getFirebaseDatabase()!, `${sessionPath}/hostId`), newHostId)
+    await set(ref(getFirebaseDatabase()!, `${sessionPath}/hostName`), newHostName)
+  }
+
   // Send buffering status
   async sendBuffering(
     roomId: string,

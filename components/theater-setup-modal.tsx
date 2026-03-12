@@ -109,8 +109,14 @@ export function TheaterSetupModal({ isOpen, onClose, onCreateSession }: TheaterS
           embedUrl = `https://www.dailymotion.com/embed/video/${match[1]}?autoplay=1`
         }
       } else if (selectedType === "archive") {
-        if (processedUrl.includes("/details/")) {
-          // If it's a details page, we try to use the embed version
+        if (processedUrl.includes("/details/") || processedUrl.includes("/download/")) {
+          // If it ends in a media extension, treat as direct for better control
+          if (processedUrl.match(/\.(mp4|mp3|ogg|webm|wav|m4a)$/i)) {
+            onCreateSession(processedUrl, "direct");
+            onClose();
+            return;
+          }
+          // Otherwise use iframe embed
           embedUrl = processedUrl.replace("/details/", "/embed/")
         }
       } else if (selectedType === "soundcloud") {
