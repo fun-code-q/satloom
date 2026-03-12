@@ -204,6 +204,33 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
       if (wakeLockRef.current) wakeLockRef.current.release()
     }
   }, [isMobile])
+  const [viewportStyles, setViewportStyles] = useState<React.CSSProperties>({})
+
+  React.useEffect(() => {
+    if (!isMobile || typeof window === 'undefined' || !window.visualViewport) return
+
+    const vv = window.visualViewport
+    const updateViewport = () => {
+      setViewportStyles({
+        height: `${vv.height}px`,
+        transform: `translateY(${vv.offsetTop}px)`,
+        position: 'fixed' as const,
+        top: 0,
+        left: 0,
+        right: 0,
+        overflow: 'hidden'
+      })
+    }
+
+    vv.addEventListener('resize', updateViewport)
+    vv.addEventListener('scroll', updateViewport)
+    updateViewport()
+
+    return () => {
+      vv.removeEventListener('resize', updateViewport)
+      vv.removeEventListener('scroll', updateViewport)
+    }
+  }, [isMobile])
 
 
 
@@ -316,7 +343,10 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
 
   return (
     <PrivacyShield>
-      <div className="fixed inset-0 flex flex-col overflow-hidden safe-area-top safe-area-bottom">
+      <div
+        className="flex flex-col overflow-hidden safe-area-top safe-area-bottom"
+        style={isMobile ? viewportStyles : { position: 'fixed', inset: 0 }}
+      >
         {/* Room Background - renders below all content */}
         <SpaceBackground backgroundImage={feature.moodBackgroundImage} />
 

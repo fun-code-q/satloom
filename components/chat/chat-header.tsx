@@ -325,7 +325,11 @@ export function ChatHeader({
                                 <DropdownMenuContent align="end" side="bottom" className="bg-slate-800 border-slate-700 text-white min-w-[280px] sm:min-w-64 max-h-[85vh] overflow-y-auto animate-none rounded-2xl shadow-2xl z-[300]" sideOffset={8}>
                                     {/* Mobile Only Quick Actions */}
                                     <div className="md:hidden">
-                                        <DropdownMenuLabel className="text-[10px] text-cyan-400 uppercase tracking-widest px-3 py-2 font-bold opacity-80">Quick Toolset</DropdownMenuLabel>
+                                        <DropdownMenuItem onClick={toggleFullscreen} className="hover:bg-slate-700 cursor-pointer min-h-[48px] haptic flex items-center gap-3 px-3">
+                                            {isFullscreen ? <Minimize2 className="w-4 h-4 text-cyan-400" /> : <Maximize2 className="w-4 h-4 text-cyan-400" />}
+                                            <span>{isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}</span>
+                                        </DropdownMenuItem>
+
                                         <DropdownMenuItem onClick={handleCopyRoomLink} className="hover:bg-slate-700 cursor-pointer min-h-[48px] haptic flex items-center gap-3 px-3">
                                             <Copy className="w-4 h-4 text-cyan-400" /><span>Copy Room ID ({roomId})</span>
                                         </DropdownMenuItem>
@@ -397,18 +401,6 @@ export function ChatHeader({
                         <div className="px-3 py-2 bg-slate-800/50 border-b border-slate-700">
                             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide online-users-bar flex-nowrap">
                                 <span className="text-xs text-gray-400 whitespace-nowrap flex-shrink-0">Participants:</span>
-                                {/* Mobile Fullscreen Toggle - only visible on mobile */}
-                                <button
-                                    onClick={toggleFullscreen}
-                                    className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-gray-300 hover:text-white transition-colors flex-shrink-0"
-                                    aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-                                >
-                                    {isFullscreen ? (
-                                        <Minimize2 className="w-4 h-4" />
-                                    ) : (
-                                        <Maximize2 className="w-4 h-4" />
-                                    )}
-                                </button>
                                 {roomMembers.map((member) => {
                                     const onlineUser = onlineUsers.find(u => u.name === member.name)
                                     const isOnline = !!onlineUser
