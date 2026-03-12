@@ -244,6 +244,7 @@ export class WebRTCManager {
                 if (sender) await sender.replaceTrack(videoTrack)
             }
 
+            this.localStream = screenStream
             videoTrack.onended = () => this.stopScreenShare()
             return screenStream
         } catch (error) {

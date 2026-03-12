@@ -136,6 +136,12 @@ export class VideoStreamManager {
             }
             this.videoElement = null;
         }
+        if (this.stream) {
+            this.stream.getTracks().forEach(track => {
+                track.stop();
+                console.log(`VideoStreamManager: Stopped track: ${track.kind}`);
+            });
+        }
         this.stream = null;
     }
 }

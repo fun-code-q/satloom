@@ -24,6 +24,33 @@ export function useGameVoice({ gameConfig, roomId, currentUserId }: UseGameVoice
     const notificationSystem = NotificationSystem.getInstance()
     const userPresence = UserPresenceSystem.getInstance()
 
+    const cleanupVoice = useCallback(() => {
+        if (localStreamRef.current) {
+            localStreamRef.current.getTracks().forEach((track) => track.stop())
+            localStreamRef.current = null
+        }
+        peerConnectionsRef.current.forEach((pc) => pc.close())
+        peerConnectionsRef.current.clear()
+    }, [])
+
+    const sendSignal = useCallback(async (type: string, payload: any, toUserId: string) => {
+        const db = getFirebaseDatabase()
+        if (!db) return
+        const signalId = `sig_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        const signalRef = ref(db, `rooms/${roomId}/gameVoiceSignals/${toUserId}/${signalId}`)
+        await set(signalRef, {
+            type,
+            payload,
+            fromUserId: currentUserId,
+            timestamp: Date.now()
+        })
+
+        // Auto-remove signal
+        setTimeout(async () => {
+            try { await remove(signalRef) } catch (e) { }
+        }, 10000)
+    }, [roomId, currentUserId])
+
     const setupPeerConnection = useCallback((playerId: string, isInitiator: boolean) => {
         if (peerConnectionsRef.current.has(playerId)) return
 
@@ -59,25 +86,7 @@ export function useGameVoice({ gameConfig, roomId, currentUserId }: UseGameVoice
                 sendSignal("offer", offer, playerId)
             })
         }
-    }, [isSpeakerMuted, roomId, currentUserId])
-
-    const sendSignal = useCallback(async (type: string, payload: any, toUserId: string) => {
-        const db = getFirebaseDatabase()
-        if (!db) return
-        const signalId = `sig_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        const signalRef = ref(db, `rooms/${roomId}/gameVoiceSignals/${toUserId}/${signalId}`)
-        await set(signalRef, {
-            type,
-            payload,
-            fromUserId: currentUserId,
-            timestamp: Date.now()
-        })
-
-        // Auto-remove signal
-        setTimeout(async () => {
-            try { await remove(signalRef) } catch (e) { }
-        }, 10000)
-    }, [roomId, currentUserId])
+    }, [isSpeakerMuted, roomId, currentUserId, sendSignal])
 
     useEffect(() => {
         if (!isVoiceChatActive) return
@@ -117,8 +126,11 @@ export function useGameVoice({ gameConfig, roomId, currentUserId }: UseGameVoice
             }
         })
 
-        return () => unsubscribe()
-    }, [isVoiceChatActive, roomId, currentUserId, setupPeerConnection, sendSignal])
+        return () => {
+            unsubscribe()
+            cleanupVoice()
+        }
+    }, [isVoiceChatActive, roomId, currentUserId, setupPeerConnection, sendSignal, cleanupVoice])
 
     const setupVoiceChat = useCallback(async () => {
         try {
@@ -177,14 +189,6 @@ export function useGameVoice({ gameConfig, roomId, currentUserId }: UseGameVoice
             audio.muted = !isSpeakerMuted
         })
     }, [isSpeakerMuted])
-
-    const cleanupVoice = useCallback(() => {
-        if (localStreamRef.current) {
-            localStreamRef.current.getTracks().forEach((track) => track.stop())
-        }
-        peerConnectionsRef.current.forEach((pc) => pc.close())
-        peerConnectionsRef.current.clear()
-    }, [])
 
     return {
         isMicMuted,

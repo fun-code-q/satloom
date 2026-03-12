@@ -229,7 +229,7 @@ export function KaraokePlayer({ session, onEnd, onMinimize }: KaraokePlayerProps
             </div>
 
             {song.audioUrl && (
-                <div className="hidden">
+                <div className="w-0 h-0 overflow-hidden absolute invisible">
                     <ReactPlayer
                         {...({
                             url: song.audioUrl,

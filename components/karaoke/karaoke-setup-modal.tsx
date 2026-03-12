@@ -115,7 +115,7 @@ export function KaraokeSetupModal({ isOpen, onClose, onStartSession }: KaraokeSe
                         </div>
 
                         {/* Song List */}
-                        <ScrollArea className="h-[280px] pr-4">
+                        <ScrollArea className="h-[220px] md:h-[280px] pr-4">
                             <div className="space-y-2">
                                 {filteredSongs.map((song) => (
                                     <div
@@ -158,8 +158,8 @@ export function KaraokeSetupModal({ isOpen, onClose, onStartSession }: KaraokeSe
                         </ScrollArea>
                     </div>
                 ) : (
-                    <div className="space-y-5 animate-in slide-in-from-right-4 duration-300">
-                        <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
+                        <div className="flex flex-col md:grid md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-white/40 uppercase tracking-wider ml-1">Song Title</label>
                                 <Input
@@ -185,7 +185,7 @@ export function KaraokeSetupModal({ isOpen, onClose, onStartSession }: KaraokeSe
                                 placeholder="Paste lyrics here (each line will be timed for 4 seconds)..."
                                 value={customLyrics}
                                 onChange={(e) => setCustomLyrics(e.target.value)}
-                                className="w-full h-40 bg-white/5 border border-white/10 rounded-2xl p-4 focus:ring-2 focus:ring-primary/50 text-white resize-none placeholder:text-white/20 outline-none"
+                                className="w-full h-24 md:h-40 bg-white/5 border border-white/10 rounded-2xl p-4 focus:ring-2 focus:ring-primary/50 text-white resize-none placeholder:text-white/20 outline-none"
                             />
                         </div>
                         <div className="space-y-2">
@@ -225,13 +225,13 @@ export function KaraokeSetupModal({ isOpen, onClose, onStartSession }: KaraokeSe
 
                 {/* Actions */}
                 <div className="flex gap-4 pt-2">
-                    <Button variant="ghost" onClick={onClose} className="flex-1 text-white/60 hover:text-white hover:bg-white/10 border border-white/5 hover:border-white/20 rounded-2xl h-12 transition-all">
+                    <Button variant="ghost" onClick={onClose} className="flex-1 text-white/60 hover:text-white hover:bg-white/10 border border-white/5 hover:border-white/20 rounded-2xl h-10 md:h-12 transition-all">
                         Exit
                     </Button>
                     <Button
                         onClick={handleStartSession}
                         disabled={(activeTab === "library" ? !selectedSong : (!customTitle || !customLyrics)) || isCreating}
-                        className="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-600/25 rounded-2xl h-12 transition-all"
+                        className="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-600/25 rounded-2xl h-10 md:h-12 transition-all"
                     >
                         <Mic className="h-5 w-5 mr-2" />
                         Start Show

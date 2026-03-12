@@ -453,10 +453,10 @@ export function useChatCalls(params: UseChatCallsParams) {
             const session = await karaokeManager.createSession(song)
             if (session) {
                 params.setCurrentKaraokeSession(session)
-                await karaokeManager.startSession()
+                // await karaokeManager.startSession() // Don't start automatically
                 await karaokeManager.broadcastInvite(song)
                 telemetry.logEvent('karaoke_started', roomId, currentUserId, userProfile.name, { song: song.title })
-                notificationSystem.success(`Karaoke started: ${song.title}`)
+                // notificationSystem.success(`Karaoke invited: ${song.title}`)
             }
         } catch (error) {
             console.error("Error starting karaoke:", error)

@@ -71,6 +71,7 @@ export function TheaterFullscreen({
   const [showPlaylist, setShowPlaylist] = useState(false)
   const [queue, setQueue] = useState<QueuedVideo[]>([])
   const [qualitySettings, setQualitySettings] = useState(theaterQuality.getSettings())
+  const [canReactPlayerPlay, setCanReactPlayerPlay] = useState(true)
 
   const playerRef = useRef<any>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -153,6 +154,7 @@ export function TheaterFullscreen({
     const videoTrack = stream.getVideoTracks()[0]
     if (videoTrack) {
       videoTrack.onended = () => {
+        stream.getTracks().forEach(t => t.stop())
         setLocalMovieStream(null)
         setIsPlaying(false)
         // Optionally close the session or just stop sharing
@@ -241,8 +243,13 @@ export function TheaterFullscreen({
     }
 
     return () => {
-      localStreamRef.current?.getTracks().forEach(track => track.stop())
-      localStreamRef.current = null
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => {
+          track.stop()
+          console.log(`Theater: Stopped PTT mic track: ${track.kind}`)
+        })
+        localStreamRef.current = null
+      }
     }
   }, [isOpen])
 
@@ -323,6 +330,20 @@ export function TheaterFullscreen({
 
     return () => unsubscribe()
   }, [session, roomId, currentUserId, onClose, isHost, currentTime])
+
+  // Effect to Check Playability (ReactPlayer.canPlay doesn't work on dynamic components)
+  useEffect(() => {
+    if (!session.videoUrl || session.videoType === "webrtc") return
+
+    // Dynamic import to get the static method on the client
+    import("react-player").then((RP) => {
+      const playable = RP.default.canPlay(session.videoUrl)
+      setCanReactPlayerPlay(playable)
+    }).catch(err => {
+      console.error("Error checking playability:", err)
+      setCanReactPlayerPlay(false) // Fallback to iframe
+    })
+  }, [session.videoUrl, session.videoType])
 
   // ... (keep Auto-hide controls)
   // ... (keep setupPushToTalk)
@@ -675,7 +696,7 @@ export function TheaterFullscreen({
                 <div className="absolute bottom-0 left-0 w-full h-[33%] bg-transparent" />
               </div>
 
-              {ReactPlayer.canPlay(session.videoUrl) ? (
+              {canReactPlayerPlay ? (
                 <ReactPlayer
                   ref={playerRef}
                   url={session.videoUrl}

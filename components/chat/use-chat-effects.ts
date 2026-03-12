@@ -97,6 +97,7 @@ export function useChatEffects(params: UseChatEffectsParams) {
     const userPresence = UserPresenceSystem.getInstance()
     const callSignaling = CallSignaling.getInstance()
     const theaterSignaling = TheaterSignaling.getInstance()
+    const joinTime = useRef(Date.now()).current
     const quizSystem = QuizSystem.getInstance()
     const prevOnlineUsersRef = useRef<string[]>([])
     const lastMessageCountRef = useRef(messages.length)
@@ -274,15 +275,19 @@ export function useChatEffects(params: UseChatEffectsParams) {
         const callUnsubscribe = callSignaling.listenForCalls(
             roomId, currentUserId,
             (call: CallData) => {
-                if (call.callerId !== currentUserId && call.caller !== userProfile.name) {
-                    console.log("[Signaling] Incoming call received:", call)
-                    setIncomingCall(call)
-                    if (call.type === "video") {
-                        setShowVideoCall(true)
-                        notificationSystem.incomingVideoCall(call.caller)
-                    } else {
-                        setShowAudioCall(true)
-                        notificationSystem.incomingCall(call.caller)
+                if (call.callerId !== currentUserId) {
+                    // If it's for us specifically or a general room call
+                    const isForMe = !call.targetUserId || call.targetUserId === currentUserId
+                    if (call.status === "ringing" && isForMe) {
+                        console.log("[Signaling] Incoming call received:", call)
+                        setIncomingCall(call)
+                        if (call.type === "video") {
+                            setShowVideoCall(true)
+                            notificationSystem.incomingVideoCall(call.caller)
+                        } else {
+                            setShowAudioCall(true)
+                            notificationSystem.incomingCall(call.caller)
+                        }
                     }
                 }
             },
@@ -400,18 +405,22 @@ export function useChatEffects(params: UseChatEffectsParams) {
         const notesRef = ref(db, `rooms/${roomId}/productivity/notes/lastModified`)
         const notesUnsubscribe = onValue(notesRef, (snapshot) => {
             if (snapshot.exists() && !showSharedNotes) {
-                setHasUnreadNotes(true)
-                // We don't have the user name here easily, so we just say "Someone"
-                // Ideally we'd store the last modifier's name in Firebase too
-                notificationSystem.notesUpdated("Someone")
+                const lastMod = snapshot.val()
+                if (typeof lastMod === 'number' && lastMod > joinTime) {
+                    setHasUnreadNotes(true)
+                    notificationSystem.notesUpdated("Someone")
+                }
             }
         })
 
         const tasksRef = ref(db, `rooms/${roomId}/productivity/tasks/lastModified`)
         const tasksUnsubscribe = onValue(tasksRef, (snapshot) => {
             if (snapshot.exists() && !showSharedTaskList) {
-                setHasUnreadTasks(true)
-                notificationSystem.tasksUpdated("Someone")
+                const lastMod = snapshot.val()
+                if (typeof lastMod === 'number' && lastMod > joinTime) {
+                    setHasUnreadTasks(true)
+                    notificationSystem.tasksUpdated("Someone")
+                }
             }
         })
 

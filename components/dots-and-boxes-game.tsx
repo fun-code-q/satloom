@@ -131,7 +131,7 @@ export function DotsAndBoxesGameComponent({
                 <Minimize2 className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
             )}
-            <Button variant="ghost" size="icon" onClick={onExit} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-red-500/20 hover:bg-red-500 text-red-500 hover:text-white haptic">
+            <Button variant="ghost" size="icon" onClick={handleExit} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-red-500/20 hover:bg-red-500 text-red-500 hover:text-white haptic">
               <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
           </div>
@@ -169,7 +169,7 @@ export function DotsAndBoxesGameComponent({
               <div className="flex flex-col gap-4">
                 <Button onClick={() => setIsPaused(false)} className="w-full bg-cyan-600 hover:bg-cyan-500 py-6 text-lg"><Play className="mr-2" /> Resume</Button>
                 <Button onClick={restartGame} variant="outline" className="w-full border-slate-600 py-6"><RotateCcw className="mr-2" /> Restart</Button>
-                <Button onClick={onExit} variant="ghost" className="w-full text-red-400 hover:bg-red-500/10 hover:text-red-300 py-6"><X className="mr-2" /> Exit Game</Button>
+                <Button onClick={handleExit} variant="ghost" className="w-full text-red-400 hover:bg-red-500/10 hover:text-red-300 py-6"><X className="mr-2" /> Exit Game</Button>
               </div>
             </div>
           </div>
@@ -184,7 +184,7 @@ export function DotsAndBoxesGameComponent({
               <p className="text-xl text-gray-400 mb-8">{winner ? `${winner.name} Wins!` : "It's a Draw!"}</p>
               <div className="flex gap-4">
                 <Button onClick={restartGame} className="flex-1 bg-cyan-600 hover:bg-cyan-500 py-8 text-xl font-bold">Play Again</Button>
-                <Button onClick={onExit} variant="outline" className="flex-1 border-slate-700 py-8 text-xl font-bold">Main Menu</Button>
+                <Button onClick={handleExit} variant="outline" className="flex-1 border-slate-700 py-8 text-xl font-bold">Main Menu</Button>
               </div>
             </div>
           </div>

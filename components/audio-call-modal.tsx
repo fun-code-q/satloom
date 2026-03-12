@@ -79,7 +79,7 @@ export function AudioCallModal({
             stream.getTracks().forEach(track => track.stop())
             return
           }
-          setLocalStream(stream)
+          setLocalStreamRef(stream)
 
           const devices = await navigator.mediaDevices.enumerateDevices()
           if (mounted) {
@@ -270,12 +270,12 @@ export function AudioCallModal({
       }
     }
 
-    if (localStream) {
-      localStream.getTracks().forEach(track => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => {
         track.stop()
         console.log(`AudioCall: Stopped local track on end: ${track.kind}`)
       })
-      setLocalStream(null)
+      setLocalStreamRef(null)
     }
 
     setCallDuration(0)
@@ -536,7 +536,7 @@ export function AudioCallModal({
 
           <h3 className="text-xl font-semibold text-white mb-2">{otherParticipant}</h3>
 
-          <p className="text-gray-400 mb-4">
+          <p className="text-gray-400 mb-6">
             {callData?.status === "ringing"
               ? isIncoming
                 ? "Incoming call..."
@@ -545,6 +545,15 @@ export function AudioCallModal({
                 ? formatDuration(callDuration)
                 : "Connecting..."}
           </p>
+
+          {/* Show Hang up even during connecting */}
+          {!isIncoming && callData?.status !== "answered" && (
+            <div className="flex justify-center mb-6">
+              <Button onClick={() => handleEndCall()} className="bg-red-500 hover:bg-red-600 text-white rounded-full w-16 h-16 shadow-lg">
+                <PhoneOff className="w-6 h-6" />
+              </Button>
+            </div>
+          )}
 
           {/* Incoming Call Actions */}
           {isIncoming && callData?.status === "ringing" && (

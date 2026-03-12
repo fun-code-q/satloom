@@ -141,12 +141,23 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
   }, [roomId, userProfile, setRoomId, setCurrentUser])
 
   React.useEffect(() => {
-    const me = onlineUsers.find(u => u.name === userProfile.name)
-    if (me?.isKicked) {
-      alert("You have been kicked from the room by the host.")
-      onLeave()
+    if (onlineUsers.length > 0) {
+      const me = onlineUsers.find(u => u.name === userProfile.name)
+      if (me?.isKicked) {
+        alert("You have been kicked from the room by the host.")
+        onLeave()
+      }
     }
   }, [onlineUsers, userProfile.name, onLeave])
+
+  // Clear productivity badges when opened
+  React.useEffect(() => {
+    if (showSharedNotes) setHasUnreadNotes(false)
+  }, [showSharedNotes, setHasUnreadNotes])
+
+  React.useEffect(() => {
+    if (showSharedTaskList) setHasUnreadTasks(false)
+  }, [showSharedTaskList, setHasUnreadTasks])
 
   // --- Screen Wake Lock & Fullscreen Persistence ---
   const isMobile = useIsMobile()
@@ -416,6 +427,7 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
           productivityGroup={calls.productivityGroup}
           settingsGroup={calls.settingsGroup}
           appSettingsGroup={calls.appSettingsGroup}
+          communicationGroup={calls.communicationGroup}
           menuGroups={calls.menuGroups}
           isMenuOpen={isMenuOpen}
           setIsMenuOpen={setIsMenuOpen}
@@ -637,13 +649,22 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
         />
 
         {/* Karaoke Stage */}
-        {feature.currentKaraokeSession && !isKaraokeMinimized && (
-          <KaraokePlayer
-            session={feature.currentKaraokeSession}
-            onEnd={calls.handleExitKaraoke}
-            onMinimize={() => setIsKaraokeMinimized(true)}
-          />
-        )}
+        {feature.currentKaraokeSession && !isKaraokeMinimized && (() => {
+          const session = feature.currentKaraokeSession;
+          const isHost = session.hostId === currentUserId;
+          const hasJoined = session.players?.[currentUserId]?.hasJoined;
+
+          if (isHost || hasJoined) {
+            return (
+              <KaraokePlayer
+                session={session}
+                onEnd={calls.handleExitKaraoke}
+                onMinimize={() => setIsKaraokeMinimized(true)}
+              />
+            );
+          }
+          return null;
+        })()}
 
         {/* File Preview before sending */}
         <FilePreviewModal

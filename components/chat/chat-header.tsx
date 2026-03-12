@@ -11,7 +11,7 @@ import type { MenuGroup } from "./chat-types"
 import type { RoomMember } from "@/stores/chat-store"
 import {
     Film, Gamepad2, Briefcase, Hammer, MoreVertical, Settings,
-    Copy, Pin, X, Search, Maximize2, Minimize2,
+    Copy, Pin, X, Search, Maximize2, Minimize2, ChevronDown, ChevronRight,
 } from "lucide-react"
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -39,6 +39,7 @@ interface ChatHeaderProps {
     productivityGroup: MenuGroup
     settingsGroup: MenuGroup
     appSettingsGroup: MenuGroup
+    communicationGroup: MenuGroup
     menuGroups: MenuGroup[]
     // Dropdown states
     isMenuOpen: boolean
@@ -76,7 +77,7 @@ export function ChatHeader({
     roomId, isHost,
     currentUserMood, setCurrentUserMood, isMoodSelectorOpen, setIsMoodSelectorOpen,
     handleCopyRoomLink, handleLeaveRoom, handleUnpinMessage,
-    mediaGroup, gamesGroup, productivityGroup, settingsGroup, appSettingsGroup, menuGroups,
+    mediaGroup, gamesGroup, productivityGroup, settingsGroup, appSettingsGroup, communicationGroup, menuGroups,
     isMenuOpen, setIsMenuOpen, isMediaMenuOpen, setIsMediaMenuOpen,
     isGamesMenuOpen, setIsGamesMenuOpen, isProductivityMenuOpen, setIsProductivityMenuOpen,
     isSettingsMenuOpen, setIsSettingsMenuOpen, isAppMenuOpen, setIsAppMenuOpen,
@@ -91,6 +92,7 @@ export function ChatHeader({
     const headerTimeoutRef = useRef<NodeJS.Timeout | null>(null)
     const userPresence = UserPresenceSystem.getInstance()
     const [isFullscreen, setIsFullscreen] = useState(false)
+    const [isSettingsFolded, setIsSettingsFolded] = useState(true)
 
     // Sync sub-menus on main menu close
     useEffect(() => {
@@ -325,43 +327,99 @@ export function ChatHeader({
                                 <DropdownMenuContent align="end" side="bottom" className="bg-slate-800 border-slate-700 text-white min-w-[280px] sm:min-w-64 max-h-[85vh] overflow-y-auto animate-none rounded-2xl shadow-2xl z-[300]" sideOffset={8}>
                                     {/* Mobile Only Quick Actions */}
                                     <div className="md:hidden">
-                                        <DropdownMenuItem onClick={toggleFullscreen} className="hover:bg-slate-700 cursor-pointer min-h-[48px] haptic flex items-center gap-3 px-3">
-                                            {isFullscreen ? <Minimize2 className="w-4 h-4 text-cyan-400" /> : <Maximize2 className="w-4 h-4 text-cyan-400" />}
-                                            <span>{isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}</span>
-                                        </DropdownMenuItem>
+                                        {/* Top Actions Row */}
+                                        <div className="flex items-center gap-2 px-2 py-2 mb-1">
+                                            <Button
+                                                variant="ghost" size="icon"
+                                                onClick={toggleFullscreen}
+                                                className="h-12 w-12 bg-slate-700/50 hover:bg-slate-700 text-cyan-400 rounded-xl haptic"
+                                            >
+                                                {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                                            </Button>
 
-                                        <DropdownMenuItem onClick={handleCopyRoomLink} className="hover:bg-slate-700 cursor-pointer min-h-[48px] haptic flex items-center gap-3 px-3">
-                                            <Copy className="w-4 h-4 text-cyan-400" /><span>Copy Room ID ({roomId})</span>
-                                        </DropdownMenuItem>
+                                            <Button
+                                                variant="ghost"
+                                                onClick={handleCopyRoomLink}
+                                                className="flex-1 h-12 bg-slate-700/50 hover:bg-slate-700 text-cyan-400 rounded-xl font-mono text-sm haptic justify-center"
+                                            >
+                                                {roomId}
+                                            </Button>
+                                        </div>
 
                                         <DropdownMenuSeparator className="bg-slate-700/50 my-1" />
 
-                                        {[mediaGroup, gamesGroup, productivityGroup, settingsGroup, appSettingsGroup].map((group, idx) => (
+                                        {[
+                                            { group: communicationGroup, label: "Communication" },
+                                            { group: mediaGroup, label: "Media" },
+                                            { group: gamesGroup, label: "Games" },
+                                            { group: productivityGroup, label: "Collabration" },
+                                            { group: settingsGroup, label: "Tools" },
+                                            { group: appSettingsGroup, label: "Other", isFoldable: true }
+                                        ].map(({ group, label, isFoldable }: { group: MenuGroup; label: string; isFoldable?: boolean }, idx: number) => (
                                             <React.Fragment key={idx}>
-                                                <DropdownMenuLabel className="text-[10px] text-slate-400 uppercase tracking-widest px-3 py-2 font-bold opacity-70">{group.label}</DropdownMenuLabel>
-                                                {group.items.map((item, i) => (
-                                                    <DropdownMenuItem key={i} onClick={item.action} className="hover:bg-slate-700 cursor-pointer min-h-[48px] haptic flex items-center gap-3 px-3">
-                                                        <item.icon className="w-4 h-4 flex-shrink-0 text-slate-400" /><span>{item.label}</span>
-                                                    </DropdownMenuItem>
-                                                ))}
+                                                <div
+                                                    className={`flex items-center justify-between px-3 py-2 ${isFoldable ? 'cursor-pointer hover:bg-slate-700/50 transition-colors rounded-lg mx-1' : ''}`}
+                                                    onClick={() => isFoldable && setIsSettingsFolded(!isSettingsFolded)}
+                                                >
+                                                    <DropdownMenuLabel className="p-0 text-[10px] text-slate-400 uppercase tracking-widest font-bold opacity-70">
+                                                        {label}
+                                                    </DropdownMenuLabel>
+                                                    {isFoldable && (
+                                                        isSettingsFolded ? <ChevronRight className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />
+                                                    )}
+                                                </div>
+
+                                                {(!isFoldable || !isSettingsFolded) && (
+                                                    <div className="space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                        {group.items.map((item: any, i: number) => (
+                                                            <DropdownMenuItem key={i} onClick={item.action} className="hover:bg-slate-700 cursor-pointer min-h-[48px] haptic flex items-center justify-between px-3">
+                                                                <div className="flex items-center gap-3">
+                                                                    <item.icon className="w-4 h-4 flex-shrink-0 text-slate-400" />
+                                                                    <span>{item.label}</span>
+                                                                </div>
+                                                                {((item.label.toLowerCase().includes("notes") && hasUnreadNotes) ||
+                                                                    (item.label.toLowerCase().includes("task") && hasUnreadTasks)) && (
+                                                                        <span className="w-2 h-2 bg-red-500 rounded-full" />
+                                                                    )}
+                                                            </DropdownMenuItem>
+                                                        ))}
+                                                    </div>
+                                                )}
                                                 <DropdownMenuSeparator className="bg-slate-700/50 my-1" />
                                             </React.Fragment>
                                         ))}
                                     </div>
 
-                                    {/* Standard More Options (Communication, etc.) */}
-                                    <DropdownMenuLabel className="text-[10px] text-pink-400 uppercase tracking-widest px-3 py-2 font-bold opacity-80">Sessions & Social</DropdownMenuLabel>
-                                    {menuGroups.map((group, groupIndex) => (
-                                        <React.Fragment key={groupIndex}>
-                                            {groupIndex > 0 && <DropdownMenuLabel className="text-[10px] text-slate-400 uppercase tracking-widest px-3 py-2 font-bold opacity-70">{group.label}</DropdownMenuLabel>}
-                                            {group.items.map((item, itemIndex) => (
-                                                <DropdownMenuItem key={itemIndex} onClick={item.action} className="hover:bg-slate-700 cursor-pointer min-h-[48px] haptic flex items-center gap-3 px-3">
-                                                    <item.icon className="w-4 h-4 flex-shrink-0 text-slate-400" /><span>{item.label}</span>
-                                                </DropdownMenuItem>
-                                            ))}
-                                            {groupIndex < menuGroups.length - 1 && <DropdownMenuSeparator className="bg-slate-700/50 my-1" />}
-                                        </React.Fragment>
-                                    ))}
+                                    {/* Desktop Only Actions */}
+                                    <div className="hidden md:block">
+                                        {[
+                                            { group: communicationGroup, label: "Communication" },
+                                            { group: mediaGroup, label: "Media" },
+                                            { group: gamesGroup, label: "Games" },
+                                            { group: productivityGroup, label: "Collabration" },
+                                            { group: settingsGroup, label: "Tools" },
+                                            { group: appSettingsGroup, label: "Other" }
+                                        ].map(({ group, label }: { group: MenuGroup; label: string }, idx: number) => (
+                                            <React.Fragment key={idx}>
+                                                <DropdownMenuLabel className="text-[10px] text-slate-400 uppercase tracking-widest px-3 py-2 font-bold opacity-70">
+                                                    {label}
+                                                </DropdownMenuLabel>
+                                                {group.items.map((item: any, i: number) => (
+                                                    <DropdownMenuItem key={i} onClick={item.action} className="hover:bg-slate-700 cursor-pointer min-h-[48px] haptic flex items-center justify-between px-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <item.icon className="w-4 h-4 flex-shrink-0 text-slate-400" />
+                                                            <span>{item.label}</span>
+                                                        </div>
+                                                        {((item.label.toLowerCase().includes("notes") && hasUnreadNotes) ||
+                                                            (item.label.toLowerCase().includes("task") && hasUnreadTasks)) && (
+                                                                <span className="w-2 h-2 bg-red-500 rounded-full" />
+                                                            )}
+                                                    </DropdownMenuItem>
+                                                ))}
+                                                {idx < 5 && <DropdownMenuSeparator className="bg-slate-700/50 my-1" />}
+                                            </React.Fragment>
+                                        ))}
+                                    </div>
                                 </DropdownMenuContent>
                             </DropdownMenu>
 

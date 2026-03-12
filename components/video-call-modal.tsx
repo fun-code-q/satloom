@@ -352,20 +352,23 @@ export function VideoCallModal({
       }
     }
 
-    // Stop all tracks immediately using refs
-    [localStreamRef.current, remoteStreamRef.current, cameraStreamRef.current].forEach(stream => {
+    // Stop all tracks immediately using refs for aggressive hardware release
+    const streamsToStop = [localStreamRef.current, remoteStreamRef.current, cameraStreamRef.current];
+    streamsToStop.forEach(stream => {
       if (stream) {
         stream.getTracks().forEach(track => {
           track.stop()
-          console.log(`VideoCall: Manual end stop (ref): ${track.kind}`)
+          console.log(`VideoCall: Explicit track stop: ${track.kind}`)
         })
       }
     })
 
-    updateLocalStream(null)
-    updateRemoteStream(null)
+    // Clear everything
+    localStreamRef.current = null
+    remoteStreamRef.current = null
     cameraStreamRef.current = null
-    cameraStreamRef.current = null
+    setLocalStream(null)
+    setRemoteStream(null)
 
     setCallDuration(0)
     onClose()
@@ -765,14 +768,23 @@ export function VideoCallModal({
                 <div className="w-20 h-20 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl text-white font-semibold">{otherParticipant.charAt(0).toUpperCase()}</span>
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">{otherParticipant}</h3>
-                <p className="text-gray-400">
+                <p className="text-gray-400 mb-6">
                   {callData?.status === "ringing"
                     ? isIncoming
                       ? "Incoming video call..."
                       : "Calling..."
                     : "Connecting..."}
                 </p>
+                {!isIncoming && (
+                  <div className="flex justify-center">
+                    <Button
+                      onClick={handleEndCall}
+                      className="bg-red-500 hover:bg-red-600 text-white rounded-full w-14 h-14 shadow-xl"
+                    >
+                      <PhoneOff className="w-6 h-6" />
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           )}
