@@ -215,10 +215,14 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
     if (loading) return <div className="flex items-center justify-center p-20 text-white"><Loader2 className="animate-spin mr-2" /> Loading Connect Four...</div>
     if (!game) return <div className="flex items-center justify-center p-20 text-slate-400">Game not found or failed to initialize.</div>
 
-    const isMyTurn = game.currentPlayer === (game.players.red.id === currentUserId ? "red" : "yellow")
+    const isMyTurn = game.status === "in_progress" && (
+        (game.currentPlayer === "red" && game.players.red.id === currentUserId) ||
+        (game.currentPlayer === "yellow" && game.players.yellow.id === currentUserId)
+    )
+    const isPlayer = game.players.red.id === currentUserId || game.players.yellow.id === currentUserId
 
     return (
-        <div className="flex flex-col items-center gap-6 p-6 bg-slate-900/90 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl max-w-lg w-full mx-auto relative overflow-hidden">
+        <div className="flex flex-col items-center gap-6 p-6 bg-slate-900/90 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl max-w-xl w-full mx-auto relative overflow-hidden">
             {/* Header */}
             <div className="flex justify-between items-center w-full">
                 <div className="flex items-center gap-3">

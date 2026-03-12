@@ -7,11 +7,11 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://fun-code-q.github.io/satloom'),
   title: 'SatLoom',
   description: 'Secure, anonymous, real-time communication.',
-  manifest: "/satloom/manifest.json",
+  manifest: "/manifest.json",
   icons: {
-    icon: "/satloom/favicon.ico",
-    shortcut: "/satloom/favicon.ico",
-    apple: "/satloom/apple-touch-icon.png",
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
   },
   openGraph: {
     title: 'SatLoom',
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: "/satloom/og-image.png",
+        url: "/og-image.png",
         width: 1200,
         height: 630,
         alt: "SatLoom - Ultimate Real-time Chat & Collaboration",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     card: 'summary',
     title: 'SatLoom',
     description: 'Secure, anonymous, real-time communication.',
-    images: ['/satloom/og-image.png'],
+    images: ['/og-image.png'],
   },
   other: {
     'theme-color': '#0891b2',

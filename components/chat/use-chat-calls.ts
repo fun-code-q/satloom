@@ -524,13 +524,18 @@ export function useChatCalls(params: UseChatCallsParams) {
 
     const handleStartQuiz = useCallback(async (topic?: string) => {
         try {
+            console.log(`[useChatCalls] Initiating quiz. Topic: ${topic || 'random'}, Room: ${roomId}`)
             const sessionId = await quizSystem.createQuizSession(roomId, currentUserId, userProfile.name, topic)
-            setTimeout(() => { quizSystem.startQuiz(roomId, sessionId) }, 1000)
+            console.log(`[useChatCalls] Quiz session created: ${sessionId}. Scheduling start in 1s...`)
+            setTimeout(() => {
+                console.log(`[useChatCalls] Executing delayed startQuiz for session: ${sessionId}`)
+                quizSystem.startQuiz(roomId, sessionId)
+            }, 1000)
             telemetry.logEvent('quiz_started', roomId, currentUserId, userProfile.name, { topic: topic || 'random' })
             userPresence.updateActivity(roomId, currentUserId, "game")
             notificationSystem.success(topic ? `${topic} quiz started!` : "Random quiz started!")
         } catch (error) {
-            console.error("Error starting quiz:", error)
+            console.error("[useChatCalls] Error in handleStartQuiz:", error)
             notificationSystem.error("Failed to start quiz")
         }
     }, [roomId, currentUserId, userProfile.name])

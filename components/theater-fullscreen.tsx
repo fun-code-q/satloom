@@ -87,6 +87,7 @@ export function TheaterFullscreen({
   const [transcodingProgress, setTranscodingProgress] = useState<number | null>(null)
   const [newQueueUrl, setNewQueueUrl] = useState("")
   const [isAddingToQueue, setIsAddingToQueue] = useState(false)
+  const lastActionTimestampRef = useRef<number>(0)
 
   // Initialize VideoStreamManager and Queue
   useEffect(() => {
@@ -263,8 +264,13 @@ export function TheaterFullscreen({
         return
       }
 
-      // Handle remote actions
-      if (updatedSession.lastAction && updatedSession.lastAction.hostId !== currentUserId) {
+      // Handle remote actions with timestamp checking to prevent double-processing/loops
+      if (updatedSession.lastAction &&
+        updatedSession.lastAction.hostId !== currentUserId &&
+        updatedSession.lastAction.timestamp > lastActionTimestampRef.current) {
+
+        console.log(`[TheaterSync] Processing remote action: ${updatedSession.lastAction.type} at ${updatedSession.lastAction.timestamp}`);
+        lastActionTimestampRef.current = updatedSession.lastAction.timestamp;
         handleRemoteAction(updatedSession.lastAction)
       }
 
@@ -284,24 +290,27 @@ export function TheaterFullscreen({
         setIsPlaying(true)
       }
 
-      // Fluid Catch-up (Micro-Sync)
+      // Fluid Catch-up (Micro-Sync) - Only if status is playing and no action was just processed
       if (!isHost && updatedSession.status === 'playing') {
         const drift = updatedSession.currentTime - currentTime
 
-        if (Math.abs(drift) > 2) {
-          // Large drift: Hard seek
-          console.log("Large drift detected, seeking to", updatedSession.currentTime)
-          playerRef.current?.seekTo(updatedSession.currentTime, 'seconds')
-          setPlaybackRate(1.0)
-        } else if (drift > 0.5) {
-          // Behind by 0.5s - 2s: Speed up slightly
-          setPlaybackRate(1.05)
-        } else if (drift < -0.5) {
-          // Ahead by 0.5s - 2s: Slow down slightly
-          setPlaybackRate(0.95)
+        // Only drift correct if we are not actively handling a hard seek/action
+        if (Math.abs(drift) > 0.5) {
+          if (Math.abs(drift) > 2) {
+            // Large drift: Hard seek
+            console.log("[TheaterSync] Large drift detected, seeking to", updatedSession.currentTime)
+            playerRef.current?.seekTo(updatedSession.currentTime, 'seconds')
+            setPlaybackRate(1.0)
+          } else if (drift > 0.5) {
+            // Behind by 0.5s - 2s: Speed up slightly
+            setPlaybackRate(1.05)
+          } else if (drift < -0.5) {
+            // Ahead by 0.5s - 2s: Slow down slightly
+            setPlaybackRate(0.95)
+          }
         } else {
           // In sync: Normal speed
-          setPlaybackRate(1.0)
+          if (playbackRate !== 1.0) setPlaybackRate(1.0)
         }
       }
       // Handle Presence Sync / Auto-Join WebRTC
@@ -549,12 +558,15 @@ export function TheaterFullscreen({
     }
   }
 
-  // Effect to sync VideoStreamManager with session status
+  // Effect to sync VideoStreamManager with session status - Optimized to prevent stutter
   useEffect(() => {
     if (isMovieStreaming && videoStreamManagerRef.current) {
-      videoStreamManagerRef.current.syncPlayback(isPlaying ? 'play' : 'pause', currentTime)
+      // Only sync play/pause states, don't sync 'currentTime' here every render 
+      // as that triggers high-overhead re-seeks which cause stuttering.
+      // Seeks should only happen via handleRemoteAction (explicit actions) or handleProgress heartbeats.
+      videoStreamManagerRef.current.syncPlayback(isPlaying ? 'play' : 'pause')
     }
-  }, [isPlaying, currentTime, isMovieStreaming])
+  }, [isPlaying, isMovieStreaming])
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.code === "Space" || e.key === "v") && !isPushToTalkActive && isOpen) {

@@ -161,7 +161,7 @@ export function AttachmentMenu({
 
   const filteredOptions = isMobile
     ? attachmentOptions
-    : attachmentOptions.filter(opt => !["vanish", "sounds", "react", "audio-call", "video-call"].includes(opt.type))
+    : attachmentOptions.filter(opt => !["audio-call", "video-call"].includes(opt.type))
 
   const triggerFileInput = (accept: string, type: string) => {
     const input = document.createElement("input")

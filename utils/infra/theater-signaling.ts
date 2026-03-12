@@ -159,9 +159,11 @@ export class TheaterSignaling {
     const actionRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}/lastAction`)
     await set(actionRef, action)
 
-    // Update session status
-    const statusRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}/status`)
-    await set(statusRef, type === "play" ? "playing" : "paused")
+    // Update session status only for play/pause, not for seek/queue
+    if (type === "play" || type === "pause") {
+      const statusRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}/status`)
+      await set(statusRef, type === "play" ? "playing" : "paused")
+    }
 
     // Update current time
     const timeRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}/currentTime`)

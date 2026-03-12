@@ -188,10 +188,14 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
     if (loading) return <div className="flex items-center justify-center p-20 text-white"><Loader2 className="animate-spin mr-2" /> Loading Tic Tac Toe...</div>
     if (!game) return <div className="flex items-center justify-center p-20 text-slate-400">Game not found or failed to initialize.</div>
 
-    const isMyTurn = game.currentPlayer === (game.players.X.id === currentUserId ? "X" : "O")
+    const isMyTurn = game.status === "in_progress" && (
+        (game.currentPlayer === "X" && game.players.X.id === currentUserId) ||
+        (game.currentPlayer === "O" && game.players.O.id === currentUserId)
+    )
+    const isPlayer = game.players.X.id === currentUserId || game.players.O.id === currentUserId
 
     return (
-        <div className="flex flex-col items-center gap-6 p-6 bg-slate-900/90 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-xl max-w-sm w-full mx-auto relative overflow-hidden">
+        <div className="flex flex-col items-center gap-6 p-6 bg-slate-900/90 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-xl max-w-[400px] w-full mx-auto relative overflow-hidden">
             {/* Header */}
             <div className="flex justify-between items-center w-full">
                 <div className="flex items-center gap-3">

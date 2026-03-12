@@ -279,9 +279,9 @@ export function useChatEffects(params: UseChatEffectsParams) {
             (call: CallData) => {
                 if (call.callerId !== currentUserId) {
                     // If it's for us specifically or a general room call
-                    const isForMe = !call.targetUserId || call.targetUserId === currentUserId
+                    const isForMe = !call.targetUserId || call.targetUserId === currentUserId || call.targetUserId === "all"
                     if (call.status === "ringing" && isForMe) {
-                        console.log("[Signaling] Incoming call received:", call)
+                        console.log(`[useChatEffects] Incoming call ring: ${call.id} from ${call.caller} (Target: ${call.targetUserId})`)
                         setIncomingCall(call)
                         if (call.type === "video") {
                             setShowVideoCall(true)
@@ -543,6 +543,7 @@ export function useChatEffects(params: UseChatEffectsParams) {
     useEffect(() => {
         if (!roomId) return
         const unsubscribeActiveQuiz = quizSystem.listenForActiveQuiz(roomId, (sessionId: string | null) => {
+            console.log(`[useChatEffects] Active quiz update for room ${roomId}: ${sessionId || 'none'}`)
             if (quizSessionUnsubscribeRef.current) { quizSessionUnsubscribeRef.current(); quizSessionUnsubscribeRef.current = null }
             if (quizAnswersUnsubscribeRef.current) { quizAnswersUnsubscribeRef.current(); quizAnswersUnsubscribeRef.current = null }
             if (!sessionId) {

@@ -92,9 +92,11 @@ export class QuizSystem {
     }
 
     const sessionId = `quiz_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    console.log(`[QuizSystem] Creating session ${sessionId} for room ${roomId}. Topic: ${topic || 'random'}`)
 
     // Generate questions
     const questions = await this.generateQuestions(topic)
+    console.log(`[QuizSystem] Generated ${questions.length} questions for session ${sessionId}`)
 
     const session: QuizSession = {
       id: sessionId,
@@ -105,18 +107,17 @@ export class QuizSystem {
       questions,
       currentQuestionIndex: 0,
       status: "waiting",
-      timePerQuestion: 10, // 10 seconds per question
-      totalQuestions: 10,
+      timePerQuestion: 10,
+      totalQuestions: questions.length, // Use actual length
       createdAt: Date.now(),
       participants: [hostId],
     }
 
     const sessionRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/quiz/${sessionId}`)
     await set(sessionRef, session)
+    console.log(`[QuizSystem] Session ${sessionId} saved to database.`)
 
-    // Set as active quiz for the room
     await this.setActiveQuiz(roomId, sessionId)
-
     return sessionId
   }
 
@@ -164,35 +165,22 @@ export class QuizSystem {
 
     if (topic) {
       const normalizedTopic = topic.toLowerCase().trim()
-
-      // Direct category match
       let categoryId = categoryMap[normalizedTopic]
 
-      // Fuzzy matching for custom topics
       if (!categoryId) {
         const topicKeywords = normalizedTopic.split(" ")
-
         for (const [category, id] of Object.entries(categoryMap)) {
           const matches = topicKeywords.some(
             (keyword) =>
               category.includes(keyword) ||
               keyword.includes(category) ||
-              (category === "computers" &&
-                (keyword.includes("programming") || keyword.includes("tech") || keyword.includes("software"))) ||
+              (category === "computers" && (keyword.includes("programming") || keyword.includes("tech") || keyword.includes("software"))) ||
               (category === "movies" && (keyword.includes("film") || keyword.includes("cinema"))) ||
-              (category === "sports" &&
-                (keyword.includes("sport") ||
-                  keyword.includes("football") ||
-                  keyword.includes("basketball") ||
-                  keyword.includes("soccer"))) ||
-              (category === "science" &&
-                (keyword.includes("physics") || keyword.includes("chemistry") || keyword.includes("biology"))) ||
-              (category === "music" &&
-                (keyword.includes("song") || keyword.includes("instrument") || keyword.includes("band"))) ||
-              (category === "nature" &&
-                (keyword.includes("animal") || keyword.includes("plant") || keyword.includes("environment"))),
+              (category === "sports" && (keyword.includes("sport") || keyword.includes("football") || keyword.includes("basketball") || keyword.includes("soccer"))) ||
+              (category === "science" && (keyword.includes("physics") || keyword.includes("chemistry") || keyword.includes("biology"))) ||
+              (category === "music" && (keyword.includes("song") || keyword.includes("instrument") || keyword.includes("band"))) ||
+              (category === "nature" && (keyword.includes("animal") || keyword.includes("plant") || keyword.includes("environment"))),
           )
-
           if (matches) {
             categoryId = id
             break
@@ -205,27 +193,40 @@ export class QuizSystem {
       }
     }
 
-    const response = await fetch(url)
-    const data = await response.json()
+    try {
+      console.log(`[QuizSystem] Fetching from API: ${url}`)
+      const response = await fetch(url)
 
-    if (data.response_code !== 0 || !data.results) {
-      throw new Error("API returned no results")
-    }
-
-    return data.results.map((item: any, index: number) => {
-      const incorrectAnswers = item.incorrect_answers.map((ans: string) => this.decodeHTML(ans))
-      const correctAnswer = this.decodeHTML(item.correct_answer)
-      const options = [...incorrectAnswers, correctAnswer].sort(() => Math.random() - 0.5)
-
-      return {
-        id: `q_${index}_${Date.now()}`,
-        question: this.decodeHTML(item.question),
-        options,
-        correctAnswer,
-        category: item.category,
-        difficulty: item.difficulty,
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
-    })
+
+      const data = await response.json()
+
+      if (data.response_code === 0 && data.results && data.results.length > 0) {
+        console.log(`[QuizSystem] API returned ${data.results.length} questions`)
+        return data.results.map((item: any, index: number) => {
+          const incorrectAnswers = item.incorrect_answers.map((ans: string) => this.decodeHTML(ans))
+          const correctAnswer = this.decodeHTML(item.correct_answer)
+          const options = [...incorrectAnswers, correctAnswer].sort(() => Math.random() - 0.5)
+
+          return {
+            id: `q_${index}_${Date.now()}`,
+            question: this.decodeHTML(item.question),
+            options,
+            correctAnswer,
+            category: item.category,
+            difficulty: item.difficulty,
+          }
+        })
+      } else {
+        console.warn(`[QuizSystem] API returned non-zero code or no results:`, data.response_code)
+        throw new Error(`API response code: ${data.response_code}`)
+      }
+    } catch (error) {
+      console.error("[QuizSystem] Error fetching from Trivia API:", error)
+      throw error // Let generateQuestions handle the fallback
+    }
   }
 
   private decodeHTML(html: string): string {
@@ -861,7 +862,7 @@ export class QuizSystem {
   // Start quiz
   async startQuiz(roomId: string, sessionId: string): Promise<void> {
     if (!getFirebaseDatabase()!) return
-
+    console.log(`[QuizSystem] Starting quiz ${sessionId} in room ${roomId}`)
     const sessionRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/quiz/${sessionId}/status`)
     await set(sessionRef, "active")
   }

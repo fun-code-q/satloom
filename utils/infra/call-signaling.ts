@@ -193,16 +193,17 @@ export class CallSignaling {
           }
 
           // Handle incoming calls (for other users)
-          const isTargetedToMe = !callData.targetUserId || callData.targetUserId === currentUserId;
+          const isTargetedToMe = !callData.targetUserId || callData.targetUserId === currentUserId || callData.targetUserId === "all";
           if (callData.status === "ringing" && callData.callerId !== currentUserId && isTargetedToMe) {
-            console.log("[Signaling] Incoming call detected for me:", callData.id)
+            console.log(`[CallSignaling] Incoming call detected for me: ${callData.id} (Type: ${callData.type}, Target: ${callData.targetUserId})`)
             onIncomingCall(callData)
           }
 
           // Handle call updates (for all relevant participants)
           const isParticipant = callData.participants.includes(currentUserId) ||
             callData.callerId === currentUserId ||
-            callData.targetUserId === currentUserId;
+            callData.targetUserId === currentUserId ||
+            callData.targetUserId === "all";
 
           if (isParticipant) {
             // Only update if it's not a dead call unless it just ended

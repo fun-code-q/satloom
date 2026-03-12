@@ -22,6 +22,7 @@ import { debounce, throttle } from "@/utils/core/lazy-loader"
 import { SecurityUtils } from "@/utils/infra/security-utils"
 import { telemetry } from "@/utils/core/telemetry"
 import { VirtualKeyboard, useVirtualKeyboardStore } from "@/components/virtual-keyboard"
+import { cn } from "@/utils/core/cn"
 
 interface ChatInputProps {
     onFileSelect: (type: string, file?: File | any) => void
@@ -416,15 +417,17 @@ export function ChatInput({
 
                     <div className="flex-1 relative">
                         <Input
-                            id="mobile-chat-input"
+                            id="message-input"
                             name="message"
                             ref={inputRef}
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             onKeyPress={handleKeyPress}
-                            placeholder={isRecording ? "Recording..." : "Type a message..."}
-                            disabled={isRecording}
-                            className="bg-slate-700 border-slate-600 text-white placeholder:text-gray-400 h-10 pr-10 rounded-full"
+                            placeholder={vanishMode !== "off" ? `Vanish Mode Active (${vanishDuration}s)...` : "Type something..."}
+                            className={cn(
+                                "w-full bg-slate-700/50 border-slate-600 focus:ring-1 focus:ring-cyan-500/50 text-white placeholder-gray-400 py-3 scrollbar-hide text-base sm:text-lg min-h-[44px] leading-relaxed transition-all duration-300 rounded-2xl",
+                                vanishMode !== "off" && "text-purple-300 placeholder-purple-400/50 italic font-medium border-purple-500/50"
+                            )}
                         />
                     </div>
 
