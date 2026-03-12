@@ -7,7 +7,7 @@ export interface TheaterSession {
   hostId: string
   hostName: string
   videoUrl: string
-  videoType: "direct" | "youtube" | "vimeo" | "twitch" | "dailymotion" | "archive" | "webrtc"
+  videoType: "direct" | "youtube" | "vimeo" | "twitch" | "dailymotion" | "archive" | "soundcloud" | "webrtc"
   status: "waiting" | "loading" | "playing" | "paused" | "buffering" | "ended"
   participants: string[]
   currentTime: number
@@ -17,7 +17,7 @@ export interface TheaterSession {
 }
 
 export interface TheaterAction {
-  type: "play" | "pause" | "seek" | "buffering" | "reaction" | "queue_update" | "rate_change"
+  type: "play" | "pause" | "seek" | "buffering" | "reaction" | "queue_update" | "rate_change" | "join_sync" | "quality_change"
   payload?: any
   currentTime?: number
   timestamp: number
@@ -53,7 +53,7 @@ export class TheaterSignaling {
     hostName: string,
     hostId: string,
     videoUrl: string,
-    videoType: "direct" | "youtube" | "vimeo" | "twitch" | "dailymotion" | "archive" | "webrtc",
+    videoType: "direct" | "youtube" | "vimeo" | "twitch" | "dailymotion" | "archive" | "soundcloud" | "webrtc",
   ): Promise<string> {
     if (!getFirebaseDatabase()!) {
       throw new Error("Firebase database not initialized")
@@ -141,10 +141,11 @@ export class TheaterSignaling {
   async sendAction(
     roomId: string,
     sessionId: string,
-    type: "play" | "pause" | "seek" | "queue_update",
+    type: "play" | "pause" | "seek" | "queue_update" | "join_sync" | "quality_change",
     currentTime: number,
     hostId: string,
     hostName: string,
+    payload?: any
   ) {
     if (!getFirebaseDatabase()!) return
 
@@ -154,6 +155,7 @@ export class TheaterSignaling {
       timestamp: Date.now(),
       hostId,
       hostName,
+      payload
     }
 
     const actionRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}/lastAction`)

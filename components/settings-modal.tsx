@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Settings, Battery, BatteryMedium, BatteryLow } from "lucide-react"
 import { useTheme } from "@/contexts/theme-context"
 import { useState, useEffect } from "react"
@@ -59,6 +59,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             <Settings className="w-5 h-5" />
             Settings
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Adjust your application preferences and hardware settings.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 sm:space-y-6 py-4 px-4 sm:px-6">

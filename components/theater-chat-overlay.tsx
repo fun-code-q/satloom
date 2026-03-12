@@ -81,7 +81,7 @@ export function TheaterChatOverlay({
     }
 
     return (
-        <div className="fixed sm:absolute right-0 sm:right-4 bottom-0 sm:bottom-24 top-0 sm:top-24 w-full sm:w-80 bg-slate-900/95 sm:bg-slate-900/90 backdrop-blur-xl sm:backdrop-blur-md sm:rounded-xl border-l sm:border border-slate-700 flex flex-col shadow-2xl z-40 animate-in fade-in slide-in-from-right-4">
+        <div className="fixed sm:absolute right-0 sm:right-4 bottom-0 sm:bottom-24 top-0 sm:top-24 w-full sm:w-80 bg-slate-900/95 sm:bg-slate-900/90 backdrop-blur-xl sm:backdrop-blur-md sm:rounded-xl border-l sm:border border-slate-700 flex flex-col shadow-2xl z-[70] animate-in fade-in slide-in-from-right-4">
             {/* Header */}
             <div className="p-3 border-b border-slate-700 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-white">

@@ -1,10 +1,12 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import dynamic from "next/dynamic"
+import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 // @ts-ignore
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, X, Mic, MicOff, Users, MessageSquare, Smile, Film, Minimize2, Monitor } from "lucide-react"
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, X, Mic, MicOff, Users, MessageSquare, Smile, Film, Minimize2, Monitor, Maximize, Minimize } from "lucide-react"
 import { TheaterSignaling, type TheaterSession, type TheaterAction } from "@/utils/infra/theater-signaling"
 import { TheaterChatOverlay, type Message } from "./theater-chat-overlay"
 import { EmojiPicker } from "./emoji-picker"
@@ -19,6 +21,8 @@ import { Settings, List, ChevronRight, ChevronLeft, FastForward } from "lucide-r
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Slider } from "@/components/ui/slider"
 import { Badge } from "@/components/ui/badge"
+
+// Native video will handle most streams, HLS will be supported via hls.js if needed
 
 interface TheaterFullscreenProps {
   isOpen: boolean
@@ -72,7 +76,7 @@ export function TheaterFullscreen({
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
-  const controlsTimeoutRef = useRef<any>(null)
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const theaterSignaling = TheaterSignaling.getInstance()
   const userPresence = UserPresenceSystem.getInstance()
   const localStreamRef = useRef<MediaStream | null>(null)
@@ -85,9 +89,15 @@ export function TheaterFullscreen({
   const [newQueueUrl, setNewQueueUrl] = useState("")
   const [isAddingToQueue, setIsAddingToQueue] = useState(false)
   const lastActionTimestampRef = useRef<number>(0)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [participantsCount, setParticipantsCount] = useState(0)
+  const [mounted, setMounted] = useState(false)
+  const lastPlaybackToggleRef = useRef<number>(0)
+  const playerReadyTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   // Initialize VideoStreamManager and Queue
   useEffect(() => {
+    setMounted(true)
     console.log("TheaterFullscreen mounted, initializing...")
     videoStreamManagerRef.current = new VideoStreamManager()
 
@@ -95,13 +105,89 @@ export function TheaterFullscreen({
     const unsubscribeQueue = theaterQueue.subscribe(setQueue)
     const unsubscribeQuality = theaterQuality.subscribe(setQualitySettings)
 
+    // Track participants
+    const unsubscribePresence = userPresence.listenForPresence(roomId, (users) => {
+      setParticipantsCount(users.length)
+    })
+
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+
     return () => {
       console.log("TheaterFullscreen cleanup")
       videoStreamManagerRef.current?.cleanup()
       unsubscribeQueue()
       unsubscribeQuality()
+      unsubscribePresence()
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
     }
   }, [])
+
+  // Sync playback state to video element
+  useEffect(() => {
+    const video = videoRef.current
+    if (video) {
+      if (isPlaying && video.paused) {
+        video.play().catch(err => {
+          if (err.name !== 'AbortError') console.error("Video play error:", err)
+        })
+      } else if (!isPlaying && !video.paused) {
+        video.pause()
+      }
+    }
+  }, [isPlaying])
+
+  // Handle WebRTC stream srcObject assignment and HLS initialization
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    if (session.videoType === "webrtc") {
+      const streamToUse = isHost ? localMovieStream : remoteMovieStream
+      if (streamToUse) {
+        if (video.srcObject !== streamToUse) {
+          video.srcObject = streamToUse
+          video.play().catch(err => {
+            if (err.name !== 'AbortError') console.error("WebRTC video play error:", err)
+          })
+        }
+      } else {
+        video.srcObject = null
+      }
+    } else if (session.videoUrl?.includes(".m3u8")) {
+      // HLS Support
+      video.srcObject = null
+
+      const initHls = async () => {
+        try {
+          const { default: Hls } = await import("hls.js")
+          if (Hls.isSupported()) {
+            const hls = new Hls()
+            hls.loadSource(session.videoUrl as string)
+            hls.attachMedia(video)
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+              if (isPlaying) video.play()
+            })
+            return () => hls.destroy()
+          } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = session.videoUrl as string
+          }
+        } catch (err) {
+          console.error("HLS init error:", err)
+        }
+      }
+
+      const cleanup = initHls()
+      return () => {
+        cleanup.then(fn => fn?.())
+      }
+    } else {
+      // For regular videos, we clear srcObject as src is handled in JSX
+      video.srcObject = null
+    }
+  }, [session.videoType, isHost, localMovieStream, remoteMovieStream, session.videoUrl, isPlaying])
 
   // Sync volume changes to video element
   useEffect(() => {
@@ -118,6 +204,42 @@ export function TheaterFullscreen({
       video.playbackRate = playbackRate
     }
   }, [playbackRate])
+
+  // Player Ready Timeout - decoupled from frequent state updates
+  useEffect(() => {
+    if (isOpen && !playerReady && !playerReadyTimeoutRef.current && session.status !== "loading") {
+      console.log("[Theater] Starting player ready timeout...")
+      playerReadyTimeoutRef.current = setTimeout(() => {
+        if (!playerReady) {
+          console.warn("Player ready timed out, forcing ready state")
+          setPlayerReady(true)
+        }
+      }, 10000)
+    }
+
+    return () => {
+      // Only cleanup timeout if it was set
+      if (playerReadyTimeoutRef.current) {
+        // We don't necessarily want to clear it on every small prop change
+        // but we should clear it if the modal closes
+        if (!isOpen) {
+          clearTimeout(playerReadyTimeoutRef.current)
+          playerReadyTimeoutRef.current = undefined
+        }
+      }
+    }
+  }, [isOpen, playerReady, session.status])
+
+  // Separate Join Sync Effect
+  useEffect(() => {
+    if (isOpen && playerReady && !isHost && currentTime === 0 && session.currentTime > 0) {
+      console.log("[TheaterSync] Initial join sync to:", session.currentTime);
+      if (videoRef.current) {
+        videoRef.current.currentTime = session.currentTime;
+      }
+      setCurrentTime(session.currentTime);
+    }
+  }, [isOpen, playerReady, isHost, session.currentTime])
 
   // No manual setupPeerConnection - handled by WebRTCManager
 
@@ -232,7 +354,7 @@ export function TheaterFullscreen({
       unsubscribeSignals()
       // Only cleanup ALL connections if theater is closing
     }
-  }, [session.id, isOpen, roomId, currentUserId])
+  }, [session.id, roomId, currentUserId])
 
   // Final cleanup on unmount
   useEffect(() => {
@@ -274,79 +396,121 @@ export function TheaterFullscreen({
   useEffect(() => {
     if (!session) return
 
-    const unsubscribe = theaterSignaling.listenForSession(roomId, session.id, (updatedSession) => {
+    const unsubscribe = theaterSignaling.listenForSession(roomId, session.id, (updatedSession: any) => {
       if (updatedSession.status === "ended") {
         setTimeout(() => onClose(), 1000)
         return
       }
 
-      // Handle remote actions with timestamp checking to prevent double-processing/loops
+      // Handle remote actions with timestamp checking
       if (updatedSession.lastAction &&
         updatedSession.lastAction.hostId !== currentUserId &&
-        updatedSession.lastAction.timestamp > lastActionTimestampRef.current) {
+        updatedSession.lastAction.timestamp > (lastActionTimestampRef.current || 0)) {
 
-        console.log(`[TheaterSync] Processing remote action: ${updatedSession.lastAction.type} at ${updatedSession.lastAction.timestamp}`);
+        console.log(`[TheaterSync] Processing remote action: ${updatedSession.lastAction.type}`);
         lastActionTimestampRef.current = updatedSession.lastAction.timestamp;
-        handleRemoteAction(updatedSession.lastAction)
+
+        const action = updatedSession.lastAction
+        switch (action.type) {
+          case "play":
+            setIsPlaying(true)
+            if (action.currentTime !== undefined) {
+              if (Math.abs(currentTime - action.currentTime) > 1) {
+                if (videoRef.current) videoRef.current.currentTime = action.currentTime
+                if (["youtube", "vimeo"].includes(session.videoType)) {
+                  syncIframePlayer("seek", action.currentTime)
+                  syncIframePlayer("play")
+                }
+              }
+            }
+            break
+          case "pause":
+            setIsPlaying(false)
+            if (["youtube", "vimeo"].includes(session.videoType)) {
+              syncIframePlayer("pause")
+            }
+            break
+          case "seek":
+            if (action.currentTime !== undefined) {
+              if (videoRef.current) videoRef.current.currentTime = action.currentTime
+              if (["youtube", "vimeo"].includes(session.videoType)) {
+                syncIframePlayer("seek", action.currentTime)
+              }
+              setCurrentTime(action.currentTime)
+            }
+            break
+          case "buffering":
+            setIsBuffering(true)
+            setIsPlaying(false)
+            break
+          case "reaction":
+            if (action.payload?.emoji) addFloatingEmoji(action.payload.emoji)
+            break
+          case "join_sync":
+            if (isHost && action.payload?.requestorId) {
+              theaterSignaling.sendAction(roomId, session.id, "seek", currentTime, currentUserId, currentUser, { targetId: action.payload.requestorId })
+            }
+            break
+          case "quality_change":
+            if (action.payload?.quality) {
+              theaterQuality.setQuality(action.payload.quality);
+            }
+            break
+        }
       }
 
-      // Sync Queue from Firebase
+      // Sync Queue
       if (updatedSession.queue && JSON.stringify(updatedSession.queue) !== JSON.stringify(queue)) {
-        // Manual deep sync (simplified)
         theaterQueue.clearQueue()
-        updatedSession.queue.forEach(v => theaterQueue.addToQueue(v))
+        updatedSession.queue.forEach((v: any) => theaterQueue.addToQueue(v))
       }
 
-      // Handle Buffering State
+      // Handle Buffering
       if (updatedSession.status === 'buffering' && !isHost) {
         setIsBuffering(true)
-        setIsPlaying(false) // Pause locally
+        setIsPlaying(false)
       } else if (updatedSession.status === 'playing' && isBuffering) {
         setIsBuffering(false)
         setIsPlaying(true)
       }
 
-      // Fluid Catch-up (Micro-Sync) - Only if status is playing and no action was just processed
-      if (!isHost && updatedSession.status === 'playing') {
+      // Sync Time / Playback Rate (Enhanced Drift Correction)
+      if (!isHost && updatedSession.status === 'playing' && playerReady) {
         const drift = updatedSession.currentTime - currentTime
 
-        // Only drift correct if we are not actively handling a hard seek/action
-        if (Math.abs(drift) > 0.5) {
-          if (Math.abs(drift) > 2) {
-            // Large drift: Hard seek
-            console.log("[TheaterSync] Large drift detected, seeking to", updatedSession.currentTime)
-            if (videoRef.current) {
-              videoRef.current.currentTime = updatedSession.currentTime
-            }
-            setPlaybackRate(1.0)
-          } else if (drift > 0.5) {
-            // Behind by 0.5s - 2s: Speed up slightly
-            setPlaybackRate(1.05)
-          } else if (drift < -0.5) {
-            // Ahead by 0.5s - 2s: Slow down slightly
-            setPlaybackRate(0.95)
+        // If drift is very large (e.g. > 5s), hard seek
+        if (Math.abs(drift) > 5) {
+          console.log("[TheaterSync] Large drift detected, hard seeking:", drift);
+          if (videoRef.current) videoRef.current.currentTime = updatedSession.currentTime
+          setCurrentTime(updatedSession.currentTime)
+          setPlaybackRate(1.0)
+        }
+        // Small drift (0.5s to 5s), adjust playback rate for smooth catch-up
+        else if (Math.abs(drift) > 0.5) {
+          const newRate = drift > 0 ? 1.05 : 0.95
+          if (playbackRate !== newRate) {
+            console.log("[TheaterSync] Adjusting playback rate for drift:", newRate);
+            setPlaybackRate(newRate)
           }
-        } else {
-          // In sync: Normal speed
-          if (playbackRate !== 1.0) setPlaybackRate(1.0)
+        }
+        // Drift resolved
+        else if (playbackRate !== 1.0) {
+          setPlaybackRate(1.0)
         }
       }
-      // Handle Presence Sync / Auto-Join WebRTC
+
+      // WebRTC Presence
       if (isHost && updatedSession.videoType === "webrtc" && localMovieStream) {
         const webrtc = WebRTCManager.getInstance()
         const currentParticipants = updatedSession.participants || []
-
         currentParticipants.forEach(async (participantId: string) => {
           if (participantId !== currentUserId && !connectedPeersRef.current.has(participantId)) {
-            console.log("Theater: New participant detected, initiating WebRTC:", participantId)
-
             webrtc.initialize(
               participantId,
               localMovieStream,
               (s, uid) => { if (uid === participantId) setRemoteMovieStream(s) },
               (c, uid) => { if (uid === participantId) theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", c, currentUserId, participantId) }
             )
-
             const offer = await webrtc.createOffer(participantId)
             theaterSignaling.sendSignal(roomId, session.id, "offer", offer, currentUserId, participantId)
             connectedPeersRef.current.add(participantId)
@@ -356,24 +520,8 @@ export function TheaterFullscreen({
     })
 
     return () => unsubscribe()
-  }, [session, roomId, currentUserId, onClose, isHost, currentTime])
+  }, [session.id, roomId, currentUserId, onClose, isHost])
 
-  // Effect to determine if we can use native video element
-  useEffect(() => {
-    if (!session.videoUrl || session.videoType === "webrtc") {
-      console.log("Video type check: webrtc or no URL")
-      return
-    }
-
-    console.log("Checking video type:", session.videoType)
-    // For direct video types, we can use native video element
-    if (session.videoType === "direct") {
-      setCanReactPlayerPlay(true)
-    } else {
-      // For other types (youtube, vimeo, etc.), use iframe
-      setCanReactPlayerPlay(false)
-    }
-  }, [session.videoUrl, session.videoType])
 
   // ... (keep Auto-hide controls)
   // ... (keep setupPushToTalk)
@@ -393,53 +541,51 @@ export function TheaterFullscreen({
     }, 2000)
   }
 
-  const handleRemoteAction = (action: TheaterAction) => {
-    switch (action.type) {
-      case "reaction":
-        if (action.payload?.emoji) {
-          addFloatingEmoji(action.payload.emoji)
-        }
-        break
-      case "play":
-        if (videoRef.current) {
-          setIsPlaying(true)
-          if (action.currentTime !== undefined) {
-            // Only seek if significantly different to avoid jitter
-            if (Math.abs(videoRef.current.currentTime - action.currentTime) > 0.5) {
-              videoRef.current.currentTime = action.currentTime
-            }
-          }
-          videoRef.current.play().catch(e => console.error("Play error:", e))
-        }
-        break
-      case "pause":
-        if (videoRef.current) {
-          videoRef.current.pause()
-        }
-        setIsPlaying(false)
-        break
-      case "seek":
-        if (videoRef.current && action.currentTime !== undefined) {
-          videoRef.current.currentTime = action.currentTime
-          setCurrentTime(action.currentTime)
-        }
-        break
-      case "buffering":
-        setIsBuffering(true)
-        setIsPlaying(false)
-        break
-      case "rate_change":
-        if (action.payload?.rate) {
-          setPlaybackRate(action.payload.rate)
-        }
-        break
-    }
-  }
 
   const handleReaction = (emoji: string) => {
     theaterSignaling.sendReaction(roomId, session.id, emoji, currentUserId, currentUser)
     addFloatingEmoji(emoji)
     setShowEmojiPicker(false)
+  }
+
+  const getEmbedUrl = (url: string, type: string) => {
+    if (type === "youtube") {
+      const match = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|live\/)|youtu\.be\/)([^&\n?#]+)/)
+      return match ? `https://www.youtube.com/embed/${match[1]}?enablejsapi=1&autoplay=1&controls=0&origin=${typeof window !== 'undefined' ? window.location.origin : '*'}` : url
+    }
+    if (type === "vimeo") {
+      const match = url.match(/vimeo\.com\/(?:groups\/[^/]+\/videos\/|)(\d+)/)
+      return match ? `https://player.vimeo.com/video/${match[1]}?api=1&autoplay=1` : url
+    }
+    if (type === "twitch") {
+      const match = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/)
+      return match ? `https://player.twitch.tv/?channel=${match[1]}&parent=${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}&autoplay=true` : url
+    }
+    if (type === "dailymotion") {
+      const match = url.match(/(?:dailymotion\.com\/video\/|dai\.ly\/)([a-zA-Z0-9]+)/)
+      return match ? `https://www.dailymotion.com/embed/video/${match[1]}?autoplay=1&controls=0` : url
+    }
+    if (type === "soundcloud") {
+      return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23ff5500&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true`
+    }
+    return url
+  }
+
+  const syncIframePlayer = (action: 'play' | 'pause' | 'seek', time?: number) => {
+    if (!iframeRef.current) return
+    const iframe = iframeRef.current
+
+    if (session.videoType === "youtube") {
+      const msg = action === 'play' ? '{"event":"command","func":"playVideo","args":""}' :
+        action === 'pause' ? '{"event":"command","func":"pauseVideo","args":""}' :
+          `{"event":"command","func":"seekTo","args":[${time}, true]}`
+      iframe.contentWindow?.postMessage(msg, '*')
+    } else if (session.videoType === "vimeo") {
+      const msg = action === 'play' ? '{"method":"play"}' :
+        action === 'pause' ? '{"method":"pause"}' :
+          `{"method":"seekTo","value":${time}}`
+      iframe.contentWindow?.postMessage(msg, '*')
+    }
   }
 
   const handlePlay = async () => {
@@ -449,43 +595,52 @@ export function TheaterFullscreen({
       return
     }
 
-    const video = videoRef.current
-    if (!video) {
-      console.log("No video ref!")
+    // Debounce to prevent AbortError
+    const now = Date.now()
+    if (now - lastPlaybackToggleRef.current < 800) {
+      console.log("Playback toggle debounced")
       return
     }
+    lastPlaybackToggleRef.current = now
 
     console.log("Attempting to toggle play/pause")
-    // Toggle play/pause on the video element
-    if (isPlaying) {
-      video.pause()
-    } else {
-      video.play().catch(e => console.error("Play error:", e))
-    }
-
     // Toggle play/pause
     const newIsPlaying = !isPlaying
     setIsPlaying(newIsPlaying)
 
-    const time = video.currentTime
+    if (["youtube", "vimeo"].includes(session.videoType)) {
+      syncIframePlayer(newIsPlaying ? "play" : "pause")
+    }
 
-    await theaterSignaling.sendAction(
-      roomId,
-      session.id,
-      newIsPlaying ? "play" : "pause",
-      time,
-      currentUserId,
-      currentUser
-    )
+    // Use the currentTime state which is updated by onProgress
+    // This is more reliable than the ref when using dynamic imports
+    const time = currentTime
+
+    try {
+      await theaterSignaling.sendAction(
+        roomId,
+        session.id,
+        newIsPlaying ? "play" : "pause",
+        time,
+        currentUserId,
+        currentUser
+      )
+    } catch (err) {
+      console.error("Failed to send playback action:", err)
+    }
   }
 
   const handleSeek = async (newTime: number) => {
     if (!isHost) return
 
-    const video = videoRef.current
-    if (video) {
-      video.currentTime = newTime
+    if (videoRef.current) {
+      videoRef.current.currentTime = newTime
     }
+
+    if (["youtube", "vimeo"].includes(session.videoType)) {
+      syncIframePlayer("seek", newTime)
+    }
+
     setCurrentTime(newTime)
     await theaterSignaling.sendAction(roomId, session.id, "seek", newTime, currentUserId, currentUser)
   }
@@ -496,15 +651,24 @@ export function TheaterFullscreen({
     handleSeek(newTime)
   }
 
-  const handleProgress = (state: { played: number; playedSeconds: number; loaded: number; loadedSeconds: number }) => {
-    if (!isDragging) {
-      setCurrentTime(state.playedSeconds)
-    }
+  const handleProgress = () => {
+    const video = videoRef.current
+    if (!video || isDragging) return
+
+    setCurrentTime(video.currentTime)
 
     // Host Sync Heartbeat
-    if (isHost && isPlaying && state.playedSeconds % 5 < 0.5) {
+    if (isHost && isPlaying && video.currentTime % 5 < 0.2) {
       // Periodically update current time in DB for drift correction (every ~5s)
-      theaterSignaling.updateCurrentTime(roomId, session.id, state.playedSeconds)
+      theaterSignaling.updateCurrentTime(roomId, session.id, video.currentTime)
+    }
+  }
+
+  const handleMetadata = () => {
+    const video = videoRef.current
+    if (video) {
+      setDuration(video.duration || 0)
+      setPlayerReady(true)
     }
   }
 
@@ -603,7 +767,7 @@ export function TheaterFullscreen({
   // Effect to sync VideoStreamManager with session status - Optimized to prevent stutter
   useEffect(() => {
     if (isMovieStreaming && videoStreamManagerRef.current) {
-      // Only sync play/pause states, don't sync 'currentTime' here every render 
+      // Only sync play/pause states, don't sync 'currentTime' here every render
       // as that triggers high-overhead re-seeks which cause stuttering.
       // Seeks should only happen via handleRemoteAction (explicit actions) or handleProgress heartbeats.
       videoStreamManagerRef.current.syncPlayback(isPlaying ? 'play' : 'pause')
@@ -678,135 +842,91 @@ export function TheaterFullscreen({
     return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
   }
 
-  if (!isOpen) return null
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable full-screen mode: ${err.message}`)
+      })
+    } else {
+      document.exitFullscreen()
+    }
+  }
 
-  return (
-    <PrivacyShield>
+  // Use off-screen positioning to prevent browser throttling while minimized
+  const rootStyles = !isOpen
+    ? "fixed top-[-9999px] left-[-9999px] w-[1px] h-[1px] bg-black z-[500] flex flex-col overflow-hidden select-none opacity-0 pointer-events-none"
+    : "fixed inset-0 bg-black z-[500] flex flex-col overflow-hidden select-none"
+
+  if (!mounted) return null
+
+  return createPortal(
+    <PrivacyShield enabled={isOpen}>
       <div
-        className="fixed inset-0 bg-black z-[500] flex flex-col overflow-hidden select-none"
+        className={rootStyles}
         onMouseMove={() => setShowControls(true)}
         onMouseLeave={() => setShowControls(false)}
         onTouchStart={() => setShowControls(true)}
       >
         {/* Video Container */}
         <div className="flex-1 relative bg-black flex items-center justify-center">
-          {session.videoType === "webrtc" ? (
-            <div className="w-full h-full relative flex items-center justify-center bg-black">
-              <video
-                ref={(el) => {
-                  if (el) {
-                    const streamToUse = isHost ? localMovieStream : remoteMovieStream;
-                    if (streamToUse) {
-                      if (el.srcObject !== streamToUse) {
-                        el.srcObject = streamToUse;
-                        el.play().catch(e => {
-                          if (e.name !== 'AbortError') {
-                            console.error("Video play failed:", e);
-                          }
-                        });
-                      }
-                    }
-                  }
-                }}
-                className="w-full h-full object-contain"
-                autoPlay
-                playsInline
-                muted={isMuted}
-                onLoadedMetadata={(e) => setDuration((e.target as HTMLVideoElement).duration || 0)}
+          <div className="w-full h-full relative flex items-center justify-center">
+            {["youtube", "vimeo", "twitch", "dailymotion", "soundcloud"].includes(session.videoType) ? (
+              <iframe
+                ref={iframeRef}
+                src={getEmbedUrl(session.videoUrl || "", session.videoType)}
+                className="w-full h-full border-0"
+                allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                allowFullScreen
+                onLoad={() => setPlayerReady(true)}
               />
+            ) : (
+              <video
+                ref={videoRef}
+                src={session.videoType !== "webrtc" && !session.videoUrl?.includes(".m3u8") ? (session.videoUrl || "") : undefined}
+                className="w-full h-full object-contain"
+                playsInline
+                autoPlay={isPlaying}
+                muted={isMuted}
+                onTimeUpdate={handleProgress}
+                onLoadedMetadata={handleMetadata}
+                onWaiting={handleBuffer}
+                onPlaying={handleBufferEnd}
+                onPlay={() => console.log("Native onPlay")}
+                onPause={() => console.log("Native onPause")}
+                onError={(e) => {
+                  console.error("Native video error:", e)
+                  setPlayerReady(true)
+                }}
+              />
+            )}
 
-              {isHost && !localMovieStream && (
-                <div className="absolute inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-md z-20">
-                  <div className="text-center p-12 rounded-[40px] bg-slate-800/80 border border-slate-700 shadow-2xl max-w-md animate-in fade-in zoom-in duration-500">
-                    <div className="w-24 h-24 rounded-full bg-cyan-500/20 flex items-center justify-center mx-auto mb-6 border border-cyan-500/30">
-                      <Film className="w-10 h-10 text-cyan-400" />
-                    </div>
-                    <h3 className="text-2xl font-bold text-white mb-2">Local Streaming Mode</h3>
-                    <p className="text-slate-400 mb-8">Select a video or audio file from your device to start sharing with everyone in the room.</p>
-                    <div className="flex flex-col gap-3">
-                      <Button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="bg-cyan-500 hover:bg-cyan-600 text-white px-10 py-6 rounded-2xl text-lg font-bold shadow-lg shadow-cyan-500/20 w-full"
-                      >
-                        Select Media File
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={handleClose}
-                        className="text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-xl"
-                      >
-                        Cancel & Exit
-                      </Button>
-                    </div>
+            {isHost && !localMovieStream && session.videoType === "webrtc" && (
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-md z-20">
+                <div className="text-center p-12 rounded-[40px] bg-slate-800/80 border border-slate-700 shadow-2xl max-w-md animate-in fade-in zoom-in duration-500">
+                  <div className="w-24 h-24 rounded-full bg-cyan-500/20 flex items-center justify-center mx-auto mb-6 border border-cyan-500/30">
+                    <Film className="w-10 h-10 text-cyan-400" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">Local Movie Streaming</h3>
+                  <p className="text-slate-400 mb-8">Select a video or audio file from your device to start sharing with everyone in the room.</p>
+                  <div className="flex flex-col gap-3">
+                    <Button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="bg-cyan-500 hover:bg-cyan-600 text-white px-10 py-6 rounded-2xl text-lg font-bold shadow-lg shadow-cyan-500/20 w-full"
+                    >
+                      Select Media File
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={handleClose}
+                      className="text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-xl"
+                    >
+                      Cancel & Exit
+                    </Button>
                   </div>
                 </div>
-              )}
-            </div>
-          ) : (
-            <div className="w-full h-full relative">
-
-              {/* Click blockers for sync enforcement (like Player.html) */}
-              <div className="absolute inset-0 z-10 cursor-default" onClick={(e) => {
-                // If not host, clicking should do nothing. If host, clicking toggles playback.
-                if (isHost) handlePlay();
-                // We don't preventDefault here because we want the controls to be able to show on hover if handled by us
-              }}>
-                <div className="absolute top-0 left-0 w-full h-[37%] bg-transparent" />
-                <div className="absolute top-[37%] left-0 w-full h-[30%] bg-transparent" />
-                <div className="absolute bottom-0 left-0 w-full h-[33%] bg-transparent" />
               </div>
-
-              {canReactPlayerPlay ? (
-                <video
-                  ref={videoRef}
-                  src={session.videoUrl}
-                  className="w-full h-full object-contain"
-                  autoPlay={isPlaying}
-                  muted={isMuted}
-                  onLoadedMetadata={(e) => {
-                    const video = e.target as HTMLVideoElement;
-                    console.log("Video loaded metadata, duration:", video.duration, "isHost:", isHost);
-                    setDuration(video.duration || 0);
-                    setPlayerReady(true);
-                    console.log("Player ready set to true");
-                  }}
-                  onPlay={() => {
-                    setIsPlaying(true);
-                    console.log("Video play event");
-                  }}
-                  onPause={() => {
-                    setIsPlaying(false);
-                    console.log("Video pause event");
-                  }}
-                  onEnded={() => {
-                    setIsPlaying(false);
-                    console.log("Video ended event");
-                  }}
-                  onTimeUpdate={(e) => {
-                    setCurrentTime((e.target as HTMLVideoElement).currentTime);
-                  }}
-                  onWaiting={() => {
-                    setIsBuffering(true);
-                    console.log("Video buffering...", "isHost:", isHost);
-                  }}
-                  onCanPlay={() => {
-                    setIsBuffering(false);
-                    console.log("Video can play", "isHost:", isHost);
-                  }}
-                  onError={(e) => console.error("Video error:", e)}
-                />
-              ) : (
-                <iframe
-                  ref={iframeRef}
-                  src={session.videoUrl}
-                  className="w-full h-full border-none"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  onLoad={() => setPlayerReady(true)}
-                />
-              )}
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Loading / Buffering Overlay */}
           {(!playerReady || session.status === "loading" || isBuffering || transcodingProgress !== null) && (
@@ -945,6 +1065,7 @@ export function TheaterFullscreen({
                   <Button
                     variant={"ghost" as any}
                     size={"icon" as any}
+                    title="Stream Local Movie"
                     className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/5"
                     onClick={() => fileInputRef.current?.click()}
                   >
@@ -953,7 +1074,8 @@ export function TheaterFullscreen({
                   <Button
                     variant={"ghost" as any}
                     size={"icon" as any}
-                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/5"
+                    title="Screen Share"
+                    className="hidden sm:flex w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 items-center justify-center"
                     onClick={handleStartScreenShare}
                   >
                     <Monitor className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
@@ -1007,6 +1129,11 @@ export function TheaterFullscreen({
                 >
                   {isMicMuted ? <MicOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Mic className="w-4 h-4 sm:w-5 sm:h-5" />}
                 </Button>
+
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 rounded-full border border-white/5">
+                  <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400" />
+                  <span className="text-[10px] sm:text-xs font-bold text-white/90">{participantsCount}</span>
+                </div>
               </div>
 
               <div className="flex items-center gap-2 sm:gap-4">
@@ -1075,19 +1202,57 @@ export function TheaterFullscreen({
                       </div>
                       {/* Quality */}
                       <div className="space-y-3">
-                        <div className="text-[10px] font-bold text-gray-400">QUALITY</div>
+                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center justify-between">
+                          <span>QUALITY</span>
+                          {qualitySettings.mode === 'auto' && <Badge variant="secondary" className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20 text-[8px] h-4">AUTO</Badge>}
+                        </div>
                         <div className="grid grid-cols-3 gap-1.5">
                           {['360p', '720p', '1080p'].map(q => (
                             <Button
                               key={q}
                               variant="ghost"
                               size="sm"
-                              className={`text-[10px] h-7 rounded-lg border border-white/5 ${qualitySettings.preferredQuality === q ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' : 'text-white/40'}`}
-                              onClick={() => theaterQuality.setQuality(q as any)}
+                              className={`text-[10px] h-7 rounded-lg border border-white/5 transition-all ${qualitySettings.preferredQuality === q ? 'bg-cyan-500 text-white border-cyan-500 shadow-lg shadow-cyan-500/20' : 'text-white/40 hover:bg-white/5 hover:text-white'}`}
+                              onClick={() => {
+                                theaterQuality.setQuality(q as any);
+                                // Optionally sync host quality change to everyone
+                                if (isHost) {
+                                  theaterSignaling.sendAction(roomId, session.id, "quality_change", currentTime, currentUserId, currentUser, { quality: q });
+                                }
+
+                                // Update internal player quality if possible
+                                if (videoRef.current) {
+                                  // Native video doesn't have quality selection like this,
+                                  // it would usually be done via different source URLs or HLS levels.
+                                }
+                              }}
                             >
                               {q}
                             </Button>
                           ))}
+                        </div>
+                      </div>
+
+                      {/* Subtitles */}
+                      <div className="space-y-4 pt-2 border-t border-white/5">
+                        <div className="flex items-center justify-between">
+                          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                            <MessageSquare className="w-3 h-3 text-cyan-400" /> SUBTITLES
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`h-7 px-3 rounded-lg border transition-all ${qualitySettings.subtitles ? 'bg-cyan-500 text-white border-cyan-500 shadow-lg shadow-cyan-500/20' : 'bg-white/5 text-white/40 border-white/10 hover:text-white'}`}
+                            onClick={() => {
+                              theaterQuality.toggleSubtitles();
+                              // Internal player subtitle logic
+                              if (videoRef.current) {
+                                // Native video subtitle logic (tracks)
+                              }
+                            }}
+                          >
+                            {qualitySettings.subtitles ? 'Enabled' : 'Disabled'}
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -1103,6 +1268,14 @@ export function TheaterFullscreen({
                     onClick={onMinimize}
                   >
                     <Minimize2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                  </Button>
+                  <Button
+                    variant={"ghost" as any}
+                    size={"icon" as any}
+                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/5"
+                    onClick={toggleFullscreen}
+                  >
+                    {isFullscreen ? <Minimize className="w-4 h-4 sm:w-5 sm:h-5 text-white" /> : <Maximize className="w-4 h-4 sm:w-5 sm:h-5 text-white" />}
                   </Button>
                   <Button
                     variant={"ghost" as any}
@@ -1220,8 +1393,9 @@ export function TheaterFullscreen({
         )}
 
         {isPushToTalkActive && (
-          <div className="absolute top-4 right-4 bg-green-500/90 backdrop-blur text-white px-3 py-1 rounded-full text-sm font-medium animate-pulse shadow-lg z-20">
-            🎤 Speaking
+          <div className="absolute top-4 right-4 bg-green-500/90 backdrop-blur-md text-white px-4 py-2 rounded-2xl text-xs font-bold animate-pulse shadow-2xl z-20 flex items-center gap-2 border border-green-400/30">
+            <Mic className="w-3.5 h-3.5" />
+            <span>SPEAKING</span>
           </div>
         )}
 
@@ -1240,6 +1414,7 @@ export function TheaterFullscreen({
           onEmojiSelect={handleReaction}
         />
       </div>
-    </PrivacyShield >
+    </PrivacyShield>,
+    document.body
   )
 }

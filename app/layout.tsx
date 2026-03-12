@@ -7,11 +7,11 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://fun-code-q.github.io/satloom'),
   title: 'SatLoom',
   description: 'Secure, anonymous, real-time communication.',
-  manifest: "/manifest.json",
+  manifest: "/satloom/manifest.json",
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
+    icon: "/satloom/favicon.ico",
+    shortcut: "/satloom/favicon.ico",
+    apple: "/satloom/apple-icon.png",
   },
   openGraph: {
     title: 'SatLoom',

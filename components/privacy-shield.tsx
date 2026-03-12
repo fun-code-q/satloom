@@ -88,8 +88,6 @@ export function PrivacyShield({
         }
     }, [enabled, handleBlur, handleFocus, handleVisibilityChange])
 
-    if (!enabled) return <>{children}</>
-
     return (
         <div className="relative w-full h-full overflow-hidden group/privacy">
             {/* Global CSS for Print Protection */}
@@ -106,12 +104,12 @@ export function PrivacyShield({
       `}</style>
 
             {/* Main Content */}
-            <div className={`w-full h-full transition-all duration-300 ${isBlurred ? "privacy-blur pointer-events-none select-none" : ""}`}>
+            <div className={`w-full h-full transition-all duration-300 ${(enabled && isBlurred) ? "privacy-blur pointer-events-none select-none" : ""}`}>
                 {children}
             </div>
 
             {/* Focus Loss Overlay */}
-            {isBlurred && (
+            {enabled && isBlurred && (
                 <div className="absolute inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-xl transition-all duration-500">
                     <div className="p-8 rounded-2xl bg-slate-800/50 border border-slate-700 shadow-2xl text-center space-y-4 max-w-md animate-in fade-in zoom-in duration-300">
                         <div className="w-16 h-16 bg-cyan-500/20 rounded-full flex items-center justify-center mx-auto">
@@ -134,7 +132,7 @@ export function PrivacyShield({
             )}
 
             {/* Traceable Watermark Overlay */}
-            {showWatermark && !isBlurred && (
+            {enabled && showWatermark && !isBlurred && (
                 <div className="absolute inset-0 z-[9998] pointer-events-none select-none opacity-[0.03] overflow-hidden whitespace-nowrap rotate-[-30deg] origin-center scale-[2]">
                     {Array.from({ length: 20 }).map((_, i) => (
                         <div key={i} className="flex gap-12 py-8 text-2xl font-bold text-white tracking-widest uppercase">

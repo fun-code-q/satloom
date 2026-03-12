@@ -3,7 +3,7 @@
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Film, Play, Youtube, Video, Loader2, Twitch, Monitor, Globe, Paperclip } from "lucide-react"
 import { toast } from "sonner"
 
@@ -12,14 +12,14 @@ interface TheaterSetupModalProps {
   onClose: () => void
   onCreateSession: (
     videoUrl: string,
-    videoType: "direct" | "youtube" | "vimeo" | "twitch" | "dailymotion" | "archive" | "webrtc",
+    videoType: "direct" | "youtube" | "vimeo" | "twitch" | "dailymotion" | "archive" | "soundcloud" | "webrtc",
     file?: File
   ) => void
 }
 
 export function TheaterSetupModal({ isOpen, onClose, onCreateSession }: TheaterSetupModalProps) {
   const [videoUrl, setVideoUrl] = useState("")
-  const [selectedType, setSelectedType] = useState<"direct" | "youtube" | "vimeo" | "twitch" | "dailymotion" | "archive" | "webrtc">("direct")
+  const [selectedType, setSelectedType] = useState<"direct" | "youtube" | "vimeo" | "twitch" | "dailymotion" | "archive" | "soundcloud" | "webrtc">("direct")
   const [isLoading, setIsLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -60,6 +60,12 @@ export function TheaterSetupModal({ isOpen, onClose, onCreateSession }: TheaterS
       icon: Globe,
       description: "Public Domain Movies",
     },
+    {
+      id: "soundcloud" as const,
+      label: "Soundcloud",
+      icon: Paperclip, // Use Paperclip or Music if available, but Paperclip is imported
+      description: "Audio & Podcasts",
+    },
   ]
 
   const handleLoadVideo = async () => {
@@ -68,40 +74,50 @@ export function TheaterSetupModal({ isOpen, onClose, onCreateSession }: TheaterS
     setIsLoading(true)
     try {
       // Validate URL based on type
+      // Keep original URL for ReactPlayer - it handles conversion internally
       let processedUrl = videoUrl.trim()
+      let embedUrl = videoUrl.trim() // Separate embed URL for iframe fallback
 
       if (selectedType === "webrtc") {
         processedUrl = "local://stream"
+        embedUrl = "local://stream"
       } else if (selectedType === "youtube") {
-        // ... (rest of URL logic)
-        const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/
+        // Handle youtube.com, youtu.be, and shorts
+        const youtubeRegex = /(?:youtube\.com\/(?:watch\?v=|shorts\/|live\/)|youtu\.be\/)([^&\n?#]+)/
         const match = processedUrl.match(youtubeRegex)
         if (match) {
-          processedUrl = `https://www.youtube.com/embed/${match[1]}?enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : '*'}`
+          embedUrl = `https://www.youtube.com/embed/${match[1]}?enablejsapi=1&controls=1&origin=${typeof window !== 'undefined' ? window.location.origin : '*'}`
         }
       } else if (selectedType === "vimeo") {
-        const vimeoRegex = /vimeo\.com\/(\d+)/
+        // Handle vimeo.com/ID and vimeo.com/groups/ID
+        const vimeoRegex = /vimeo\.com\/(?:groups\/[^/]+\/videos\/|)(\d+)/
         const match = processedUrl.match(vimeoRegex)
         if (match) {
-          processedUrl = `https://player.vimeo.com/video/${match[1]}?api=1`
+          embedUrl = `https://player.vimeo.com/video/${match[1]}?api=1`
         }
       } else if (selectedType === "twitch") {
         const twitchRegex = /twitch\.tv\/([a-zA-Z0-9_]+)/
         const match = processedUrl.match(twitchRegex)
         if (match) {
-          processedUrl = `https://www.twitch.tv/${match[1]}`
+          embedUrl = `https://player.twitch.tv/?channel=${match[1]}&parent=${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}`
         }
       } else if (selectedType === "dailymotion") {
-        const dmRegex = /dailymotion\.com\/video\/([a-zA-Z0-9]+)/
+        // Handle dailymotion.com and dai.ly
+        const dmRegex = /(?:dailymotion\.com\/video\/|dai\.ly\/)([a-zA-Z0-9]+)/
         const match = processedUrl.match(dmRegex)
         if (match) {
-          processedUrl = `https://www.dailymotion.com/video/${match[1]}`
+          embedUrl = `https://www.dailymotion.com/embed/video/${match[1]}?autoplay=1`
         }
       } else if (selectedType === "archive") {
-        // Archive.org - use the URL directly as-is (react-player supports it)
-        // No transformation needed
+        if (processedUrl.includes("/details/")) {
+          // If it's a details page, we try to use the embed version
+          embedUrl = processedUrl.replace("/details/", "/embed/")
+        }
+      } else if (selectedType === "soundcloud") {
+        embedUrl = `https://w.soundcloud.com/player/?url=${encodeURIComponent(processedUrl)}&color=%23ff5500&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true`
       }
 
+      // Pass the ReactPlayer-compatible URL (not embed format)
       onCreateSession(processedUrl, selectedType)
       onClose()
       setVideoUrl("")
@@ -133,10 +149,12 @@ export function TheaterSetupModal({ isOpen, onClose, onCreateSession }: TheaterS
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-center text-cyan-400 flex items-center justify-center gap-2">
-            <Film className="w-5 h-5" />
-            Select a Video
+          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+            Cinema Theater Setup
           </DialogTitle>
+          <DialogDescription className="text-slate-400">
+            Configure your video session and share media with everyone in the room.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
@@ -180,7 +198,8 @@ export function TheaterSetupModal({ isOpen, onClose, onCreateSession }: TheaterS
                       selectedType === "youtube" ? "Paste YouTube URL" :
                         selectedType === "vimeo" ? "Paste Vimeo URL" :
                           selectedType === "twitch" ? "Paste Twitch URL" :
-                            selectedType === "dailymotion" ? "Paste Dailymotion URL" : "Paste Archive.org URL"
+                            selectedType === "dailymotion" ? "Paste Dailymotion URL" :
+                              selectedType === "soundcloud" ? "Paste Soundcloud URL" : "Paste Archive.org URL"
                   }
                   className="bg-slate-700 border-slate-600 text-white placeholder-gray-400 pr-12 h-12 rounded-xl"
                 />
