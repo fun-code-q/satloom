@@ -142,13 +142,21 @@ export function AudioCallModal({
       if (isInitializedRef.current) {
         console.log("AudioCall: Cleaning up WebRTC")
         unsubscribeSignalsRef.current()
-        WebRTCManager.getInstance().cleanup()
-        isInitializedRef.current = false
+        // Only cleanup ALL connections if call is actually ended or modal unmounted
       }
       return
     }
+  }, [isOpen])
 
-    if (isInitializedRef.current || !localStream || !callData) return
+  // Final cleanup on unmount
+  useEffect(() => {
+    return () => {
+      WebRTCManager.getInstance().cleanup()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isOpen || isInitializedRef.current || !localStream || !callData) return
 
     const webrtc = WebRTCManager.getInstance()
     isInitializedRef.current = true
@@ -165,7 +173,13 @@ export function AudioCallModal({
       },
       (c, uid) => {
         if (callData?.id && uid === targetUserId) {
-          callSignaling.sendSignal(roomId, callData.id, "ice-candidate", c, currentUserId)
+          // Send structured payload matching video-call.html and standard expectations
+          const payload = {
+            candidate: c.candidate,
+            sdpMid: c.sdpMid,
+            sdpMLineIndex: c.sdpMLineIndex
+          }
+          callSignaling.sendSignal(roomId, callData.id, "ice-candidate", payload, currentUserId)
         }
       },
       (state, uid) => {
@@ -176,8 +190,9 @@ export function AudioCallModal({
       }
     )
 
-    unsubscribeSignalsRef.current = callSignaling.listenForSignals(roomId, callData.id, currentUserId, async (type, payload) => {
-      console.log(`AudioCall: Signal received (${type})`)
+    unsubscribeSignalsRef.current = callSignaling.listenForSignals(roomId, callData.id, currentUserId, async (type, payload, senderId) => {
+      console.log(`AudioCall: Signal received (${type}) from ${senderId}`)
+      const targetUserId = senderId
       if (type === "offer") {
         if (callData.status === "answered") {
           const answer = await webrtc.createAnswer(targetUserId, payload)
@@ -189,9 +204,13 @@ export function AudioCallModal({
         await webrtc.handleAnswer(targetUserId, payload)
       } else if (type === "ice-candidate") {
         await webrtc.addIceCandidate(targetUserId, payload)
+      } else if (type === "bye") {
+        console.log("AudioCall: Remote peer sent bye")
+        onClose()
       }
     })
-  }, [isOpen, localStream, roomId, currentUserId, callData?.id]) // Removed callData.status to prevent re-init
+  }, [isOpen, localStream, roomId, currentUserId, callData?.id])
+  // Removed callData.status to prevent re-init
 
   // Effect 2.5: Handshake Action (Triggered on status change)
   useEffect(() => {
@@ -242,7 +261,13 @@ export function AudioCallModal({
 
   const handleEndCall = async () => {
     if (callData) {
-      await callSignaling.endCall(roomId, callData.id)
+      try {
+        // Send bye signal before closing to notify remote peer immediately
+        await callSignaling.sendSignal(roomId, callData.id, "bye", {}, currentUserId)
+        await callSignaling.endCall(roomId, callData.id)
+      } catch (err) {
+        console.error("Error during end call signaling:", err)
+      }
     }
 
     if (localStream) {

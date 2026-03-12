@@ -174,7 +174,7 @@ export function TheaterFullscreen({
 
   // Handle Incoming Signals
   useEffect(() => {
-    if (!session) return
+    if (!session || !isOpen) return
     const webrtc = WebRTCManager.getInstance()
 
     const unsubscribeSignals = theaterSignaling.listenForSignals(roomId, session.id, currentUserId, async (type, payload, fromUserId) => {
@@ -186,7 +186,16 @@ export function TheaterFullscreen({
           fromUserId,
           streamToUse,
           (s, uid) => { if (uid === fromUserId) setRemoteMovieStream(s) },
-          (c, uid) => { if (uid === fromUserId) theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", c, currentUserId, fromUserId) }
+          (c, uid) => {
+            if (uid === fromUserId) {
+              const payload = {
+                candidate: c.candidate,
+                sdpMid: c.sdpMid,
+                sdpMLineIndex: c.sdpMLineIndex
+              }
+              theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", payload, currentUserId, fromUserId)
+            }
+          }
         )
         const answer = await webrtc.createAnswer(fromUserId, payload)
         theaterSignaling.sendSignal(roomId, session.id, "answer", answer, currentUserId, fromUserId)
@@ -194,14 +203,24 @@ export function TheaterFullscreen({
         await webrtc.handleAnswer(fromUserId, payload)
       } else if (type === "ice-candidate") {
         await webrtc.addIceCandidate(fromUserId, payload)
+      } else if (type === "bye") {
+        console.log("Theater: Remote peer sent bye")
+        // Just log for theater, manager handles track cleanup better
       }
     })
 
     return () => {
       unsubscribeSignals()
-      webrtc.cleanup()
+      // Only cleanup ALL connections if theater is closing
     }
-  }, [session, isOpen, roomId, currentUserId, localMovieStream])
+  }, [session.id, isOpen, roomId, currentUserId])
+
+  // Final cleanup on unmount
+  useEffect(() => {
+    return () => {
+      WebRTCManager.getInstance().cleanup()
+    }
+  }, [])
 
   // PTT Setup
   useEffect(() => {
@@ -643,59 +662,64 @@ export function TheaterFullscreen({
                 </div>
               )}
             </div>
-          ) : ReactPlayer.canPlay(session.videoUrl) ? (
-            <ReactPlayer
-              ref={playerRef}
-              url={session.videoUrl}
-              width="100%"
-              height="100%"
-              playing={isPlaying}
-              volume={isMuted ? 0 : volume}
-              playbackRate={playbackRate}
-              onReady={() => setPlayerReady(true)}
-              onProgress={handleProgress as any}
-              onDuration={setDuration}
-              onEnded={() => setIsPlaying(false)}
-              onBuffer={() => setIsBuffering(true)}
-              onBufferEnd={() => setIsBuffering(false)}
-              config={{
-                youtube: {
-                  playerVars: {
-                    showinfo: 0,
-                    controls: 1,
-                    modestbranding: 1,
-                    rel: 0,
-                    enablejsapi: 1
-                  }
-                },
-                vimeo: {
-                  playerOptions: {
-                    responsive: true,
-                    autoplay: true
-                  }
-                },
-                twitch: {
-                  options: {
-                    muted: isMuted
-                  }
-                },
-                dailymotion: {
-                  playerParams: {
-                    start: 0,
-                    mute: isMuted
-                  }
-                }
-              } as any}
-            />
           ) : (
-            <iframe
-              ref={iframeRef}
-              src={session.videoUrl}
-              className="w-full h-full border-none"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              onLoad={() => setPlayerReady(true)}
-            />
+            <div className="w-full h-full relative">
+              {/* Click blockers for sync enforcement (like Player.html) */}
+              <div className="absolute inset-0 z-10 cursor-default" onClick={(e) => {
+                // If not host, clicking should do nothing. If host, clicking toggles playback.
+                if (isHost) handlePlay();
+                // We don't preventDefault here because we want the controls to be able to show on hover if handled by us
+              }}>
+                <div className="absolute top-0 left-0 w-full h-[37%] bg-transparent" />
+                <div className="absolute top-[37%] left-0 w-full h-[30%] bg-transparent" />
+                <div className="absolute bottom-0 left-0 w-full h-[33%] bg-transparent" />
+              </div>
+
+              {ReactPlayer.canPlay(session.videoUrl) ? (
+                <ReactPlayer
+                  ref={playerRef}
+                  url={session.videoUrl}
+                  width="100%"
+                  height="100%"
+                  playing={isPlaying}
+                  volume={isMuted ? 0 : volume}
+                  playbackRate={playbackRate}
+                  onReady={() => setPlayerReady(true)}
+                  onProgress={handleProgress as any}
+                  onDuration={setDuration}
+                  onEnded={() => setIsPlaying(false)}
+                  onBuffer={() => setIsBuffering(true)}
+                  onBufferEnd={() => setIsBuffering(false)}
+                  config={{
+                    youtube: {
+                      playerVars: {
+                        showinfo: 0,
+                        controls: 0, // Disable native controls for better sync
+                        modestbranding: 1,
+                        rel: 0,
+                        enablejsapi: 1
+                      }
+                    },
+                    vimeo: {
+                      playerOptions: {
+                        responsive: true,
+                        autoplay: true,
+                        controls: false
+                      }
+                    },
+                  } as any}
+                />
+              ) : (
+                <iframe
+                  ref={iframeRef}
+                  src={session.videoUrl}
+                  className="w-full h-full border-none"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  onLoad={() => setPlayerReady(true)}
+                />
+              )}
+            </div>
           )}
 
           {/* Loading / Buffering Overlay */}

@@ -63,12 +63,28 @@ export class WebRTCManager {
         })
 
         if (servers.length === 0) {
+            // High-reliability fallbacks - mix of Google and public STUN/TURN
             servers.push(
                 { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' },
+                // Fallback public TURN from OpenRelay (sometimes works as fallback even without fresh credentials if using default ones)
+                {
+                    urls: 'turn:openrelay.metered.ca:80',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                }
             )
         }
 
+        console.log(`WebRTC: Initialized with ${servers.length} ICE servers`)
         return servers
     }
 
@@ -116,11 +132,19 @@ export class WebRTCManager {
 
         // Handle remote tracks
         pc.ontrack = (event) => {
-            if (event.streams && event.streams[0]) {
-                this.remoteStreams.set(targetUserId, event.streams[0])
-                if (this.onRemoteStream) {
-                    this.onRemoteStream(event.streams[0], targetUserId)
+            console.log(`[WebRTC] Received remote track: ${event.track.kind}`)
+            let stream = event.streams[0]
+            if (!stream) {
+                // Fallback: build stream manually if not provided by browser
+                stream = this.remoteStreams.get(targetUserId) || new MediaStream()
+                if (!stream.getTracks().some(t => t.id === event.track.id)) {
+                    stream.addTrack(event.track)
                 }
+            }
+
+            this.remoteStreams.set(targetUserId, stream)
+            if (this.onRemoteStream) {
+                this.onRemoteStream(stream, targetUserId)
             }
         }
 

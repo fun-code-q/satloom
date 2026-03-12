@@ -170,7 +170,13 @@ export function VideoCallModal({
     }
     onIceCandidateRef.current = (candidate: RTCIceCandidate) => {
       if (callData?.id) {
-        callSignaling.sendSignal(roomId, callData.id, "ice-candidate", candidate, currentUserId)
+        // Send structured payload matching video-call.html and standard expectations
+        const payload = {
+          candidate: candidate.candidate,
+          sdpMid: candidate.sdpMid,
+          sdpMLineIndex: candidate.sdpMLineIndex
+        }
+        callSignaling.sendSignal(roomId, callData.id, "ice-candidate", payload, currentUserId)
       }
     }
   }, [callData?.id, roomId, currentUserId, callData?.participants, callData?.caller])
@@ -261,10 +267,11 @@ export function VideoCallModal({
       }
     )
 
-    unsubscribeSignalsRef.current = callSignaling.listenForSignals(roomId, callData.id, currentUserId, async (type, payload) => {
-      console.log(`VideoCall: Signal received (${type})`)
-      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.callerId
-      if (!targetUserId) return
+    unsubscribeSignalsRef.current = callSignaling.listenForSignals(roomId, callData.id, currentUserId, async (type, payload, senderId) => {
+      console.log(`VideoCall: Signal received (${type}) from ${senderId}`)
+
+      // Use the senderId directly from the signal instead of finding it inparticipants again
+      const targetUserId = senderId
 
       if (type === "offer") {
         if (callData.status === "answered") {
@@ -277,6 +284,9 @@ export function VideoCallModal({
         await webrtc.handleAnswer(targetUserId, payload)
       } else if (type === "ice-candidate") {
         await webrtc.addIceCandidate(targetUserId, payload)
+      } else if (type === "bye") {
+        console.log("VideoCall: Remote peer sent bye")
+        onClose()
       }
     })
   }, [isOpen, localStream, roomId, currentUserId, callData?.id]) // Removed callData.status to prevent re-init
@@ -333,7 +343,13 @@ export function VideoCallModal({
 
   const handleEndCall = async () => {
     if (callData) {
-      await callSignaling.endCall(roomId, callData.id)
+      try {
+        // Send bye signal before closing to notify remote peer immediately
+        await callSignaling.sendSignal(roomId, callData.id, "bye", {}, currentUserId)
+        await callSignaling.endCall(roomId, callData.id)
+      } catch (err) {
+        console.error("Error during end call signaling:", err)
+      }
     }
 
     // Stop all tracks immediately using refs

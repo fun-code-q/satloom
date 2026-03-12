@@ -212,7 +212,7 @@ export class CallSignaling {
   }
 
   // WebRTC Signaling Methods
-  async sendSignal(roomId: string, callId: string, type: "offer" | "answer" | "ice-candidate", payload: any, senderId: string) {
+  async sendSignal(roomId: string, callId: string, type: "offer" | "answer" | "ice-candidate" | "bye", payload: any, senderId: string) {
     const db = getDb()
     if (!db) return
     const signalRef = ref(db, `rooms/${roomId}/calls/${callId}/signals`)
@@ -224,7 +224,7 @@ export class CallSignaling {
     })
   }
 
-  listenForSignals(roomId: string, callId: string, currentUserId: string, onSignal: (type: string, payload: any) => void): () => void {
+  listenForSignals(roomId: string, callId: string, currentUserId: string, onSignal: (type: string, payload: any, senderId: string) => void): () => void {
     const db = getDb()
     if (!db) return () => { }
     const signalsRef = ref(db, `rooms/${roomId}/calls/${callId}/signals`)
@@ -233,11 +233,21 @@ export class CallSignaling {
       const data = snapshot.val()
       if (data && data.senderId !== currentUserId) {
         // Only process signals from the OTHER person
-        onSignal(data.type, data.payload)
+        onSignal(data.type, data.payload, data.senderId)
+
+        // Remove signal after processing to keep DB clean and avoid stale processing
+        remove(snapshot.ref).catch(err => console.warn("Failed to remove signal:", err))
       }
     })
 
     return unsubscribe
+  }
+
+  async clearSignals(roomId: string, callId: string) {
+    const db = getDb()
+    if (!db) return
+    const signalsRef = ref(db, `rooms/${roomId}/calls/${callId}/signals`)
+    await remove(signalsRef)
   }
 
   // Actually, let's implement sending correctly first.

@@ -125,6 +125,16 @@ export class TheaterSignaling {
       const updatedParticipants = [...session.participants, userId]
       await set(ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}/participants`), updatedParticipants)
     }
+
+    // Clear stale signals for this user
+    await this.clearSignals(roomId, sessionId, userId)
+  }
+
+  // Clear all signals for a user
+  async clearSignals(roomId: string, sessionId: string, userId: string) {
+    if (!getFirebaseDatabase()!) return
+    const signalsRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}/signals/${userId}`)
+    await remove(signalsRef)
   }
 
   // Send theater action (play, pause, seek)
@@ -236,7 +246,7 @@ export class TheaterSignaling {
   async sendSignal(
     roomId: string,
     sessionId: string,
-    type: "offer" | "answer" | "ice-candidate",
+    type: "offer" | "answer" | "ice-candidate" | "bye",
     payload: any,
     fromUserId: string,
     toUserId: string
@@ -265,17 +275,19 @@ export class TheaterSignaling {
     userId: string,
     onSignal: (type: string, payload: any, fromUserId: string) => void
   ) {
-    if (!getFirebaseDatabase()!) return () => { }
-    const signalsRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}/signals/${userId}`)
-    const unsubscribe = onValue(signalsRef, (snapshot) => {
-      const signals = snapshot.val()
-      if (signals) {
-        Object.values(signals).forEach((sig: any) => {
-          onSignal(sig.type, sig.payload, sig.fromUserId)
-          // Clean up this specific signal immediately after processing
-          // Note: we'd need the key here. A more robust way is to just let the timeout handle it
-          // OR iterate with snapshot.forEach
-        })
+    const db = getFirebaseDatabase()
+    if (!db) return () => { }
+
+    // @ts-ignore
+    const { onChildAdded } = require("firebase/database")
+    const signalsRef = ref(db, `rooms/${roomId}/theater/${sessionId}/signals/${userId}`)
+
+    const unsubscribe = onChildAdded(signalsRef, (snapshot: any) => {
+      const sig = snapshot.val()
+      if (sig) {
+        onSignal(sig.type, sig.payload, sig.fromUserId)
+        // Optionally remove the signal once processed
+        remove(snapshot.ref).catch(() => { })
       }
     })
     return unsubscribe
