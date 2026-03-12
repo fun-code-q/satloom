@@ -218,99 +218,103 @@ export function ChatHeader({
                                 >
                                     <Copy className="w-4 h-4" />
                                 </Button>
+                            </div>
 
-                                {/* Main Menu (Calling Icon) */}
-                                <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 bg-white/5 rounded-xl h-10 w-10 transition-colors relative" title="Game Controls & Tools">
-                                            <Phone className="w-5 h-5" />
-                                            {(hasUnreadNotes || hasUnreadTasks) && (
-                                                <span className="md:hidden absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse" />
-                                            )}
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" side="bottom" className="bg-slate-800 border-slate-700 text-white min-w-[280px] sm:min-w-64 max-h-[85vh] overflow-y-auto animate-none rounded-2xl shadow-2xl z-[300]" sideOffset={8}>
-                                        {/* Mobile Only Quick Actions */}
-                                        <div className="md:hidden">
-                                            {/* Top Actions Row */}
-                                            <div className="flex items-center gap-2 px-2 py-2 mb-1">
-                                                <Button
-                                                    variant="ghost" size="icon"
-                                                    onClick={toggleFullscreen}
-                                                    className="h-12 w-12 bg-slate-700/50 hover:bg-slate-700 text-cyan-400 rounded-xl haptic"
+                            {/* Main Menu (Calling Icon on Desktop, 3-dot on Mobile) */}
+                            <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 bg-white/5 rounded-xl h-10 w-10 transition-colors relative" title="Game Controls & Tools">
+                                        <Phone className="hidden md:block w-5 h-5" />
+                                        <MoreVertical className="md:hidden w-5 h-5" />
+                                        {(hasUnreadNotes || hasUnreadTasks) && (
+                                            <span className="md:hidden absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse" />
+                                        )}
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" side="bottom" className="bg-slate-800 border-slate-700 text-white min-w-[280px] sm:min-w-64 max-h-[85vh] overflow-y-auto animate-none rounded-2xl shadow-2xl z-[300]" sideOffset={8}>
+                                    {/* Mobile Only Quick Actions */}
+                                    <div className="md:hidden">
+                                        {/* Top Actions Row */}
+                                        <div className="flex items-center gap-2 px-2 py-2 mb-1">
+                                            <Button
+                                                variant="ghost" size="icon"
+                                                onClick={toggleFullscreen}
+                                                className="h-12 w-12 bg-slate-700/50 hover:bg-slate-700 text-cyan-400 rounded-xl haptic"
+                                            >
+                                                {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                                            </Button>
+
+                                            <Button
+                                                variant="ghost"
+                                                onClick={handleCopyRoomLink}
+                                                className="flex-1 h-12 bg-slate-700/50 hover:bg-slate-700 text-cyan-400 rounded-xl font-mono text-sm haptic justify-center"
+                                            >
+                                                {roomId}
+                                            </Button>
+                                        </div>
+
+                                        <DropdownMenuSeparator className="bg-slate-700/50 my-1" />
+
+                                        {[
+                                            { group: communicationGroup, label: "Communication" },
+                                            { group: mediaGroup, label: "Media" },
+                                            { group: gamesGroup, label: "Games" },
+                                            { group: productivityGroup, label: "Collabration" },
+                                            { group: settingsGroup, label: "Tools" },
+                                            { group: appSettingsGroup, label: "Settings", isFoldable: true }
+                                        ].map(({ group, label, isFoldable }: { group: MenuGroup; label: string; isFoldable?: boolean }, idx: number) => (
+                                            <React.Fragment key={idx}>
+                                                <div
+                                                    className={`flex items-center justify-between px-3 py-2 ${isFoldable ? 'cursor-pointer hover:bg-slate-700/50 transition-colors rounded-lg mx-1' : ''}`}
+                                                    onClick={() => isFoldable && setIsSettingsFolded(!isSettingsFolded)}
                                                 >
-                                                    {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-                                                </Button>
-
-                                                <Button
-                                                    variant="ghost"
-                                                    onClick={handleCopyRoomLink}
-                                                    className="flex-1 h-12 bg-slate-700/50 hover:bg-slate-700 text-cyan-400 rounded-xl font-mono text-sm haptic justify-center"
-                                                >
-                                                    {roomId}
-                                                </Button>
-                                            </div>
-
-                                            <DropdownMenuSeparator className="bg-slate-700/50 my-1" />
-
-                                            {[
-                                                { group: communicationGroup, label: "Communication" },
-                                                { group: mediaGroup, label: "Media" },
-                                                { group: gamesGroup, label: "Games" },
-                                                { group: productivityGroup, label: "Collabration" },
-                                                { group: settingsGroup, label: "Tools" },
-                                                { group: appSettingsGroup, label: "Settings", isFoldable: true }
-                                            ].map(({ group, label, isFoldable }: { group: MenuGroup; label: string; isFoldable?: boolean }, idx: number) => (
-                                                <React.Fragment key={idx}>
-                                                    <div
-                                                        className={`flex items-center justify-between px-3 py-2 ${isFoldable ? 'cursor-pointer hover:bg-slate-700/50 transition-colors rounded-lg mx-1' : ''}`}
-                                                        onClick={() => isFoldable && setIsSettingsFolded(!isSettingsFolded)}
-                                                    >
-                                                        <DropdownMenuLabel className="p-0 text-[10px] text-slate-400 uppercase tracking-widest font-bold opacity-70">
-                                                            {label}
-                                                        </DropdownMenuLabel>
-                                                        {isFoldable && (
-                                                            isSettingsFolded ? <ChevronRight className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />
-                                                        )}
-                                                    </div>
-
-                                                    {(!isFoldable || !isSettingsFolded) && (
-                                                        <div className="space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
-                                                            {group.items.map((item: any, i: number) => (
-                                                                <DropdownMenuItem key={i} onClick={item.action} className="hover:bg-slate-700 cursor-pointer min-h-[48px] haptic flex items-center justify-between px-3">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <item.icon className="w-4 h-4 flex-shrink-0 text-slate-400" />
-                                                                        <span>{item.label}</span>
-                                                                    </div>
-                                                                    {((item.label.toLowerCase().includes("notes") && hasUnreadNotes) ||
-                                                                        (item.label.toLowerCase().includes("task") && hasUnreadTasks)) && (
-                                                                            <span className="w-2 h-2 bg-red-500 rounded-full" />
-                                                                        )}
-                                                                </DropdownMenuItem>
-                                                            ))}
-                                                        </div>
+                                                    <DropdownMenuLabel className="p-0 text-[10px] text-slate-400 uppercase tracking-widest font-bold opacity-70">
+                                                        {label}
+                                                    </DropdownMenuLabel>
+                                                    {isFoldable && (
+                                                        isSettingsFolded ? <ChevronRight className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />
                                                     )}
-                                                    <DropdownMenuSeparator className="bg-slate-700/50 my-1" />
-                                                </React.Fragment>
-                                            ))}
-                                        </div>
+                                                </div>
 
-                                        {/* Desktop Only Actions - Only Call Items now */}
-                                        <div className="hidden md:block">
-                                            <DropdownMenuLabel className="text-[10px] text-slate-400 uppercase tracking-widest px-3 py-2 font-bold opacity-70">
-                                                Communication
-                                            </DropdownMenuLabel>
-                                            {communicationGroup.items.map((item: any, i: number) => (
-                                                <DropdownMenuItem key={i} onClick={item.action} className="hover:bg-slate-700 cursor-pointer min-h-[48px] haptic flex items-center justify-between px-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <item.icon className="w-4 h-4 flex-shrink-0 text-slate-400" />
-                                                        <span>{item.label}</span>
+                                                {(!isFoldable || !isSettingsFolded) && (
+                                                    <div className="space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                        {group.items.map((item: any, i: number) => (
+                                                            <DropdownMenuItem key={i} onClick={item.action} className="hover:bg-slate-700 cursor-pointer min-h-[48px] haptic flex items-center justify-between px-3">
+                                                                <div className="flex items-center gap-3">
+                                                                    <item.icon className="w-4 h-4 flex-shrink-0 text-slate-400" />
+                                                                    <span>{item.label}</span>
+                                                                </div>
+                                                                {((item.label.toLowerCase().includes("notes") && hasUnreadNotes) ||
+                                                                    (item.label.toLowerCase().includes("task") && hasUnreadTasks)) && (
+                                                                        <span className="w-2 h-2 bg-red-500 rounded-full" />
+                                                                    )}
+                                                            </DropdownMenuItem>
+                                                        ))}
                                                     </div>
-                                                </DropdownMenuItem>
-                                            ))}
-                                        </div>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                                                )}
+                                                <DropdownMenuSeparator className="bg-slate-700/50 my-1" />
+                                            </React.Fragment>
+                                        ))}
+                                    </div>
+
+                                    {/* Desktop Only Actions - Only Call Items now */}
+                                    <div className="hidden md:block">
+                                        <DropdownMenuLabel className="text-[10px] text-slate-400 uppercase tracking-widest px-3 py-2 font-bold opacity-70">
+                                            Communication
+                                        </DropdownMenuLabel>
+                                        {communicationGroup.items.map((item: any, i: number) => (
+                                            <DropdownMenuItem key={i} onClick={item.action} className="hover:bg-slate-700 cursor-pointer min-h-[48px] haptic flex items-center justify-between px-3">
+                                                <div className="flex items-center gap-3">
+                                                    <item.icon className="w-4 h-4 flex-shrink-0 text-slate-400" />
+                                                    <span>{item.label}</span>
+                                                </div>
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </div>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            <div className="hidden md:flex items-center gap-2">
 
                                 {/* Media Menu */}
                                 <DropdownMenu open={isMediaMenuOpen} onOpenChange={setIsMediaMenuOpen}>
