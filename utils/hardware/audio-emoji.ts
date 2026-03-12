@@ -42,17 +42,16 @@ export interface AudioEmojiState {
 
 export const DEFAULT_AUDIO_EMOJIS: AudioEmoji[] = [
     // Reaction sounds
-    { id: "celebration", name: "Celebration", emoji: "🥳", audioUrl: "audio-emoji/celebration.mp3", duration: 2000, category: "reaction" },
-    { id: "laughter", name: "Laughter", emoji: "😂", audioUrl: "audio-emoji/laughter.mp3", duration: 3000, category: "reaction" },
-    { id: "fire", name: "Fire", emoji: "🔥", audioUrl: "audio-emoji/fire.mp3", duration: 1500, category: "reaction" },
-    { id: "applause", name: "Applause", emoji: "👏", audioUrl: "audio-emoji/applause.mp3", duration: 2500, category: "reaction" },
-    { id: "wow", name: "Wow", emoji: "😮", audioUrl: "audio-emoji/wow.mp3", duration: 1500, category: "reaction" },
-    { id: "sad", name: "Sad", emoji: "😢", audioUrl: "audio-emoji/sad.mp3", duration: 2000, category: "reaction" },
-    { id: "angry", name: "Angry", emoji: "😡", audioUrl: "audio-emoji/angry.mp3", duration: 1500, category: "reaction" },
-    { id: "love", name: "Love", emoji: "❤️", audioUrl: "audio-emoji/love.mp3", duration: 2000, category: "reaction" },
+    { id: "celebration", name: "Celebration", emoji: "🥳", audioUrl: "/satloom/audio-emoji/celebration.mp3", duration: 2000, category: "reaction" },
+    { id: "laughter", name: "Laughter", emoji: "😂", audioUrl: "/satloom/audio-emoji/laughter.mp3", duration: 3000, category: "reaction" },
+    { id: "fire", name: "Fire", emoji: "🔥", audioUrl: "/satloom/audio-emoji/fire.mp3", duration: 1500, category: "reaction" },
+    { id: "applause", name: "Applause", emoji: "👏", audioUrl: "/satloom/audio-emoji/applause.mp3", duration: 2500, category: "reaction" },
+    { id: "wow", name: "Wow", emoji: "😮", audioUrl: "/satloom/audio-emoji/wow.mp3", duration: 1500, category: "reaction" },
+    { id: "sad", name: "Sad", emoji: "😢", audioUrl: "/satloom/audio-emoji/sad.mp3", duration: 2000, category: "reaction" },
+    { id: "angry", name: "Angry", emoji: "😡", audioUrl: "/satloom/audio-emoji/angry.mp3", duration: 1500, category: "reaction" },
+    { id: "love", name: "Love", emoji: "❤️", audioUrl: "/satloom/audio-emoji/love.mp3", duration: 2000, category: "reaction" },
 
     // Game sounds
-    { id: "correct", name: "Correct", emoji: "✅", audioUrl: "audio-emoji/correct.mp3", duration: 1000, category: "game" },
     { id: "wrong", name: "Wrong", emoji: "❌", audioUrl: "audio-emoji/wrong.mp3", duration: 1000, category: "game" },
     { id: "buzzer", name: "Buzzer", emoji: "🔔", audioUrl: "audio-emoji/buzzer.mp3", duration: 2000, category: "game" },
     { id: "ding", name: "Ding", emoji: "🔔", audioUrl: "audio-emoji/ding.mp3", duration: 500, category: "game" },

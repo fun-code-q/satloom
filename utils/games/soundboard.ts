@@ -26,21 +26,21 @@ export interface SoundboardState {
 
 // Predefined sound effects
 export const DEFAULT_SOUNDS: SoundEffect[] = [
-    { id: "bruh", name: "Bruh", icon: "😤", audioUrl: "sounds/bruh.mp3", duration: 2000, color: "#f59e0b", hotkey: "1" },
-    { id: "wow", name: "Wow", icon: "😮", audioUrl: "sounds/wow.mp3", duration: 1500, color: "#8b5cf6", hotkey: "2" },
-    { id: "airhorn", name: "Airhorn", icon: "📢", audioUrl: "sounds/airhorn.mp3", duration: 1000, color: "#ef4444", hotkey: "3" },
-    { id: "vineboom", name: "Vine Boom", icon: "💥", audioUrl: "sounds/vineboom.mp3", duration: 2000, color: "#dc2626", hotkey: "4" },
-    { id: "sad-violin", name: "Sad Violin", icon: "🎻", audioUrl: "sounds/sad-violin.mp3", duration: 3000, color: "#6366f1", hotkey: "5" },
-    { id: "crickets", name: "Crickets", icon: "🦗", audioUrl: "sounds/crickets.mp3", duration: 2500, color: "#065f46", hotkey: "6" },
-    { id: "rimshot", name: "Rimshot", icon: "🥁", audioUrl: "sounds/rimshot.mp3", duration: 1500, color: "#7c3aed", hotkey: "7" },
-    { id: "trombone", name: "Trombone", icon: "🎺", audioUrl: "sounds/trombone.mp3", duration: 2000, color: "#ca8a04", hotkey: "8" },
-    { id: "cartoon-boing", name: "Boing", icon: "🔔", audioUrl: "sounds/cartoon-boing.mp3", duration: 1000, color: "#0ea5e9", hotkey: "9" },
-    { id: "punch", name: "Punch", icon: "👊", audioUrl: "sounds/punch.mp3", duration: 500, color: "#b91c1c", hotkey: "0" },
-    { id: "celebration", name: "Celebrate", icon: "🥳", audioUrl: "audio-emoji/celebration.mp3", duration: 2000, color: "#10b981", hotkey: "q" },
-    { id: "laughter", name: "Laugh", icon: "😂", audioUrl: "audio-emoji/laughter.mp3", duration: 3000, color: "#fcd34d", hotkey: "w" },
-    { id: "applause", name: "Applause", icon: "👏", audioUrl: "audio-emoji/applause.mp3", duration: 2500, color: "#34d399", hotkey: "e" },
-    { id: "correct", name: "Correct", icon: "✅", audioUrl: "audio-emoji/correct.mp3", duration: 1000, color: "#22c55e", hotkey: "r" },
-    { id: "wrong", name: "Wrong", icon: "❌", audioUrl: "audio-emoji/wrong.mp3", duration: 1000, color: "#ef4444", hotkey: "t" },
+    { id: "bruh", name: "Bruh", icon: "😤", audioUrl: "/satloom/sounds/bruh.mp3", duration: 2000, color: "#f59e0b", hotkey: "1" },
+    { id: "wow", name: "Wow", icon: "😮", audioUrl: "/satloom/sounds/wow.mp3", duration: 1500, color: "#8b5cf6", hotkey: "2" },
+    { id: "airhorn", name: "Airhorn", icon: "📢", audioUrl: "/satloom/sounds/airhorn.mp3", duration: 1000, color: "#ef4444", hotkey: "3" },
+    { id: "vineboom", name: "Vine Boom", icon: "💥", audioUrl: "/satloom/sounds/vineboom.mp3", duration: 2000, color: "#dc2626", hotkey: "4" },
+    { id: "sad-violin", name: "Sad Violin", icon: "🎻", audioUrl: "/satloom/sounds/sad-violin.mp3", duration: 3000, color: "#6366f1", hotkey: "5" },
+    { id: "crickets", name: "Crickets", icon: "🦗", audioUrl: "/satloom/sounds/crickets.mp3", duration: 2500, color: "#065f46", hotkey: "6" },
+    { id: "rimshot", name: "Rimshot", icon: "🥁", audioUrl: "/satloom/sounds/rimshot.mp3", duration: 1500, color: "#7c3aed", hotkey: "7" },
+    { id: "trombone", name: "Trombone", icon: "🎺", audioUrl: "/satloom/sounds/trombone.mp3", duration: 2000, color: "#ca8a04", hotkey: "8" },
+    { id: "cartoon-boing", name: "Boing", icon: "🔔", audioUrl: "/satloom/sounds/cartoon-boing.mp3", duration: 1000, color: "#0ea5e9", hotkey: "9" },
+    { id: "punch", name: "Punch", icon: "👊", audioUrl: "/satloom/sounds/punch.mp3", duration: 500, color: "#b91c1c", hotkey: "0" },
+    { id: "celebration", name: "Celebrate", icon: "🥳", audioUrl: "/satloom/audio-emoji/celebration.mp3", duration: 2000, color: "#10b981", hotkey: "q" },
+    { id: "laughter", name: "Laugh", icon: "😂", audioUrl: "/satloom/audio-emoji/laughter.mp3", duration: 3000, color: "#fcd34d", hotkey: "w" },
+    { id: "applause", name: "Applause", icon: "👏", audioUrl: "/satloom/audio-emoji/applause.mp3", duration: 2500, color: "#34d399", hotkey: "e" },
+    { id: "correct", name: "Correct", icon: "✅", audioUrl: "/satloom/audio-emoji/correct.mp3", duration: 1000, color: "#22c55e", hotkey: "r" },
+    { id: "wrong", name: "Wrong", icon: "❌", audioUrl: "/satloom/audio-emoji/wrong.mp3", duration: 1000, color: "#ef4444", hotkey: "t" },
 ]
 
 export interface PlayedSound {

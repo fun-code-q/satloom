@@ -343,12 +343,16 @@ export function useChatCalls(params: UseChatCallsParams) {
     const sendGameInvite = useCallback(async (config: GameConfig) => {
         const db = getFirebaseDatabase()
         if (!db || !roomId) return
+
+        // Sanitize config to remove undefined values which Firebase rejects
+        const sanitizedConfig = JSON.parse(JSON.stringify(config))
+
         const inviteId = `invite_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         const invite: GameInvite = {
             id: inviteId, roomId,
             gameId: (config as any).gameId || "",
             hostId: currentUserId, hostName: userProfile.name,
-            invitedUsers: ["all"], gameConfig: config as any,
+            invitedUsers: ["all"], gameConfig: sanitizedConfig,
             expiresAt: Date.now() + 30000, status: "pending", timestamp: Date.now(),
         }
         const inviteRef = ref(db, `gameInvites/${roomId}/${inviteId}`)
