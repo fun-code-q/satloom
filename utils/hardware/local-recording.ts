@@ -498,6 +498,19 @@ export class RecordingManager {
 
         return Array.from(dataArray)
     }
+
+    // Cleanup resources
+    cleanup(): void {
+        if (this.recordingStream) {
+            this.recordingStream.getTracks().forEach(track => track.stop())
+            this.recordingStream = null
+        }
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+            this.mediaRecorder.stop()
+        }
+        this.mediaRecorder = null
+        this.recordedChunks = []
+    }
 }
 
 // Helper functions
