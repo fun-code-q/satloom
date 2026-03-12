@@ -337,8 +337,12 @@ export function TheaterFullscreen({
 
     // Dynamic import to get the static method on the client
     import("react-player").then((RP) => {
-      const playable = RP.default.canPlay(session.videoUrl)
-      setCanReactPlayerPlay(playable)
+      if (RP.default && typeof RP.default.canPlay === "function") {
+        const playable = RP.default.canPlay(session.videoUrl)
+        setCanReactPlayerPlay(playable)
+      } else {
+        setCanReactPlayerPlay(false)
+      }
     }).catch(err => {
       console.error("Error checking playability:", err)
       setCanReactPlayerPlay(false) // Fallback to iframe
