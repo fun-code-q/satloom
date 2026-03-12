@@ -42,29 +42,29 @@ export interface AudioEmojiState {
 
 export const DEFAULT_AUDIO_EMOJIS: AudioEmoji[] = [
     // Reaction sounds
-    { id: "celebration", name: "Celebration", emoji: "🥳", audioUrl: "/audio-emoji/celebration.mp3", duration: 2000, category: "reaction" },
-    { id: "laughter", name: "Laughter", emoji: "😂", audioUrl: "/audio-emoji/laughter.mp3", duration: 3000, category: "reaction" },
-    { id: "fire", name: "Fire", emoji: "🔥", audioUrl: "/audio-emoji/fire.mp3", duration: 1500, category: "reaction" },
-    { id: "applause", name: "Applause", emoji: "👏", audioUrl: "/audio-emoji/applause.mp3", duration: 2500, category: "reaction" },
-    { id: "wow", name: "Wow", emoji: "😮", audioUrl: "/audio-emoji/wow.mp3", duration: 1500, category: "reaction" },
-    { id: "sad", name: "Sad", emoji: "😢", audioUrl: "/audio-emoji/sad.mp3", duration: 2000, category: "reaction" },
-    { id: "angry", name: "Angry", emoji: "😡", audioUrl: "/audio-emoji/angry.mp3", duration: 1500, category: "reaction" },
-    { id: "love", name: "Love", emoji: "❤️", audioUrl: "/audio-emoji/love.mp3", duration: 2000, category: "reaction" },
+    { id: "celebration", name: "Celebration", emoji: "🥳", audioUrl: "audio-emoji/celebration.mp3", duration: 2000, category: "reaction" },
+    { id: "laughter", name: "Laughter", emoji: "😂", audioUrl: "audio-emoji/laughter.mp3", duration: 3000, category: "reaction" },
+    { id: "fire", name: "Fire", emoji: "🔥", audioUrl: "audio-emoji/fire.mp3", duration: 1500, category: "reaction" },
+    { id: "applause", name: "Applause", emoji: "👏", audioUrl: "audio-emoji/applause.mp3", duration: 2500, category: "reaction" },
+    { id: "wow", name: "Wow", emoji: "😮", audioUrl: "audio-emoji/wow.mp3", duration: 1500, category: "reaction" },
+    { id: "sad", name: "Sad", emoji: "😢", audioUrl: "audio-emoji/sad.mp3", duration: 2000, category: "reaction" },
+    { id: "angry", name: "Angry", emoji: "😡", audioUrl: "audio-emoji/angry.mp3", duration: 1500, category: "reaction" },
+    { id: "love", name: "Love", emoji: "❤️", audioUrl: "audio-emoji/love.mp3", duration: 2000, category: "reaction" },
 
     // Game sounds
-    { id: "correct", name: "Correct", emoji: "✅", audioUrl: "/audio-emoji/correct.mp3", duration: 1000, category: "game" },
-    { id: "wrong", name: "Wrong", emoji: "❌", audioUrl: "/audio-emoji/wrong.mp3", duration: 1000, category: "game" },
-    { id: "buzzer", name: "Buzzer", emoji: "🔔", audioUrl: "/audio-emoji/buzzer.mp3", duration: 2000, category: "game" },
-    { id: "ding", name: "Ding", emoji: "🔔", audioUrl: "/audio-emoji/ding.mp3", duration: 500, category: "game" },
-    { id: "countdown", name: "Countdown", emoji: "⏰", audioUrl: "/audio-emoji/countdown.mp3", duration: 3000, category: "game" },
+    { id: "correct", name: "Correct", emoji: "✅", audioUrl: "audio-emoji/correct.mp3", duration: 1000, category: "game" },
+    { id: "wrong", name: "Wrong", emoji: "❌", audioUrl: "audio-emoji/wrong.mp3", duration: 1000, category: "game" },
+    { id: "buzzer", name: "Buzzer", emoji: "🔔", audioUrl: "audio-emoji/buzzer.mp3", duration: 2000, category: "game" },
+    { id: "ding", name: "Ding", emoji: "🔔", audioUrl: "audio-emoji/ding.mp3", duration: 500, category: "game" },
+    { id: "countdown", name: "Countdown", emoji: "⏰", audioUrl: "audio-emoji/countdown.mp3", duration: 3000, category: "game" },
 
     // Meme sounds
-    { id: "bruh", name: "Bruh", emoji: "😤", audioUrl: "/audio-emoji/bruh.mp3", duration: 1000, category: "meme" },
-    { id: "vine_boom", name: "Vine Boom", emoji: "💥", audioUrl: "/audio-emoji/vine-boom.mp3", duration: 2000, category: "meme" },
-    { id: "airhorn", name: "Airhorn", emoji: "📢", audioUrl: "/audio-emoji/airhorn.mp3", duration: 1500, category: "meme" },
-    { id: "sad_violin", name: "Sad Violin", emoji: "🎻", audioUrl: "/audio-emoji/sad-violin.mp3", duration: 3000, category: "meme" },
-    { id: "crickets", name: "Crickets", emoji: "🦗", audioUrl: "/audio-emoji/crickets.mp3", duration: 3000, category: "meme" },
-    { id: "wow_spongebob", name: "Spongebob Wow", emoji: "🧜", audioUrl: "/audio-emoji/spongebob-wow.mp3", duration: 2000, category: "meme" },
+    { id: "bruh", name: "Bruh", emoji: "😤", audioUrl: "audio-emoji/bruh.mp3", duration: 1000, category: "meme" },
+    { id: "vine_boom", name: "Vine Boom", emoji: "💥", audioUrl: "audio-emoji/vine-boom.mp3", duration: 2000, category: "meme" },
+    { id: "airhorn", name: "Airhorn", emoji: "📢", audioUrl: "audio-emoji/airhorn.mp3", duration: 1500, category: "meme" },
+    { id: "sad_violin", name: "Sad Violin", emoji: "🎻", audioUrl: "audio-emoji/sad-violin.mp3", duration: 3000, category: "meme" },
+    { id: "crickets", name: "Crickets", emoji: "🦗", audioUrl: "audio-emoji/crickets.mp3", duration: 3000, category: "meme" },
+    { id: "wow_spongebob", name: "Spongebob Wow", emoji: "🧜", audioUrl: "audio-emoji/spongebob-wow.mp3", duration: 2000, category: "meme" },
 ]
 
 class AudioEmojiManager {
