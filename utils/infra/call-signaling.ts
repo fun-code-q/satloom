@@ -24,6 +24,7 @@ export interface CallData {
   timestamp: number
   offer?: any
   answer?: any
+  targetUserId?: string
 }
 
 export class CallSignaling {
@@ -64,6 +65,7 @@ export class CallSignaling {
           [callerId]: callerName
         },
         timestamp: Date.now(),
+        targetUserId
       }
 
       await set(newCallRef, callData)

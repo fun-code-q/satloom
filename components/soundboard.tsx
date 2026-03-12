@@ -22,6 +22,9 @@ export function Soundboard({ isOpen, onClose, roomId, userId, userName }: Soundb
 
     useEffect(() => {
         if (isOpen) {
+            // Initialize soundboard to preload actual MP3 files
+            soundboard.initialize(roomId, userId, userName)
+
             const unsubState = soundboard.subscribe((state) => {
                 setSoundState(state)
             })

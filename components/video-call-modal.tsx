@@ -240,12 +240,14 @@ export function VideoCallModal({
     if (isInitializedRef.current || !localStream || !callData) return
 
     const webrtc = WebRTCManager.getInstance()
+
+    const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.targetUserId || callData.callerId
+    // Only initialize if we know the OTHER person's ID and it isn't our own ID
+    if (!targetUserId || targetUserId === currentUserId) return
+
     isInitializedRef.current = true
 
-    const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.callerId
-    if (!targetUserId) return
-
-    console.log("VideoCall: Initializing WebRTC and Signal Listeners")
+    console.log("VideoCall: Initializing WebRTC and Signal Listeners for target", targetUserId)
     webrtc.initialize(
       targetUserId,
       localStream,
@@ -287,10 +289,10 @@ export function VideoCallModal({
 
     // If we are the caller and call just became answered, send the offer
     if (!isIncoming && callData.status === "answered") {
-      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.callerId
-      if (!targetUserId) return
+      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.targetUserId || callData.callerId
+      if (!targetUserId || targetUserId === currentUserId) return
 
-      console.log("VideoCall: Call answered, sending offer as caller")
+      console.log("VideoCall: Call answered, sending offer as caller to", targetUserId)
       webrtc.createOffer(targetUserId).then(offer => {
         callSignaling.sendSignal(roomId, callData.id, "offer", offer, currentUserId)
       }).catch(err => console.error("Error creating offer:", err))
@@ -301,8 +303,8 @@ export function VideoCallModal({
   useEffect(() => {
     if (isOpen && isIncoming && callData?.status === "answered" && pendingOfferRef.current) {
       const webrtc = WebRTCManager.getInstance()
-      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.callerId
-      if (!targetUserId) return
+      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.targetUserId || callData.callerId
+      if (!targetUserId || targetUserId === currentUserId) return
 
       webrtc.createAnswer(targetUserId, pendingOfferRef.current).then(answer => {
         callSignaling.sendSignal(roomId, callData.id, "answer", answer, currentUserId)

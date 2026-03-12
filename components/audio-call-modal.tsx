@@ -154,8 +154,8 @@ export function AudioCallModal({
     isInitializedRef.current = true
 
     console.log("AudioCall: Initializing WebRTC")
-    const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.callerId
-    if (!targetUserId) return
+    const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.targetUserId || callData.callerId
+    if (!targetUserId || targetUserId === currentUserId) return
 
     webrtc.initialize(
       targetUserId,
@@ -201,8 +201,8 @@ export function AudioCallModal({
 
     // If we are the caller and call just became answered, send the offer
     if (!isIncoming && callData.status === "answered") {
-      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.callerId
-      if (!targetUserId) return
+      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.targetUserId || callData.callerId
+      if (!targetUserId || targetUserId === currentUserId) return
 
       console.log("AudioCall: Call answered, sending offer as caller")
       webrtc.createOffer(targetUserId).then(offer => {
@@ -215,8 +215,8 @@ export function AudioCallModal({
   useEffect(() => {
     if (isOpen && isIncoming && callData?.status === "answered" && pendingOfferRef.current) {
       const webrtc = WebRTCManager.getInstance()
-      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.callerId
-      if (!targetUserId) return
+      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.targetUserId || callData.callerId
+      if (!targetUserId || targetUserId === currentUserId) return
 
       webrtc.createAnswer(targetUserId, pendingOfferRef.current).then(answer => {
         callSignaling.sendSignal(roomId, callData.id, "answer", answer, currentUserId)

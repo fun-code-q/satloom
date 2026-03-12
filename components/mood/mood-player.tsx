@@ -106,7 +106,7 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
             <>
                 {/* Hidden ReactPlayer - render even when popup is shown so it can start playing when user clicks Yes */}
                 {playlist.length > 0 && (
-                    <div className="hidden">
+                    <div className="w-0 h-0 overflow-hidden absolute invisible">
                         <ReactPlayer
                             {...({
                                 url: playlist[currentSongIndex] || playlist[0],
@@ -177,7 +177,7 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
         <>
             {/* Invisible ReactPlayer for background audio playback */}
             {playlist.length > 0 && (
-                <div className="hidden">
+                <div className="w-0 h-0 overflow-hidden absolute invisible">
                     <ReactPlayer
                         {...({
                             url: playlist[currentSongIndex] || playlist[0],

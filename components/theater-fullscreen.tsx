@@ -73,6 +73,7 @@ export function TheaterFullscreen({
   const [qualitySettings, setQualitySettings] = useState(theaterQuality.getSettings())
 
   const playerRef = useRef<any>(null)
+  const iframeRef = useRef<HTMLIFrameElement>(null)
   const controlsTimeoutRef = useRef<any>(null)
   const theaterSignaling = TheaterSignaling.getInstance()
   const userPresence = UserPresenceSystem.getInstance()
@@ -642,7 +643,7 @@ export function TheaterFullscreen({
                 </div>
               )}
             </div>
-          ) : (
+          ) : ReactPlayer.canPlay(session.videoUrl) ? (
             <ReactPlayer
               ref={playerRef}
               url={session.videoUrl}
@@ -685,6 +686,15 @@ export function TheaterFullscreen({
                   }
                 }
               } as any}
+            />
+          ) : (
+            <iframe
+              ref={iframeRef}
+              src={session.videoUrl}
+              className="w-full h-full border-none"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              onLoad={() => setPlayerReady(true)}
             />
           )}
 
