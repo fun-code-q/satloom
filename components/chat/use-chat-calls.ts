@@ -669,7 +669,7 @@ export function useChatCalls(params: UseChatCallsParams) {
     }
 
     const settingsGroup: MenuGroup = {
-        label: "Tools",
+        label: "Tools & Settings",
         items: [
             { icon: Briefcase, label: "Breakout Rooms", action: () => params.setShowBreakoutRooms(true) },
             { icon: Link, label: "Burner Links", action: () => params.setShowBurnerLink(true) },
