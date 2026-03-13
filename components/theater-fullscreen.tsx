@@ -816,17 +816,24 @@ export function TheaterFullscreen({
     }
 
     if (stream) {
-      stream.getAudioTracks().forEach((track) => {
-        track.enabled = active
-      })
+      if (active) {
+        stream.getAudioTracks().forEach((track) => {
+          track.enabled = true
+        })
+      } else {
+        // Stop the tracks to release the hardware (mic indicator in browser)
+        stream.getAudioTracks().forEach((track) => {
+          track.stop()
+        })
+        localStreamRef.current = null
+      }
+
       setIsPushToTalkActive(active)
       setIsMicMuted(!active)
 
       // Replace audio track in all active WebRTC connections
-      const audioTrack = stream.getAudioTracks()[0]
-      if (audioTrack) {
-        WebRTCManager.getInstance().replaceAudioTrack(audioTrack)
-      }
+      const audioTrack = active ? stream.getAudioTracks()[0] : null
+      WebRTCManager.getInstance().replaceAudioTrack(audioTrack)
 
       // Update presence
       userPresence.setRecordingVoice(roomId, currentUserId, active).catch(err => {

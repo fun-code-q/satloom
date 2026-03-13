@@ -123,7 +123,7 @@ export function TheaterChatOverlay({
                                 : "bg-slate-700/50 text-white rounded-tl-none"
                                 }`}
                         >
-                            {msg.type === "text" ? (
+                            {(!msg.type || msg.type === "text") ? (
                                 msg.text
                             ) : (
                                 <span className="italic text-gray-300">[{msg.type} message]</span>

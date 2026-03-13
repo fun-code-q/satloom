@@ -331,7 +331,7 @@ export class WebRTCManager {
         }
     }
 
-    async replaceAudioTrack(newAudioTrack: MediaStreamTrack) {
+    async replaceAudioTrack(newAudioTrack: MediaStreamTrack | null) {
         for (const pc of this.peerConnections.values()) {
             const sender = pc.getSenders().find(s => s.track?.kind === 'audio')
             if (sender) await sender.replaceTrack(newAudioTrack)

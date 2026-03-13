@@ -48,8 +48,8 @@ export function EmojiPicker({ onEmojiSelect, isOpen, onClose }: EmojiPickerProps
 
   return createPortal(
     <>
-      <div className="fixed inset-0 z-[100] bg-black/20" onClick={onClose} />
-      <div className="fixed bottom-24 right-4 md:absolute md:bottom-16 md:right-0 z-[101] bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-[32px] p-5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] w-[calc(100vw-32px)] max-w-[360px] animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300 ease-out flex flex-col gap-4">
+      <div className="fixed inset-0 z-[600] bg-black/20" onClick={onClose} />
+      <div className="fixed bottom-24 right-4 md:absolute md:bottom-16 md:right-0 z-[601] bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-[32px] p-5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] w-[calc(100vw-32px)] max-w-[360px] animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300 ease-out flex flex-col gap-4">
         <div className="relative group">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-cyan-400 transition-colors" />
           <input

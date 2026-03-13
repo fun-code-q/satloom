@@ -20,8 +20,10 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
     const [currentSongIndex, setCurrentSongIndex] = useState(0)
     const [showMagicPopup, setShowMagicPopup] = useState(false)
     const [isPlaying, setIsPlaying] = useState(false)
+    const [isDucked, setIsDucked] = useState(false)
 
     const BASE_VOLUME = 0.35 // 35% as requested
+    const DUCKED_VOLUME = 0.10 // 10% during notifications
     const lastTriggerRef = useRef<number>(0)
     const notificationSystem = NotificationSystem.getInstance()
 
@@ -69,7 +71,6 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
         setShowMagicPopup(false)
         if (!playlist || playlist.length === 0) return
 
-        // Use react-player to play the song - it handles YouTube links natively
         setIsPlaying(true)
         setCurrentSongIndex(0)
         toast.success("Magic is starting! 🎶")
@@ -81,10 +82,10 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
     // 4. Volume Ducking Logic — duck to 10% during notification sounds, restore to 35%
     useEffect(() => {
         const unsubscribe = notificationSystem.subscribeToAudioActivity((isActive) => {
-            // Volume is controlled via react-player state - handled via the volume prop
+            setIsDucked(isActive)
         })
         return () => unsubscribe()
-    }, [])
+    }, [notificationSystem])
 
     // 5. Cleanup on unmount
     useEffect(() => {
@@ -100,37 +101,44 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
         setCurrentSongIndex(nextIndex)
     }
 
-    // Magic popup — shown to all users in the room when a song mood is set
-    if (showMagicPopup) {
-        return (
-            <>
-                {/* Hidden ReactPlayer - render even when popup is shown so it can start playing when user clicks Yes */}
-                {playlist.length > 0 && (
-                    <div className="fixed bottom-4 left-4 w-1 h-1 overflow-hidden" style={{ opacity: 0, pointerEvents: 'none' }}>
-                        <ReactPlayer
-                            {...({
-                                url: playlist[currentSongIndex] || playlist[0],
-                                playing: isPlaying,
-                                volume: BASE_VOLUME,
-                                width: 1,
-                                height: 1,
-                                playsInline: true,
-                                onReady: () => {
-                                    console.log("MoodPlayer ready, isPlaying:", isPlaying)
-                                },
-                                onPlay: () => console.log("MoodPlayer playing"),
-                                onPause: () => console.log("MoodPlayer paused"),
-                                onError: (error: any) => console.error("MoodPlayer error:", error),
-                                onEnded: handlePlayerEnded,
-                                config: {
-                                    youtube: {
-                                        playerVars: { showinfo: 0, controls: 0, modestbranding: 1 }
+    const currentVolume = isDucked ? DUCKED_VOLUME : BASE_VOLUME
+
+    return (
+        <>
+            {/* Unified ReactPlayer - Always mounted to prevent playback drops */}
+            {playlist.length > 0 && (
+                <div
+                    className="fixed bottom-0 left-0 w-[1px] h-[1px] opacity-0 pointer-events-none z-[-1] overflow-hidden"
+                    aria-hidden="true"
+                >
+                    <ReactPlayer
+                        {...({
+                            url: playlist[currentSongIndex] || playlist[0],
+                            playing: isPlaying,
+                            volume: currentVolume,
+                            width: "100%",
+                            height: "100%",
+                            playsinline: true,
+                            onEnded: handlePlayerEnded,
+                            onError: (e: any) => console.error("MoodPlayer Error:", e),
+                            config: {
+                                youtube: {
+                                    playerVars: {
+                                        showinfo: 0,
+                                        controls: 0,
+                                        modestbranding: 1,
+                                        autoplay: 1,
+                                        origin: typeof window !== 'undefined' ? window.location.origin : ''
                                     }
                                 }
-                            } as any)}
-                        />
-                    </div>
-                )}
+                            }
+                        } as any)}
+                    />
+                </div>
+            )}
+
+            {/* Magic popup — shown to all users in the room when a song mood is set */}
+            {showMagicPopup && (
                 <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
                     <div className="relative bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 border border-purple-500/30 rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl shadow-purple-900/50 text-center overflow-hidden">
                         {/* Animated sparkle bg */}
@@ -173,33 +181,6 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
                             Yes ✨
                         </button>
                     </div>
-                </div>
-            </>
-        )
-    }
-
-    // Hidden ReactPlayer that plays YouTube/direct audio URLs in the background
-    return (
-        <>
-            {/* Invisible ReactPlayer for background audio playback */}
-            {playlist.length > 0 && (
-                <div className="w-0 h-0 overflow-hidden absolute invisible">
-                    <ReactPlayer
-                        {...({
-                            url: playlist[currentSongIndex] || playlist[0],
-                            playing: isPlaying,
-                            volume: BASE_VOLUME,
-                            width: 0,
-                            height: 0,
-                            style: { opacity: 0, position: 'absolute', visibility: 'hidden' },
-                            onEnded: handlePlayerEnded,
-                            config: {
-                                youtube: {
-                                    playerVars: { showinfo: 0, controls: 0, modestbranding: 1 }
-                                }
-                            }
-                        } as any)}
-                    />
                 </div>
             )}
         </>
