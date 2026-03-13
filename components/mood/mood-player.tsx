@@ -63,7 +63,7 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
         } catch {
             return url
         }
-    }
+    }\n\n    const isDirectAudioUrl = (url: string): boolean => {\n        return /\\.(mp3|wav|ogg|m4a|webm)(\\?|#|$)/i.test(url)\n    }
 
     // 1. Listen to Firebase for Mood changes & magic trigger
     useEffect(() => {
@@ -115,7 +115,35 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
         // Start from the current song index (fallback to first)
         const songUrl = playlist[currentSongIndex] || playlist[0]
         if (songUrl) {
-            setCurrentUrl(normalizeSongUrl(songUrl))
+            const normalizedUrl = normalizeSongUrl(songUrl)
+            setCurrentUrl(normalizedUrl)
+
+            const isDirectAudio = isDirectAudioUrl(normalizedUrl)
+
+            // If this is a direct audio file, attempt to play immediately on user gesture
+            if (isDirectAudio && audioElementRef.current) {
+                try {
+                    audioElementRef.current.src = normalizedUrl
+                    audioElementRef.current.volume = currentVolume
+                    audioElementRef.current.play().catch(() => { })
+                } catch (e) {
+                    // Ignore: ReactPlayer will still attempt to play
+                }
+            }
+
+            // For non-direct sources (e.g., YouTube), try to kick the internal player
+            if (!isDirectAudio) {
+                try {
+                    const internalPlayer = playerRef.current?.getInternalPlayer?.()
+                    if (internalPlayer?.playVideo) {
+                        internalPlayer.playVideo()
+                    } else if (internalPlayer?.play) {
+                        internalPlayer.play().catch(() => { })
+                    }
+                } catch (e) {
+                    // Ignore: ReactPlayer will attempt to play via props
+                }
+            }
         }
 
         setCurrentSongIndex(0)
@@ -188,6 +216,32 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
         return normalizeSongUrl(url)
     }
 
+    const playerUrl = getPlayerUrl()
+    const useNativeAudio = isDirectAudioUrl(playerUrl)
+
+    // Keep native audio element in sync when using direct audio files
+    useEffect(() => {
+        const audio = audioElementRef.current
+        if (!audio) return
+
+        audio.volume = currentVolume
+
+        if (useNativeAudio) {
+            if (audio.src !== playerUrl) {
+                audio.src = playerUrl
+            }
+            if (isPlaying) {
+                audio.play().catch(() => { })
+            } else if (!audio.paused) {
+                audio.pause()
+            }
+        } else {
+            if (!audio.paused) {
+                audio.pause()
+            }
+        }
+    }, [playerUrl, useNativeAudio, isPlaying, currentVolume])
+
     return (
         <>
             {/* Unified ReactPlayer - Always mounted to prevent playback drops */}
@@ -201,8 +255,8 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
                         key="mood-player-stable"
                         ref={playerRef}
                         {...({
-                            url: getPlayerUrl(),
-                            playing: isPlaying,
+                            url: playerUrl,
+                            playing: isPlaying && !useNativeAudio,
                             volume: currentVolume,
                             width: "100%",
                             height: "100%",
@@ -225,6 +279,19 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
                                 setPlayerReady(true)
                                 if (playRequestedRef.current) {
                                     setIsPlaying(true)
+                                    // If this is a non-direct source, try to kick the player on ready
+                                    if (!useNativeAudio) {
+                                        try {
+                                            const internalPlayer = playerRef.current?.getInternalPlayer?.()
+                                            if (internalPlayer?.playVideo) {
+                                                internalPlayer.playVideo()
+                                            } else if (internalPlayer?.play) {
+                                                internalPlayer.play().catch(() => { })
+                                            }
+                                        } catch (e) {
+                                            // Ignore: ReactPlayer will attempt to play via props
+                                        }
+                                    }
                                     // Reset the play request flag
                                     playRequestedRef.current = false
                                 }
@@ -310,3 +377,4 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
         </>
     )
 }
+
