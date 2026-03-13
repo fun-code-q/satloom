@@ -17,6 +17,7 @@ import { VideoStreamManager } from "@/utils/hardware/video-stream-manager"
 import { theaterQueue, type QueuedVideo } from "@/utils/infra/theater-queue-manager"
 import { theaterQuality } from "@/utils/infra/theater-quality-manager"
 import { WebRTCManager } from "@/utils/infra/webrtc-manager"
+import { SoundCloudPlayerController } from "@/utils/infra/soundcloud-widget"
 import { Settings, List, ChevronRight, ChevronLeft, FastForward } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Slider } from "@/components/ui/slider"
@@ -94,6 +95,11 @@ export function TheaterFullscreen({
   const [mounted, setMounted] = useState(false)
   const lastPlaybackToggleRef = useRef<number>(0)
   const playerReadyTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
+
+  // Player ready tracking for iframe-based players
+  const iframePlayerReadyRef = useRef<boolean>(false)
+  const pendingCommandsRef = useRef<Array<{ action: 'play' | 'pause' | 'seek', time?: number }>>([])
+  const soundcloudControllerRef = useRef<SoundCloudPlayerController | null>(null)
 
   // Initialize VideoStreamManager and Queue
   useEffect(() => {
@@ -406,6 +412,16 @@ export function TheaterFullscreen({
     }
   }, [])
 
+  // Reset player ready state when video type changes
+  useEffect(() => {
+    if (session?.videoType) {
+      // Reset iframe player ready state when video type changes
+      iframePlayerReadyRef.current = false
+      pendingCommandsRef.current = []
+      setPlayerReady(false)
+    }
+  }, [session?.videoType])
+
   // Listen for theater session updates
   useEffect(() => {
     if (!session) return
@@ -569,22 +585,22 @@ export function TheaterFullscreen({
   const getEmbedUrl = (url: string, type: string) => {
     if (type === "youtube") {
       const match = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|live\/)|youtu\.be\/)([^&\n?#]+)/)
-      return match ? `https://www.youtube.com/embed/${match[1]}?enablejsapi=1&autoplay=1&controls=0&origin=${typeof window !== 'undefined' ? window.location.origin : '*'}` : url
+      return match ? `https://www.youtube.com/embed/${match[1]}?enablejsapi=1&autoplay=0&controls=0&origin=${typeof window !== 'undefined' ? window.location.origin : '*'}` : url
     }
     if (type === "vimeo") {
       const match = url.match(/vimeo\.com\/(?:groups\/[^/]+\/videos\/|)(\d+)/)
-      return match ? `https://player.vimeo.com/video/${match[1]}?api=1&autoplay=1` : url
+      return match ? `https://player.vimeo.com/video/${match[1]}?api=1&autoplay=0` : url
     }
     if (type === "twitch") {
       const match = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/)
-      return match ? `https://player.twitch.tv/?channel=${match[1]}&parent=${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}&autoplay=true` : url
+      return match ? `https://player.twitch.tv/?channel=${match[1]}&parent=${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}&autoplay=false` : url
     }
     if (type === "dailymotion") {
       const match = url.match(/(?:dailymotion\.com\/video\/|dai\.ly\/)([a-zA-Z0-9]+)/)
-      return match ? `https://www.dailymotion.com/embed/video/${match[1]}?autoplay=1&controls=0` : url
+      return match ? `https://www.dailymotion.com/embed/video/${match[1]}?autoplay=0&controls=0` : url
     }
     if (type === "soundcloud") {
-      return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23ff5500&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true`
+      return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true`
     }
     if (type === "archive") {
       // Handle archive.org URLs - convert /details/ to /embed/
@@ -610,32 +626,65 @@ export function TheaterFullscreen({
     const iframe = iframeRef.current
     const type = session.videoType
 
-    if (type === "youtube") {
-      const msg = action === 'play' ? '{"event":"command","func":"playVideo","args":""}' :
-        action === 'pause' ? '{"event":"command","func":"pauseVideo","args":""}' :
-          `{"event":"command","func":"seekTo","args":[${time}, true]}`
-      iframe.contentWindow?.postMessage(msg, '*')
-    } else if (type === "vimeo") {
-      const msg = action === 'play' ? '{"method":"play"}' :
-        action === 'pause' ? '{"method":"pause"}' :
-          `{"method":"seekTo","value":${time}}`
-      iframe.contentWindow?.postMessage(msg, '*')
-    } else if (type === "dailymotion") {
-      const msg = action === 'play' ? '{"command":"play"}' :
-        action === 'pause' ? '{"command":"pause"}' :
-          `{"command":"seek","parameters":[${time}]}`
-      iframe.contentWindow?.postMessage(msg, '*')
-    } else if (type === "soundcloud") {
-      const msg = action === 'play' ? '{"method":"play"}' :
-        action === 'pause' ? '{"method":"pause"}' :
-          `{"method":"seekTo","value":${(time || 0) * 1000}}` // SoundCloud uses ms
-      iframe.contentWindow?.postMessage(msg, '*')
-    } else if (type === "twitch") {
-      const msg = action === 'play' ? '{"command":"play"}' :
-        action === 'pause' ? '{"command":"pause"}' :
-          `{"command":"seek","args":[${time}]}`
-      iframe.contentWindow?.postMessage(msg, '*')
+    // If player not ready, queue the command
+    if (!iframePlayerReadyRef.current) {
+      console.log(`[Theater] Queuing ${action} command - player not ready yet`)
+      pendingCommandsRef.current.push({ action, time })
+      return
     }
+
+    // Execute the command
+    const executeCommand = () => {
+      if (type === "youtube") {
+        const msg = action === 'play' ? '{"event":"command","func":"playVideo","args":""}' :
+          action === 'pause' ? '{"event":"command","func":"pauseVideo","args":""}' :
+            `{"event":"command","func":"seekTo","args":[${time}, true]}`
+        iframe.contentWindow?.postMessage(msg, '*')
+      } else if (type === "vimeo") {
+        const msg = action === 'play' ? '{"method":"play"}' :
+          action === 'pause' ? '{"method":"pause"}' :
+            `{"method":"seekTo","value":${time}}`
+        iframe.contentWindow?.postMessage(msg, '*')
+      } else if (type === "dailymotion") {
+        const msg = action === 'play' ? '{"command":"play"}' :
+          action === 'pause' ? '{"command":"pause"}' :
+            `{"command":"seek","parameters":[${time}]}`
+        iframe.contentWindow?.postMessage(msg, '*')
+      } else if (type === "soundcloud") {
+        // Use SoundCloud SDK if available, otherwise fall back to postMessage
+        if (soundcloudControllerRef.current) {
+          if (action === 'play') {
+            soundcloudControllerRef.current.play()
+          } else if (action === 'pause') {
+            soundcloudControllerRef.current.pause()
+          } else if (action === 'seek' && time !== undefined) {
+            soundcloudControllerRef.current.seekTo(time)
+          }
+        } else {
+          // Fallback to postMessage
+          const msg = action === 'play' ? '{"method":"play"}' :
+            action === 'pause' ? '{"method":"pause"}' :
+              `{"method":"seekTo","value":${(time || 0) * 1000}}` // SoundCloud uses ms
+          iframe.contentWindow?.postMessage(msg, '*')
+        }
+      } else if (type === "twitch") {
+        const msg = action === 'play' ? '{"command":"play"}' :
+          action === 'pause' ? '{"command":"pause"}' :
+            `{"command":"seek","args":[${time}]}`
+        iframe.contentWindow?.postMessage(msg, '*')
+      }
+    }
+
+    executeCommand()
+  }
+
+  // Process pending commands when player becomes ready
+  const processPendingCommands = () => {
+    const commands = [...pendingCommandsRef.current]
+    pendingCommandsRef.current = []
+    commands.forEach(cmd => {
+      syncIframePlayer(cmd.action, cmd.time)
+    })
   }
 
   const handlePlay = async () => {
@@ -657,6 +706,20 @@ export function TheaterFullscreen({
     // Toggle play/pause
     const newIsPlaying = !isPlaying
     setIsPlaying(newIsPlaying)
+
+    // Control native video element directly
+    if (session.videoType === "direct" && videoRef.current) {
+      if (newIsPlaying) {
+        videoRef.current.play().catch(err => console.error("Play error:", err))
+      } else {
+        videoRef.current.pause()
+      }
+    }
+
+    // Control iframe-based players
+    if (session.videoType !== "direct" && session.videoType !== "webrtc") {
+      syncIframePlayer(newIsPlaying ? 'play' : 'pause')
+    }
 
     if (session.videoType === "webrtc" && videoStreamManagerRef.current) {
       videoStreamManagerRef.current.syncPlayback(newIsPlaying ? 'play' : 'pause')
@@ -930,7 +993,22 @@ export function TheaterFullscreen({
                 className="w-full h-full border-0"
                 allow="autoplay; fullscreen; picture-in-picture; encrypted-media; microphone"
                 allowFullScreen
-                onLoad={() => setPlayerReady(true)}
+                onLoad={() => {
+                  setPlayerReady(true)
+                  iframePlayerReadyRef.current = true
+
+                  // Initialize SoundCloud widget if needed
+                  if (session.videoType === "soundcloud" && iframeRef.current) {
+                    const controller = new SoundCloudPlayerController()
+                    controller.initialize(iframeRef.current).then(() => {
+                      soundcloudControllerRef.current = controller
+                      console.log("[Theater] SoundCloud widget initialized")
+                    })
+                  }
+
+                  // Process any commands that were queued while loading
+                  setTimeout(() => processPendingCommands(), 500)
+                }}
               />
             ) : (
               <video

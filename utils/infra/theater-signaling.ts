@@ -1,5 +1,5 @@
 import { getFirebaseDatabase } from "@/lib/firebase"
-import { ref, set, onValue, remove } from "firebase/database"
+import { ref, set, onValue, remove, off, get } from "firebase/database"
 
 export interface TheaterSession {
   id: string
@@ -39,6 +39,9 @@ export class TheaterSignaling {
   private static instance: TheaterSignaling
   private currentSession: TheaterSession | null = null
   private theaterListeners: Array<() => void> = []
+  private hostPresenceUnsubscribe: (() => void) | null = null
+  private hostHeartbeatInterval: NodeJS.Timeout | null = null
+  private lastHeartbeat: number = 0
 
   static getInstance(): TheaterSignaling {
     if (!TheaterSignaling.instance) {
@@ -185,6 +188,102 @@ export class TheaterSignaling {
     const sessionPath = `rooms/${roomId}/theater/${sessionId}`
     await set(ref(getFirebaseDatabase()!, `${sessionPath}/hostId`), newHostId)
     await set(ref(getFirebaseDatabase()!, `${sessionPath}/hostName`), newHostName)
+  }
+
+  // Start host heartbeat - call this periodically from the host's client
+  startHostHeartbeat(roomId: string, sessionId: string, hostId: string) {
+    if (this.hostHeartbeatInterval) {
+      clearInterval(this.hostHeartbeatInterval)
+    }
+
+    this.lastHeartbeat = Date.now()
+
+    // Update heartbeat every 5 seconds
+    this.hostHeartbeatInterval = setInterval(async () => {
+      if (!getFirebaseDatabase()) return
+
+      this.lastHeartbeat = Date.now()
+      await set(
+        ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}/lastHeartbeat`),
+        this.lastHeartbeat
+      )
+    }, 5000)
+  }
+
+  // Stop host heartbeat
+  stopHostHeartbeat() {
+    if (this.hostHeartbeatInterval) {
+      clearInterval(this.hostHeartbeatInterval)
+      this.hostHeartbeatInterval = null
+    }
+  }
+
+  // Monitor host presence - returns unsubscribe function
+  monitorHostPresence(
+    roomId: string,
+    sessionId: string,
+    onHostGone: (newHostId: string, newHostName: string) => void,
+    heartbeatTimeout: number = 15000 // 15 seconds timeout
+  ): () => void {
+    if (!getFirebaseDatabase()) {
+      return () => { }
+    }
+
+    const sessionRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}`)
+    let checkInterval: NodeJS.Timeout | null = null
+
+    const unsubscribe = onValue(sessionRef, async (snapshot) => {
+      const session = snapshot.val()
+      if (!session) return
+
+      const lastHeartbeat = session.lastHeartbeat
+      const currentHostId = session.hostId
+
+      // Check if heartbeat is too old (host may have crashed)
+      if (lastHeartbeat && Date.now() - lastHeartbeat > heartbeatTimeout) {
+        console.log("[TheaterSignaling] Host heartbeat timeout, initiating handover...")
+
+        // Get participants and find next host
+        const participants = session.participants || []
+        if (participants.length > 1) {
+          // Find a new host (first participant that isn't the old host)
+          const newHostId = participants.find((id: string) => id !== currentHostId) || participants[0]
+          const newHostName = session.hostName + " (former host)"
+
+          // Transfer host
+          await this.transferHost(roomId, sessionId, newHostId, newHostName)
+
+          // Notify about host change
+          onHostGone(newHostId, newHostName)
+        }
+      }
+    })
+
+    return () => {
+      unsubscribe()
+      if (checkInterval) {
+        clearInterval(checkInterval)
+      }
+    }
+  }
+
+  // Get current playback state for host handover
+  async getPlaybackState(roomId: string, sessionId: string) {
+    if (!getFirebaseDatabase()) return null
+
+    const db = getFirebaseDatabase()
+    const sessionRef = ref(db, `rooms/${roomId}/theater/${sessionId}`)
+    const snapshot = await get(sessionRef)
+
+    if (snapshot.exists()) {
+      const session = snapshot.val()
+      return {
+        currentTime: session.currentTime || 0,
+        status: session.status || 'paused',
+        lastAction: session.lastAction
+      }
+    }
+    return null
   }
 
   // Send buffering status
