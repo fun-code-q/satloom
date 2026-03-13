@@ -134,14 +134,7 @@ export function Soundboard({ isOpen, onClose, roomId, userId, userName }: Soundb
                     ))}
                 </div>
 
-                {/* Now Playing Indicator */}
-                {soundState.currentSound && (
-                    <div className="text-center py-1.5 bg-cyan-500/10 rounded-xl border border-cyan-500/20 mt-0.5 md:mt-1">
-                        <span className="text-[9px] md:text-[10px] font-bold text-cyan-400 uppercase tracking-widest">
-                            Playing: {DEFAULT_SOUNDS.find((s) => s.id === soundState.currentSound)?.name}
-                        </span>
-                    </div>
-                )}
+
             </div>
         </>
     )
