@@ -16,8 +16,9 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-  # Note: Ensure ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION is NOT set if using Node 24
+  # Using Node 24 for the build, but allowing actions to use their default stable runtime for now
+  # as FORCE_JAVASCRIPT_ACTIONS_TO_NODE24 causes internal TypeErrors in configure-pages@v5
+  NODE_VERSION: 24
 
 jobs:
   build:
@@ -40,14 +41,12 @@ jobs:
             exit 1
           fi
       - name: Setup Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
-          node-version-file: "package.json"
+          node-version: ${{ env.NODE_VERSION }}
           cache: ${{ steps.detect-package-manager.outputs.manager }}
       - name: Setup Pages
         uses: actions/configure-pages@v5
-        with:
-          static_site_generator: nextjs
       - name: Install dependencies
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
       - name: Build with Next.js
