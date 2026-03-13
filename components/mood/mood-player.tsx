@@ -24,13 +24,33 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
     const [playerReady, setPlayerReady] = useState(false)
     const [currentUrl, setCurrentUrl] = useState<string>("")
     const [lastTrigger, setLastTrigger] = useState<number>(0)
+    const [backupUrl, setBackupUrl] = useState<string>("")
 
-    const BASE_VOLUME = 0.35 // 35% as requested
-    const DUCKED_VOLUME = 0.10 // 10% during notifications
+    // Refs
     const lastTriggerRef = useRef<number>(0)
     const playerRef = useRef<any>(null)
     const playRequestedRef = useRef(false)
+    const audioElementRef = useRef<HTMLAudioElement | null>(null)
     const notificationSystem = NotificationSystem.getInstance()
+
+    const BASE_VOLUME = 0.35 // 35% as requested
+    const DUCKED_VOLUME = 0.10 // 10% during notifications
+
+    // Helper function to get proxied URL if needed for CORS
+    const getProxiedUrlIfNeeded = (url: string): string => {
+        try {
+            const parsed = new URL(url)
+            // List of domains that we know require a proxy (due to CORS restrictions)
+            const proxyDomains = ['archive.org', 'www.archive.org']
+            if (proxyDomains.includes(parsed.hostname)) {
+                // We assume the proxy is at `/api/audio-proxy`
+                return `${window.location.origin}/api/audio-proxy?url=${encodeURIComponent(url)}`
+            }
+            return url
+        } catch {
+            return url
+        }
+    }
 
     // 1. Listen to Firebase for Mood changes & magic trigger
     useEffect(() => {
@@ -72,7 +92,7 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
         return () => unsubscribe()
     }, [roomId])
 
-    // 2. Handle magic popup "Yes" button — plays song at 35% volume using react-player
+    // 2. Handle magic popup "Yes" button — plays song at 35% volume using react-player with backup
     const handleMagicYes = () => {
         // Get the current playlist from Firebase state before closing popup
         if (playlist.length === 0) {
@@ -80,45 +100,35 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
             return
         }
 
-        // Ensure URL is set before playing - get the first song or current index
-        const songUrl = playlist[currentSongIndex] || playlist[0]
+        // Always start from the first song when magic mood is activated
+        const songUrl = playlist[0]
         if (songUrl) {
             setCurrentUrl(songUrl)
+            // Set the backup URL with proxy if needed
+            setBackupUrl(getProxiedUrlIfNeeded(songUrl))
         }
 
         setCurrentSongIndex(0)
+
         setShowMagicPopup(false)
 
         // Start playback immediately on user gesture to satisfy autoplay policies
         playRequestedRef.current = true
         setIsPlaying(true)
         toast.success("Magic is starting! 🎶")
-
-        // Best-effort direct play for internal players (e.g., HTML5/YouTube)
-        const attemptDirectPlay = () => {
-            const internalPlayer = playerRef.current?.getInternalPlayer?.()
-            if (internalPlayer) {
-                try {
-                    if (typeof internalPlayer.playVideo === "function") {
-                        internalPlayer.playVideo()
-                    } else if (typeof internalPlayer.play === "function") {
-                        internalPlayer.play().catch(() => { })
-                    }
-                } catch (e) {
-                    console.warn("Direct play handshake failed, relying on reactive props", e)
-                }
-            }
-        }
-
-        attemptDirectPlay()
-        // Small delay to ensure ReactPlayer has processed the URL change
-        setTimeout(attemptDirectPlay, 100)
     }
 
-    // 3. Audio playlist logic (next song on end)
+    // 3. Update the backup audio element's src when backupUrl changes
+    useEffect(() => {
+        if (audioElementRef.current && backupUrl) {
+            audioElementRef.current.src = backupUrl
+        }
+    }, [backupUrl])
+
+    // 4. Audio playlist logic (next song on end)
     // Playlist continues automatically via react-player's onEnded callback
 
-    // 4. Volume Ducking Logic — duck to 10% during notification sounds, restore to 35%
+    // 5. Volume Ducking Logic — duck to 10% during notification sounds, restore to 35%
     useEffect(() => {
         const unsubscribe = notificationSystem.subscribeToAudioActivity((isActive) => {
             setIsDucked(isActive)
@@ -126,14 +136,18 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
         return () => unsubscribe()
     }, [notificationSystem])
 
-    // 5. Cleanup on unmount
+    // 6. Cleanup on unmount
     useEffect(() => {
         return () => {
             setIsPlaying(false)
+            // Pause backup audio element
+            if (audioElementRef.current && !audioElementRef.current.paused) {
+                audioElementRef.current.pause()
+            }
         }
     }, [])
 
-    // 6. Sync current URL when playlist or index changes
+    // 7. Sync current URL when playlist or index changes
     useEffect(() => {
         if (playlist.length > 0 && playlist[currentSongIndex]) {
             setCurrentUrl(playlist[currentSongIndex])
@@ -151,25 +165,30 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
 
     const currentVolume = isDucked ? DUCKED_VOLUME : BASE_VOLUME
 
-    // Get the current URL to play
+    // Get the current URL to play (with proxy if needed)
     const getPlayerUrl = () => {
-        if (currentUrl) return currentUrl
-        if (playlist.length > 0 && playlist[currentSongIndex]) return playlist[currentSongIndex]
-        if (playlist.length > 0) return playlist[0]
-        return ""
+        let url = ""
+        if (currentUrl) {
+            url = currentUrl
+        } else if (playlist.length > 0 && playlist[currentSongIndex]) {
+            url = playlist[currentSongIndex]
+        } else if (playlist.length > 0) {
+            url = playlist[0]
+        }
+        return getProxiedUrlIfNeeded(url)
     }
 
     return (
         <>
             {/* Unified ReactPlayer - Always mounted to prevent playback drops */}
-            {/* Force remount via key whenever magic trigger happens to ensure fresh player state */}
+            {/* Use stable key to prevent unnecessary remounting */}
             {playlist.length > 0 && (
                 <div
-                    className="fixed top-[-1000px] left-[-1000px] w-16 h-16 pointer-events-none z-[-1] overflow-hidden"
+                    className="fixed top-[-100px] left-[-100px] w-16 h-16 pointer-events-none z-[-1] overflow-hidden"
                     aria-hidden="true"
                 >
                     <ReactPlayer
-                        key={`mood-player-${lastTrigger}`}
+                        key="mood-player-stable"
                         ref={playerRef}
                         {...({
                             url: getPlayerUrl(),
@@ -183,18 +202,21 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
                             onError: (e: any) => {
                                 console.error("MoodPlayer Error:", e)
                                 toast.error("Failed to play the song. Please check the URL.")
+                                // Try backup audio player if ReactPlayer fails
+                                if (audioElementRef.current) {
+                                    audioElementRef.current.play().catch((err) => {
+                                        console.warn("Backup audio player also failed:", err)
+                                        toast.error("Both primary and backup players failed to play the audio.")
+                                    })
+                                }
                             },
                             onReady: () => {
                                 console.log("MoodPlayer Ready")
                                 setPlayerReady(true)
                                 if (playRequestedRef.current) {
                                     setIsPlaying(true)
-                                    // Try direct play again once ready
-                                    const internal = playerRef.current?.getInternalPlayer?.()
-                                    if (internal) {
-                                        if (internal.playVideo) internal.playVideo()
-                                        else if (internal.play) internal.play()
-                                    }
+                                    // Reset the play request flag
+                                    playRequestedRef.current = false
                                 }
                             },
                             config: {
@@ -211,6 +233,16 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
                         } as any)}
                     />
                 </div>
+            )}
+
+            {/* Backup HTML5 Audio Player - hidden off-screen */}
+            {playlist.length > 0 && (
+                <audio
+                    ref={audioElementRef}
+                    className="fixed top-[-200px] left-[-200px] w-10 h-10 pointer-events-none z-[-2] overflow-hidden"
+                    aria-hidden="true"
+                    preload="auto"
+                />
             )}
 
             {/* Magic popup — shown to all users in the room when a song mood is set */}
