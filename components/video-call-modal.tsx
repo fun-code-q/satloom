@@ -164,8 +164,25 @@ export function VideoCallModal({
     const targetUserId = callData?.participants.find(p => p !== currentUserId) || callData?.caller
     onRemoteStreamRef.current = (stream: MediaStream, userId: string) => {
       if (userId === targetUserId) {
-        console.log("VideoCall: Remote stream received")
+        console.log(`VideoCall: Remote stream received for user ${userId}. Stream ID: ${stream.id}`)
+        
+        // Ensure the stream has tracks before updating state
+        const tracks = stream.getTracks()
+        console.log(`VideoCall: Remote tracks existing:`, tracks.map(t => t.kind))
+        
         updateRemoteStream(stream)
+        
+        // Listen for new tracks being added to this stream
+        stream.onaddtrack = (e) => {
+          console.log(`VideoCall: New track added to remote stream: ${e.track.kind}`)
+          updateRemoteStream(new MediaStream(stream.getTracks())) // Force re-render with new stream object
+        }
+
+        tracks.forEach(track => {
+          track.onmute = () => console.log(`[VideoCall] Remote track ${track.kind} MUTED`)
+          track.onunmute = () => console.log(`[VideoCall] Remote track ${track.kind} UNMUTED`)
+          track.onended = () => console.log(`[VideoCall] Remote track ${track.kind} ENDED`)
+        })
       }
     }
     onIceCandidateRef.current = (candidate: RTCIceCandidate) => {
@@ -247,9 +264,19 @@ export function VideoCallModal({
 
     const webrtc = WebRTCManager.getInstance()
 
-    const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.targetUserId || callData.callerId
-    // Only initialize if we know the OTHER person's ID and it isn't our own ID
-    if (!targetUserId || targetUserId === currentUserId) return
+    // Correctly resolve the actual user ID we are talking to
+    const targetUserId = callData.participants.find(p => p !== currentUserId) || 
+                       (callData.targetUserId !== "all" ? callData.targetUserId : null) || 
+                       (callData.callerId !== currentUserId ? callData.callerId : null)
+
+    if (!targetUserId || targetUserId === currentUserId) {
+      console.log("VideoCall: Waiting for a specific target user to join...", { 
+        participants: callData.participants, 
+        targetUserId: callData.targetUserId,
+        callerId: callData.callerId 
+      })
+      return
+    }
 
     isInitializedRef.current = true
 
@@ -282,7 +309,7 @@ export function VideoCallModal({
     unsubscribeSignalsRef.current = callSignaling.listenForSignals(roomId, callData.id, currentUserId, async (type, payload, senderId) => {
       console.log(`VideoCall: Signal received (${type}) from ${senderId}`)
 
-      // Use the senderId directly from the signal instead of finding it inparticipants again
+      // Use the senderId directly from the signal
       const targetUserId = senderId
 
       if (type === "offer") {
@@ -301,7 +328,7 @@ export function VideoCallModal({
         onClose()
       }
     })
-  }, [isOpen, localStream, roomId, currentUserId, callData?.id]) // Removed callData.status to prevent re-init
+  }, [isOpen, localStream, roomId, currentUserId, callData?.id, callData?.participants]) // Added participants to trigger re-init when someone joins
 
   // Effect 2.5: Handshake Action (Triggered on status change)
   useEffect(() => {
@@ -311,15 +338,18 @@ export function VideoCallModal({
 
     // If we are the caller and call just became answered, send the offer
     if (!isIncoming && callData.status === "answered") {
-      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.targetUserId || callData.callerId
+      const targetUserId = callData.participants.find(p => p !== currentUserId) || 
+                         (callData.targetUserId !== "all" ? callData.targetUserId : null) || 
+                         (callData.callerId !== currentUserId ? callData.callerId : null)
+                         
       if (!targetUserId || targetUserId === currentUserId) return
 
       console.log("VideoCall: Call answered, sending offer as caller to", targetUserId)
       webrtc.createOffer(targetUserId).then(offer => {
         callSignaling.sendSignal(roomId, callData.id, "offer", offer, currentUserId)
-      }).catch(err => console.error("Error creating offer:", err))
+      }).catch(err => console.error("VideoCall: Error creating offer:", err))
     }
-  }, [isOpen, callData?.status, isIncoming, roomId, currentUserId, callData?.id])
+  }, [isOpen, callData?.status, isIncoming, roomId, currentUserId, callData?.id, callData?.participants])
 
   // Effect 3: Handle pending offer when call is answered
   useEffect(() => {

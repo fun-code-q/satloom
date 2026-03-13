@@ -159,12 +159,24 @@ export function AudioCallModal({
     if (!isOpen || isInitializedRef.current || !localStream || !callData) return
 
     const webrtc = WebRTCManager.getInstance()
+
+    // Correctly resolve the actual user ID we are talking to
+    const targetUserId = callData.participants.find(p => p !== currentUserId) || 
+                       (callData.targetUserId !== "all" ? callData.targetUserId : null) || 
+                       (callData.callerId !== currentUserId ? callData.callerId : null)
+
+    if (!targetUserId || targetUserId === currentUserId) {
+      console.log("AudioCall: Waiting for a specific target user to join...", { 
+        participants: callData.participants, 
+        targetUserId: callData.targetUserId,
+        callerId: callData.callerId 
+      })
+      return
+    }
+
     isInitializedRef.current = true
 
-    console.log("AudioCall: Initializing WebRTC")
-    const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.targetUserId || callData.callerId
-    if (!targetUserId || targetUserId === currentUserId) return
-
+    console.log("AudioCall: Initializing WebRTC for target", targetUserId)
     webrtc.initialize(
       targetUserId,
       localStream,
@@ -196,7 +208,7 @@ export function AudioCallModal({
       }
     )
 
-    console.log(`[AudioCall] Initialized WebRTC for ${targetUserId}`)
+    console.log(`[AudioCall] Initialized WebRTC for ${targetUserId} with local stream ${localStream.id}`)
     localStream.getTracks().forEach(t => console.log(`[AudioCall] Local track active: ${t.kind} (${t.id})`))
 
     unsubscribeSignalsRef.current = callSignaling.listenForSignals(roomId, callData.id, currentUserId, async (type, payload, senderId) => {
@@ -218,7 +230,7 @@ export function AudioCallModal({
         onClose()
       }
     })
-  }, [isOpen, localStream, roomId, currentUserId, callData?.id])
+  }, [isOpen, localStream, roomId, currentUserId, callData?.id, callData?.participants])
   // Removed callData.status to prevent re-init
 
   // Effect 2.5: Handshake Action (Triggered on status change)
@@ -229,15 +241,18 @@ export function AudioCallModal({
 
     // If we are the caller and call just became answered, send the offer
     if (!isIncoming && callData.status === "answered") {
-      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.targetUserId || callData.callerId
+      const targetUserId = callData.participants.find(p => p !== currentUserId) || 
+                         (callData.targetUserId !== "all" ? callData.targetUserId : null) || 
+                         (callData.callerId !== currentUserId ? callData.callerId : null)
+
       if (!targetUserId || targetUserId === currentUserId) return
 
       console.log("AudioCall: Call answered, sending offer as caller")
       webrtc.createOffer(targetUserId).then(offer => {
         callSignaling.sendSignal(roomId, callData.id, "offer", offer, currentUserId)
-      }).catch(err => console.error("Error creating offer:", err))
+      }).catch(err => console.error("AudioCall: Error creating offer:", err))
     }
-  }, [isOpen, callData?.status, isIncoming, roomId, currentUserId, callData?.id])
+  }, [isOpen, callData?.status, isIncoming, roomId, currentUserId, callData?.id, callData?.participants])
 
   // Effect 3: Handle pending offer
   useEffect(() => {
