@@ -294,7 +294,8 @@ export class TicTacToeManager {
         const gameRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/tictactoe/${gameId}`)
 
         const unsubscribe = onValue(gameRef, (snapshot) => {
-            callback(snapshot.exists() ? (snapshot.val() as TicTacToeGame) : null)
+            const data = snapshot.val();
+            callback(data ? (data as TicTacToeGame) : null)
         })
 
         this.listeners.push(unsubscribe)

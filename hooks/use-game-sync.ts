@@ -150,7 +150,14 @@ export function useGameSync({ gameConfig, roomId, currentUserId, onExit, isPause
                     } else {
                         gameSounds.playTurnChange()
                     }
-                    if (updatedState.gameStatus === "finished") gameSounds.playGameEnd()
+                    if (updatedState.gameStatus === "finished") {
+                        gameSounds.playGameEnd()
+                        if (updatedState.winner === currentUserId) {
+                            notificationSystem.gameWon(gameConfig.gameId ? "Multiplayer" : "Dots & Boxes")
+                        } else if (updatedState.winner && updatedState.winner !== "tie") {
+                            notificationSystem.gameLost(gameConfig.gameId ? "Multiplayer" : "Dots & Boxes")
+                        }
+                    }
                 }
             }, 800 + Math.random() * 800)
         }
@@ -180,7 +187,14 @@ export function useGameSync({ gameConfig, roomId, currentUserId, onExit, isPause
                 gameSounds.playTurnChange()
             }
 
-            if (updatedState.gameStatus === "finished") gameSounds.playGameEnd()
+            if (updatedState.gameStatus === "finished") {
+                gameSounds.playGameEnd()
+                if (updatedState.winner === currentUserId) {
+                    notificationSystem.gameWon(gameConfig.gameId ? "Multiplayer" : "Dots & Boxes")
+                } else if (updatedState.winner && updatedState.winner !== "tie") {
+                    notificationSystem.gameLost(gameConfig.gameId ? "Multiplayer" : "Dots & Boxes")
+                }
+            }
             return true
         }
         return false

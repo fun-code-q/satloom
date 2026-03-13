@@ -136,6 +136,7 @@ export class NotificationSystem {
   // Event methods
   async newMessage(sender: string, message: string) {
     await this.playTone(800, 0.2)
+    this.vibrate([100])
     this.showNotification("New Message", `${sender}: ${message.substring(0, 50)}${message.length > 50 ? "..." : ""}`)
   }
 
@@ -240,7 +241,21 @@ export class NotificationSystem {
   async gameInvite(host: string, gameType: string) {
     await this.playTone(700, 0.3)
     await this.playTone(1000, 0.3)
+    this.vibrate([200, 100, 200])
     this.showNotification("Game Invite", `${host} invited you to play ${gameType}`)
+  }
+
+  async gameWon(gameType: string) {
+    await this.playChord([523, 659, 783, 1046], 0.8, 0.5) // C Major triad + octave
+    this.vibrate([100, 50, 100, 50, 300])
+    this.showNotification("Victory!", `You won the ${gameType} game!`)
+  }
+
+  async gameLost(gameType: string) {
+    await this.playTone(200, 0.4, 0.3, "sawtooth")
+    await this.playTone(150, 0.6, 0.3, "sawtooth")
+    this.vibrate([500])
+    this.showNotification("Game Over", `Better luck next time in ${gameType}!`)
   }
 
   async callConnected() {

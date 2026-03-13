@@ -61,7 +61,7 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
 
                     // If I am the guest and I haven't joined yet, join now
                     const isGuest = gameConfig.players[1]?.id === currentUserId
-                    if (isGuest && gameState.players.yellow.id === "waiting" && gameState.status === "waiting") {
+                    if (isGuest && (!gameState.players.yellow.id || gameState.players.yellow.id === "") && gameState.status === "waiting") {
                         manager.joinGame(roomId, gameId, currentUserId, gameConfig.players[1].name)
                     }
                 } else if (isHostPlayer) {
@@ -222,7 +222,7 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
     const isPlayer = game.players.red.id === currentUserId || game.players.yellow.id === currentUserId
 
     return (
-        <div className="flex flex-col items-center gap-6 p-6 bg-slate-900/90 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl max-w-xl w-full mx-auto relative overflow-hidden">
+        <div className="flex flex-col items-center gap-6 p-6 bg-slate-900/95 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl max-w-[650px] w-full mx-auto relative overflow-hidden">
             {/* Header */}
             <div className="flex justify-between items-center w-full">
                 <div className="flex items-center gap-3">
@@ -296,9 +296,9 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
                 </div>
 
                 {/* Grid */}
-                <div className="grid grid-rows-6 gap-2 sm:gap-4">
+                <div className="grid grid-rows-6 gap-3 sm:gap-5">
                     {(game?.board || []).map((row, r) => (
-                        <div key={r} className="flex gap-2 sm:gap-4">
+                        <div key={r} className="flex gap-3 sm:gap-5">
                             {(row || []).map((cell, c) => (
                                 <div
                                     key={c}
@@ -306,11 +306,11 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
                                     onMouseLeave={() => setHoverColumn(null)}
                                     onClick={() => handleColumnClick(c)}
                                     className={cn(
-                                        "w-10 h-10 sm:w-12 sm:h-12 rounded-full ring-inset ring-4 ring-blue-700 transition-all duration-300 transform",
-                                        cell === "red" ? "bg-red-500 shadow-[0_4px_0_rgb(153,27,27)]" :
-                                            cell === "yellow" ? "bg-yellow-400 shadow-[0_4px_0_rgb(161,98,7)]" :
-                                                "bg-slate-900/60 shadow-inner",
-                                        !cell && isMyTurn && !isPaused && "cursor-pointer hover:bg-slate-800/80 active:scale-95",
+                                        "w-12 h-12 sm:w-16 sm:h-16 rounded-full ring-inset ring-4 ring-blue-700 transition-all duration-300 transform",
+                                        cell === "red" ? "bg-red-500 shadow-[0_6px_0_rgb(153,27,27)]" :
+                                            cell === "yellow" ? "bg-yellow-400 shadow-[0_6px_0_rgb(161,98,7)]" :
+                                                "bg-slate-900/80 shadow-inner",
+                                        !cell && isMyTurn && !isPaused && "cursor-pointer hover:bg-slate-800 active:scale-95",
                                         cell && "animate-in slide-in-from-top-4 duration-300 ease-out"
                                     )}
                                 />
@@ -349,11 +349,18 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
             </div>
 
             {/* Turn Status */}
-            <div className="text-center h-4">
+            <div className="text-center h-6">
                 {game.status === "in_progress" && (
-                    <p className={cn("text-sm font-medium animate-pulse", isMyTurn ? "text-blue-400" : "text-slate-500")}>
-                        {isMyTurn ? "Strategic Move Required" : `Awaiting ${game.currentPlayer}'s strategy...`}
+                    <p className={cn("text-base font-bold animate-pulse tracking-tight", isMyTurn ? "text-blue-400" : "text-slate-500")}>
+                        {isMyTurn ? "Your Strategy, General" : `Awaiting ${game.currentPlayer}'s deployment...`}
                     </p>
+                )}
+                {game.status === "waiting" && (
+                    <div className="flex items-center justify-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" />
+                        <p className="text-sm font-bold text-blue-400/80 uppercase tracking-widest">Waiting for challenger...</p>
+                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:0.2s]" />
+                    </div>
                 )}
             </div>
 

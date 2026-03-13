@@ -7,6 +7,7 @@ import { Loader2, X, Circle, RotateCcw, Trophy, Clock, Pause, Play, Settings, Mi
 import { PlaygroundSetupModal } from "../playground-setup-modal"
 import { toast } from "sonner"
 import { cn } from "@/utils/core/cn"
+import { NotificationSystem } from "@/utils/core/notification-system"
 import type { GameConfig } from "../playground-setup-modal"
 
 interface TicTacToeBoardProps {
@@ -60,7 +61,7 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
 
                     // If I am the guest and I haven't joined yet, join now
                     const isGuest = gameConfig.players[1]?.id === currentUserId
-                    if (isGuest && gameState.players.O.id === "waiting" && gameState.status === "waiting") {
+                    if (isGuest && (!gameState.players.O.id || gameState.players.O.id === "") && gameState.status === "waiting") {
                         manager.joinGame(roomId, gameId, currentUserId, gameConfig.players[1].name)
                     }
                 } else if (isHostPlayer) {
@@ -98,6 +99,17 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
             return () => clearTimeout(timer)
         }
     }, [game?.currentPlayer, game?.status, gameConfig.gameType, isPaused])
+
+    useEffect(() => {
+        if (game?.status === "finished") {
+            const notificationSystem = NotificationSystem.getInstance()
+            if (game.winner === (game.players.X.id === currentUserId ? "X" : "O")) {
+                notificationSystem.gameWon("Tic Tac Toe")
+            } else if (game.winner && game.winner !== "draw") {
+                notificationSystem.gameLost("Tic Tac Toe")
+            }
+        }
+    }, [game?.status, game?.winner, currentUserId])
 
     const handleCellClick = async (index: number) => {
         if (!game || game.board[index] || game.status !== "in_progress" || processing || isPaused) return
@@ -195,7 +207,7 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
     const isPlayer = game.players.X.id === currentUserId || game.players.O.id === currentUserId
 
     return (
-        <div className="flex flex-col items-center gap-6 p-6 bg-slate-900/90 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-xl max-w-[400px] w-full mx-auto relative overflow-hidden">
+        <div className="flex flex-col items-center gap-6 p-6 bg-slate-900/90 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-xl max-w-[450px] w-full mx-auto relative overflow-hidden">
             {/* Header */}
             <div className="flex justify-between items-center w-full">
                 <div className="flex items-center gap-3">
@@ -253,23 +265,23 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
             </div>
 
             {/* Board */}
-            <div className="grid grid-cols-3 gap-3 bg-slate-800/50 p-3 rounded-2xl relative">
+            <div className="grid grid-cols-3 gap-4 bg-slate-800/50 p-4 rounded-3xl relative shadow-inner border border-white/5">
                 {(game?.board || []).map((cell, i) => (
                     <button
                         key={i}
                         onClick={() => handleCellClick(i)}
                         disabled={!!cell || game.status !== "in_progress" || processing || isPaused}
                         className={cn(
-                            "w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center rounded-xl text-4xl transition-all duration-300",
-                            cell === "X" ? "bg-cyan-500/10 text-cyan-400 shadow-[inset_0_0_20px_rgba(6,182,212,0.1)]" :
-                                cell === "O" ? "bg-pink-500/10 text-pink-400 shadow-[inset_0_0_20px_rgba(236,72,153,0.1)]" :
-                                    "bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/30",
+                            "w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center rounded-2xl text-5xl transition-all duration-300",
+                            cell === "X" ? "bg-cyan-500/10 text-cyan-400 shadow-[inset_0_0_30px_rgba(6,182,212,0.15)]" :
+                                cell === "O" ? "bg-pink-500/10 text-pink-400 shadow-[inset_0_0_30px_rgba(236,72,153,0.15)]" :
+                                    "bg-slate-700/40 hover:bg-slate-600/50 border border-slate-600/20",
                             isMyTurn && !cell && !isPaused && "hover:scale-105 active:scale-95 cursor-pointer ring-cyan-500/30 hover:ring-4",
                             (!isMyTurn || cell || isPaused) && "cursor-default opacity-90"
                         )}
                     >
-                        {cell === "X" && <X className="w-12 h-12 animate-in zoom-in duration-300" strokeWidth={2.5} />}
-                        {cell === "O" && <Circle className="w-10 h-10 animate-in zoom-in duration-300" strokeWidth={3} />}
+                        {cell === "X" && <X className="w-14 h-14 animate-in zoom-in duration-300" strokeWidth={3} />}
+                        {cell === "O" && <Circle className="w-12 h-12 animate-in zoom-in duration-300" strokeWidth={3.5} />}
                     </button>
                 ))}
 
@@ -304,11 +316,18 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
             </div>
 
             {/* Turn Status */}
-            <div className="text-center h-4">
+            <div className="text-center h-6">
                 {game.status === "in_progress" && (
-                    <p className={cn("text-sm font-medium animate-pulse", isMyTurn ? "text-cyan-400" : "text-slate-500")}>
+                    <p className={cn("text-base font-bold animate-pulse tracking-tight", isMyTurn ? "text-cyan-400" : "text-slate-500")}>
                         {isMyTurn ? "Your Turn" : `Waiting for ${game.currentPlayer === "X" ? game.players.X.name : game.players.O.name}...`}
                     </p>
+                )}
+                {game.status === "waiting" && (
+                    <div className="flex items-center justify-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" />
+                        <p className="text-sm font-bold text-cyan-400/80 uppercase tracking-widest">Waiting for opponent...</p>
+                        <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce [animation-delay:0.2s]" />
+                    </div>
                 )}
             </div>
 

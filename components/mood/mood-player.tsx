@@ -23,6 +23,7 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
     const [isDucked, setIsDucked] = useState(false)
     const [playerReady, setPlayerReady] = useState(false)
     const [currentUrl, setCurrentUrl] = useState<string>("")
+    const [lastTrigger, setLastTrigger] = useState<number>(0)
 
     const BASE_VOLUME = 0.35 // 35% as requested
     const DUCKED_VOLUME = 0.10 // 10% during notifications
@@ -60,6 +61,7 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
                 data.magicSongTrigger !== lastTriggerRef.current
             ) {
                 lastTriggerRef.current = data.magicSongTrigger
+                setLastTrigger(data.magicSongTrigger)
                 setIsPlaying(false)
                 setCurrentSongIndex(0)
                 // Show the magic popup to everyone in the room
@@ -93,18 +95,24 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
         toast.success("Magic is starting! 🎶")
 
         // Best-effort direct play for internal players (e.g., HTML5/YouTube)
-        const internalPlayer = playerRef.current?.getInternalPlayer?.()
-        if (internalPlayer) {
-            try {
-                if (typeof internalPlayer.playVideo === "function") {
-                    internalPlayer.playVideo()
-                } else if (typeof internalPlayer.play === "function") {
-                    internalPlayer.play().catch(() => { })
+        const attemptDirectPlay = () => {
+            const internalPlayer = playerRef.current?.getInternalPlayer?.()
+            if (internalPlayer) {
+                try {
+                    if (typeof internalPlayer.playVideo === "function") {
+                        internalPlayer.playVideo()
+                    } else if (typeof internalPlayer.play === "function") {
+                        internalPlayer.play().catch(() => { })
+                    }
+                } catch (e) {
+                    console.warn("Direct play handshake failed, relying on reactive props", e)
                 }
-            } catch (e) {
-                // No-op: ReactPlayer will still try to play via props
             }
         }
+
+        attemptDirectPlay()
+        // Small delay to ensure ReactPlayer has processed the URL change
+        setTimeout(attemptDirectPlay, 100)
     }
 
     // 3. Audio playlist logic (next song on end)
@@ -154,12 +162,14 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
     return (
         <>
             {/* Unified ReactPlayer - Always mounted to prevent playback drops */}
+            {/* Force remount via key whenever magic trigger happens to ensure fresh player state */}
             {playlist.length > 0 && (
                 <div
                     className="fixed top-[-1000px] left-[-1000px] w-16 h-16 pointer-events-none z-[-1] overflow-hidden"
                     aria-hidden="true"
                 >
                     <ReactPlayer
+                        key={`mood-player-${lastTrigger}`}
                         ref={playerRef}
                         {...({
                             url: getPlayerUrl(),
@@ -179,6 +189,12 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
                                 setPlayerReady(true)
                                 if (playRequestedRef.current) {
                                     setIsPlaying(true)
+                                    // Try direct play again once ready
+                                    const internal = playerRef.current?.getInternalPlayer?.()
+                                    if (internal) {
+                                        if (internal.playVideo) internal.playVideo()
+                                        else if (internal.play) internal.play()
+                                    }
                                 }
                             },
                             config: {
@@ -246,4 +262,3 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
         </>
     )
 }
-

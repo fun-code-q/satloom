@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Trophy, Users, Volume2, VolumeX, Share2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { NotificationSystem } from "@/utils/core/notification-system"
 
 interface BingoGameProps {
     roomId: string
@@ -42,6 +43,17 @@ export function BingoGame({ roomId, userId, userName }: BingoGameProps) {
             bingoGameManager.destroy()
         }
     }, [roomId, userId, userName])
+
+    useEffect(() => {
+        if (gameStatus === "finished") {
+            const notificationSystem = NotificationSystem.getInstance()
+            if (winner === userId) {
+                notificationSystem.gameWon("Bingo")
+            } else if (winner) {
+                notificationSystem.gameLost("Bingo")
+            }
+        }
+    }, [gameStatus, winner, userId])
 
     const handleMarkWord = async (word: string) => {
         if (!myCard) return
