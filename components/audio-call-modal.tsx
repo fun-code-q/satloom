@@ -184,11 +184,20 @@ export function AudioCallModal({
       },
       (state, uid) => {
         console.log(`[AudioCall] WebRTC state for ${uid}: ${state}`)
+        if (state === "connected") {
+          console.log(`[AudioCall] SUCCESSFULLY CONNECTED to ${uid}`)
+        }
         if (state === "failed") {
-          console.error("[AudioCall] Connection failed. Check network/ICE servers.")
+          console.error(`[AudioCall] Connection to ${uid} FAILED. Check network/ICE servers.`)
+        }
+        if (state === "disconnected") {
+          console.warn(`[AudioCall] Connection to ${uid} disconnected.`)
         }
       }
     )
+
+    console.log(`[AudioCall] Initialized WebRTC for ${targetUserId}`)
+    localStream.getTracks().forEach(t => console.log(`[AudioCall] Local track active: ${t.kind} (${t.id})`))
 
     unsubscribeSignalsRef.current = callSignaling.listenForSignals(roomId, callData.id, currentUserId, async (type, payload, senderId) => {
       console.log(`AudioCall: Signal received (${type}) from ${senderId}`)

@@ -62,27 +62,40 @@ export class WebRTCManager {
             }
         })
 
-        if (servers.length === 0) {
-            // High-reliability fallbacks - mix of Google and public STUN/TURN
-            servers.push(
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' },
-                { urls: 'stun:stun3.l.google.com:19302' },
-                { urls: 'stun:stun4.l.google.com:19302' },
-                // Fallback public TURN from OpenRelay (sometimes works as fallback even without fresh credentials if using default ones)
-                {
-                    urls: 'turn:openrelay.metered.ca:80',
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
-                },
-                {
-                    urls: 'turn:openrelay.metered.ca:443',
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
-                }
+        // Always include high-reliability STUN servers as baseline
+        const fallbackServers: RTCIceServer[] = [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun3.l.google.com:19302' },
+            { urls: 'stun:stun4.l.google.com:19302' },
+            // Always include OpenRelay TURN as a baseline for robustness
+            {
+                urls: 'turn:openrelay.metered.ca:80',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            },
+            {
+                urls: 'turn:openrelay.metered.ca:443',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            },
+            {
+                urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            }
+        ]
+
+        // Add fallbacks that aren't already represented by environment variables
+        fallbackServers.forEach(fallback => {
+            const exists = servers.some(s => 
+                Array.isArray(s.urls) 
+                    ? s.urls.includes(fallback.urls as string) 
+                    : s.urls === fallback.urls
             )
-        }
+            if (!exists) servers.push(fallback)
+        })
 
         console.log(`WebRTC: Initialized with ${servers.length} ICE servers`)
         return servers

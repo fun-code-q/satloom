@@ -261,11 +261,23 @@ export function VideoCallModal({
       (c, uid) => { if (uid === targetUserId) onIceCandidateRef.current(c) },
       (state, uid) => {
         console.log(`[VideoCall] WebRTC state for ${uid}: ${state}`)
+        if (state === "connected") {
+          console.log(`[VideoCall] SUCCESSFULLY CONNECTED to ${uid}`)
+          toast.success("Connection established")
+        }
         if (state === "failed") {
-          console.error("[VideoCall] Connection failed. Check network/ICE servers.")
+          console.error(`[VideoCall] Connection to ${uid} FAILED. Check network/ICE servers.`)
+          toast.error("Connection failed. Retrying...")
+        }
+        if (state === "disconnected") {
+          console.warn(`[VideoCall] Connection to ${uid} disconnected.`)
         }
       }
     )
+
+    // Log tracking for debugging
+    console.log(`[VideoCall] Initialized WebRTC for ${targetUserId} with local stream ${localStream.id}`)
+    localStream.getTracks().forEach(t => console.log(`[VideoCall] Local track active: ${t.kind} (${t.id})`))
 
     unsubscribeSignalsRef.current = callSignaling.listenForSignals(roomId, callData.id, currentUserId, async (type, payload, senderId) => {
       console.log(`VideoCall: Signal received (${type}) from ${senderId}`)
