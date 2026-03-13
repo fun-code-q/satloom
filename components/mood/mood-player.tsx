@@ -34,6 +34,37 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
     const BASE_VOLUME = 0.35 // 35% as requested
     const DUCKED_VOLUME = 0.10 // 10% during notifications
 
+    const normalizeSongUrl = (url: string): string => {
+        try {
+            const parsed = new URL(url)
+            const host = parsed.hostname
+
+            // Convert archive.org /details/... URLs to direct /download/... URLs for CORS-safe MP3 playback
+            if (host === "archive.org" || host === "www.archive.org") {
+                const parts = parsed.pathname.split("/").filter(Boolean)
+                // Expected: /details/{item}/{file}
+                if (parts.length >= 3 && parts[0] === "details") {
+                    const item = parts[1]
+                    const file = parts.slice(2).join("/")
+                    return `https://archive.org/download/${item}/${file}`
+                }
+            }
+
+            // Normalize youtu.be short links to youtube.com/watch for consistent player parsing
+            if (host === "youtu.be") {
+                const videoId = parsed.pathname.replace("/", "")
+                if (videoId) {
+                    const search = parsed.search ? parsed.search : ""
+                    return `https://www.youtube.com/watch?v=${videoId}${search}`
+                }
+            }
+
+            return url
+        } catch {
+            return url
+        }
+    }
+
     // 1. Listen to Firebase for Mood changes & magic trigger
     useEffect(() => {
         const db = getFirebaseDatabase()
@@ -84,7 +115,7 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
         // Start from the current song index (fallback to first)
         const songUrl = playlist[currentSongIndex] || playlist[0]
         if (songUrl) {
-            setCurrentUrl(songUrl)
+            setCurrentUrl(normalizeSongUrl(songUrl))
         }
 
         setCurrentSongIndex(0)
@@ -129,9 +160,9 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
     // 7. Sync current URL when playlist or index changes
     useEffect(() => {
         if (playlist.length > 0 && playlist[currentSongIndex]) {
-            setCurrentUrl(playlist[currentSongIndex])
+            setCurrentUrl(normalizeSongUrl(playlist[currentSongIndex]))
         } else if (playlist.length > 0) {
-            setCurrentUrl(playlist[0])
+            setCurrentUrl(normalizeSongUrl(playlist[0]))
         }
     }, [playlist, currentSongIndex])
 
@@ -154,7 +185,7 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
         } else if (playlist.length > 0) {
             url = playlist[0]
         }
-        return url
+        return normalizeSongUrl(url)
     }
 
     return (
@@ -199,6 +230,11 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
                                 }
                             },
                             config: {
+                                file: {
+                                    attributes: {
+                                        crossOrigin: "anonymous",
+                                    },
+                                },
                                 youtube: {
                                     playerVars: {
                                         showinfo: 0,
@@ -221,6 +257,7 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
                     className="fixed top-[-200px] left-[-200px] w-10 h-10 pointer-events-none z-[-2] overflow-hidden"
                     aria-hidden="true"
                     preload="auto"
+                    crossOrigin="anonymous"
                 />
             )}
 
