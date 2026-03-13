@@ -108,7 +108,7 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
             {/* Unified ReactPlayer - Always mounted to prevent playback drops */}
             {playlist.length > 0 && (
                 <div
-                    className="fixed bottom-0 left-0 w-[1px] h-[1px] opacity-0 pointer-events-none z-[-1] overflow-hidden"
+                    className="fixed top-[-1000px] left-[-1000px] w-16 h-16 pointer-events-none z-[-1] overflow-hidden"
                     aria-hidden="true"
                 >
                     <ReactPlayer
@@ -127,7 +127,6 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
                                         showinfo: 0,
                                         controls: 0,
                                         modestbranding: 1,
-                                        autoplay: 1,
                                         origin: typeof window !== 'undefined' ? window.location.origin : ''
                                     }
                                 }

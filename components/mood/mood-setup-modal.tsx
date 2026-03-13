@@ -78,6 +78,7 @@ export function MoodSetupModal({ isOpen, onClose, roomId }: MoodSetupModalProps)
                 ...(songAdded && hasSongs && { magicSongTrigger: Date.now() })
             })
             toast.success("Mood updated for everyone!")
+            setSongAdded(false)
             onClose()
         } catch (error) {
             console.error("Error saving mood:", error)
