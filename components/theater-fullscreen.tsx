@@ -100,6 +100,11 @@ export function TheaterFullscreen({
   const iframePlayerReadyRef = useRef<boolean>(false)
   const pendingCommandsRef = useRef<Array<{ action: 'play' | 'pause' | 'seek', time?: number }>>([])
   const soundcloudControllerRef = useRef<SoundCloudPlayerController | null>(null)
+  const toIcePayload = (c: RTCIceCandidate) => ({
+    candidate: c.candidate,
+    sdpMid: c.sdpMid,
+    sdpMLineIndex: c.sdpMLineIndex
+  })
 
   // Initialize VideoStreamManager and Queue
   useEffect(() => {
@@ -283,10 +288,8 @@ export function TheaterFullscreen({
   const handleScreenStreamReady = async (stream: MediaStream) => {
     setLocalMovieStream(stream)
 
-    // Update session to webrtc mode if not already
-    if (session.videoType !== "webrtc") {
-      await theaterSignaling.createSession(roomId, currentUser, currentUserId, "screen://share", "webrtc")
-    }
+    // Update current session to WebRTC mode (don't create a new session)
+    await theaterSignaling.updateSessionMedia(roomId, session.id, "screen://share", "webrtc")
 
     // Broadcast stream to all current participants
     const webrtc = WebRTCManager.getInstance()
@@ -299,15 +302,26 @@ export function TheaterFullscreen({
         participantId,
         stream,
         (s, uid) => { if (uid === participantId) setRemoteMovieStream(s) },
-        (c, uid) => { if (uid === participantId) theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", c, currentUserId, participantId) }
+        (c, uid) => {
+          if (uid === participantId) {
+            theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", toIcePayload(c), currentUserId, participantId)
+          }
+        }
       )
 
       const offer = await webrtc.createOffer(participantId)
       theaterSignaling.sendSignal(roomId, session.id, "offer", offer, currentUserId, participantId)
+      connectedPeersRef.current.add(participantId)
     })
 
     setIsBuffering(false)
     setIsPlaying(true)
+    setCurrentTime(0)
+    try {
+      await theaterSignaling.sendAction(roomId, session.id, "play", 0, currentUserId, currentUser)
+    } catch (err) {
+      console.error("Failed to send play action for screen share:", err)
+    }
 
     // Handle track ended
     const videoTrack = stream.getVideoTracks()[0]
@@ -537,13 +551,24 @@ export function TheaterFullscreen({
       if (isHost && updatedSession.videoType === "webrtc" && localMovieStream) {
         const webrtc = WebRTCManager.getInstance()
         const currentParticipants = updatedSession.participants || []
+        const currentParticipantSet = new Set(currentParticipants)
+        connectedPeersRef.current.forEach((id) => {
+          if (!currentParticipantSet.has(id)) {
+            connectedPeersRef.current.delete(id)
+          }
+        })
+
         currentParticipants.forEach(async (participantId: string) => {
           if (participantId !== currentUserId && !connectedPeersRef.current.has(participantId)) {
             webrtc.initialize(
               participantId,
               localMovieStream,
               (s, uid) => { if (uid === participantId) setRemoteMovieStream(s) },
-              (c, uid) => { if (uid === participantId) theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", c, currentUserId, participantId) }
+              (c, uid) => {
+                if (uid === participantId) {
+                  theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", toIcePayload(c), currentUserId, participantId)
+                }
+              }
             )
             const offer = await webrtc.createOffer(participantId)
             theaterSignaling.sendSignal(roomId, session.id, "offer", offer, currentUserId, participantId)
@@ -858,8 +883,8 @@ export function TheaterFullscreen({
       const stream = videoStreamManagerRef.current.captureStream()
       setLocalMovieStream(stream)
 
-      // Update session to webrtc mode
-      await theaterSignaling.createSession(roomId, currentUser, currentUserId, "local://stream", "webrtc")
+      // Update current session to WebRTC mode (don't create a new session)
+      await theaterSignaling.updateSessionMedia(roomId, session.id, "local://stream", "webrtc")
 
       // Broadcast stream to all current participants
       const webrtc = WebRTCManager.getInstance()
@@ -870,15 +895,26 @@ export function TheaterFullscreen({
           participantId,
           stream,
           (s, uid) => { if (uid === participantId) setRemoteMovieStream(s) },
-          (c, uid) => { if (uid === participantId) theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", c, currentUserId, participantId) }
+          (c, uid) => {
+            if (uid === participantId) {
+              theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", toIcePayload(c), currentUserId, participantId)
+            }
+          }
         )
 
         const offer = await webrtc.createOffer(participantId)
         theaterSignaling.sendSignal(roomId, session.id, "offer", offer, currentUserId, participantId)
+        connectedPeersRef.current.add(participantId)
       })
 
       setIsBuffering(false)
       setIsPlaying(true)
+      setCurrentTime(0)
+      try {
+        await theaterSignaling.sendAction(roomId, session.id, "play", 0, currentUserId, currentUser)
+      } catch (err) {
+        console.error("Failed to send play action for stream:", err)
+      }
       videoStreamManagerRef.current.syncPlayback('play')
     } catch (err: any) {
       console.error("Movie streaming error:", err)

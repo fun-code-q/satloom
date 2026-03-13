@@ -27,6 +27,8 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
     const BASE_VOLUME = 0.35 // 35% as requested
     const DUCKED_VOLUME = 0.10 // 10% during notifications
     const lastTriggerRef = useRef<number>(0)
+    const playerRef = useRef<any>(null)
+    const playRequestedRef = useRef(false)
     const notificationSystem = NotificationSystem.getInstance()
 
     // 1. Listen to Firebase for Mood changes & magic trigger
@@ -76,21 +78,33 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
             return
         }
 
-        setShowMagicPopup(false)
-
         // Ensure URL is set before playing - get the first song or current index
-        const songUrl = playlist[0] || playlist[currentSongIndex]
+        const songUrl = playlist[currentSongIndex] || playlist[0]
         if (songUrl) {
             setCurrentUrl(songUrl)
         }
 
         setCurrentSongIndex(0)
+        setShowMagicPopup(false)
 
-        // Small delay to ensure URL is properly set before playing
-        setTimeout(() => {
-            setIsPlaying(true)
-            toast.success("Magic is starting! 🎶")
-        }, 150)
+        // Start playback immediately on user gesture to satisfy autoplay policies
+        playRequestedRef.current = true
+        setIsPlaying(true)
+        toast.success("Magic is starting! 🎶")
+
+        // Best-effort direct play for internal players (e.g., HTML5/YouTube)
+        const internalPlayer = playerRef.current?.getInternalPlayer?.()
+        if (internalPlayer) {
+            try {
+                if (typeof internalPlayer.playVideo === "function") {
+                    internalPlayer.playVideo()
+                } else if (typeof internalPlayer.play === "function") {
+                    internalPlayer.play().catch(() => { })
+                }
+            } catch (e) {
+                // No-op: ReactPlayer will still try to play via props
+            }
+        }
     }
 
     // 3. Audio playlist logic (next song on end)
@@ -146,6 +160,7 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
                     aria-hidden="true"
                 >
                     <ReactPlayer
+                        ref={playerRef}
                         {...({
                             url: getPlayerUrl(),
                             playing: isPlaying,
@@ -162,6 +177,9 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
                             onReady: () => {
                                 console.log("MoodPlayer Ready")
                                 setPlayerReady(true)
+                                if (playRequestedRef.current) {
+                                    setIsPlaying(true)
+                                }
                             },
                             config: {
                                 youtube: {
@@ -228,3 +246,4 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
         </>
     )
 }
+

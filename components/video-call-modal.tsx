@@ -161,7 +161,7 @@ export function VideoCallModal({
   const isInitializedRef = useRef(false)
 
   useEffect(() => {
-    const targetUserId = callData?.participants.find(p => p !== currentUserId) || callData?.caller
+    const targetUserId = callData?.participants.find(p => p !== currentUserId) || callData?.callerId
     onRemoteStreamRef.current = (stream: MediaStream, userId: string) => {
       if (userId === targetUserId) {
         console.log(`VideoCall: Remote stream received for user ${userId}. Stream ID: ${stream.id}`)
@@ -196,7 +196,7 @@ export function VideoCallModal({
         callSignaling.sendSignal(roomId, callData.id, "ice-candidate", payload, currentUserId)
       }
     }
-  }, [callData?.id, roomId, currentUserId, callData?.participants, callData?.caller])
+  }, [callData?.id, roomId, currentUserId, callData?.participants, callData?.callerId])
 
   // Effect 1: Media Setup
   useEffect(() => {

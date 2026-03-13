@@ -1,5 +1,5 @@
 import { getFirebaseDatabase } from "@/lib/firebase"
-import { ref, set, onValue, remove, off, get } from "firebase/database"
+import { ref, set, onValue, remove, off, get, update } from "firebase/database"
 
 export interface TheaterSession {
   id: string
@@ -358,6 +358,33 @@ export class TheaterSignaling {
     }
     const actionRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}/lastAction`)
     await set(actionRef, action)
+  }
+
+  // Update session media details (video URL/type/status)
+  async updateSessionMedia(
+    roomId: string,
+    sessionId: string,
+    videoUrl: string,
+    videoType: TheaterSession["videoType"],
+    status?: TheaterSession["status"],
+    currentTime?: number
+  ) {
+    if (!getFirebaseDatabase()!) return
+
+    const updates: any = {
+      videoUrl,
+      videoType,
+    }
+
+    if (status) {
+      updates.status = status
+    }
+
+    if (typeof currentTime === "number") {
+      updates.currentTime = currentTime
+    }
+
+    await update(ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}`), updates)
   }
 
   // WebRTC Signaling for Theater (e.g., for movie streaming or high-quality voice)
