@@ -23,8 +23,6 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
     const [isDucked, setIsDucked] = useState(false)
     const [playerReady, setPlayerReady] = useState(false)
     const [currentUrl, setCurrentUrl] = useState<string>("")
-    const [lastTrigger, setLastTrigger] = useState<number>(0)
-    const [backupUrl, setBackupUrl] = useState<string>("")
 
     // Refs
     const lastTriggerRef = useRef<number>(0)
@@ -35,22 +33,6 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
 
     const BASE_VOLUME = 0.35 // 35% as requested
     const DUCKED_VOLUME = 0.10 // 10% during notifications
-
-    // Helper function to get proxied URL if needed for CORS
-    const getProxiedUrlIfNeeded = (url: string): string => {
-        try {
-            const parsed = new URL(url)
-            // List of domains that we know require a proxy (due to CORS restrictions)
-            const proxyDomains = ['archive.org', 'www.archive.org']
-            if (proxyDomains.includes(parsed.hostname)) {
-                // We assume the proxy is at `/api/audio-proxy`
-                return `${window.location.origin}/api/audio-proxy?url=${encodeURIComponent(url)}`
-            }
-            return url
-        } catch {
-            return url
-        }
-    }
 
     // 1. Listen to Firebase for Mood changes & magic trigger
     useEffect(() => {
@@ -81,7 +63,6 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
                 data.magicSongTrigger !== lastTriggerRef.current
             ) {
                 lastTriggerRef.current = data.magicSongTrigger
-                setLastTrigger(data.magicSongTrigger)
                 setIsPlaying(false)
                 setCurrentSongIndex(0)
                 // Show the magic popup to everyone in the room
@@ -100,12 +81,10 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
             return
         }
 
-        // Always start from the first song when magic mood is activated
-        const songUrl = playlist[0]
+        // Start from the current song index (fallback to first)
+        const songUrl = playlist[currentSongIndex] || playlist[0]
         if (songUrl) {
             setCurrentUrl(songUrl)
-            // Set the backup URL with proxy if needed
-            setBackupUrl(getProxiedUrlIfNeeded(songUrl))
         }
 
         setCurrentSongIndex(0)
@@ -118,12 +97,12 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
         toast.success("Magic is starting! 🎶")
     }
 
-    // 3. Update the backup audio element's src when backupUrl changes
+    // 3. Update the backup audio element's src when currentUrl changes
     useEffect(() => {
-        if (audioElementRef.current && backupUrl) {
-            audioElementRef.current.src = backupUrl
+        if (audioElementRef.current && currentUrl) {
+            audioElementRef.current.src = currentUrl
         }
-    }, [backupUrl])
+    }, [currentUrl])
 
     // 4. Audio playlist logic (next song on end)
     // Playlist continues automatically via react-player's onEnded callback
@@ -165,7 +144,7 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
 
     const currentVolume = isDucked ? DUCKED_VOLUME : BASE_VOLUME
 
-    // Get the current URL to play (with proxy if needed)
+    // Get the current URL to play
     const getPlayerUrl = () => {
         let url = ""
         if (currentUrl) {
@@ -175,7 +154,7 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
         } else if (playlist.length > 0) {
             url = playlist[0]
         }
-        return getProxiedUrlIfNeeded(url)
+        return url
     }
 
     return (
