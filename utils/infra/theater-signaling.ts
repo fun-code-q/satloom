@@ -234,7 +234,7 @@ export class TheaterSignaling {
 
     const unsubscribe = onValue(sessionRef, async (snapshot) => {
       const session = snapshot.val()
-      if (!session) return
+      if (!session || !getFirebaseDatabase()) return
 
       const lastHeartbeat = session.lastHeartbeat
       const currentHostId = session.hostId
@@ -269,9 +269,9 @@ export class TheaterSignaling {
 
   // Get current playback state for host handover
   async getPlaybackState(roomId: string, sessionId: string) {
-    if (!getFirebaseDatabase()) return null
-
     const db = getFirebaseDatabase()
+    if (!db) return null
+
     const sessionRef = ref(db, `rooms/${roomId}/theater/${sessionId}`)
     const snapshot = await get(sessionRef)
 

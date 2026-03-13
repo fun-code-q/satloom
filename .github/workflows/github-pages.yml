@@ -17,6 +17,7 @@ concurrency:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  # Note: Ensure ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION is NOT set if using Node 24
 
 jobs:
   build:
@@ -45,6 +46,8 @@ jobs:
           cache: ${{ steps.detect-package-manager.outputs.manager }}
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        with:
+          static_site_generator: nextjs
       - name: Install dependencies
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
       - name: Build with Next.js
