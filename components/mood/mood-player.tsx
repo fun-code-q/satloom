@@ -21,6 +21,8 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
     const [showMagicPopup, setShowMagicPopup] = useState(false)
     const [isPlaying, setIsPlaying] = useState(false)
     const [isDucked, setIsDucked] = useState(false)
+    const [playerReady, setPlayerReady] = useState(false)
+    const [currentUrl, setCurrentUrl] = useState<string>("")
 
     const BASE_VOLUME = 0.35 // 35% as requested
     const DUCKED_VOLUME = 0.10 // 10% during notifications
@@ -68,12 +70,27 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
 
     // 2. Handle magic popup "Yes" button — plays song at 35% volume using react-player
     const handleMagicYes = () => {
-        setShowMagicPopup(false)
-        if (!playlist || playlist.length === 0) return
+        // Get the current playlist from Firebase state before closing popup
+        if (playlist.length === 0) {
+            toast.error("No songs in playlist. Please add a song first.")
+            return
+        }
 
-        setIsPlaying(true)
+        setShowMagicPopup(false)
+
+        // Ensure URL is set before playing - get the first song or current index
+        const songUrl = playlist[0] || playlist[currentSongIndex]
+        if (songUrl) {
+            setCurrentUrl(songUrl)
+        }
+
         setCurrentSongIndex(0)
-        toast.success("Magic is starting! 🎶")
+
+        // Small delay to ensure URL is properly set before playing
+        setTimeout(() => {
+            setIsPlaying(true)
+            toast.success("Magic is starting! 🎶")
+        }, 150)
     }
 
     // 3. Audio playlist logic (next song on end)
@@ -94,6 +111,15 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
         }
     }, [])
 
+    // 6. Sync current URL when playlist or index changes
+    useEffect(() => {
+        if (playlist.length > 0 && playlist[currentSongIndex]) {
+            setCurrentUrl(playlist[currentSongIndex])
+        } else if (playlist.length > 0) {
+            setCurrentUrl(playlist[0])
+        }
+    }, [playlist, currentSongIndex])
+
     // Handle when current song ends - play next song in playlist
     const handlePlayerEnded = () => {
         if (!playlist || playlist.length === 0) return
@@ -102,6 +128,14 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
     }
 
     const currentVolume = isDucked ? DUCKED_VOLUME : BASE_VOLUME
+
+    // Get the current URL to play
+    const getPlayerUrl = () => {
+        if (currentUrl) return currentUrl
+        if (playlist.length > 0 && playlist[currentSongIndex]) return playlist[currentSongIndex]
+        if (playlist.length > 0) return playlist[0]
+        return ""
+    }
 
     return (
         <>
@@ -113,20 +147,29 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
                 >
                     <ReactPlayer
                         {...({
-                            url: playlist[currentSongIndex] || playlist[0],
+                            url: getPlayerUrl(),
                             playing: isPlaying,
                             volume: currentVolume,
                             width: "100%",
                             height: "100%",
                             playsinline: true,
+                            muted: false,
                             onEnded: handlePlayerEnded,
-                            onError: (e: any) => console.error("MoodPlayer Error:", e),
+                            onError: (e: any) => {
+                                console.error("MoodPlayer Error:", e)
+                                toast.error("Failed to play the song. Please check the URL.")
+                            },
+                            onReady: () => {
+                                console.log("MoodPlayer Ready")
+                                setPlayerReady(true)
+                            },
                             config: {
                                 youtube: {
                                     playerVars: {
                                         showinfo: 0,
                                         controls: 0,
                                         modestbranding: 1,
+                                        rel: 0,
                                         origin: typeof window !== 'undefined' ? window.location.origin : ''
                                     }
                                 }
