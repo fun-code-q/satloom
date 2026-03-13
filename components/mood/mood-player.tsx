@@ -63,7 +63,11 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
         } catch {
             return url
         }
-    }\n\n    const isDirectAudioUrl = (url: string): boolean => {\n        return /\\.(mp3|wav|ogg|m4a|webm)(\\?|#|$)/i.test(url)\n    }
+    }
+
+    const isDirectAudioUrl = (url: string): boolean => {
+        return /\.(mp3|wav|ogg|m4a|webm)(\?|#|$)/i.test(url)
+    }
 
     // 1. Listen to Firebase for Mood changes & magic trigger
     useEffect(() => {
