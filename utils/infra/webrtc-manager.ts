@@ -7,9 +7,9 @@ export class WebRTCManager {
     private remoteStreams: Map<string, Map<string, MediaStream>> = new Map() // userId -> (label -> Stream)
 
     private onRemoteStreamListeners: Set<(stream: MediaStream, userId: string, label: string) => void> = new Set()
-    private onIceCandidate: ((candidate: RTCIceCandidate, userId: string) => void) | null = null
+    private onIceCandidateListeners: Map<string, Set<(candidate: RTCIceCandidate, userId: string) => void>> = new Map() // userId -> listeners
+    private onStateChangeListeners: Map<string, Set<(state: RTCPeerConnectionState, userId: string) => void>> = new Map() // userId -> listeners
     private isCleanupInProgress = false
-    private onStateChange: ((state: RTCPeerConnectionState, userId: string) => void) | null = null
     private iceCandidateBuffers: Map<string, RTCIceCandidateInit[]> = new Map()
 
     private config: RTCConfiguration = WEBRTC_CONFIG
@@ -44,8 +44,24 @@ export class WebRTCManager {
         if (this.isCleanupInProgress) return
 
         this.onRemoteStreamListeners.add(onRemoteStream)
-        this.onIceCandidate = onIceCandidate
-        this.onStateChange = onStateChange || null
+        
+        // Add ICE candidate listener for this user
+        let userIceListeners = this.onIceCandidateListeners.get(targetUserId)
+        if (!userIceListeners) {
+            userIceListeners = new Set()
+            this.onIceCandidateListeners.set(targetUserId, userIceListeners)
+        }
+        userIceListeners.add(onIceCandidate)
+
+        // Add state change listener if provided
+        if (onStateChange) {
+            let userStateListeners = this.onStateChangeListeners.get(targetUserId)
+            if (!userStateListeners) {
+                userStateListeners = new Set()
+                this.onStateChangeListeners.set(targetUserId, userStateListeners)
+            }
+            userStateListeners.add(onStateChange)
+        }
 
         let pc = this.peerConnections.get(targetUserId)
 
@@ -77,8 +93,7 @@ export class WebRTCManager {
             const stream = event.streams[0] || new MediaStream([event.track])
             
             // Determine label from stream metadata if possible, or fallback to default
-            // In a better system, we'd negotiate labels via DataChannel
-            const streamLabel = stream.id.includes("theater") ? "theater" : "default"
+            const streamLabel = stream.id.toLowerCase().includes("theater") ? "theater" : "default"
 
             let userStreams = this.remoteStreams.get(targetUserId)
             if (!userStreams) {
@@ -94,8 +109,9 @@ export class WebRTCManager {
 
         // Handle ICE candidates
         pc.onicecandidate = (event) => {
-            if (event.candidate && this.onIceCandidate) {
-                this.onIceCandidate(event.candidate, targetUserId)
+            if (event.candidate) {
+                const listeners = this.onIceCandidateListeners.get(targetUserId)
+                listeners?.forEach(listener => listener(event.candidate!, targetUserId))
             }
         }
 
@@ -103,7 +119,8 @@ export class WebRTCManager {
         pc.onconnectionstatechange = () => {
             const state = pc!.connectionState
             console.log(`[WebRTC] Connection ${targetUserId} State:`, state)
-            if (this.onStateChange) this.onStateChange(state, targetUserId)
+            const listeners = this.onStateChangeListeners.get(targetUserId)
+            listeners?.forEach(listener => listener(state, targetUserId))
         }
 
         this.iceCandidateBuffers.set(targetUserId, [])

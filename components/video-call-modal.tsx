@@ -344,7 +344,7 @@ export function VideoCallModal({
       targetUserId,
       localStream,
       (s, uid, label) => {
-        if (uid === targetUserId && !label) onRemoteStreamRef.current(s, uid)
+        if (uid === targetUserId && (label === "default" || !label)) onRemoteStreamRef.current(s, uid)
       },
       (c, uid) => { if (uid === targetUserId) onIceCandidateRef.current(c) },
       (state, uid) => {

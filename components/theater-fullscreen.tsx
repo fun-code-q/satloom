@@ -362,7 +362,9 @@ export function TheaterFullscreen({
         webrtc.initialize(
           fromUserId,
           streamToUse,
-          (s, uid, label) => { if (uid === fromUserId && label === "theater") setRemoteMovieStream(s) },
+          (s, uid, label) => { 
+            if (uid === fromUserId && label === "theater") setRemoteMovieStream(s) 
+          },
           (c, uid) => {
             if (uid === fromUserId) {
               const payload = {
@@ -372,7 +374,9 @@ export function TheaterFullscreen({
               }
               theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", payload, currentUserId, fromUserId)
             }
-          }
+          },
+          undefined,
+          "theater"
         )
         const answer = await webrtc.createAnswer(fromUserId, payload)
         theaterSignaling.sendSignal(roomId, session.id, "answer", answer, currentUserId, fromUserId)
@@ -719,7 +723,7 @@ export function TheaterFullscreen({
   }
 
   const handlePlay = async () => {
-    console.log("handlePlay called, isHost:", isHost, "isPlaying:", isPlaying)
+    console.log("[Theater] handlePlay called. isHost:", isHost, "isPlaying:", isPlaying, "videoType:", session.videoType)
     if (!isHost) {
       console.log("Not host, ignoring play click")
       return

@@ -222,8 +222,8 @@ export function AudioCallModal({
     webrtc.initialize(
       targetUserId,
       localStream,
-      (s, uid) => {
-        if (uid === targetUserId && !s.getVideoTracks().length) setRemoteStreamRef(s)
+      (s, uid, label) => {
+        if (uid === targetUserId && (label === "default" || !label) && !s.getVideoTracks().length) setRemoteStreamRef(s)
       },
       (c, uid) => {
         if (callData?.id && uid === targetUserId) {
