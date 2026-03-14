@@ -114,9 +114,11 @@ export function VideoCallModal({
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
   const callTimerRef = useRef<any>(null)
+  const wakeLockRef = useRef<any>(null)
   const pendingOfferRef = useRef<any>(null)
   const offerSentRef = useRef(false)
   const unsubscribeSignalsRef = useRef<() => void>(() => { })
+  const wasOpenRef = useRef(false)
   const callSignaling = CallSignaling.getInstance()
 
   const { isRecording, startRecording, stopRecording } = useCallRecording({
@@ -248,7 +250,6 @@ export function VideoCallModal({
   // Effect 1: Media Setup
   useEffect(() => {
     let mounted = true
-    let wakeLock: any = null
 
     if (!isOpen) {
       audioNotificationManager.stopAll()
@@ -260,14 +261,16 @@ export function VideoCallModal({
       audioNotificationManager.startOutgoingRing()
     }
 
+    const shouldInitMedia = !isIncoming || callData?.status === "answered"
     const setupMedia = async () => {
+      if (!shouldInitMedia || localStreamRef.current) return
       try {
         if (!navigator?.mediaDevices?.getUserMedia) {
           toast.error("Camera/microphone access is not supported in this browser.")
           return
         }
-        if ("wakeLock" in navigator) {
-          try { wakeLock = await (navigator as any).wakeLock.request("screen") } catch (e) { }
+        if ("wakeLock" in navigator && !wakeLockRef.current) {
+          try { wakeLockRef.current = await (navigator as any).wakeLock.request("screen") } catch (e) { }
         }
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
         if (!mounted) {
@@ -288,16 +291,20 @@ export function VideoCallModal({
 
     return () => {
       mounted = false
-      if (wakeLock) {
-        try { wakeLock.release() } catch (e) { }
-      }
-      cleanupMedia("effect cleanup")
+    }
+  }, [isOpen, isIncoming, callData?.status])
+
+  useEffect(() => {
+    if (!isOpen && wakeLockRef.current) {
+      try { wakeLockRef.current.release() } catch (e) { }
+      wakeLockRef.current = null
     }
   }, [isOpen])
 
   // Effect 2: WebRTC Initialization (Runs once)
   useEffect(() => {
     if (!isOpen) {
+      if (!wasOpenRef.current) return
       if (isInitializedRef.current) {
         console.log("VideoCall: Cleaning up WebRTC")
         unsubscribeSignalsRef.current()
@@ -305,7 +312,12 @@ export function VideoCallModal({
         isInitializedRef.current = false
       }
       cleanupMedia("modal closed")
+      wasOpenRef.current = false
       return
+    }
+
+    if (!wasOpenRef.current) {
+      wasOpenRef.current = true
     }
 
     if (isInitializedRef.current || !localStream || !callData) return

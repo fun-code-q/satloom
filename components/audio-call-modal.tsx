@@ -73,6 +73,7 @@ export function AudioCallModal({
   const offerSentRef = useRef(false)
   const pendingOfferRef = useRef<any>(null)
   const remoteAudioRef = useRef<HTMLAudioElement>(null)
+  const wasOpenRef = useRef(false)
   const [switchRequest, setSwitchRequest] = useState<{ fromUserId: string } | null>(null)
   const [isAwaitingSwitchResponse, setIsAwaitingSwitchResponse] = useState(false)
 
@@ -115,7 +116,9 @@ export function AudioCallModal({
   useEffect(() => {
     let mounted = true
     if (isOpen) {
+      const shouldInitMedia = !isIncoming || callData?.status === "answered"
       const initMedia = async () => {
+        if (!shouldInitMedia || localStreamRef.current) return
         try {
           if (!navigator?.mediaDevices?.getUserMedia) {
             toast.error("Microphone access is not supported in this browser.")
@@ -151,7 +154,7 @@ export function AudioCallModal({
       audioNotificationManager.stopAll()
     }
 
-    if (isOpen && callData?.status === "answered") {
+    if (isOpen && callData?.status === "answered" && !callTimerRef.current) {
       callTimerRef.current = setInterval(() => {
         setCallDuration((prev) => prev + 1)
       }, 1000)
@@ -161,10 +164,25 @@ export function AudioCallModal({
       mounted = false
       if (callTimerRef.current) {
         clearInterval(callTimerRef.current)
+        callTimerRef.current = null
       }
-      cleanupMedia("effect cleanup")
     }
-  }, [isOpen, callData?.status])
+  }, [isOpen, callData?.status, isIncoming])
+
+  useEffect(() => {
+    if (!isOpen) {
+      if (wasOpenRef.current) {
+        audioNotificationManager.stopAll()
+        cleanupMedia("modal closed")
+        wasOpenRef.current = false
+      }
+      return
+    }
+
+    if (!wasOpenRef.current) {
+      wasOpenRef.current = true
+    }
+  }, [isOpen])
 
   useEffect(() => {
       if (callData?.status === "answered" || callData?.status === "ended") {
