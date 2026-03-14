@@ -47,21 +47,21 @@ export class ConnectFourManager {
         if (!game) return null
 
         // Ensure board
-        if (!game.board || !Array.isArray(game.board)) {
+        if (!game.board) {
             game.board = Array(6).fill(null).map(() => Array(7).fill(null))
         } else {
-            // Handle sparse arrays/objects for rows
+            const rawBoard = game.board
+            const normalizedBoard: ConnectFourCell[][] = Array(6).fill(null).map(() => Array(7).fill(null))
+            
             for (let r = 0; r < 6; r++) {
-                if (!game.board[r]) {
-                    game.board[r] = Array(7).fill(null)
-                } else if (!Array.isArray(game.board[r])) {
-                    const rowData = game.board[r]
-                    game.board[r] = Array(7).fill(null)
+                const rowData = rawBoard[r]
+                if (rowData) {
                     for (let c = 0; c < 7; c++) {
-                        game.board[r][c] = rowData[c] !== undefined ? rowData[c] : null
+                        normalizedBoard[r][c] = rowData[c] !== undefined ? rowData[c] : null
                     }
                 }
             }
+            game.board = normalizedBoard
         }
 
         // Ensure moves

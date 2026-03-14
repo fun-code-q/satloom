@@ -270,7 +270,7 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
     const isPlayer = game.players.red.id === currentUserId || game.players.yellow.id === currentUserId
 
     return (
-        <div className="flex flex-col items-center gap-6 p-6 bg-slate-900/95 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl max-w-[650px] w-full mx-auto relative overflow-hidden">
+        <div className="flex flex-col items-center gap-4 sm:gap-6 p-3 sm:p-6 bg-slate-900/95 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl max-w-[650px] w-full mx-auto relative overflow-hidden">
             {/* Header */}
             <div className="flex justify-between items-center w-full">
                 <div className="flex items-center gap-3">
@@ -321,21 +321,21 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
             </div>
 
             {/* Players */}
-            <div className="flex justify-between w-full items-center px-4 py-3 bg-white/5 rounded-2xl">
+            <div className="flex justify-between w-full items-center px-3 sm:px-4 py-2 sm:py-3 bg-white/5 rounded-2xl">
                 <C4PlayerBadge name={game?.players?.red?.name || "Red"} color="red" active={game?.currentPlayer === "red"} />
-                <div className="text-slate-600 font-bold italic text-xs uppercase tracking-tighter">VS</div>
+                <div className="text-slate-600 font-bold italic text-[10px] sm:text-xs uppercase tracking-tighter">VS</div>
                 <C4PlayerBadge name={game?.players?.yellow?.name || "Yellow"} color="yellow" active={game?.currentPlayer === "yellow"} />
             </div>
 
             {/* Game Board */}
-            <div className="relative p-4 bg-blue-600 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-t-4 border-blue-400/30">
+            <div className="relative p-2 sm:p-4 bg-blue-600 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-t-4 border-blue-400/30 w-full max-w-fit mx-auto">
                 {/* Hover Indicator */}
-                <div className="flex gap-2 sm:gap-4 px-2 mb-2 h-8">
+                <div className="flex gap-1.5 sm:gap-5 px-1 sm:px-2 mb-1 sm:mb-2 h-6 sm:h-8">
                     {Array(7).fill(0).map((_, i) => (
                         <div key={i} className="flex-1 flex justify-center">
                             {hoverColumn === i && isMyTurn && !(game?.board?.[0]?.[i]) && !isPaused && (
                                 <ChevronDown className={cn(
-                                    "w-6 h-6 animate-bounce",
+                                    "w-4 h-4 sm:w-6 sm:h-6 animate-bounce",
                                     game?.currentPlayer === "red" ? "text-red-500" : "text-yellow-400"
                                 )} />
                             )}
@@ -344,9 +344,9 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
                 </div>
 
                 {/* Grid */}
-                <div className="grid grid-rows-6 gap-3 sm:gap-5">
+                <div className="grid grid-rows-6 gap-1.5 sm:gap-5">
                     {(Array.isArray(game?.board) ? game.board : []).map((row, r) => (
-                        <div key={r} className="flex gap-3 sm:gap-5">
+                        <div key={r} className="flex gap-1.5 sm:gap-5">
                             {(Array.isArray(row) ? row : []).map((cell, c) => (
                                 <div
                                     key={c}
@@ -354,9 +354,9 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
                                     onMouseLeave={() => setHoverColumn(null)}
                                     onClick={() => handleColumnClick(c)}
                                     className={cn(
-                                        "w-12 h-12 sm:w-16 sm:h-16 rounded-full ring-inset ring-4 ring-blue-700 transition-all duration-300 transform",
-                                        cell === "red" ? "bg-red-500 shadow-[0_6px_0_rgb(153,27,27)]" :
-                                            cell === "yellow" ? "bg-yellow-400 shadow-[0_6px_0_rgb(161,98,7)]" :
+                                        "w-9 h-9 sm:w-16 sm:h-16 rounded-full ring-inset ring-2 sm:ring-4 ring-blue-700 transition-all duration-300 transform",
+                                        cell === "red" ? "bg-red-500 shadow-[0_3px_0_rgb(153,27,27)] sm:shadow-[0_6px_0_rgb(153,27,27)]" :
+                                            cell === "yellow" ? "bg-yellow-400 shadow-[0_3px_0_rgb(161,98,7)] sm:shadow-[0_6px_0_rgb(161,98,7)]" :
                                                 "bg-slate-900/80 shadow-inner",
                                         !cell && isMyTurn && !isPaused && "cursor-pointer hover:bg-slate-800 active:scale-95",
                                         cell && "animate-in slide-in-from-top-4 duration-300 ease-out"
@@ -456,14 +456,14 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
 function C4PlayerBadge({ name, color, active }: { name: string, color: "red" | "yellow", active: boolean }) {
     return (
         <div className={cn(
-            "flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-300",
+            "flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl transition-all duration-300",
             active ? "bg-white/10 ring-1 ring-white/20 shadow-lg scale-105" : "opacity-30 blur-[0.5px]"
         )}>
             <div className={cn(
-                "w-4 h-4 rounded-full shadow-lg",
+                "w-3 h-3 sm:w-4 sm:h-4 rounded-full shadow-lg",
                 color === "red" ? "bg-red-500" : "bg-yellow-400"
             )} />
-            <span className="text-xs font-bold text-white max-w-[80px] truncate tracking-tight uppercase">{name}</span>
+            <span className="text-[10px] sm:text-xs font-bold text-white max-w-[60px] sm:max-w-[80px] truncate tracking-tight uppercase">{name}</span>
         </div>
     )
 }

@@ -42,7 +42,7 @@ export class TicTacToeManager {
         if (!game) return null
 
         // Ensure board
-        if (!game.board || !Array.isArray(game.board)) {
+        if (!game.board) {
             game.board = Array(9).fill(null)
         } else {
             // Handle sparse arrays/objects
