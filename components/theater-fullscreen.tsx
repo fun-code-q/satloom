@@ -289,19 +289,18 @@ export function TheaterFullscreen({
   const reactivateControls = useCallback(() => {
     setShowControls(true)
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
-    if (isPlaying) {
-      controlsTimeoutRef.current = setTimeout(() => {
-        if (!showChat && !showEmojiPicker && !showPlaylist && !showSoundboard) {
-          setShowControls(false)
-        }
-      }, 3000)
-    }
-  }, [isPlaying, showChat, showEmojiPicker, showPlaylist, showSoundboard])
+    
+    // Auto-hide after 3 seconds of inactivity
+    controlsTimeoutRef.current = setTimeout(() => {
+      if (!showChat && !showEmojiPicker && !showPlaylist && !showSoundboard) {
+        setShowControls(false)
+      }
+    }, 3000)
+  }, [showChat, showEmojiPicker, showPlaylist, showSoundboard])
 
   useEffect(() => {
-    if (isPlaying) reactivateControls()
-    else setShowControls(true)
-  }, [isPlaying, reactivateControls])
+    reactivateControls()
+  }, [reactivateControls])
 
   const setupMic = async () => {
     if (localStreamRef.current) return localStreamRef.current
@@ -599,7 +598,7 @@ export function TheaterFullscreen({
   return createPortal(
     <PrivacyShield enabled={isOpen}>
       <div className={!isOpen ? "fixed top-[-9999px] left-[-9999px] opacity-0" : "fixed inset-0 bg-black z-[500] flex flex-col overflow-hidden select-none"}
-        onMouseMove={reactivateControls} onMouseLeave={() => isPlaying && setShowControls(false)} onTouchStart={reactivateControls}>
+        onMouseMove={reactivateControls} onMouseLeave={() => setShowControls(false)} onTouchStart={reactivateControls}>
         <div className="flex-1 relative bg-black flex items-center justify-center">
           <div className="w-full h-full relative flex items-center justify-center">
             {["youtube", "vimeo", "twitch", "dailymotion", "soundcloud", "archive"].includes(session.videoType) ? (
@@ -650,7 +649,7 @@ export function TheaterFullscreen({
             </div>
           </div>
 
-          <div className="flex flex-row items-center justify-between gap-3 overflow-hidden">
+          <div className="flex flex-row items-center justify-between gap-3 sm:gap-4 w-full overflow-x-auto no-scrollbar pb-1">
             {/* Left Controls */}
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {isHost ? (
