@@ -31,10 +31,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Load saved preferences
     const savedTheme = localStorage.getItem("satloom-theme") as Theme
-    const savedNotifications = localStorage.getItem("satloom-notifications") === "true"
-    const savedNotificationSound = localStorage.getItem("satloom-notification-sound") === "true"
-    const savedVibration = localStorage.getItem("satloom-vibration") === "true"
-    const savedHapticFeedback = localStorage.getItem("satloom-haptic-feedback") === "true"
+    const getStoredBool = (key: string, fallback: boolean) => {
+      const raw = localStorage.getItem(key)
+      if (raw === null) return fallback
+      return raw === "true"
+    }
+    const savedNotifications = getStoredBool("satloom-notifications", true)
+    const savedNotificationSound = getStoredBool("satloom-notification-sound", true)
+    const savedVibration = getStoredBool("satloom-vibration", true)
+    const savedHapticFeedback = getStoredBool("satloom-haptic-feedback", true)
 
     // Theme is always dark, ignore savedTheme from localStorage
     setNotifications(savedNotifications)
