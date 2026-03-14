@@ -218,7 +218,13 @@ export class CallSignaling {
   }
 
   // WebRTC Signaling Methods
-  async sendSignal(roomId: string, callId: string, type: "offer" | "answer" | "ice-candidate" | "bye", payload: any, senderId: string) {
+  async sendSignal(
+    roomId: string,
+    callId: string,
+    type: "offer" | "answer" | "ice-candidate" | "bye" | "switch-request" | "switch-accept" | "switch-decline",
+    payload: any,
+    senderId: string
+  ) {
     const db = getDb()
     if (!db) return
     const signalRef = ref(db, `rooms/${roomId}/calls/${callId}/signals`)

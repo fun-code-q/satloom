@@ -62,13 +62,47 @@ export function AudioCallModal({
   const remoteStreamRef = useRef<MediaStream | null>(null)
   const unsubscribeSignalsRef = useRef<() => void>(() => { })
   const isInitializedRef = useRef(false)
+  const offerSentRef = useRef(false)
   const pendingOfferRef = useRef<any>(null)
   const remoteAudioRef = useRef<HTMLAudioElement>(null)
+  const [switchRequest, setSwitchRequest] = useState<{ fromUserId: string } | null>(null)
+  const [isAwaitingSwitchResponse, setIsAwaitingSwitchResponse] = useState(false)
 
   const { isRecording, startRecording, stopRecording } = useCallRecording({
     stream: remoteStream,
     fileType: "audio/webm"
   })
+
+  const cleanupMedia = (reason?: string) => {
+    if (reason) console.log(`AudioCall: Cleanup (${reason})`)
+
+    try {
+      unsubscribeSignalsRef.current()
+    } catch { }
+
+    const streamsToStop = [localStreamRef.current, remoteStreamRef.current, WebRTCManager.getInstance().getLocalStream].filter(Boolean) as MediaStream[]
+    streamsToStop.forEach(stream => {
+      stream.getTracks().forEach(track => {
+        track.stop()
+        console.log(`AudioCall: Stopped track: ${track.kind}`)
+      })
+    })
+
+    localStreamRef.current = null
+    remoteStreamRef.current = null
+    setLocalStream(null)
+    setRemoteStream(null)
+
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.srcObject = null
+    }
+
+    WebRTCManager.getInstance().cleanup()
+    isInitializedRef.current = false
+    offerSentRef.current = false
+    pendingOfferRef.current = null
+    setCallDuration(0)
+  }
 
   useEffect(() => {
     let mounted = true
@@ -114,19 +148,7 @@ export function AudioCallModal({
         clearInterval(callTimerRef.current)
       }
 
-      // Stop all tracks using refs
-      [localStreamRef.current, remoteStreamRef.current].forEach(stream => {
-        if (stream) {
-          stream.getTracks().forEach(track => {
-            track.stop()
-            console.log(`AudioCall: Stopped track: ${track.kind}`)
-          })
-        }
-      })
-      localStreamRef.current = null
-      remoteStreamRef.current = null
-      setLocalStream(null)
-      setRemoteStream(null)
+      cleanupMedia("effect cleanup")
     }
   }, [isOpen, callData?.status])
 
@@ -154,6 +176,7 @@ export function AudioCallModal({
         unsubscribeSignalsRef.current()
         // Only cleanup ALL connections if call is actually ended or modal unmounted
       }
+      cleanupMedia("modal closed")
       return
     }
   }, [isOpen])
@@ -238,14 +261,32 @@ export function AudioCallModal({
       } else if (type === "bye") {
         console.log("AudioCall: Remote peer sent bye")
         onClose()
+      } else if (type === "switch-request") {
+        if (payload?.to === "video" && callData?.status === "answered") {
+          setSwitchRequest({ fromUserId: senderId })
+        }
+      } else if (type === "switch-accept") {
+        setIsAwaitingSwitchResponse(false)
+      } else if (type === "switch-decline") {
+        setIsAwaitingSwitchResponse(false)
+        toast.error("Video upgrade declined")
       }
     })
+
+    // If we are caller and call already answered, send offer immediately
+    if (!isIncoming && callData.status === "answered" && !offerSentRef.current) {
+      offerSentRef.current = true
+      console.log("AudioCall: Call already answered, sending offer as caller")
+      webrtc.createOffer(targetUserId).then(offer => {
+        callSignaling.sendSignal(roomId, callData.id, "offer", offer, currentUserId)
+      }).catch(err => console.error("AudioCall: Error creating offer:", err))
+    }
   }, [isOpen, localStream, roomId, currentUserId, callData?.id, callData?.participants])
   // Removed callData.status to prevent re-init
 
   // Effect 2.5: Handshake Action (Triggered on status change)
   useEffect(() => {
-    if (!isOpen || !isInitializedRef.current || !callData) return
+    if (!isOpen || !isInitializedRef.current || !callData || offerSentRef.current) return
 
     const webrtc = WebRTCManager.getInstance()
 
@@ -258,6 +299,7 @@ export function AudioCallModal({
       if (!targetUserId || targetUserId === currentUserId) return
 
       console.log("AudioCall: Call answered, sending offer as caller")
+      offerSentRef.current = true
       webrtc.createOffer(targetUserId).then(offer => {
         callSignaling.sendSignal(roomId, callData.id, "offer", offer, currentUserId)
       }).catch(err => console.error("AudioCall: Error creating offer:", err))
@@ -287,6 +329,38 @@ export function AudioCallModal({
     }
   }, [isMuted, localStream])
 
+  useEffect(() => {
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.muted = !isSpeakerOn
+      remoteAudioRef.current.volume = isSpeakerOn ? 1 : 0
+    }
+  }, [isSpeakerOn])
+
+  useEffect(() => {
+    if (!isOpen) {
+      offerSentRef.current = false
+      setSwitchRequest(null)
+      setIsAwaitingSwitchResponse(false)
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    offerSentRef.current = false
+  }, [callData?.id])
+
+  useEffect(() => {
+    if (callData?.status === "ended") {
+      cleanupMedia("call ended")
+    }
+  }, [callData?.status])
+
+  useEffect(() => {
+    if (callData?.type === "video") {
+      setIsAwaitingSwitchResponse(false)
+      setSwitchRequest(null)
+    }
+  }, [callData?.type])
+
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
@@ -303,16 +377,7 @@ export function AudioCallModal({
         console.error("Error during end call signaling:", err)
       }
     }
-
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
-        track.stop()
-        console.log(`AudioCall: Stopped local track on end: ${track.kind}`)
-      })
-      setLocalStreamRef(null)
-    }
-
-    setCallDuration(0)
+    cleanupMedia("end call")
     onClose()
   }
 
@@ -322,6 +387,25 @@ export function AudioCallModal({
     } else if (callData) {
       await callSignaling.answerCall(roomId, callData.id, currentUserId, currentUser)
     }
+  }
+
+  const handleRequestVideoSwitch = async () => {
+    if (!callData || callData.status !== "answered") return
+    setIsAwaitingSwitchResponse(true)
+    await callSignaling.sendSignal(roomId, callData.id, "switch-request", { to: "video" }, currentUserId)
+  }
+
+  const handleAcceptVideoSwitch = async () => {
+    if (!callData || !switchRequest) return
+    await callSignaling.switchCallType(roomId, callData.id, "video")
+    await callSignaling.sendSignal(roomId, callData.id, "switch-accept", { to: "video" }, currentUserId)
+    setSwitchRequest(null)
+  }
+
+  const handleDeclineVideoSwitch = async () => {
+    if (!callData || !switchRequest) return
+    await callSignaling.sendSignal(roomId, callData.id, "switch-decline", { to: "video" }, currentUserId)
+    setSwitchRequest(null)
   }
 
   const handleAudioDeviceChange = async (deviceId: string) => {
@@ -494,13 +578,13 @@ export function AudioCallModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] p-4">
+    <div className="fixed inset-0 bg-black/50 z-[1000] flex items-stretch sm:items-center justify-center p-0 sm:p-4">
       <div
         ref={modalRef}
-        className="bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto mx-auto"
+        className="bg-slate-800 border border-slate-700 shadow-2xl w-full h-[100dvh] sm:h-auto sm:max-w-md sm:max-h-[90vh] rounded-none sm:rounded-2xl overflow-y-auto mx-auto pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10 bg-indigo-950/50 backdrop-blur-sm">
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-white/10 bg-indigo-950/50 backdrop-blur-sm">
           <div className="flex items-center gap-2">
             <Mic className="w-4 h-4 text-indigo-400" />
             <h2 className="text-white font-semibold tracking-tight">Audio Connection</h2>
@@ -511,10 +595,13 @@ export function AudioCallModal({
                 variant="outline"
                 size="sm"
                 className="border-indigo-500/50 text-indigo-300 hover:text-white hover:bg-indigo-500/20 gap-1.5 h-8 bg-indigo-950/20"
-                onClick={onSwitchToVideo}
+                onClick={handleRequestVideoSwitch}
+                disabled={isAwaitingSwitchResponse}
               >
                 <Video className="w-3.5 h-3.5" />
-                <span className="text-xs font-bold uppercase tracking-wider">Enable Video</span>
+                <span className="text-xs font-bold uppercase tracking-wider">
+                  {isAwaitingSwitchResponse ? "Waiting..." : "Enable Video"}
+                </span>
               </Button>
             )}
 
@@ -602,6 +689,20 @@ export function AudioCallModal({
               <Button onClick={() => handleEndCall()} className="bg-red-500 hover:bg-red-600 text-white rounded-full w-16 h-16">
                 <PhoneOff className="w-6 h-6" />
               </Button>
+            </div>
+          )}
+
+          {switchRequest && (
+            <div className="mb-4 rounded-xl border border-indigo-500/30 bg-indigo-900/30 px-4 py-3 text-sm text-indigo-100">
+              <div className="font-semibold mb-2">Switch to video?</div>
+              <div className="flex gap-2">
+                <Button onClick={handleAcceptVideoSwitch} className="bg-indigo-500 hover:bg-indigo-600 text-white h-9">
+                  Accept
+                </Button>
+                <Button onClick={handleDeclineVideoSwitch} variant="outline" className="border-slate-600 text-white hover:bg-slate-700 bg-transparent h-9">
+                  Decline
+                </Button>
+              </div>
             </div>
           )}
 

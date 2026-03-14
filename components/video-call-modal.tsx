@@ -45,6 +45,16 @@ interface VideoCallModalProps {
   onSwitchToAudio?: () => void
 }
 
+const isScreenShareStream = (stream: MediaStream | null) => {
+  if (!stream) return false
+  const track = stream.getVideoTracks()[0]
+  if (!track) return false
+  const settings = track.getSettings ? (track.getSettings() as MediaTrackSettings & { displaySurface?: string }) : {}
+  if (settings.displaySurface) return true
+  const label = (track.label || "").toLowerCase()
+  return label.includes("screen") || label.includes("display") || label.includes("window") || label.includes("monitor")
+}
+
 export function VideoCallModal({
   isOpen,
   onClose,
@@ -72,6 +82,7 @@ export function VideoCallModal({
   const [currentEffect, setCurrentEffect] = useState("none")
   const [localStream, setLocalStream] = useState<MediaStream | null>(null)
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null)
+  const [isRemoteScreenShare, setIsRemoteScreenShare] = useState(false)
 
   // Refs for cleanup to avoid closure capture issues
   const localStreamRef = useRef<MediaStream | null>(null)
@@ -89,6 +100,7 @@ export function VideoCallModal({
     remoteStreamRef.current = stream
   }
 
+
   // Device Selection State
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([])
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([])
@@ -102,12 +114,46 @@ export function VideoCallModal({
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
   const callTimerRef = useRef<any>(null)
   const pendingOfferRef = useRef<any>(null)
+  const offerSentRef = useRef(false)
+  const unsubscribeSignalsRef = useRef<() => void>(() => { })
   const callSignaling = CallSignaling.getInstance()
 
   const { isRecording, startRecording, stopRecording } = useCallRecording({
     stream: remoteStream,
     fileType: "video/webm"
   })
+
+  const cleanupMedia = (reason?: string) => {
+    if (reason) console.log(`VideoCall: Cleanup (${reason})`)
+
+    try {
+      unsubscribeSignalsRef.current()
+    } catch { }
+
+    const streamsToStop = [localStreamRef.current, remoteStreamRef.current, cameraStreamRef.current, WebRTCManager.getInstance().getLocalStream]
+      .filter(Boolean) as MediaStream[]
+    streamsToStop.forEach(stream => {
+      stream.getTracks().forEach(track => {
+        track.stop()
+        console.log(`VideoCall: Stopped track: ${track.kind}`)
+      })
+    })
+
+    localStreamRef.current = null
+    remoteStreamRef.current = null
+    cameraStreamRef.current = null
+    setLocalStream(null)
+    setRemoteStream(null)
+
+    if (localVideoRef.current) localVideoRef.current.srcObject = null
+    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null
+
+    WebRTCManager.getInstance().cleanup()
+    isInitializedRef.current = false
+    offerSentRef.current = false
+    pendingOfferRef.current = null
+    setCallDuration(0)
+  }
   useEffect(() => {
     if (isOpen && callData?.status === "answered") {
       callTimerRef.current = setInterval(() => {
@@ -238,26 +284,11 @@ export function VideoCallModal({
       if (wakeLock) {
         try { wakeLock.release() } catch (e) { }
       }
-      // Final aggressive cleanup of all known streams using refs
-      [localStreamRef.current, remoteStreamRef.current, cameraStreamRef.current].forEach(stream => {
-        if (stream) {
-          stream.getTracks().forEach(track => {
-            track.stop()
-            console.log(`VideoCall: Aggressive stop (ref): ${track.kind}`)
-          })
-        }
-      })
-      localStreamRef.current = null
-      remoteStreamRef.current = null
-      cameraStreamRef.current = null
-      setLocalStream(null)
-      setRemoteStream(null)
+      cleanupMedia("effect cleanup")
     }
   }, [isOpen])
 
   // Effect 2: WebRTC Initialization (Runs once)
-  const unsubscribeSignalsRef = useRef<() => void>(() => { })
-
   useEffect(() => {
     if (!isOpen) {
       if (isInitializedRef.current) {
@@ -266,6 +297,7 @@ export function VideoCallModal({
         WebRTCManager.getInstance().cleanup()
         isInitializedRef.current = false
       }
+      cleanupMedia("modal closed")
       return
     }
 
@@ -337,11 +369,20 @@ export function VideoCallModal({
         onClose()
       }
     })
+
+    // If we are caller and call already answered, send offer immediately
+    if (!isIncoming && callData.status === "answered" && !offerSentRef.current) {
+      offerSentRef.current = true
+      console.log("VideoCall: Call already answered, sending offer as caller")
+      webrtc.createOffer(targetUserId).then(offer => {
+        callSignaling.sendSignal(roomId, callData.id, "offer", offer, currentUserId)
+      }).catch(err => console.error("VideoCall: Error creating offer:", err))
+    }
   }, [isOpen, localStream, roomId, currentUserId, callData?.id, callData?.participants]) // Added participants to trigger re-init when someone joins
 
   // Effect 2.5: Handshake Action (Triggered on status change)
   useEffect(() => {
-    if (!isOpen || !isInitializedRef.current || !callData) return
+    if (!isOpen || !isInitializedRef.current || !callData || offerSentRef.current) return
 
     const webrtc = WebRTCManager.getInstance()
 
@@ -354,11 +395,32 @@ export function VideoCallModal({
       if (!targetUserId || targetUserId === currentUserId) return
 
       console.log("VideoCall: Call answered, sending offer as caller to", targetUserId)
+      offerSentRef.current = true
       webrtc.createOffer(targetUserId).then(offer => {
         callSignaling.sendSignal(roomId, callData.id, "offer", offer, currentUserId)
       }).catch(err => console.error("VideoCall: Error creating offer:", err))
     }
   }, [isOpen, callData?.status, isIncoming, roomId, currentUserId, callData?.id, callData?.participants])
+
+  useEffect(() => {
+    if (!isOpen) {
+      offerSentRef.current = false
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    offerSentRef.current = false
+  }, [callData?.id])
+
+  useEffect(() => {
+    if (callData?.status === "ended") {
+      cleanupMedia("call ended")
+    }
+  }, [callData?.status])
+
+  useEffect(() => {
+    setIsRemoteScreenShare(isScreenShareStream(remoteStream))
+  }, [remoteStream])
 
   // Effect 3: Handle pending offer when call is answered
   useEffect(() => {
@@ -402,26 +464,7 @@ export function VideoCallModal({
         console.error("Error during end call signaling:", err)
       }
     }
-
-    // Stop all tracks immediately using refs for aggressive hardware release
-    const streamsToStop = [localStreamRef.current, remoteStreamRef.current, cameraStreamRef.current];
-    streamsToStop.forEach(stream => {
-      if (stream) {
-        stream.getTracks().forEach(track => {
-          track.stop()
-          console.log(`VideoCall: Explicit track stop: ${track.kind}`)
-        })
-      }
-    })
-
-    // Clear everything
-    localStreamRef.current = null
-    remoteStreamRef.current = null
-    cameraStreamRef.current = null
-    setLocalStream(null)
-    setRemoteStream(null)
-
-    setCallDuration(0)
+    cleanupMedia("end call")
     onClose()
   }
 
@@ -651,6 +694,8 @@ export function VideoCallModal({
   }
 
   const otherParticipant = getOtherParticipantName()
+  const shouldMirrorLocal = !isScreenSharing && isFrontCamera
+  const localVideoFitClass = isScreenSharing ? "object-contain" : "object-cover"
 
   if (isMinimized) {
     return (
@@ -670,7 +715,7 @@ export function VideoCallModal({
         <div className="relative w-full h-full bg-slate-900">
           <video
             ref={localVideoRef}
-            className={`w-full h-full object-cover ${isFrontCamera ? 'scale-x-[-1]' : ''}`}
+            className={`w-full h-full ${localVideoFitClass} ${shouldMirrorLocal ? "scale-x-[-1]" : ""}`}
             autoPlay
             muted
             playsInline
@@ -717,19 +762,19 @@ export function VideoCallModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[1000]">
+    <div className="fixed inset-0 bg-black/90 z-[1000] flex items-stretch sm:items-center justify-center p-0 sm:p-4">
       <div
         ref={modalRef}
-        className="bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl w-full h-full max-w-4xl max-h-[90vh] mx-4 my-4 flex flex-col"
+        className="bg-slate-900 border border-slate-700 shadow-2xl w-full h-[100dvh] sm:h-full sm:max-w-4xl sm:max-h-[90vh] rounded-none sm:rounded-2xl flex flex-col min-h-0 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-700 bg-slate-800/50">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 sm:p-4 border-b border-slate-700 bg-slate-800/50">
+          <div className="flex items-center gap-3 min-w-0">
             <h2 className="text-white font-semibold">Video Call</h2>
-            <span className="text-gray-400 text-sm">{otherParticipant}</span>
+            <span className="text-gray-400 text-sm truncate max-w-[12rem] sm:max-w-none">{otherParticipant}</span>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             {connectionStats && (
               <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-900 border border-slate-700 group relative cursor-help">
                 {connectionStats.rtt < 100 && connectionStats.packetLoss < 1 ? (
@@ -764,7 +809,7 @@ export function VideoCallModal({
                 </div>
               </div>
             )}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-gray-400 text-sm">{formatDuration(callDuration)}</span>
               {onSwitchToAudio && callData?.status === "answered" && (
                 <Button
@@ -790,15 +835,15 @@ export function VideoCallModal({
         </div>
 
         {/* Video Area */}
-        <div className="flex-1 relative bg-black">
+        <div className="flex-1 min-h-0 relative bg-black overflow-hidden">
           {/* Remote video (main) */}
-          <video ref={remoteVideoRef} className="w-full h-full object-cover" autoPlay playsInline />
+          <video ref={remoteVideoRef} className={`w-full h-full ${isRemoteScreenShare ? "object-contain" : "object-cover"}`} autoPlay playsInline />
 
           {/* Local video (picture-in-picture) */}
-          <div className="absolute top-4 right-4 w-48 h-36 bg-slate-800 rounded-lg overflow-hidden border border-slate-600">
+          <div className="absolute top-3 right-3 sm:top-4 sm:right-4 w-28 h-20 sm:w-48 sm:h-36 bg-slate-800 rounded-lg overflow-hidden border border-slate-600">
             <video
               ref={localVideoRef}
-              className={`w-full h-full object-cover scale-x-[-1]`}
+              className={`w-full h-full ${localVideoFitClass} ${shouldMirrorLocal ? "scale-x-[-1]" : ""}`}
               autoPlay
               muted
               playsInline
