@@ -136,6 +136,35 @@ export class TicTacToeManager {
         }
     }
 
+    async leaveGame(roomId: string, gameId: string, playerId: string): Promise<boolean> {
+        if (!getFirebaseDatabase()!) return false
+
+        try {
+            const gameRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/tictactoe/${gameId}`)
+            const snapshot = await get(gameRef)
+
+            if (!snapshot.exists()) return false
+
+            const game = this.normalizeGame(snapshot.val())
+            if (!game) return false
+
+            const isPlayerX = game.players.X.id === playerId
+            const isPlayerO = game.players.O.id === playerId
+
+            if (!isPlayerX && !isPlayerO) return false
+
+            game.status = "abandoned"
+            game.updatedAt = Date.now()
+
+            const sanitizedGame = JSON.parse(JSON.stringify(game))
+            await set(gameRef, sanitizedGame)
+            return true
+        } catch (error) {
+            console.error("Failed to leave game:", error)
+            return false
+        }
+    }
+
     // Make a move
     async makeMove(roomId: string, gameId: string, playerId: string, move: TicTacToeMove): Promise<{ success: boolean; error?: string }> {
         if (!getFirebaseDatabase()!) return { success: false, error: "Database not available" }

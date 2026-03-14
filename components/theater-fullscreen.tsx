@@ -301,12 +301,14 @@ export function TheaterFullscreen({
       webrtc.initialize(
         participantId,
         stream,
-        (s, uid) => { if (uid === participantId) setRemoteMovieStream(s) },
+        (s, uid, label) => { if (uid === participantId && label === "theater") setRemoteMovieStream(s) },
         (c, uid) => {
           if (uid === participantId) {
             theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", toIcePayload(c), currentUserId, participantId)
           }
-        }
+        },
+        undefined,
+        "theater"
       )
 
       const offer = await webrtc.createOffer(participantId)
@@ -360,7 +362,7 @@ export function TheaterFullscreen({
         webrtc.initialize(
           fromUserId,
           streamToUse,
-          (s, uid) => { if (uid === fromUserId) setRemoteMovieStream(s) },
+          (s, uid, label) => { if (uid === fromUserId && label === "theater") setRemoteMovieStream(s) },
           (c, uid) => {
             if (uid === fromUserId) {
               const payload = {
@@ -563,12 +565,16 @@ export function TheaterFullscreen({
             webrtc.initialize(
               participantId,
               localMovieStream,
-              (s, uid) => { if (uid === participantId) setRemoteMovieStream(s) },
+              (s, uid, label) => { 
+                if (uid === participantId && label === "theater") setRemoteMovieStream(s) 
+              },
               (c, uid) => {
                 if (uid === participantId) {
                   theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", toIcePayload(c), currentUserId, participantId)
                 }
-              }
+              },
+              undefined,
+              "theater"
             )
             const offer = await webrtc.createOffer(participantId)
             theaterSignaling.sendSignal(roomId, session.id, "offer", offer, currentUserId, participantId)
@@ -894,12 +900,16 @@ export function TheaterFullscreen({
         webrtc.initialize(
           participantId,
           stream,
-          (s, uid) => { if (uid === participantId) setRemoteMovieStream(s) },
+          (s, uid, label) => { 
+            if (uid === participantId && label === "theater") setRemoteMovieStream(s) 
+          },
           (c, uid) => {
             if (uid === participantId) {
               theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", toIcePayload(c), currentUserId, participantId)
             }
-          }
+          },
+          undefined,
+          "theater"
         )
 
         const offer = await webrtc.createOffer(participantId)

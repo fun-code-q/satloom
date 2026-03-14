@@ -83,6 +83,12 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
                             if (!success) joinRequestedRef.current = false
                         })
                     }
+
+                    // Check for abandonment
+                    if (gameState.status === "abandoned" && !loading) {
+                        toast.error("The other player has left the game.")
+                        if (onClose) onClose()
+                    }
                 } else if (isHostPlayer) {
                     // Only HOST creates the game session in Firebase
                     const hostName = gameConfig.players?.[0]?.name || "Host"
@@ -250,7 +256,10 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
         setShowSettingsModal(true)
     }
 
-    const handleExitGame = () => {
+    const handleExitGame = async () => {
+        if (gameConfig.gameType === "double") {
+            await manager.leaveGame(roomId, gameId, currentUserId)
+        }
         if (onClose) onClose()
     }
 

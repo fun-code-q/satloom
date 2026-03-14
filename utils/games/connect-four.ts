@@ -154,6 +154,41 @@ export class ConnectFourManager {
         }
     }
 
+    async leaveGame(roomId: string, gameId: string, playerId: string): Promise<boolean> {
+        if (!getFirebaseDatabase()!) return false
+
+        try {
+            const gameRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/connect4/${gameId}`)
+            const snapshot = await get(gameRef)
+
+            if (!snapshot.exists()) return false
+
+            const game = this.normalizeGame(snapshot.val())
+            if (!game) return false
+
+            const isHost = game.players.red.id === playerId
+            const isGuest = game.players.yellow.id === playerId
+
+            if (!isHost && !isGuest) return false
+
+            if (isHost) {
+                // If host leaves, mark as abandoned or delete
+                game.status = "abandoned"
+            } else {
+                // If guest leaves, mark as abandoned
+                game.status = "abandoned"
+            }
+
+            game.updatedAt = Date.now()
+            const sanitizedGame = JSON.parse(JSON.stringify(game))
+            await set(gameRef, sanitizedGame)
+            return true
+        } catch (error) {
+            console.error("Failed to leave game:", error)
+            return false
+        }
+    }
+
     // Make a move
     async makeMove(
         roomId: string,

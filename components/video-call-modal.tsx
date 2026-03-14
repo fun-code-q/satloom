@@ -133,8 +133,7 @@ export function VideoCallModal({
       unsubscribeSignalsRef.current()
     } catch { }
 
-    const streamsToStop = [localStreamRef.current, remoteStreamRef.current, cameraStreamRef.current, WebRTCManager.getInstance().getLocalStream]
-      .filter(Boolean) as MediaStream[]
+    const streamsToStop = [localStreamRef.current, remoteStreamRef.current, cameraStreamRef.current].filter(Boolean) as MediaStream[]
     streamsToStop.forEach(stream => {
       stream.getTracks().forEach(track => {
         track.stop()
@@ -344,7 +343,9 @@ export function VideoCallModal({
     webrtc.initialize(
       targetUserId,
       localStream,
-      (s, uid) => onRemoteStreamRef.current(s, uid),
+      (s, uid, label) => {
+        if (uid === targetUserId && !label) onRemoteStreamRef.current(s, uid)
+      },
       (c, uid) => { if (uid === targetUserId) onIceCandidateRef.current(c) },
       (state, uid) => {
         console.log(`[VideoCall] WebRTC state for ${uid}: ${state}`)
@@ -850,15 +851,6 @@ export function VideoCallModal({
                    {callData?.status === "ringing" ? "Ringing..." : "Connecting..."}
                  </p>
                </div>
-
-               {!isIncoming && callData?.status === "ringing" && (
-                 <Button 
-                   onClick={handleEndCall}
-                   className="mt-4 bg-red-500 hover:bg-red-600 text-white rounded-full w-14 h-14 shadow-xl shadow-red-500/20"
-                 >
-                   <PhoneOff className="w-6 h-6" />
-                 </Button>
-               )}
             </div>
           ) : (
             <video

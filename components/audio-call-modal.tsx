@@ -89,7 +89,7 @@ export function AudioCallModal({
       unsubscribeSignalsRef.current()
     } catch { }
 
-    const streamsToStop = [localStreamRef.current, remoteStreamRef.current, WebRTCManager.getInstance().getLocalStream].filter(Boolean) as MediaStream[]
+    const streamsToStop = [localStreamRef.current, remoteStreamRef.current].filter(Boolean) as MediaStream[]
     streamsToStop.forEach(stream => {
       stream.getTracks().forEach(track => {
         track.stop()
@@ -223,7 +223,7 @@ export function AudioCallModal({
       targetUserId,
       localStream,
       (s, uid) => {
-        if (uid === targetUserId) setRemoteStreamRef(s)
+        if (uid === targetUserId && !s.getVideoTracks().length) setRemoteStreamRef(s)
       },
       (c, uid) => {
         if (callData?.id && uid === targetUserId) {
