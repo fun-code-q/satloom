@@ -39,6 +39,12 @@ export function QuizQuestionBubble({
   onRestore,
   answers = [],
 }: QuizQuestionBubbleProps) {
+  const [localAnswer, setLocalAnswer] = useState<string>("")
+ 
+  useEffect(() => {
+    setLocalAnswer("")
+  }, [question.id])
+ 
   if (isMinimized) {
     return (
       <div className="max-w-md mx-auto mb-4 animate-in slide-in-from-bottom-4 duration-300">
@@ -72,12 +78,6 @@ export function QuizQuestionBubble({
       </div>
     )
   }
-  const [localAnswer, setLocalAnswer] = useState<string>("")
-
-  useEffect(() => {
-    setLocalAnswer("")
-  }, [question.id])
-
   const handleAnswerClick = (answer: string) => {
     if (userAnswer || localAnswer || showResults) return
     setLocalAnswer(answer)
