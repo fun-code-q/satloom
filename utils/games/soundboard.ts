@@ -30,11 +30,6 @@ export const DEFAULT_SOUNDS: SoundEffect[] = [
     { id: "trombone", name: "Trombone", icon: "🎺", audioUrl: "/satloom/sounds/trombone.mp3", duration: 2000, color: "#ca8a04", hotkey: "8" },
     { id: "cartoon-boing", name: "Boing", icon: "🔔", audioUrl: "/satloom/sounds/cartoon-boing.mp3", duration: 1000, color: "#0ea5e9", hotkey: "9" },
     { id: "punch", name: "Punch", icon: "👊", audioUrl: "/satloom/sounds/punch.mp3", duration: 500, color: "#b91c1c", hotkey: "0" },
-    { id: "celebration", name: "Celebrate", icon: "🥳", audioUrl: "/satloom/audio-emoji/celebration.mp3", duration: 2000, color: "#10b981", hotkey: "q" },
-    { id: "laughter", name: "Laugh", icon: "😂", audioUrl: "/satloom/audio-emoji/laughter.mp3", duration: 3000, color: "#fcd34d", hotkey: "w" },
-    { id: "applause", name: "Applause", icon: "👏", audioUrl: "/satloom/audio-emoji/applause.mp3", duration: 2500, color: "#34d399", hotkey: "e" },
-    { id: "correct", name: "Correct", icon: "✅", audioUrl: "/satloom/audio-emoji/correct.mp3", duration: 1000, color: "#22c55e", hotkey: "r" },
-    { id: "wrong", name: "Wrong", icon: "❌", audioUrl: "/satloom/audio-emoji/wrong.mp3", duration: 1000, color: "#ef4444", hotkey: "t" },
 ]
 
 export interface PlayedSound {

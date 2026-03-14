@@ -72,36 +72,39 @@ export function Soundboard({ isOpen, onClose, roomId, userId, userName }: Soundb
                 onClick={(e) => e.stopPropagation()}
             >
 
-                <div className="flex items-center justify-between gap-3 px-3 py-2.5 md:px-4 md:py-3 bg-slate-700/40 rounded-2xl border border-slate-600/30">
-                    <div className="flex items-center gap-2">
-                        {soundState.volume > 0 ? (
-                            <Volume2 className="w-5 h-5 text-cyan-400" />
-                        ) : (
-                            <VolumeX className="w-5 h-5 text-red-400" />
-                        )}
-                        <span className="text-sm text-gray-300">Volume</span>
-                    </div>
-                    <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.1"
-                        value={soundState.volume}
-                        onInput={(e) => handleVolumeChange(parseFloat((e.target as HTMLInputElement).value))}
-                        className="w-24 md:w-32 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-                    />
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-cyan-400 w-8 md:w-9 text-right tabular-nums">
-                            {Math.round(soundState.volume * 100)}%
-                        </span>
-                        <div className="w-px h-5 bg-slate-600/50 mx-0.5 md:mx-1"></div>
-                        <button
-                            onClick={() => setShowHotkeys(!showHotkeys)}
-                            className={`p-1.5 md:p-2 rounded-xl transition-all ${showHotkeys ? 'bg-cyan-500/20 text-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.2)]' : 'text-gray-400 hover:text-gray-300 hover:bg-slate-700/60'}`}
-                            title="Toggle Hotkeys"
-                        >
-                            <Keyboard className="w-5 h-5" />
-                        </button>
+                {/* Header controls hidden as per user request */}
+                <div className="hidden">
+                    <div className="flex items-center justify-between gap-3 px-3 py-2.5 md:px-4 md:py-3 bg-slate-700/40 rounded-2xl border border-slate-600/30">
+                        <div className="flex items-center gap-2">
+                            {soundState.volume > 0 ? (
+                                <Volume2 className="w-5 h-5 text-cyan-400" />
+                            ) : (
+                                <VolumeX className="w-5 h-5 text-red-400" />
+                            )}
+                            <span className="text-sm text-gray-300">Volume</span>
+                        </div>
+                        <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.1"
+                            value={soundState.volume}
+                            onInput={(e) => handleVolumeChange(parseFloat((e.target as HTMLInputElement).value))}
+                            className="w-24 md:w-32 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                        />
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-cyan-400 w-8 md:w-9 text-right tabular-nums">
+                                {Math.round(soundState.volume * 100)}%
+                            </span>
+                            <div className="w-px h-5 bg-slate-600/50 mx-0.5 md:mx-1"></div>
+                            <button
+                                onClick={() => setShowHotkeys(!showHotkeys)}
+                                className={`p-1.5 md:p-2 rounded-xl transition-all ${showHotkeys ? 'bg-cyan-500/20 text-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.2)]' : 'text-gray-400 hover:text-gray-300 hover:bg-slate-700/60'}`}
+                                title="Toggle Hotkeys"
+                            >
+                                <Keyboard className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
