@@ -13,6 +13,7 @@ import { Sparkles, Settings } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { WebRTCManager } from "@/utils/infra/webrtc-manager"
+import { toast } from "sonner"
 
 interface AudioCallModalProps {
   isOpen: boolean
@@ -74,6 +75,10 @@ export function AudioCallModal({
     if (isOpen) {
       const initMedia = async () => {
         try {
+          if (!navigator?.mediaDevices?.getUserMedia) {
+            toast.error("Microphone access is not supported in this browser.")
+            return
+          }
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
           if (!mounted) {
             stream.getTracks().forEach(track => track.stop())
@@ -85,8 +90,13 @@ export function AudioCallModal({
           if (mounted) {
             setAudioDevices(devices.filter(d => d.kind === "audioinput"))
           }
-        } catch (e) {
+        } catch (e: any) {
           console.error("Failed to get audio stream:", e)
+          const reason =
+            e?.name === "NotAllowedError" ? "Microphone permission denied." :
+              e?.name === "NotFoundError" ? "No microphone device found." :
+                "Could not access microphone."
+          toast.error(reason)
         }
       }
       initMedia()

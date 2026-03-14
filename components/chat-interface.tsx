@@ -248,20 +248,22 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
 
   const themeContext = useTheme()
   const userPresence = UserPresenceSystem.getInstance()
-  const resolveUserId = () => {
-    const explicitId = currentUserIdProp?.trim()
-    if (explicitId) return explicitId
-
-    const fallbackName = userProfile.name?.trim() || "User"
-    if (typeof window !== "undefined") {
-      const storedId = localStorage.getItem("satloom-user-id")
-      if (storedId) return storedId
-      const generatedId = userPresence.createUniqueUserId(fallbackName)
-      localStorage.setItem("satloom-user-id", generatedId)
-      return generatedId
-    }
-    return userPresence.createUniqueUserId(fallbackName)
+  const getSessionId = () => {
+    const fallback = `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    if (typeof window === "undefined") return fallback
+    const key = "satloom-session-id"
+    const existing = sessionStorage.getItem(key)
+    if (existing) return existing
+    sessionStorage.setItem(key, fallback)
+    return fallback
   }
+
+  const resolveUserId = () => {
+    const baseId = currentUserIdProp?.trim() || userPresence.createUniqueUserId(userProfile.name?.trim() || "User")
+    const sessionId = getSessionId()
+    return `${baseId}:${sessionId}`
+  }
+
   const currentUserId = useRef(resolveUserId()).current
 
   // --- Soundboard Global Initialization ---

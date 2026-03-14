@@ -209,6 +209,10 @@ export function VideoCallModal({
 
     const setupMedia = async () => {
       try {
+        if (!navigator?.mediaDevices?.getUserMedia) {
+          toast.error("Camera/microphone access is not supported in this browser.")
+          return
+        }
         if ("wakeLock" in navigator) {
           try { wakeLock = await (navigator as any).wakeLock.request("screen") } catch (e) { }
         }
@@ -218,8 +222,13 @@ export function VideoCallModal({
           return
         }
         updateLocalStream(stream)
-      } catch (e) {
+      } catch (e: any) {
         console.error("Failed to get local media", e)
+        const reason =
+          e?.name === "NotAllowedError" ? "Camera/microphone permission denied." :
+            e?.name === "NotFoundError" ? "No camera or microphone device found." :
+              "Could not access camera/microphone."
+        toast.error(reason)
       }
     }
     setupMedia()
