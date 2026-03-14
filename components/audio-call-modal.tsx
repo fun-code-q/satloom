@@ -255,7 +255,7 @@ export function AudioCallModal({
         callSignaling.sendSignal(roomId, callData.id, "offer", offer, currentUserId)
       })
     }
-  }, [isOpen, localStream, roomId, currentUserId, callData?.id, callData?.participants])
+  }, [isOpen, localStream, roomId, currentUserId, callData?.id, callData?.participants, isIncoming])
 
   // Effect 2.5: Handshake
   useEffect(() => {
@@ -269,6 +269,21 @@ export function AudioCallModal({
       })
     }
   }, [isOpen, callData?.status, isIncoming])
+
+  // Effect to handle pending offer when call is answered
+  useEffect(() => {
+    if (isOpen && isIncoming && callData?.status === "answered" && pendingOfferRef.current) {
+      const webrtc = WebRTCManager.getInstance()
+      const targetUserId = callData.participants.find(p => p !== currentUserId) || callData.targetUserId || callData.callerId
+      if (!targetUserId || targetUserId === currentUserId) return
+
+      console.log("[AudioCallModal] Processing pending offer for user:", targetUserId)
+      webrtc.createAnswer(targetUserId, pendingOfferRef.current).then(answer => {
+        callSignaling.sendSignal(roomId, callData.id, "answer", answer, currentUserId)
+        pendingOfferRef.current = null
+      }).catch(err => console.error("Error answering pending offer:", err))
+    }
+  }, [isOpen, callData?.status, isIncoming, roomId, currentUserId, callData?.id, callData?.participants])
 
   useEffect(() => {
     if (localStream) {

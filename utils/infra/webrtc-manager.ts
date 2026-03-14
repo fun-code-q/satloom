@@ -131,7 +131,20 @@ export class WebRTCManager {
         this.onStateChange = onStateChange || null
 
         if (this.peerConnections.has(targetUserId)) {
-            console.log(`WebRTCManager: Connection to ${targetUserId} already exists`)
+            console.log(`WebRTCManager: Connection to ${targetUserId} already exists, updating tracks...`)
+            const pc = this.peerConnections.get(targetUserId)!
+            
+            // Update tracks if needed
+            this.localStream.getTracks().forEach(track => {
+                const sender = pc.getSenders().find(s => s.track?.kind === track.kind)
+                if (sender) {
+                    if (sender.track !== track) {
+                        sender.replaceTrack(track).catch(err => console.error("Error replacing track:", err))
+                    }
+                } else {
+                    pc.addTrack(track, this.localStream!)
+                }
+            })
             return
         }
 
@@ -182,7 +195,10 @@ export class WebRTCManager {
         const pc = this.peerConnections.get(targetUserId)
         if (!pc) throw new Error(`No PC for user ${targetUserId}`)
 
-        const offer = await pc.createOffer()
+        const offer = await pc.createOffer({
+            offerToReceiveAudio: true,
+            offerToReceiveVideo: true
+        })
         await pc.setLocalDescription(offer)
         return offer
     }
