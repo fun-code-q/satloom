@@ -70,6 +70,7 @@ export function useChatUIState() {
     const [isKaraokeMinimized, setIsKaraokeMinimized] = useState(false)
 
     const [isPlaygroundMinimized, setIsPlaygroundMinimized] = useState(false)
+    const [isQuizMinimized, setIsQuizMinimized] = useState(false)
 
     return {
         showGameMenu, setShowGameMenu,
@@ -126,6 +127,7 @@ export function useChatUIState() {
         isTheaterMinimized, setIsTheaterMinimized,
         isKaraokeMinimized, setIsKaraokeMinimized,
         isPlaygroundMinimized, setIsPlaygroundMinimized,
+        isQuizMinimized, setIsQuizMinimized,
         isMoodSelectorOpen, setIsMoodSelectorOpen,
         showEmojiPicker, setShowEmojiPicker,
         showChatSearch, setShowChatSearch,

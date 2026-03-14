@@ -1,14 +1,46 @@
 "use client"
 
-import { Trophy, Medal, Award, Star } from "lucide-react"
+import { Trophy, Medal, Award, Star, Maximize, Minus, X } from "lucide-react"
+import { Button } from "./ui/button"
 import type { QuizResult } from "@/utils/games/quiz-system"
 
 interface QuizResultsBubbleProps {
   results: QuizResult[]
   totalQuestions: number
+  isMinimized?: boolean
+  onMinimize?: () => void
+  onRestore?: () => void
+  onExit?: () => void
 }
 
-export function QuizResultsBubble({ results, totalQuestions }: QuizResultsBubbleProps) {
+export function QuizResultsBubble({ results, totalQuestions, isMinimized, onMinimize, onRestore, onExit }: QuizResultsBubbleProps) {
+  if (isMinimized) {
+    return (
+      <div className="max-w-md mx-auto mb-4 animate-in slide-in-from-bottom-4 duration-300">
+        <div className="bg-slate-900/90 backdrop-blur-md border border-yellow-500/30 rounded-xl p-3 flex items-center justify-between shadow-2xl">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-yellow-600/20 flex items-center justify-center">
+              <Trophy className="w-4 h-4 text-yellow-400" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-gray-400 uppercase tracking-widest">Quiz Finished</div>
+              <div className="text-sm text-white font-medium">Final Results Ready</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onRestore}
+              className="h-8 w-8 text-gray-400 hover:text-white hover:bg-white/10 rounded-full"
+            >
+              <Maximize className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
   // Sort results by score (descending), then by average time (ascending)
   const sortedResults = [...(results || [])].sort((a, b) => {
     if (b.score !== a.score) {
@@ -56,6 +88,28 @@ export function QuizResultsBubble({ results, totalQuestions }: QuizResultsBubble
   return (
     <div className="max-w-2xl mx-auto">
       <div className="bg-gradient-to-br from-yellow-900/40 to-orange-900/40 backdrop-blur-sm border border-yellow-500/30 rounded-2xl p-6 shadow-2xl">
+        {/* Header with actions */}
+        <div className="flex justify-end gap-2 mb-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onMinimize}
+            className="h-8 w-8 text-yellow-400/60 hover:text-yellow-400 hover:bg-white/10 rounded-full"
+            title="Minimize Results"
+          >
+            <Minus className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onExit}
+            className="h-8 w-8 text-yellow-400/60 hover:text-red-400 hover:bg-red-500/10 rounded-full"
+            title="Close Results"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
         {/* Header */}
         <div className="text-center mb-6">
           <div className="w-16 h-16 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 flex items-center justify-center mx-auto mb-4">

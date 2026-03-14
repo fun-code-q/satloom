@@ -55,6 +55,7 @@ interface UseChatEffectsParams {
     setPinnedMessage: (val: Message | null) => void
     setFirebaseConnected: (connected: boolean) => void
     setIsHost: (val: boolean) => void
+    isHost: boolean
     setRoomIsProtected: (val: boolean) => void
     setPasswordValidated: (val: boolean) => void
     setMoodBackgroundImage: (val: string | null) => void
@@ -69,11 +70,15 @@ interface UseChatEffectsParams {
     listenForGameInvites: () => () => void
     startQuizTimer: (time: number) => void
     handleQuizFinished: (sessionId: string) => void
+    handleNextQuestion: () => void
     showSharedNotes: boolean
     showSharedTaskList: boolean
     setHasUnreadNotes: (val: boolean) => void
     setHasUnreadTasks: (val: boolean) => void
     pinnedMessageId: string | null
+    currentQuizSession: QuizSession | null
+    quizAnswers: QuizAnswer[]
+    isQuizMinimized: boolean
 }
 
 export function useChatEffects(params: UseChatEffectsParams) {
@@ -88,8 +93,9 @@ export function useChatEffects(params: UseChatEffectsParams) {
         setRoomIsProtected, setPasswordValidated, setMoodBackgroundImage, setMoodBackgroundMusic, setMoodPlaylist,
         setHasUnreadNotes, setHasUnreadTasks, showSharedNotes, showSharedTaskList,
         typingTimeoutRef, quizTimerRef, quizSessionUnsubscribeRef, quizAnswersUnsubscribeRef,
-        listenForGameInvites, startQuizTimer, handleQuizFinished, pinnedMessageId,
+        listenForGameInvites, startQuizTimer, handleQuizFinished, handleNextQuestion, pinnedMessageId,
         currentUserMood,
+        currentQuizSession, quizAnswers, isHost, isQuizMinimized
     } = params
 
     const notificationSystem = NotificationSystem.getInstance()
@@ -550,7 +556,18 @@ export function useChatEffects(params: UseChatEffectsParams) {
                 setCurrentQuizSession(null); setQuizAnswers([]); setUserQuizAnswer(""); setShowQuizResults(false)
                 return
             }
-            quizSystem.joinQuizSession(roomId, sessionId, currentUserId).then(() => {
+            quizSystem.joinQuizSession(roomId, sessionId, currentUserId).then(async () => {
+                // Fetch the session to see who started it
+                const db = getFirebaseDatabase()
+                if (db) {
+                    const sessionRef = ref(db, `rooms/${roomId}/quiz/${sessionId}`)
+                    const snapshot = await get(sessionRef)
+                    const sessionData = snapshot.val() as QuizSession
+                    if (sessionData && sessionData.hostName !== userProfile.name) {
+                        notificationSystem.quizInvite(sessionData.hostName, sessionData.topic || "general")
+                    }
+                }
+
                 quizSessionUnsubscribeRef.current = quizSystem.listenForQuizSession(roomId, sessionId, (session: QuizSession) => {
                     setCurrentQuizSession(session)
                     if (session.status === "active") startQuizTimer(session.timePerQuestion || 10)
@@ -579,4 +596,20 @@ export function useChatEffects(params: UseChatEffectsParams) {
             userPresence.setUserMood(roomId, currentUserId, currentUserMood)
         }
     }, [currentUserMood, roomId, currentUserId])
+
+    // Auto-advance quiz if everyone answered
+    useEffect(() => {
+        if (!currentQuizSession || currentQuizSession.status !== "active" || !isHost) return
+
+        const currentQuestionId = currentQuizSession.questions[currentQuizSession.currentQuestionIndex]?.id
+        if (!currentQuestionId) return
+
+        const currentAnswers = quizAnswers.filter((a: QuizAnswer) => a.questionId === currentQuestionId)
+
+        // If everyone answered, advance!
+        if (currentAnswers.length > 0 && currentAnswers.length >= currentQuizSession.participants.length) {
+            console.log(`[useChatEffects] Everyone answered (${currentAnswers.length}/${currentQuizSession.participants.length}). Advancing question...`)
+            handleNextQuestion()
+        }
+    }, [quizAnswers, currentQuizSession, isHost, handleNextQuestion])
 }

@@ -31,7 +31,7 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
     const audioElementRef = useRef<HTMLAudioElement | null>(null)
     const notificationSystem = NotificationSystem.getInstance()
 
-    const BASE_VOLUME = 0.35 // 35% as requested
+    const BASE_VOLUME = 0.25 // 25% as requested
     const DUCKED_VOLUME = 0.10 // 10% during notifications
 
     const normalizeSongUrl = (url: string): string => {

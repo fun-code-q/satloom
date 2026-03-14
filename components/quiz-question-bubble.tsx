@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Clock, Users, X, CheckCircle, XCircle } from "lucide-react"
+import React, { useState, useEffect } from "react"
+import { Timer, Users, CheckCircle2, XCircle, Trophy, Gamepad2, Maximize, Minus, X, Clock } from "lucide-react"
+import { Button } from "./ui/button"
 import type { QuizQuestion, QuizAnswer } from "@/utils/games/quiz-system"
+import { NotificationSystem } from "@/utils/core/notification-system"
 
 interface QuizQuestionBubbleProps {
   question: QuizQuestion
@@ -16,6 +17,9 @@ interface QuizQuestionBubbleProps {
   onExit: () => void
   showResults?: boolean
   correctAnswer?: string
+  isMinimized?: boolean
+  onMinimize?: () => void
+  onRestore?: () => void
   answers?: QuizAnswer[]
 }
 
@@ -30,17 +34,61 @@ export function QuizQuestionBubble({
   onExit,
   showResults = false,
   correctAnswer,
+  isMinimized,
+  onMinimize,
+  onRestore,
   answers = [],
 }: QuizQuestionBubbleProps) {
-  const [selectedAnswer, setSelectedAnswer] = useState<string>("")
+  if (isMinimized) {
+    return (
+      <div className="max-w-md mx-auto mb-4 animate-in slide-in-from-bottom-4 duration-300">
+        <div className="bg-slate-900/90 backdrop-blur-md border border-purple-500/30 rounded-xl p-3 flex items-center justify-between shadow-2xl">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-purple-600/20 flex items-center justify-center">
+              <Gamepad2 className="w-4 h-4 text-purple-400" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-gray-400 uppercase tracking-widest">Quiz Active</div>
+              <div className="text-sm text-white font-medium">Question {currentQuestionNumber} of {totalQuestions}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="text-right mr-2">
+              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Time</div>
+              <div className={`text-sm font-bold ${timeRemaining < 5 ? 'text-red-400 animate-pulse' : 'text-cyan-400'}`}>
+                {timeRemaining}s
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onRestore}
+              className="h-8 w-8 text-gray-400 hover:text-white hover:bg-white/10 rounded-full"
+            >
+              <Maximize className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+  const [localAnswer, setLocalAnswer] = useState<string>("")
 
   useEffect(() => {
-    setSelectedAnswer("")
+    setLocalAnswer("")
   }, [question.id])
 
   const handleAnswerClick = (answer: string) => {
-    if (userAnswer || showResults) return
-    setSelectedAnswer(answer)
+    if (userAnswer || localAnswer || showResults) return
+    setLocalAnswer(answer)
+ 
+    // Instant feedback sound/vibration
+    if (answer === question.correctAnswer) {
+      NotificationSystem.getInstance().quizCorrect()
+    } else {
+      NotificationSystem.getInstance().quizWrong()
+    }
+ 
     onAnswer(answer)
   }
 
@@ -55,6 +103,7 @@ export function QuizQuestionBubble({
   }
 
   const getAnswerStyle = (option: string) => {
+    // Priority 1: Final results from server
     if (showResults) {
       if (option === correctAnswer) {
         return "bg-green-500/20 border-green-400 text-green-300"
@@ -63,11 +112,26 @@ export function QuizQuestionBubble({
       } else {
         return "bg-slate-700/50 border-slate-600 text-gray-300"
       }
-    } else if (userAnswer === option) {
-      return "bg-purple-500/20 border-purple-400 text-purple-300"
-    } else {
-      return "bg-slate-700/50 border-slate-600 text-white hover:bg-slate-600/50 hover:border-slate-500"
     }
+ 
+    // Priority 2: Instant local feedback
+    if (localAnswer) {
+      if (option === question.correctAnswer) {
+        return "bg-green-500/20 border-green-400 text-green-300"
+      } else if (option === localAnswer && option !== question.correctAnswer) {
+        return "bg-red-500/20 border-red-400 text-red-300"
+      } else {
+        return "bg-slate-700/50 border-slate-600 text-gray-300"
+      }
+    }
+ 
+    // Priority 3: Remote user selection (if sync is slow)
+    if (userAnswer === option) {
+      return "bg-purple-500/20 border-purple-400 text-purple-300"
+    }
+ 
+    // Default
+    return "bg-slate-700/50 border-slate-600 text-white hover:bg-slate-600/50 hover:border-slate-500"
   }
 
   const progressPercentage = ((totalQuestions - currentQuestionNumber + 1) / totalQuestions) * 100
@@ -89,7 +153,7 @@ export function QuizQuestionBubble({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {/* Timer */}
             <div
               className={`flex items-center gap-2 px-3 py-1 rounded-full ${timeRemaining <= 5 ? "bg-red-500/20 text-red-300 animate-pulse" : "bg-slate-700/50 text-gray-300"
@@ -99,14 +163,26 @@ export function QuizQuestionBubble({
               <span className="font-mono font-bold">{timeRemaining}s</span>
             </div>
 
+            {/* Minimize Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onMinimize}
+              className="h-8 w-8 text-gray-400 hover:text-white hover:bg-white/10 rounded-full"
+              title="Minimize Quiz"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+
             {/* Exit Button */}
             <Button
               variant="ghost"
               size="icon"
-              className="w-8 h-8 text-red-400 hover:text-red-300 hover:bg-red-500/20"
               onClick={onExit}
+              className="h-8 w-8 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-full"
+              title="Exit Quiz"
             >
-              <X className="w-4 h-4" />
+              <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -135,8 +211,17 @@ export function QuizQuestionBubble({
         )}
 
         {/* Question */}
-        <div className="mb-6">
+        <div className="mb-6 relative">
           <h2 className="text-xl font-medium text-white leading-relaxed">{question.question}</h2>
+          {userAnswer && !showResults && (
+            <div className="absolute -bottom-8 left-0 flex items-center gap-2 text-purple-400 text-sm animate-pulse">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
+              </span>
+              Waiting for other participants...
+            </div>
+          )}
         </div>
 
         <div className="grid gap-3 mb-6">
@@ -156,11 +241,11 @@ export function QuizQuestionBubble({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-bold ${showResults && isCorrect
+                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-bold ${(showResults || localAnswer) && isCorrect
                           ? "border-green-400 bg-green-500"
-                          : showResults && isUserAnswer && !isCorrect
+                          : (showResults || localAnswer) && (isUserAnswer || option === localAnswer) && !isCorrect
                             ? "border-red-400 bg-red-500"
-                            : isUserAnswer
+                            : isUserAnswer || option === localAnswer
                               ? "border-purple-400 bg-purple-500"
                               : "border-gray-400"
                         }`}
@@ -172,7 +257,7 @@ export function QuizQuestionBubble({
 
                   {showResults && (
                     <div className="flex items-center gap-2">
-                      {isCorrect && <CheckCircle className="w-5 h-5 text-green-400" />}
+                      {isCorrect && <CheckCircle2 className="w-5 h-5 text-green-400" />}
                       {isUserAnswer && !isCorrect && <XCircle className="w-5 h-5 text-red-400" />}
                       <div className="text-right">
                         <div className="text-sm font-bold">{stats.percentage}%</div>
@@ -240,7 +325,7 @@ export function QuizQuestionBubble({
                   {correctAnswer}
                 </p>
               )}
-              <p className="mt-1 text-gray-400">Next question in 3 seconds...</p>
+              <p className="mt-1 text-gray-400">Next question in 2 seconds...</p>
             </div>
           </div>
         )}

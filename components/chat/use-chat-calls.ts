@@ -563,7 +563,7 @@ export function useChatCalls(params: UseChatCallsParams) {
             } else {
                 await quizSystem.nextQuestion(roomId, currentQuizSession.id, currentQuizSession.currentQuestionIndex)
             }
-        }, 3000)
+        }, 2000)
     }, [roomId, currentQuizSession])
 
     const handleQuizFinished = useCallback(async (sessionId: string) => {

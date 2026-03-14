@@ -332,7 +332,12 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
     listenForGameInvites: calls.listenForGameInvites,
     startQuizTimer: calls.startQuizTimer,
     handleQuizFinished: calls.handleQuizFinished,
-    pinnedMessageId,
+    handleNextQuestion: calls.handleNextQuestion,
+    pinnedMessageId: pinnedMessageId,
+    currentQuizSession: feature.currentQuizSession,
+    quizAnswers: feature.quizAnswers,
+    isHost: isHost,
+    isQuizMinimized: ui.isQuizMinimized,
     setFirebaseConnected,
     currentUserMood: feature.currentUserMood,
   })
@@ -479,6 +484,8 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
           isHost={isHost}
           onLeave={onLeave}
           messages={messages}
+          onlineUsers={onlineUsers}
+          roomMembers={roomMembers}
           showEmojiPicker={showEmojiPicker}
           setShowEmojiPicker={setShowEmojiPicker}
           showChatSearch={showChatSearch}
@@ -560,6 +567,8 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
           isTheaterMinimized={ui.isTheaterMinimized}
           setIsTheaterMinimized={ui.setIsTheaterMinimized}
           showQuizSetup={showQuizSetup}
+          isQuizMinimized={ui.isQuizMinimized}
+          setIsQuizMinimized={ui.setIsQuizMinimized}
           handleStartQuiz={calls.handleStartQuiz}
           showGameMenu={showGameMenu}
           setShowGameMenu={setShowGameMenu}

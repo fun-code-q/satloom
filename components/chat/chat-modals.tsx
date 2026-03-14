@@ -16,6 +16,8 @@ import { TheaterInviteNotification } from "../theater-invite-notification"
 import { DotsAndBoxesGameComponent } from "../dots-and-boxes-game"
 import { GameInviteNotification } from "../game-invite-notification"
 import { QuizSetupModal } from "../quiz-setup-modal"
+import { QuizQuestionBubble } from "../quiz-question-bubble"
+import { QuizResultsBubble } from "../quiz-results-bubble"
 import { MoodSetupModal } from "../mood/mood-setup-modal"
 import { WhiteboardModal } from "../whiteboard-modal"
 import { WhiteboardInviteNotification } from "../whiteboard-invite-notification"
@@ -59,6 +61,8 @@ import type { Message } from "../message-bubble"
 import type { GameInvite } from "@/utils/infra/game-signaling"
 import type { KaraokeSong, KaraokeInvite } from "@/utils/games/karaoke"
 import type { WhiteboardInvite } from "@/utils/infra/whiteboard-signaling"
+import type { UserPresence } from "@/utils/infra/user-presence"
+import type { RoomMember } from "@/stores/chat-store"
 
 interface ChatModalsProps {
     roomId: string
@@ -67,6 +71,8 @@ interface ChatModalsProps {
     isHost: boolean
     onLeave: () => void
     messages: Message[]
+    onlineUsers: UserPresence[]
+    roomMembers: RoomMember[]
     // Chat Input
     showEmojiPicker: boolean
     setShowEmojiPicker: (val: boolean) => void
@@ -255,11 +261,14 @@ interface ChatModalsProps {
     handleDeclinePresentationInvite: () => void
     pendingScreenStream: MediaStream | null
     setPendingScreenStream: (stream: MediaStream | null) => void
+    isQuizMinimized: boolean
+    setIsQuizMinimized: (val: boolean) => void
 }
 
 export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps) {
     const {
         roomId, userProfile, currentUserId, isHost, onLeave, messages,
+        onlineUsers, roomMembers,
     } = props
 
     const [mounted, setMounted] = useState(false)
@@ -273,6 +282,23 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
         if (!mounted) return null
         return createPortal(content, document.body)
     }
+
+    const getQuizParticipants = useCallback(() => {
+        if (!props.currentQuizSession) return []
+        return (props.currentQuizSession.participants || []).map((participantId) => {
+            const user = props.onlineUsers.find((u: UserPresence) => u.id === participantId)
+            const hasAnswered = (props.quizAnswers || []).some(
+                (a) =>
+                    a.playerId === participantId &&
+                    a.questionId === props.currentQuizSession?.questions[props.currentQuizSession.currentQuestionIndex]?.id,
+            )
+            return {
+                id: participantId,
+                name: user?.name || "Unknown",
+                hasAnswered,
+            }
+        })
+    }, [props.currentQuizSession, props.quizAnswers, props.onlineUsers])
 
     useEffect(() => {
         if (props.showAudioCall || props.showVideoCall) {
@@ -295,14 +321,6 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
                     onDelete={props.handleDeleteMessage}
                     onEdit={props.handleEditMessage}
                     onCopy={props.handleCopyMessage}
-                    currentQuizSession={props.currentQuizSession}
-                    quizTimeRemaining={props.quizTimeRemaining}
-                    quizAnswers={props.quizAnswers}
-                    quizResults={props.quizResults}
-                    userQuizAnswer={props.userQuizAnswer}
-                    showQuizResults={props.showQuizResults}
-                    onQuizAnswer={props.handleQuizAnswer}
-                    onQuizExit={props.handleExitQuiz}
                     onVote={props.handleVote}
                     onRSVP={props.handleRSVP}
                     onPin={props.handlePinMessage}
@@ -372,6 +390,15 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
                         >
                             <Mic className="h-5 w-5" />
                             <span className="text-xs font-black tracking-widest uppercase">Restore Karaoke</span>
+                        </Button>
+                    )}
+                    {props.currentQuizSession && props.isQuizMinimized && (
+                        <Button
+                            onClick={() => props.setIsQuizMinimized(false)}
+                            className="bg-purple-600/90 hover:bg-purple-500 text-white rounded-2xl p-4 shadow-2xl backdrop-blur-md border border-purple-400/30 flex items-center gap-3 animate-in slide-in-from-right-10 duration-300"
+                        >
+                            <Gamepad2 className="h-5 w-5" />
+                            <span className="text-xs font-black tracking-widest uppercase">Restore Quiz</span>
                         </Button>
                     )}
                 </div>
@@ -587,6 +614,53 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
             )}
             {props.showMafiaGame && props.mafiaConfig && renderModal(
                 <MafiaGame config={props.mafiaConfig} roomId={roomId} userId={currentUserId} userName={userProfile.name} isHost={isHost} onClose={() => { props.setShowMafiaGame(false); props.setMafiaConfig(null) }} />
+            )}
+
+            {/* Quiz Modal Popup */}
+            {props.currentQuizSession && !props.isQuizMinimized && renderModal(
+                <div className="fixed inset-0 z-[550] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="w-full max-w-2xl transform transition-all animate-in zoom-in-95 duration-200">
+                        {props.currentQuizSession.status === "active" && props.currentQuizSession.questions[props.currentQuizSession.currentQuestionIndex] && (
+                            <QuizQuestionBubble
+                                question={props.currentQuizSession.questions[props.currentQuizSession.currentQuestionIndex]}
+                                currentQuestionNumber={props.currentQuizSession.currentQuestionIndex + 1}
+                                totalQuestions={props.currentQuizSession.totalQuestions}
+                                timeRemaining={props.quizTimeRemaining}
+                                participants={getQuizParticipants()}
+                                userAnswer={props.userQuizAnswer}
+                                onAnswer={props.handleQuizAnswer}
+                                onExit={props.handleExitQuiz}
+                                showResults={props.showQuizResults}
+                                isMinimized={props.isQuizMinimized}
+                                onMinimize={() => props.setIsQuizMinimized(true)}
+                                onRestore={() => props.setIsQuizMinimized(false)}
+                                correctAnswer={
+                                    props.showQuizResults
+                                        ? props.currentQuizSession.questions[props.currentQuizSession.currentQuestionIndex].correctAnswer
+                                        : undefined
+                                }
+                                answers={
+                                    props.showQuizResults
+                                        ? (props.quizAnswers || []).filter(
+                                            (a) =>
+                                                a.questionId === props.currentQuizSession?.questions[props.currentQuizSession.currentQuestionIndex].id,
+                                        )
+                                        : []
+                                }
+                            />
+                        )}
+                        {props.showQuizResults && props.quizResults && props.quizResults.length > 0 && (
+                            <QuizResultsBubble
+                                results={props.quizResults}
+                                totalQuestions={props.currentQuizSession.totalQuestions}
+                                isMinimized={props.isQuizMinimized}
+                                onMinimize={() => props.setIsQuizMinimized(true)}
+                                onRestore={() => props.setIsQuizMinimized(false)}
+                                onExit={props.handleExitQuiz}
+                            />
+                        )}
+                    </div>
+                </div>
             )}
 
             {/* Random Match */}

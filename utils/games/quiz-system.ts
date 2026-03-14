@@ -103,7 +103,7 @@ export class QuizSystem {
       roomId,
       hostId,
       hostName,
-      topic,
+      topic: topic || "random",
       questions,
       currentQuestionIndex: 0,
       status: "waiting",

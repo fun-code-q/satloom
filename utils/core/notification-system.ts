@@ -239,10 +239,15 @@ export class NotificationSystem {
   }
 
   async gameInvite(host: string, gameType: string) {
-    await this.playTone(700, 0.3)
-    await this.playTone(1000, 0.3)
     this.vibrate([200, 100, 200])
     this.showNotification("Game Invite", `${host} invited you to play ${gameType}`)
+  }
+
+  async quizInvite(host: string, topic: string) {
+    await this.playChord([523, 659, 783], 0.3)
+    await this.playTone(880, 0.2)
+    this.vibrate([100, 50, 100])
+    this.showNotification("Quiz Starting", `${host} started a ${topic} quiz!`)
   }
 
   async gameWon(gameType: string) {
@@ -301,6 +306,17 @@ export class NotificationSystem {
 
   private notifyAudioActivity(active: boolean) {
     this.audioActivityListeners.forEach((cb) => cb(active))
+  }
+
+  async quizCorrect() {
+    await this.playTone(1000, 0.1)
+    await this.playTone(1500, 0.2)
+  }
+
+  async quizWrong() {
+    await this.playTone(400, 0.2, 0.3, "sawtooth")
+    await this.playTone(300, 0.4, 0.3, "sawtooth")
+    this.vibrate([200])
   }
 
   cleanup() {
