@@ -30,6 +30,7 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
     const manager = TicTacToeManager.getInstance()
     const timerRef = useRef<NodeJS.Timeout | null>(null)
     const gameId = useRef(gameConfig.gameId || `ttt_${Date.now()}`).current
+    const joinRequestedRef = useRef(false)
 
     // Sync session
     useEffect(() => {
@@ -53,6 +54,7 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
             setGame(initialGame)
             setLoading(false)
         } else {
+            joinRequestedRef.current = false
             const isHostPlayer = gameConfig.players[0]?.id === currentUserId
             const unsubscribe = manager.listenForGameUpdates(roomId, gameId, (gameState) => {
                 if (gameState) {
@@ -69,14 +71,21 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
                     setGame(gameState)
                     setLoading(false)
 
-                    // If I am the guest and I haven't joined yet, join now
-                    const isGuest = gameConfig.players[1]?.id === currentUserId
-                    if (isGuest && (!gameState.players.O.id || gameState.players.O.id === "") && gameState.status === "waiting") {
-                        manager.joinGame(roomId, gameId, currentUserId, gameConfig.players[1].name)
+                    // If I am not the host and the guest slot is open, join now
+                    const hostId = gameState.players?.X?.id
+                    const guestId = gameState.players?.O?.id
+                    const isHost = hostId === currentUserId
+                    if (!isHost && (!guestId || guestId === "") && gameState.status === "waiting" && !joinRequestedRef.current) {
+                        joinRequestedRef.current = true
+                        const guestName = gameConfig.players?.[1]?.name || "Guest"
+                        manager.joinGame(roomId, gameId, currentUserId, guestName).then((success) => {
+                            if (!success) joinRequestedRef.current = false
+                        })
                     }
                 } else if (isHostPlayer) {
                     // Only HOST creates the game session in Firebase
-                    manager.createGame(roomId, currentUserId, gameConfig.players[0].name, undefined, gameId).then(newGame => {
+                    const hostName = gameConfig.players?.[0]?.name || "Host"
+                    manager.createGame(roomId, currentUserId, hostName, undefined, gameId).then(newGame => {
                         if (newGame) setGame(newGame)
                         setLoading(false)
                     })
@@ -85,7 +94,7 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
             })
             return () => unsubscribe()
         }
-    }, [roomId, gameId, gameConfig.gameType])
+    }, [roomId, gameId, gameConfig.gameType, currentUserId, gameConfig.players])
 
     // Game Timer
     useEffect(() => {
@@ -124,17 +133,23 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
     const handleCellClick = async (index: number) => {
         if (!game || game.board[index] || game.status !== "in_progress" || processing || isPaused) return
 
+        const isPlayer = game.players.X.id === currentUserId || game.players.O.id === currentUserId
+        if (!isPlayer) return
+
         const mySymbol = game.players.X.id === currentUserId ? "X" : "O"
         if (game.currentPlayer !== mySymbol) return
 
         setProcessing(true)
-        if (gameConfig.gameType === "single") {
-            handleMove(index, mySymbol)
-        } else {
-            const result = await manager.makeMove(roomId, gameId, currentUserId, { position: index })
-            if (!result.success && result.error) toast.error(result.error)
+        try {
+            if (gameConfig.gameType === "single") {
+                handleMove(index, mySymbol)
+            } else {
+                const result = await manager.makeMove(roomId, gameId, currentUserId, { position: index })
+                if (!result.success && result.error) toast.error(result.error)
+            }
+        } finally {
+            setProcessing(false)
         }
-        setProcessing(false)
     }
 
     const handleMove = (index: number, symbol: TicSymbol) => {

@@ -401,7 +401,7 @@ export default function Home() {
 
               {appState === "chat" && currentRoomId && (
                 <ChatErrorBoundary onReset={() => { setAppState('landing'); setCurrentRoomId(''); window.history.pushState({}, '', BASE_PATH) }}>
-                  <ChatInterface roomId={currentRoomId} userProfile={userProfile} onLeave={handleLeaveRoom} />
+                  <ChatInterface roomId={currentRoomId} userProfile={userProfile} currentUserId={currentUser?.uid || ""} onLeave={handleLeaveRoom} />
                 </ChatErrorBoundary>
               )}
 

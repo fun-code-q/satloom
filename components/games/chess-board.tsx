@@ -32,6 +32,7 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose, onMinim
     const timerRef = useRef<NodeJS.Timeout | null>(null)
     const gameId = useRef(gameConfig.gameId || `chess_${Date.now()}`).current
     const initialized = useRef(false)
+    const joinRequestedRef = useRef(false)
 
     const initEngine = (fen: string) => {
         chessGame.loadFEN(fen)
@@ -60,20 +61,28 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose, onMinim
             setSession(initialSession)
             initEngine(initialSession.fen)
         } else {
+            joinRequestedRef.current = false
             const isHostPlayer = gameConfig.players[0]?.id === currentUserId
             const unsubscribe = manager.listenForGameUpdates(roomId, gameId, (newSession) => {
                 if (newSession) {
                     setSession(newSession)
                     initEngine(newSession.fen)
 
-                    // If I am the guest and I haven't joined yet, join now
-                    const isGuest = gameConfig.players[1]?.id === currentUserId
-                    if (isGuest && newSession.blackPlayer.id === "" && newSession.status === "waiting") {
-                        manager.joinGame(roomId, gameId, currentUserId, gameConfig.players[1].name)
+                    // If I am not the host and the guest slot is open, join now
+                    const hostId = newSession.whitePlayer?.id
+                    const guestId = newSession.blackPlayer?.id
+                    const isHost = hostId === currentUserId
+                    if (!isHost && (!guestId || guestId === "") && newSession.status === "waiting" && !joinRequestedRef.current) {
+                        joinRequestedRef.current = true
+                        const guestName = gameConfig.players?.[1]?.name || "Guest"
+                        manager.joinGame(roomId, gameId, currentUserId, guestName).then((success) => {
+                            if (!success) joinRequestedRef.current = false
+                        })
                     }
                 } else if (isHostPlayer) {
                     // Only HOST creates the game session in Firebase
-                    manager.createGame(roomId, currentUserId, gameConfig.players[0].name, undefined, gameId).then(game => {
+                    const hostName = gameConfig.players?.[0]?.name || "Host"
+                    manager.createGame(roomId, currentUserId, hostName, undefined, gameId).then(game => {
                         if (game) setSession(game)
                     })
                 }
@@ -81,7 +90,7 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose, onMinim
             })
             return () => unsubscribe()
         }
-    }, [roomId, gameId, gameConfig.gameType, currentUserId])
+    }, [roomId, gameId, gameConfig.gameType, currentUserId, gameConfig.players])
 
     // Timer
     useEffect(() => {
@@ -152,17 +161,19 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose, onMinim
         const isMove = validMoves.some(m => m.row === row && m.col === col)
         if (isMove) {
             setProcessing(true)
-            chessGame.loadFEN(session.fen)
-            const success = chessGame.makeMove(selectedSquare, { row, col })
+            try {
+                chessGame.loadFEN(session.fen)
+                const success = chessGame.makeMove(selectedSquare, { row, col })
 
-            if (success) {
-                const state = chessGame.getGameState()
-                await syncGame(chessGame.getFEN(), state.status, state.winner as any)
+                if (success) {
+                    const state = chessGame.getGameState()
+                    await syncGame(chessGame.getFEN(), state.status, state.winner as any)
+                }
+            } finally {
+                setSelectedSquare(null)
+                setValidMoves([])
+                setProcessing(false)
             }
-
-            setSelectedSquare(null)
-            setValidMoves([])
-            setProcessing(false)
         } else {
             const piece = board[row][col]
             if (piece && piece.color === myColor) {

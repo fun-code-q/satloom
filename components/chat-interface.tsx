@@ -40,6 +40,7 @@ interface ChatInterfaceProps {
   roomId: string
   userProfile: { name: string; avatar?: string; currentActivity?: "chat" | "game" | "theater" }
   onLeave: () => void
+  currentUserId?: string
 }
 
 // Generate consistent colors for users
@@ -56,7 +57,7 @@ function getUserColor(username: string): string {
   return colors[Math.abs(hash) % colors.length]
 }
 
-export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfaceProps) {
+export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: currentUserIdProp }: ChatInterfaceProps) {
   console.log("ChatInterface: Initialized with roomId:", roomId)
 
   const {
@@ -247,7 +248,21 @@ export function ChatInterface({ roomId, userProfile, onLeave }: ChatInterfacePro
 
   const themeContext = useTheme()
   const userPresence = UserPresenceSystem.getInstance()
-  const currentUserId = useRef(userPresence.createUniqueUserId(userProfile.name)).current
+  const resolveUserId = () => {
+    const explicitId = currentUserIdProp?.trim()
+    if (explicitId) return explicitId
+
+    const fallbackName = userProfile.name?.trim() || "User"
+    if (typeof window !== "undefined") {
+      const storedId = localStorage.getItem("satloom-user-id")
+      if (storedId) return storedId
+      const generatedId = userPresence.createUniqueUserId(fallbackName)
+      localStorage.setItem("satloom-user-id", generatedId)
+      return generatedId
+    }
+    return userPresence.createUniqueUserId(fallbackName)
+  }
+  const currentUserId = useRef(resolveUserId()).current
 
   // --- Soundboard Global Initialization ---
   React.useEffect(() => {

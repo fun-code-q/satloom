@@ -11,6 +11,7 @@ export interface ChatInterfaceProps {
     roomId: string
     userProfile: { name: string; avatar?: string; currentActivity?: "chat" | "game" | "theater" }
     onLeave: () => void
+    currentUserId?: string
 }
 
 export interface MenuItem {
