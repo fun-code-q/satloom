@@ -9,6 +9,7 @@ interface AudioVisualizerProps {
     barColor?: string
     gap?: number
     barWidth?: number
+    className?: string
 }
 
 export function AudioVisualizer({
@@ -18,6 +19,7 @@ export function AudioVisualizer({
     barColor = "#22d3ee", // cyan-400
     gap = 2,
     barWidth = 3,
+    className,
 }: AudioVisualizerProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const animationRef = useRef<number | null>(null)
@@ -113,7 +115,7 @@ export function AudioVisualizer({
             ref={canvasRef}
             width={width}
             height={height}
-            className="opacity-80"
+            className={`opacity-80 ${className || ""}`}
         />
     )
 }

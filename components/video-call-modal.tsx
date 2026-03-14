@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Mic, MicOff, Video, VideoOff, Phone, PhoneOff, Minimize2, Maximize2, Camera, CameraOff, Monitor, Palette, Settings, SignalHigh, SignalMedium, SignalLow, SignalZero, Info, Music, Smile, Wand2, Sparkles, MonitorPlay, Film, X } from "lucide-react"
+import { Mic, MicOff, Video, VideoOff, Phone, PhoneOff, Minimize2, Maximize2, Camera, CameraOff, Monitor, Palette, Settings, SignalHigh, SignalMedium, SignalLow, SignalZero, Info, Music, Smile, Wand2, Sparkles, MonitorPlay, Film, X, User } from "lucide-react"
 
 // Debug icons to prevent crashes if icons are missing from lucide-react version
 const Icon = ({ icon: LucideIcon, ...props }: any) => {
@@ -20,6 +20,7 @@ import { voiceFilterProcessor, type VoiceFilterType } from "@/utils/hardware/voi
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { toast } from "sonner"
+import { audioNotificationManager } from "@/utils/hardware/audio-notification-manager"
 
 const DEFAULT_EFFECTS = [
   { id: "none", name: "None", icon: "🚫", type: "none" as const },
@@ -250,7 +251,13 @@ export function VideoCallModal({
     let wakeLock: any = null
 
     if (!isOpen) {
+      audioNotificationManager.stopAll()
       return
+    }
+
+    // Start outgoing ring if we are the caller and ringing
+    if (!isIncoming && callData?.status === "ringing") {
+      audioNotificationManager.startOutgoingRing()
     }
 
     const setupMedia = async () => {
@@ -413,8 +420,15 @@ export function VideoCallModal({
   }, [callData?.id])
 
   useEffect(() => {
+    if (callData?.status === "answered" || callData?.status === "ended") {
+      audioNotificationManager.stopAll()
+    }
+  }, [callData?.status])
+
+  useEffect(() => {
     if (callData?.status === "ended") {
       cleanupMedia("call ended")
+      audioNotificationManager.stopAll()
     }
   }, [callData?.status])
 
@@ -455,6 +469,7 @@ export function VideoCallModal({
   }
 
   const handleEndCall = async () => {
+    audioNotificationManager.stopAll()
     if (callData) {
       try {
         // Send bye signal before closing to notify remote peer immediately
@@ -469,6 +484,7 @@ export function VideoCallModal({
   }
 
   const handleAnswerCall = async () => {
+    audioNotificationManager.stopAll()
     if (onAnswer) {
       onAnswer()
     } else if (callData) {
@@ -762,324 +778,211 @@ export function VideoCallModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/90 z-[1000] flex items-stretch sm:items-center justify-center p-0 sm:p-4">
+    <div className="fixed inset-0 bg-black/95 sm:bg-black/90 z-[1000] flex items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
       <div
         ref={modalRef}
-        className="bg-slate-900 border border-slate-700 shadow-2xl w-full h-[100dvh] sm:h-full sm:max-w-4xl sm:max-h-[90vh] rounded-none sm:rounded-2xl flex flex-col min-h-0 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
+        className="bg-slate-900 border-x sm:border border-slate-700/50 shadow-2xl w-full h-[100dvh] sm:h-full sm:max-w-4xl sm:max-h-[85vh] rounded-none sm:rounded-2xl flex flex-col min-h-0 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] overflow-hidden"
       >
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 sm:p-4 border-b border-slate-700 bg-slate-800/50">
-          <div className="flex items-center gap-3 min-w-0">
-            <h2 className="text-white font-semibold">Video Call</h2>
-            <span className="text-gray-400 text-sm truncate max-w-[12rem] sm:max-w-none">{otherParticipant}</span>
+        {/* Header - Compact on mobile */}
+        <div className="flex items-center justify-between gap-2 p-2 sm:p-4 border-b border-slate-700/50 bg-slate-800/80 backdrop-blur-md">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
+              <Video className="w-4 h-4 text-blue-400" />
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 min-w-0">
+              <h2 className="text-lg sm:text-base font-semibold text-white truncate">Video Call</h2>
+              <span className="text-gray-400 text-[10px] sm:text-sm truncate opacity-80">{otherParticipant}</span>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-1 sm:gap-3">
             {connectionStats && (
-              <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-900 border border-slate-700 group relative cursor-help">
+              <div className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full bg-slate-900/50 border border-slate-700/50">
                 {connectionStats.rtt < 100 && connectionStats.packetLoss < 1 ? (
-                  <Icon icon={SignalHigh} className="w-4 h-4 text-green-400" />
-                ) : connectionStats.rtt < 250 && connectionStats.packetLoss < 3 ? (
-                  <SignalMedium className="w-3.5 h-3.5 text-yellow-400" />
-                ) : connectionStats.rtt < 500 && connectionStats.packetLoss < 7 ? (
-                  <SignalLow className="w-3.5 h-3.5 text-orange-400" />
+                  <SignalHigh className="w-3 h-3 text-green-400" />
                 ) : (
-                  <SignalZero className="w-3.5 h-3.5 text-red-400" />
+                  <SignalLow className="w-3 h-3 text-yellow-400" />
                 )}
-                <span className="text-[10px] font-mono text-gray-300">{Math.round(connectionStats.rtt)}ms</span>
-
-                {/* Tooltip */}
-                <div className="absolute top-full right-0 mt-2 hidden group-hover:block z-50">
-                  <div className="bg-slate-900 border border-slate-700 rounded-lg p-3 shadow-2xl min-w-[140px] text-xs">
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between items-center gap-4 text-gray-400">
-                        <span>Latency</span>
-                        <span className="font-mono text-cyan-400">{Math.round(connectionStats.rtt)}ms</span>
-                      </div>
-                      <div className="flex justify-between items-center gap-4 text-gray-400">
-                        <span>Packet Loss</span>
-                        <span className="font-mono text-cyan-400">{connectionStats.packetLoss.toFixed(1)}%</span>
-                      </div>
-                      <div className="flex justify-between items-center gap-4 text-gray-400">
-                        <span>Jitter</span>
-                        <span className="font-mono text-cyan-400">{connectionStats.jitter.toFixed(1)}ms</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <span className="text-[9px] sm:text-[10px] font-mono text-gray-400">{Math.round(connectionStats.rtt)}ms</span>
               </div>
             )}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-gray-400 text-sm">{formatDuration(callDuration)}</span>
-              {onSwitchToAudio && callData?.status === "answered" && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 gap-1.5 h-8 mr-2"
-                  onClick={onSwitchToAudio}
-                >
-                  <Phone className="w-3.5 h-3.5" />
-                  <span className="text-xs font-bold uppercase tracking-wider">Switch to Audio</span>
-                </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-gray-400 hover:text-white"
-                onClick={() => setIsMinimized(true)}
-              >
-                <Minimize2 className="w-4 h-4" />
-              </Button>
-            </div>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-8 h-8 rounded-full text-gray-400 hover:text-white"
+              onClick={() => setIsMinimized(true)}
+            >
+              <Minimize2 className="w-4 h-4" />
+            </Button>
           </div>
         </div>
 
-        {/* Video Area */}
-        <div className="flex-1 min-h-0 relative bg-black overflow-hidden">
-          {/* Remote video (main) */}
-          <video ref={remoteVideoRef} className={`w-full h-full ${isRemoteScreenShare ? "object-contain" : "object-cover"}`} autoPlay playsInline />
+        {/* Video Area - Fill space */}
+        <div className="flex-1 relative bg-slate-950 overflow-hidden flex items-center justify-center">
+          {/* Main Content: Remote video or Connecting UI */}
+          {!remoteStream || callData?.status === "ringing" ? (
+            <div className="flex flex-col items-center justify-center gap-6 p-8 text-center animate-in zoom-in duration-500">
+               <div className="relative">
+                 <div className="w-24 h-24 sm:w-32 sm:h-32 bg-slate-800 rounded-full flex items-center justify-center border-2 border-blue-500/30">
+                   <User className="w-12 h-12 sm:w-16 sm:h-16 text-slate-500" />
+                 </div>
+                 {callData?.status === "ringing" && (
+                   <div className="absolute inset-x-[-10px] inset-y-[-10px] border-2 border-blue-500/50 rounded-full animate-ping opacity-20" />
+                 )}
+               </div>
+               
+               <div>
+                 <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">{otherParticipant}</h3>
+                 <p className="text-blue-400 text-sm font-medium tracking-wide animate-pulse uppercase">
+                   {callData?.status === "ringing" ? "Ringing..." : "Connecting..."}
+                 </p>
+               </div>
 
-          {/* Local video (picture-in-picture) */}
-          <div className="absolute top-3 right-3 sm:top-4 sm:right-4 w-28 h-20 sm:w-48 sm:h-36 bg-slate-800 rounded-lg overflow-hidden border border-slate-600">
+               {!isIncoming && callData?.status === "ringing" && (
+                 <Button 
+                   onClick={handleEndCall}
+                   className="mt-4 bg-red-500 hover:bg-red-600 text-white rounded-full w-14 h-14 shadow-xl shadow-red-500/20"
+                 >
+                   <PhoneOff className="w-6 h-6" />
+                 </Button>
+               )}
+            </div>
+          ) : (
+            <video
+              ref={remoteVideoRef}
+              className={`w-full h-full ${isRemoteScreenShare ? "object-contain" : "object-cover"} transition-opacity duration-700`}
+              autoPlay
+              playsInline
+            />
+          )}
+
+          {/* Local Preview - PiP */}
+          <div className={`absolute bottom-4 right-4 sm:bottom-6 sm:right-6 w-24 sm:w-32 aspect-[3/4] bg-slate-800 rounded-lg sm:rounded-xl border border-white/10 shadow-2xl overflow-hidden transition-all z-10 ${isMinimized ? "hidden" : ""}`}>
             <video
               ref={localVideoRef}
-              className={`w-full h-full ${localVideoFitClass} ${shouldMirrorLocal ? "scale-x-[-1]" : ""}`}
+              className={`w-full h-full object-cover ${shouldMirrorLocal ? "scale-x-[-1]" : ""}`}
               autoPlay
               muted
               playsInline
               style={{ filter: getFilterStyle() }}
             />
-
             {!isVideoOn && (
-              <div className="absolute inset-0 bg-slate-700 flex items-center justify-center">
-                <CameraOff className="w-8 h-8 text-gray-400" />
+              <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center">
+                <CameraOff className="w-6 h-6 text-gray-500" />
               </div>
             )}
           </div>
 
-          {/* Call status overlay */}
-          {callData?.status !== "answered" && (
-            <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-20 h-20 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl text-white font-semibold">{otherParticipant.charAt(0).toUpperCase()}</span>
-                </div>
-                <p className="text-gray-400 mb-6">
-                  {callData?.status === "ringing"
-                    ? isIncoming
-                      ? "Incoming video call..."
-                      : "Calling..."
-                    : "Connecting..."}
-                </p>
-              </div>
-            </div>
-          )}
+          <div className="absolute top-4 left-4 text-[10px] text-white/50 bg-black/30 backdrop-blur-sm rounded px-2 py-1 pointer-events-none">
+            {formatDuration(callDuration)}
+          </div>
         </div>
 
-        {/* Controls */}
-        <div className="p-4 bg-slate-800/50 border-t border-slate-700">
-          <div className="flex justify-center flex-wrap gap-4">
-            {/* Incoming Call Actions */}
+        {/* Controls Bar - Floating and optimized */}
+        <div className="p-4 sm:p-6 bg-gradient-to-t from-slate-900 via-slate-900/90 to-transparent">
+          <div className="flex items-center justify-center gap-3 sm:gap-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`rounded-full w-12 h-12 sm:w-14 sm:h-14 transition-all duration-300 ${isMuted ? "bg-red-500/20 text-red-500 border border-red-500/30" : "bg-slate-800/80 text-white hover:bg-slate-700 border border-white/5"}`}
+              onClick={() => setIsMuted(!isMuted)}
+            >
+              {isMuted ? <MicOff className="w-5 h-5 sm:w-6 sm:h-6" /> : <Mic className="w-5 h-5 sm:w-6 sm:h-6" />}
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`rounded-full w-12 h-12 sm:w-14 sm:h-14 transition-all duration-300 ${!isVideoOn ? "bg-red-500/20 text-red-500 border border-red-500/30" : "bg-slate-800/80 text-white hover:bg-slate-700 border border-white/5"}`}
+              onClick={() => setIsVideoOn(!isVideoOn)}
+            >
+              {!isVideoOn ? <VideoOff className="w-5 h-5 sm:w-6 sm:h-6" /> : <Video className="w-5 h-5 sm:w-6 sm:h-6" />}
+            </Button>
+
+            <Button
+              onClick={handleEndCall}
+              className="bg-red-500 hover:bg-red-600 text-white rounded-full w-12 h-12 sm:w-14 sm:h-14 shadow-lg shadow-red-500/20 transition-transform active:scale-95"
+            >
+              <PhoneOff className="w-5 h-5 sm:w-6 sm:h-6" />
+            </Button>
+
             {isIncoming && callData?.status === "ringing" && (
-              <>
                 <Button
-                  onClick={handleEndCall}
-                  className="bg-red-500 hover:bg-red-600 text-white rounded-full w-14 h-14"
+                onClick={handleAnswerCall}
+                className="bg-green-500 hover:bg-green-600 text-white rounded-full w-12 h-12 sm:w-14 sm:h-14 shadow-lg shadow-green-500/20 transition-transform active:scale-95"
                 >
-                  <PhoneOff className="w-6 h-6" />
+                <Phone className="w-5 h-5 sm:w-6 sm:h-6" />
                 </Button>
-                <Button
-                  onClick={handleAnswerCall}
-                  className="bg-green-500 hover:bg-green-600 text-white rounded-full w-14 h-14"
-                >
-                  <Phone className="w-6 h-6" />
-                </Button>
-              </>
             )}
 
-            {/* Active Call Controls */}
-            {callData?.status === "answered" && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={`rounded-full w-12 h-12 ${isMuted ? "bg-red-500/20 text-red-400" : "bg-slate-700 text-white"
-                    }`}
-                  onClick={() => setIsMuted(!isMuted)}
-                >
-                  {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={`rounded-full w-12 h-12 ${!isVideoOn ? "bg-red-500/20 text-red-400" : "bg-slate-700 text-white"
-                    }`}
-                  onClick={() => setIsVideoOn(!isVideoOn)}
-                >
-                  {isVideoOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
-                </Button>
-
-
-                <Button variant="ghost" size="icon" className="rounded-full w-12 h-12 bg-slate-700 text-white hover:bg-slate-600 transition-colors" onClick={handleSwitchCamera} title="Switch Camera">
-                  <Camera className="w-5 h-5" />
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={`rounded-full w-12 h-12 ${isScreenSharing ? "bg-cyan-500 text-white" : "bg-slate-700 text-white hover:bg-slate-600"} transition-colors`}
-                  onClick={handleToggleScreenShare}
-                  title={isScreenSharing ? "Stop Sharing" : "Share Screen"}
-                >
-                  <Monitor className="w-5 h-5" />
-                </Button>
-
-                {/* Watch Together Button */}
-                {onWatchTogether && (
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`rounded-full w-12 h-12 bg-slate-800/80 text-white hover:bg-slate-700 border border-white/5 ${isScreenSharing ? "text-blue-400 bg-blue-500/10" : ""}`}
+                onClick={handleToggleScreenShare}
+                title="Share Screen"
+              >
+                <Monitor className="w-5 h-5" />
+              </Button>
+              
+              <Popover open={showSettings} onOpenChange={setShowSettings}>
+                <PopoverTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="rounded-full w-12 h-12 bg-slate-700 text-white hover:bg-violet-500/30 hover:text-violet-300 transition-colors"
-                    onClick={onWatchTogether}
-                    title="Watch Together (Movie Theater)"
+                    className="rounded-full w-12 h-12 bg-slate-800/80 text-white hover:bg-slate-700 border border-white/5"
                   >
-                    <Icon icon={Film} className="w-4 h-4" />
+                    <Settings className="w-5 h-5" />
                   </Button>
-                )}
-
-                {onStartWhiteboard && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full w-12 h-12 bg-slate-700 text-white hover:bg-slate-600 transition-colors"
-                    onClick={onStartWhiteboard}
-                    title="Open Whiteboard"
-                  >
-                    <Icon icon={MonitorPlay} className="w-4 h-4" />
-                  </Button>
-                )}
-
-                {/* Voice Filter Button */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={`rounded-full w-12 h-12 transition-colors ${currentVoiceFilter !== "none" ? "bg-cyan-500 text-white" : "bg-slate-700 text-white hover:bg-slate-600"}`}
-                  onClick={() => setShowVoiceFilterModal(true)}
-                  title={currentVoiceFilter !== "none" ? `Voice: ${currentVoiceFilter}` : "Voice Effects"}
-                >
-                  <Sparkles className="w-5 h-5" />
-                </Button>
-
-                {/* Video Effects Button */}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={`rounded-full w-12 h-12 transition-colors ${currentEffect !== "none" ? "bg-indigo-500 text-white" : "bg-slate-700 text-white hover:bg-slate-600"}`}
-                      title="Video Effects"
-                    >
-                      <Wand2 className="w-5 h-5" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-64 bg-slate-800 border-slate-700 p-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      {DEFAULT_EFFECTS.map((effect) => (
-                        <Button
-                          key={effect.id}
-                          variant="ghost"
-                          className={`justify-start gap-2 h-9 text-xs px-2 ${currentEffect === effect.id ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/50" : "text-gray-300 hover:bg-slate-700"}`}
-                          onClick={() => setCurrentEffect(effect.id)}
-                        >
-                          <span className="text-sm">{effect.icon}</span>
-                          <span>{effect.name}</span>
-                        </Button>
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="rounded-full w-12 h-12 bg-slate-700 text-white relative"
-                      title="Settings"
-                    >
-                      <Settings className="w-5 h-5" />
-                      <div className="absolute -top-1 -right-1">
-                        <AudioVisualizer stream={localStream} width={20} height={20} />
-                      </div>
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 bg-slate-800 border-slate-700 text-white p-4">
+                </PopoverTrigger>
+                <PopoverContent className="w-80 bg-slate-900 border-slate-700 text-white p-4">
                     <div className="space-y-4">
-                      <h4 className="font-medium text-sm text-gray-400 uppercase">Input Devices</h4>
+                        <h4 className="font-medium text-sm text-gray-400 uppercase">Input Devices</h4>
 
-                      <div className="space-y-2">
+                        <div className="space-y-2">
                         <label className="text-xs font-medium text-gray-400">Microphone</label>
                         <Select value={selectedAudioDevice} onValueChange={handleAudioDeviceChange}>
-                          <SelectTrigger className="bg-slate-900 border-slate-600">
+                            <SelectTrigger className="bg-slate-900 border-slate-600">
                             <SelectValue placeholder="Select Microphone" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-slate-900 border-slate-600 text-white">
+                            </SelectTrigger>
+                            <SelectContent className="bg-slate-900 border-slate-600 text-white">
                             {audioDevices.map((device) => (
-                              <SelectItem key={device.deviceId} value={device.deviceId}>
+                                <SelectItem key={device.deviceId} value={device.deviceId}>
                                 {device.label || `Microphone ${device.deviceId.slice(0, 5)}...`}
-                              </SelectItem>
+                                </SelectItem>
                             ))}
-                          </SelectContent>
+                            </SelectContent>
                         </Select>
                         <div className="bg-slate-900 p-2 rounded flex justify-center items-center h-12 border border-slate-700">
-                          <AudioVisualizer stream={localStream} width={200} height={30} />
+                            <AudioVisualizer stream={localStream} width={200} height={30} />
                         </div>
-                      </div>
+                        </div>
 
-                      <div className="space-y-2">
+                        <div className="space-y-2">
                         <label className="text-xs font-medium">Camera</label>
                         <Select value={selectedVideoDevice} onValueChange={handleVideoDeviceChange}>
-                          <SelectTrigger className="bg-slate-900 border-slate-600">
+                            <SelectTrigger className="bg-slate-900 border-slate-600">
                             <SelectValue placeholder="Select Camera" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-slate-900 border-slate-600 text-white">
+                            </SelectTrigger>
+                            <SelectContent className="bg-slate-900 border-slate-600 text-white">
                             {videoDevices.map((device) => (
-                              <SelectItem key={device.deviceId} value={device.deviceId}>
+                                <SelectItem key={device.deviceId} value={device.deviceId}>
                                 {device.label || `Camera ${device.deviceId.slice(0, 5)}...`}
-                              </SelectItem>
+                                </SelectItem>
                             ))}
-                          </SelectContent>
+                            </SelectContent>
                         </Select>
-                      </div>
+                        </div>
                     </div>
-                  </PopoverContent>
-                </Popover>
-
-                <Button
-                  onClick={handleEndCall}
-                  className="bg-red-500 hover:bg-red-600 text-white rounded-full w-12 h-12"
-                >
-                  <PhoneOff className="w-5 h-5" />
-                </Button>
-              </>
-            )}
-
-            {/* Outgoing Call Controls */}
-            {!isIncoming && callData?.status === "ringing" && (
-              <Button
-                onClick={handleEndCall}
-                className="bg-red-500 hover:bg-red-600 text-white rounded-full w-14 h-14 shadow-xl"
-              >
-                <PhoneOff className="w-6 h-6" />
-              </Button>
-            )}
-
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Voice Filter Modal */}
       <VoiceFilterModal
         isOpen={showVoiceFilterModal}
         onClose={() => setShowVoiceFilterModal(false)}

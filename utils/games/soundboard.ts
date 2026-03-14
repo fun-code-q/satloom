@@ -1,12 +1,6 @@
-/**
- * Soundboard Manager
- * 
- * Manages meme sound effects that can be triggered by users.
- * Sounds play locally and broadcast to other participants.
- */
-
 import { getFirebaseDatabase } from "@/lib/firebase"
 import { ref, set, push, onValue, remove, serverTimestamp } from "firebase/database"
+import { generateWavDataUri } from "../hardware/audio-utility"
 
 export interface SoundEffect {
     id: string
@@ -53,8 +47,7 @@ export interface PlayedSound {
 
 class SoundboardManager {
     private static instance: SoundboardManager
-    private audioContext: AudioContext | null = null
-    private audioBuffers: Map<string, AudioBuffer> = new Map()
+    private audioCache: Map<string, HTMLAudioElement> = new Map()
     private state: SoundboardState = {
         isPlaying: false,
         currentSound: null,
@@ -67,9 +60,7 @@ class SoundboardManager {
     private unsubscribers: (() => void)[] = []
     private lastPlayedTimestamp: number = Date.now()
 
-    private constructor() {
-        console.log("[Soundboard] Constructor called, waiting for interaction to init AudioContext...")
-    }
+    private constructor() {}
 
     static getInstance(): SoundboardManager {
         if (!SoundboardManager.instance) {
@@ -78,11 +69,7 @@ class SoundboardManager {
         return SoundboardManager.instance
     }
 
-    /**
-     * Initialize soundboard for a room
-     */
     initialize(roomId: string, userId: string, userName: string): void {
-        // Clear existing room listeners if room changes or re-initializing
         this.unsubscribers.forEach((unsub) => unsub())
         this.unsubscribers = []
 
@@ -90,59 +77,7 @@ class SoundboardManager {
         this.userId = userId
         this.userName = userName
 
-        // Preload sounds if not already done
-        this.preloadSounds()
-
-        // Listen for remote sounds
         this.listenToRemoteSounds()
-
-        // Global click listener to resume/init audio context
-        if (typeof window !== "undefined") {
-            const resumeAudio = async () => {
-                if (!this.audioContext) {
-                    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-                }
-                if (this.audioContext.state === 'suspended') {
-                    await this.audioContext.resume()
-                }
-            }
-            document.addEventListener("click", resumeAudio, { once: false })
-        }
-    }
-
-    /**
-     * Preload all sounds using AudioContext
-     */
-    private async preloadSounds(): Promise<void> {
-        if (typeof window === "undefined" || this.audioBuffers.size > 0) return
-
-        console.log("[Soundboard] Preloading sounds into AudioBuffers...")
-
-        // We need a temporary context if the main one isn't ready, 
-        // but decoding usually works better on the actual context.
-        if (!this.audioContext) {
-            this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-        }
-
-        const loadSound = async (sound: SoundEffect) => {
-            // Skip placeholders that use synth logic
-            const synthSounds = ["celebration", "laughter", "applause", "correct", "wrong"]
-            if (synthSounds.includes(sound.id)) return
-
-            try {
-                const response = await fetch(sound.audioUrl)
-                const arrayBuffer = await response.arrayBuffer()
-                const audioBuffer = await this.audioContext!.decodeAudioData(arrayBuffer)
-                this.audioBuffers.set(sound.id, audioBuffer)
-                console.log(`[Soundboard] Decoded: ${sound.id}`)
-            } catch (err) {
-                console.error(`[Soundboard] Failed to load/decode ${sound.id}:`, err)
-            }
-        }
-
-        // Load all concurrently
-        await Promise.all(DEFAULT_SOUNDS.map(loadSound))
-        console.log(`[Soundboard] Preloaded ${this.audioBuffers.size} audio buffers`)
     }
 
     private listenToRemoteSounds(): void {
@@ -153,13 +88,11 @@ class SoundboardManager {
             const data = snapshot.val()
             if (data) {
                 const sounds = Object.entries(data as Record<string, PlayedSound>)
-                // Only process sounds that are newer than our last played sound
                 const newSounds = sounds.filter(([_, sound]) => {
                     return sound.timestamp > this.lastPlayedTimestamp && sound.userId !== this.userId
                 })
 
                 if (newSounds.length > 0) {
-                    // Update the last played timestamp to the newest one in this batch
                     const latestTimestamp = Math.max(...newSounds.map(([_, s]) => s.timestamp))
                     this.lastPlayedTimestamp = latestTimestamp
 
@@ -173,45 +106,34 @@ class SoundboardManager {
         this.unsubscribers.push(unsubscribe)
     }
 
-    /**
-     * Play a sound locally using AudioContext
-     */
     private async playSoundLocally(soundId: string): Promise<void> {
         if (typeof window === "undefined") return
 
-        // Ensure Context is ready
-        if (!this.audioContext) {
-            this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-        }
+        const sound = DEFAULT_SOUNDS.find(s => s.id === soundId)
+        if (!sound) return
 
-        if (this.audioContext.state === 'suspended') {
-            await this.audioContext.resume()
-        }
-
-        const buffer = this.audioBuffers.get(soundId)
-        if (buffer) {
-            try {
-                const source = this.audioContext.createBufferSource()
-                source.buffer = buffer
-
-                const gainNode = this.audioContext.createGain()
-                gainNode.gain.setValueAtTime(this.state.volume, this.audioContext.currentTime)
-
-                source.connect(gainNode)
-                gainNode.connect(this.audioContext.destination)
-
-                source.start(0)
-                this.setState({ isPlaying: true, currentSound: soundId })
-
-                source.onended = () => {
-                    this.setState({ isPlaying: false, currentSound: null })
-                }
-            } catch (err) {
-                console.error(`[Soundboard] Error playing AudioBuffer ${soundId}, falling back to synth:`, err)
-                this.playSynthSound(soundId)
+        try {
+            let audio = this.audioCache.get(soundId)
+            if (!audio) {
+                audio = new Audio(sound.audioUrl)
+                this.audioCache.set(soundId, audio)
             }
-        } else {
-            console.warn(`[Soundboard] Buffer missing for ${soundId}, playing synth version...`)
+
+            audio.volume = this.state.volume
+            audio.currentTime = 0
+            
+            this.setState({ isPlaying: true, currentSound: soundId })
+            
+            await audio.play().catch(err => {
+                console.warn(`[Soundboard] File play failed for ${soundId}, trying synth fallback:`, err)
+                this.playSynthSound(soundId)
+            })
+
+            audio.onended = () => {
+                this.setState({ isPlaying: false, currentSound: null })
+            }
+        } catch (err) {
+            console.error(`[Soundboard] Error playing ${soundId}:`, err)
             this.playSynthSound(soundId)
         }
     }
@@ -220,190 +142,41 @@ class SoundboardManager {
      * Play synthesized sound using Web Audio API
      */
     private playSynthSound(soundId: string): void {
-        if (!this.audioContext) return
-
-        const ctx = this.audioContext
-        const now = ctx.currentTime
-        const gainNode = ctx.createGain()
-        gainNode.connect(ctx.destination)
-        gainNode.gain.setValueAtTime(this.state.volume * 0.4, now)
-
-        this.setState({ isPlaying: true, currentSound: soundId })
-
-        // Find duration for state reset
         const sound = DEFAULT_SOUNDS.find(s => s.id === soundId)
-        const duration = sound?.duration || 1000
+        const duration = (sound?.duration || 1000) / 1000
+        
+        let freq = 440
+        let type: 'sine' | 'square' | 'sawtooth' = 'sine'
 
         if (soundId === "bruh") {
-            // Low thud synth
-            const osc = ctx.createOscillator()
-            osc.type = "sine"
-            osc.frequency.setValueAtTime(150, now)
-            osc.frequency.exponentialRampToValueAtTime(40, now + 0.3)
-            osc.connect(gainNode)
-            osc.start(now)
-            osc.stop(now + 0.4)
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4)
+            freq = 60
+            type = 'sine'
         } else if (soundId === "wow") {
-            // "Wow" - high rising pitch
-            const osc = ctx.createOscillator()
-            osc.type = "sine"
-            osc.frequency.setValueAtTime(300, now)
-            osc.frequency.exponentialRampToValueAtTime(600, now + 0.2)
-            osc.frequency.exponentialRampToValueAtTime(500, now + 0.4)
-            osc.connect(gainNode)
-            osc.start(now)
-            osc.stop(now + 0.5)
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5)
+            freq = 400
+            type = 'sine'
         } else if (soundId === "airhorn") {
-            // Aggressive sawtooth blasts
-            for (let i = 0; i < 3; i++) {
-                const osc = ctx.createOscillator()
-                const start = now + (i * 0.2)
-                osc.type = "sawtooth"
-                osc.frequency.setValueAtTime(440 + (i * 10), start)
-                osc.connect(gainNode)
-                osc.start(start)
-                osc.stop(start + 0.15)
-            }
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.8)
+            freq = 440
+            type = 'sawtooth'
         } else if (soundId === "vineboom") {
-            // Deep 808-style drop
-            const osc = ctx.createOscillator()
-            osc.type = "sine"
-            osc.frequency.setValueAtTime(60, now)
-            osc.frequency.exponentialRampToValueAtTime(30, now + 0.8)
-            osc.connect(gainNode)
-            osc.start(now)
-            osc.stop(now + 1.0)
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 1.0)
-        } else if (soundId === "sad-violin") {
-            // High wavering pitch
-            const osc = ctx.createOscillator()
-            osc.type = "triangle"
-            osc.frequency.setValueAtTime(880, now)
-            for (let i = 0; i < 10; i++) {
-                osc.frequency.linearRampToValueAtTime(880 + (i % 2 === 0 ? 20 : -20), now + (i * 0.1))
-            }
-            osc.connect(gainNode)
-            osc.start(now)
-            osc.stop(now + 1.2)
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 1.2)
-        } else if (soundId === "crickets") {
-            // Chirping noise
-            for (let i = 0; i < 5; i++) {
-                const start = now + (i * 0.4)
-                const osc = ctx.createOscillator()
-                osc.type = "sine"
-                osc.frequency.setValueAtTime(4000, start)
-                osc.connect(gainNode)
-                osc.start(start)
-                osc.stop(start + 0.1)
-            }
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 2.0)
-        } else if (soundId === "rimshot") {
-            // Snare-like noise burst then tap
-            const noise = ctx.createOscillator()
-            noise.type = "square"
-            noise.frequency.setValueAtTime(1000, now)
-            noise.connect(gainNode)
-            noise.start(now)
-            noise.stop(now + 0.05)
-
-            const tap = ctx.createOscillator()
-            tap.type = "sine"
-            tap.frequency.setValueAtTime(200, now + 0.1)
-            tap.connect(gainNode)
-            tap.start(now + 0.1)
-            tap.stop(now + 0.15)
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3)
-        } else if (soundId === "trombone") {
-            // Falling saw wave
-            const osc = ctx.createOscillator()
-            osc.type = "sawtooth"
-            osc.frequency.setValueAtTime(220, now)
-            osc.frequency.exponentialRampToValueAtTime(110, now + 0.8)
-            osc.connect(gainNode)
-            osc.start(now)
-            osc.stop(now + 1.0)
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 1.0)
-        } else if (soundId === "cartoon-boing") {
-            // Rising sine
-            const osc = ctx.createOscillator()
-            osc.type = "sine"
-            osc.frequency.setValueAtTime(200, now)
-            osc.frequency.exponentialRampToValueAtTime(800, now + 0.3)
-            osc.connect(gainNode)
-            osc.start(now)
-            osc.stop(now + 0.4)
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4)
-        } else if (soundId === "punch") {
-            // Low freq impact
-            const osc = ctx.createOscillator()
-            osc.type = "square"
-            osc.frequency.setValueAtTime(80, now)
-            osc.connect(gainNode)
-            osc.start(now)
-            osc.stop(now + 0.05)
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1)
-        } else if (soundId === "celebration") {
-            // Arpeggio synthesis
-            for (let i = 0; i < 4; i++) {
-                const osc = ctx.createOscillator()
-                const freq = [440, 554.37, 659.25, 880][i]
-                osc.type = "sine"
-                osc.frequency.setValueAtTime(freq, now + (i * 0.1))
-                osc.connect(gainNode)
-                osc.start(now + (i * 0.1))
-                osc.stop(now + (i * 0.1) + 0.3)
-            }
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.8)
-        } else if (soundId === "laughter") {
-            // Staccato synthesis
-            for (let i = 0; i < 6; i++) {
-                const osc = ctx.createOscillator()
-                osc.type = "triangle"
-                osc.frequency.setValueAtTime(800 + (i % 2 === 0 ? 200 : 0), now + (i * 0.12))
-                osc.connect(gainNode)
-                osc.start(now + (i * 0.12))
-                osc.stop(now + (i * 0.12) + 0.08)
-            }
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 1.0)
-        } else if (soundId === "applause") {
-            // Noise synthesis for clapping
-            for (let i = 0; i < 8; i++) {
-                const osc = ctx.createOscillator()
-                osc.type = "sawtooth"
-                osc.frequency.setValueAtTime(200 + Math.random() * 100, now + (i * 0.15))
-                osc.connect(gainNode)
-                osc.start(now + (i * 0.15))
-                osc.stop(now + (i * 0.15) + 0.05)
-            }
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 1.5)
-        } else if (soundId === "correct") {
-            const osc = ctx.createOscillator()
-            osc.type = "sine"
-            osc.frequency.setValueAtTime(600, now)
-            osc.frequency.setValueAtTime(800, now + 0.15)
-            osc.connect(gainNode)
-            osc.start(now)
-            osc.stop(now + 0.5)
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5)
+            freq = 50
+            type = 'sine'
         } else if (soundId === "wrong") {
-            const osc = ctx.createOscillator()
-            osc.type = "sawtooth"
-            osc.frequency.setValueAtTime(150, now)
-            osc.frequency.linearRampToValueAtTime(120, now + 0.5)
-            osc.connect(gainNode)
-            osc.start(now)
-            osc.stop(now + 0.6)
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.6)
+            freq = 150
+            type = 'sawtooth'
         }
 
-        // Auto-reset state
+        const url = generateWavDataUri(freq, duration, this.state.volume * 0.4, type)
+        const audio = new Audio(url)
+        
+        this.setState({ isPlaying: true, currentSound: soundId })
+        audio.play().catch(() => {})
+
         setTimeout(() => {
             this.setState({ isPlaying: false, currentSound: null })
-        }, duration)
+            if (url.startsWith('blob:')) {
+                URL.revokeObjectURL(url)
+            }
+        }, duration * 1000)
     }
 
     /**
@@ -507,19 +280,18 @@ class SoundboardManager {
         return () => window.removeEventListener("keydown", handleKeydown)
     }
 
-    /**
-     * Clean up
-     */
     destroy(): void {
-        this.audioBuffers.clear()
+        this.audioCache.forEach(audio => {
+            audio.pause()
+            if (audio.src.startsWith('blob:')) {
+                URL.revokeObjectURL(audio.src)
+            }
+        })
+        this.audioCache.clear()
         this.unsubscribers.forEach((unsub) => unsub())
         this.unsubscribers = []
         this.roomId = null
         this.userId = null
-        if (this.audioContext) {
-            this.audioContext.close()
-            this.audioContext = null
-        }
     }
 }
 

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Phone, PhoneOff, User, Video } from "lucide-react"
 import type { CallData } from "@/utils/infra/call-signaling"
 import { NotificationCard } from "@/components/ui/notification-card"
+import { audioNotificationManager } from "@/utils/hardware/audio-notification-manager"
 
 interface IncomingVideoCallNotificationProps {
   call: CallData
@@ -14,16 +15,33 @@ export function IncomingVideoCallNotification({ call, onAnswer, onDecline }: Inc
   const [isVisible, setIsVisible] = useState(true)
 
   useEffect(() => {
+    // Start incoming ringtone
+    audioNotificationManager.startIncomingRing()
+
     // Auto-hide after 30 seconds
     const timer = setTimeout(() => {
+      audioNotificationManager.stopAll()
       setIsVisible(false)
       onDecline()
     }, 30000)
 
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+      audioNotificationManager.stopAll()
+    }
   }, [onDecline])
 
   if (!isVisible) return null
+
+  const handleAnswer = () => {
+    audioNotificationManager.stopAll()
+    onAnswer()
+  }
+
+  const handleDecline = () => {
+    audioNotificationManager.stopAll()
+    onDecline()
+  }
 
   return (
     <NotificationCard
@@ -52,7 +70,7 @@ export function IncomingVideoCallNotification({ call, onAnswer, onDecline }: Inc
         <Button
           size="icon"
           className="w-10 h-10 rounded-full bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20"
-          onClick={onDecline}
+          onClick={handleDecline}
           aria-label="Decline video call"
         >
           <PhoneOff className="w-5 h-5 text-white" />
@@ -60,7 +78,7 @@ export function IncomingVideoCallNotification({ call, onAnswer, onDecline }: Inc
         <Button
           size="icon"
           className="w-10 h-10 rounded-full bg-green-500 hover:bg-green-600 shadow-lg shadow-green-500/20"
-          onClick={onAnswer}
+          onClick={handleAnswer}
           aria-label="Answer video call"
         >
           <Phone className="w-5 h-5 text-white" />

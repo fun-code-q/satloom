@@ -6,6 +6,7 @@
 
 import { getFirebaseDatabase } from "@/lib/firebase"
 import { ref, set, push, onValue, remove } from "firebase/database"
+import { generateWavDataUri } from "./audio-utility"
 
 // Safe database reference with null check
 const getDbRef = (path: string) => {
@@ -134,133 +135,56 @@ class AudioEmojiManager {
         this.playedEventIds.add(play.id)
     }
 
-    private playLocalAudio(emoji: AudioEmoji): void {
-        // Generate simple beep sounds for demo (since we don't have actual audio files)
-        if (this.audioElement) {
-            this.audioElement.pause()
-        }
-
-        this.audioElement = new Audio()
-        this.audioElement.volume = 0.5
-
-        // Create a simple beep pattern based on emoji type
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-        const oscillator = audioContext.createOscillator()
-        const gainNode = audioContext.createGain()
-
-        oscillator.connect(gainNode)
-        gainNode.connect(audioContext.destination)
-
-        // Different sounds for specific emojis
-        const now = audioContext.currentTime
-
-        if (emoji.id === "celebration") {
-            // Arpeggio
-            oscillator.type = "sine"
-            oscillator.frequency.setValueAtTime(440, now)       // A4
-            oscillator.frequency.setValueAtTime(554.37, now + 0.1) // C#5
-            oscillator.frequency.setValueAtTime(659.25, now + 0.2) // E5
-            oscillator.frequency.setValueAtTime(880, now + 0.3)    // A5
-            gainNode.gain.setValueAtTime(0.3, now)
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.8)
-            oscillator.start(now)
-            oscillator.stop(now + 0.8)
-            emoji.duration = 800
-        } else if (emoji.id === "laughter") {
-            // Staccato high pitches
-            oscillator.type = "triangle"
-            for (let i = 0; i < 5; i++) {
-                oscillator.frequency.setValueAtTime(800 + (i % 2 === 0 ? 200 : 0), now + (i * 0.15))
-                gainNode.gain.setValueAtTime(0.3, now + (i * 0.15))
-                gainNode.gain.exponentialRampToValueAtTime(0.01, now + (i * 0.15) + 0.1)
-            }
-            oscillator.start(now)
-            oscillator.stop(now + 0.8)
-            emoji.duration = 800
-        } else if (emoji.id === "sad" || emoji.id === "sad_violin") {
-            // Descending pitch
-            oscillator.type = "sine"
-            oscillator.frequency.setValueAtTime(440, now)
-            oscillator.frequency.exponentialRampToValueAtTime(220, now + 1.0)
-            gainNode.gain.setValueAtTime(0.3, now)
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 1.0)
-            oscillator.start(now)
-            oscillator.stop(now + 1.0)
-            emoji.duration = 1000
-        } else if (emoji.id === "correct") {
-            // Happy ding (two rising notes)
-            oscillator.type = "sine"
-            oscillator.frequency.setValueAtTime(600, now)
-            oscillator.frequency.setValueAtTime(800, now + 0.15)
-            gainNode.gain.setValueAtTime(0.3, now)
-            gainNode.gain.setValueAtTime(0.3, now + 0.15)
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5)
-            oscillator.start(now)
-            oscillator.stop(now + 0.5)
-            emoji.duration = 500
-        } else if (emoji.id === "wrong" || emoji.id === "buzzer") {
-            // Low harsh buzz
-            oscillator.type = "sawtooth"
-            oscillator.frequency.setValueAtTime(150, now)
-            oscillator.frequency.setValueAtTime(140, now + 0.2)
-            gainNode.gain.setValueAtTime(0.3, now)
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.6)
-            oscillator.start(now)
-            oscillator.stop(now + 0.6)
-            emoji.duration = 600
-        } else if (emoji.id === "fire" || emoji.id === "vine_boom") {
-            // Low boom drop
-            oscillator.type = "square"
-            oscillator.frequency.setValueAtTime(100, now)
-            oscillator.frequency.exponentialRampToValueAtTime(40, now + 0.5)
-            gainNode.gain.setValueAtTime(0.4, now)
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5)
-            oscillator.start(now)
-            oscillator.stop(now + 0.5)
-            emoji.duration = 500
-        } else if (emoji.id === "ding") {
-            oscillator.type = "sine"
-            oscillator.frequency.setValueAtTime(1200, now)
-            gainNode.gain.setValueAtTime(0.3, now)
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5)
-            oscillator.start(now)
-            oscillator.stop(now + 0.5)
-            emoji.duration = 500
-        } else {
-            // Generic fallback sounds based on category
-            switch (emoji.category) {
-                case "reaction":
-                    oscillator.frequency.value = 500
-                    oscillator.type = "sine"
-                    break
-                case "game":
-                    oscillator.frequency.value = 880
-                    oscillator.type = "square"
-                    break
-                case "meme":
-                    oscillator.frequency.value = 220
-                    oscillator.type = "sawtooth"
-                    break
-                default:
-                    oscillator.frequency.value = 440
-                    oscillator.type = "sine"
-            }
-            gainNode.gain.setValueAtTime(0.3, now)
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5)
-            oscillator.start(now)
-            oscillator.stop(now + 0.5)
-            emoji.duration = 500
-        }
-
-        this.state.isPlaying = true
-        this.notify()
-
-        setTimeout(() => {
-            this.state.isPlaying = false
-            this.notify()
-        }, emoji.duration)
+  private async playLocalAudio(emoji: AudioEmoji): Promise<void> {
+    if (this.audioElement) {
+      this.audioElement.pause();
     }
 
+    // Determine signal parameters for procedural fallback
+    let freq = 440;
+    let duration = emoji.duration / 1000;
+    let type: 'sine' | 'square' | 'sawtooth' = 'sine';
+
+    if (emoji.id === "celebration") {
+      freq = 880;
+      type = 'sine';
+    } else if (emoji.id === "laughter") {
+      freq = 600;
+      type = 'square';
+    } else if (emoji.id === "sad" || emoji.id === "sad_violin") {
+      freq = 330;
+      type = 'sine';
+    } else if (emoji.id === "wrong" || emoji.id === "buzzer") {
+      freq = 150;
+      type = 'sawtooth';
+    } else if (emoji.id === "fire" || emoji.id === "vine_boom") {
+      freq = 100;
+      type = 'square';
+    } else if (emoji.id === "ding") {
+      freq = 1200;
+      type = 'sine';
+    }
+
+    // Use HTML5 Audio
+    const url = generateWavDataUri(freq, duration, 0.3, type);
+    this.audioElement = new Audio(url);
+    this.audioElement.volume = 0.5;
+
+    this.state.isPlaying = true;
+    this.notify();
+
+    await this.audioElement.play().catch(err => {
+      console.warn("AudioEmojiManager: Failed to play audio", err);
+    });
+
+    setTimeout(() => {
+      this.state.isPlaying = false;
+      this.notify();
+      if (url.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+      }
+    }, emoji.duration);
+  }
     async addCustomEmoji(name: string, emoji: string, audioUrl: string, duration: number = 2000): Promise<void> {
         const customEmoji: AudioEmoji = {
             id: `custom_${Date.now()}`,

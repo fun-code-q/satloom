@@ -1,6 +1,8 @@
+import { generateWavDataUri } from "../hardware/audio-utility"
+
 export class NotificationSystem {
   private static instance: NotificationSystem
-  private audioContext: AudioContext | null = null
+  private audioCache: Map<string, HTMLAudioElement> = new Map()
   private notificationsEnabled = true
   private soundEnabled = true
   private vibrationEnabled = true
@@ -17,18 +19,7 @@ export class NotificationSystem {
     return NotificationSystem.instance
   }
 
-  constructor() {
-    this.initAudioContext()
-  }
-
-  private initAudioContext() {
-    if (typeof window === "undefined") return
-    try {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-    } catch (error) {
-      console.warn("Audio context not supported:", error)
-    }
-  }
+  constructor() {}
 
   setNotificationsEnabled(enabled: boolean) {
     this.notificationsEnabled = enabled
@@ -51,45 +42,40 @@ export class NotificationSystem {
     }
   }
 
-  private async playTone(frequency: number, duration: number, volume = 0.3, type: OscillatorType = "sine") {
-    if (!this.soundEnabled || !this.audioContext) return
+  private async playTone(frequency: number, duration: number, volume = 0.3, type: 'sine' | 'square' | 'sawtooth' = "sine") {
+    if (!this.soundEnabled) return
 
     try {
-      if (this.audioContext.state === "suspended") {
-        await this.audioContext.resume()
+      const key = `${frequency}-${duration}-${volume}-${type}`
+      let audio = this.audioCache.get(key)
+      
+      if (!audio) {
+        const url = generateWavDataUri(frequency, duration, volume, type)
+        audio = new Audio(url)
+        this.audioCache.set(key, audio)
       }
 
-      const oscillator = this.audioContext.createOscillator()
-      const gainNode = this.audioContext.createGain()
-
-      oscillator.connect(gainNode)
-      gainNode.connect(this.audioContext.destination)
-
-      oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime)
-      oscillator.type = type
-
-      gainNode.gain.setValueAtTime(0, this.audioContext.currentTime)
-      gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.01)
-      gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration)
-
       this.notifyAudioActivity(true)
-
-      oscillator.start(this.audioContext.currentTime)
-      oscillator.stop(this.audioContext.currentTime + duration)
+      
+      // Reset and play
+      audio.currentTime = 0
+      await audio.play().catch(e => {
+        if (e.name !== "AbortError") console.warn("Error playing audio:", e)
+      })
 
       setTimeout(() => {
         this.notifyAudioActivity(false)
-      }, duration * 1000 + 100)
+      }, duration * 1000)
     } catch (error) {
       console.warn("Error playing tone:", error)
       this.notifyAudioActivity(false)
     }
   }
 
-  private async playChord(frequencies: number[], duration: number, volume = 0.3, type: OscillatorType = "sine") {
-    if (!this.soundEnabled || !this.audioContext) return
-    const individualVolume = volume / frequencies.length
-    await Promise.all(frequencies.map(freq => this.playTone(freq, duration, individualVolume, type)))
+  private async playChord(frequencies: number[], duration: number, volume = 0.3, type: 'sine' | 'square' | 'sawtooth' = "sine") {
+    if (!this.soundEnabled) return
+    // Simple chord implementation: play simultaneous tones
+    await Promise.all(frequencies.map(freq => this.playTone(freq, duration, volume / frequencies.length, type)))
   }
 
   private showNotification(title: string, body: string, icon?: string) {
@@ -322,18 +308,14 @@ export class NotificationSystem {
   cleanup() {
     if (this.isCleanupCalled) return
     this.isCleanupCalled = true
-    this.stopRinging()
-    this.audioActivityListeners = []
-    try {
-      if (this.audioContext) {
-        if (this.audioContext.state !== "closed") {
-          this.audioContext.close().catch((error) => console.warn("Error closing audio context:", error))
-        }
-        this.audioContext = null
+
+    // Revoke all blob URLs in cache
+    this.audioCache.forEach(audio => {
+      if (audio.src.startsWith('blob:')) {
+        URL.revokeObjectURL(audio.src)
       }
-    } catch (error) {
-      console.warn("Cleanup error:", error)
-    }
+    })
+    this.audioCache.clear()
   }
 }
 

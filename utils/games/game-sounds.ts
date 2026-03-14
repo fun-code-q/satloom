@@ -1,6 +1,8 @@
+import { generateWavDataUri } from "../hardware/audio-utility"
+
 export class GameSounds {
   private static instance: GameSounds
-  private audioContext: AudioContext | null = null
+  private audioCache: Map<string, HTMLAudioElement> = new Map()
   private soundEnabled = true
   private isCleanupCalled = false
 
@@ -11,46 +13,29 @@ export class GameSounds {
     return GameSounds.instance
   }
 
-  constructor() {
-    this.initAudioContext()
-  }
-
-  private initAudioContext() {
-    if (typeof window === "undefined") return
-    try {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-    } catch (error) {
-      console.warn("Audio context not supported:", error)
-    }
-  }
+  constructor() {}
 
   setSoundEnabled(enabled: boolean) {
     this.soundEnabled = enabled
   }
 
-  private async playTone(frequency: number, duration: number, volume = 0.3, type: OscillatorType = "sine") {
-    if (!this.soundEnabled || !this.audioContext) return
+  private async playTone(frequency: number, duration: number, volume = 0.3, type: 'sine' | 'square' | 'sawtooth' = "sine") {
+    if (!this.soundEnabled) return
 
     try {
-      if (this.audioContext.state === "suspended") {
-        await this.audioContext.resume()
+      const key = `${frequency}-${duration}-${volume}-${type}`
+      let audio = this.audioCache.get(key)
+      
+      if (!audio) {
+        const url = generateWavDataUri(frequency, duration, volume, type)
+        audio = new Audio(url)
+        this.audioCache.set(key, audio)
       }
 
-      const oscillator = this.audioContext.createOscillator()
-      const gainNode = this.audioContext.createGain()
-
-      oscillator.connect(gainNode)
-      gainNode.connect(this.audioContext.destination)
-
-      oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime)
-      oscillator.type = type
-
-      gainNode.gain.setValueAtTime(0, this.audioContext.currentTime)
-      gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.01)
-      gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration)
-
-      oscillator.start(this.audioContext.currentTime)
-      oscillator.stop(this.audioContext.currentTime + duration)
+      audio.currentTime = 0
+      await audio.play().catch(e => {
+        if (e.name !== "AbortError") console.warn("Error playing game sound:", e)
+      })
     } catch (error) {
       console.warn("Error playing tone:", error)
     }
@@ -98,23 +83,18 @@ export class GameSounds {
     setTimeout(() => this.playTone(300, 0.8, 0.3), 400)
   }
 
-  // Cleanup method to properly close AudioContext
+  // Cleanup method to revoke all blob URLs
   cleanup() {
     if (this.isCleanupCalled) return
     this.isCleanupCalled = true
 
-    try {
-      if (this.audioContext) {
-        if (this.audioContext.state !== "closed") {
-          this.audioContext.close().catch((error) => {
-            console.warn("Error closing audio context:", error)
-          })
-        }
-        this.audioContext = null
+    // Revoke all blob URLs in cache
+    this.audioCache.forEach(audio => {
+      if (audio.src.startsWith('blob:')) {
+        URL.revokeObjectURL(audio.src)
       }
-    } catch (error) {
-      console.warn("Error during game sounds cleanup:", error)
-    }
+    })
+    this.audioCache.clear()
   }
 }
 
