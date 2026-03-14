@@ -38,6 +38,34 @@ export class TicTacToeManager {
         return TicTacToeManager.instance
     }
 
+    private normalizeGame(game: any): TicTacToeGame | null {
+        if (!game) return null
+
+        // Ensure board
+        if (!game.board || !Array.isArray(game.board)) {
+            game.board = Array(9).fill(null)
+        } else {
+            // Handle sparse arrays/objects
+            const normalizedBoard: CellValue[] = Array(9).fill(null)
+            for (let i = 0; i < 9; i++) {
+                normalizedBoard[i] = game.board[i] !== undefined ? game.board[i] : null
+            }
+            game.board = normalizedBoard
+        }
+
+        // Ensure moves
+        if (!game.moves || !Array.isArray(game.moves)) {
+            game.moves = []
+        }
+
+        // Ensure rematches
+        if (!game.rematches || !Array.isArray(game.rematches)) {
+            game.rematches = []
+        }
+
+        return game as TicTacToeGame
+    }
+
     // Create a new game
     async createGame(
         roomId: string,
@@ -89,7 +117,7 @@ export class TicTacToeManager {
                 return false
             }
 
-            const game = snapshot.val() as TicTacToeGame
+            const game = this.normalizeGame(snapshot.val()); if (!game) return false
 
             if (game.status !== "waiting") {
                 return false
@@ -120,7 +148,8 @@ export class TicTacToeManager {
                 return { success: false, error: "Game not found" }
             }
 
-            const game = snapshot.val() as TicTacToeGame
+            const game = this.normalizeGame(snapshot.val())
+            if (!game) return { success: false, error: "Game not found" }
 
             if (game.status !== "in_progress") {
                 return { success: false, error: "Game is not in progress" }
@@ -198,7 +227,7 @@ export class TicTacToeManager {
                 return false
             }
 
-            const game = snapshot.val() as TicTacToeGame
+            const game = this.normalizeGame(snapshot.val()); if (!game) return false
 
             if (!game.rematches.includes(playerId)) {
                 game.rematches.push(playerId)
@@ -294,8 +323,8 @@ export class TicTacToeManager {
         const gameRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/tictactoe/${gameId}`)
 
         const unsubscribe = onValue(gameRef, (snapshot) => {
-            const data = snapshot.val();
-            callback(data ? (data as TicTacToeGame) : null)
+            const data = this.normalizeGame(snapshot.val())
+            callback(data)
         })
 
         this.listeners.push(unsubscribe)

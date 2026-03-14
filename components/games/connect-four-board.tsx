@@ -56,6 +56,16 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
             const isHostPlayer = gameConfig.players[0]?.id === currentUserId
             const unsubscribe = manager.listenForGameUpdates(roomId, gameId, (gameState) => {
                 if (gameState) {
+                    // redundant safety check
+                    if (!gameState.board || !Array.isArray(gameState.board)) {
+                        gameState.board = Array(6).fill(null).map(() => Array(7).fill(null))
+                    }
+                    if (!gameState.moves || !Array.isArray(gameState.moves)) {
+                        gameState.moves = []
+                    }
+                    if (!gameState.rematches || !Array.isArray(gameState.rematches)) {
+                        gameState.rematches = []
+                    }
                     setGame(gameState)
                     setLoading(false)
 
@@ -297,9 +307,9 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
 
                 {/* Grid */}
                 <div className="grid grid-rows-6 gap-3 sm:gap-5">
-                    {(game?.board || []).map((row, r) => (
+                    {(Array.isArray(game?.board) ? game.board : []).map((row, r) => (
                         <div key={r} className="flex gap-3 sm:gap-5">
-                            {(row || []).map((cell, c) => (
+                            {(Array.isArray(row) ? row : []).map((cell, c) => (
                                 <div
                                     key={c}
                                     onMouseEnter={() => setHoverColumn(c)}

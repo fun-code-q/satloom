@@ -43,6 +43,40 @@ export class ConnectFourManager {
         return ConnectFourManager.instance
     }
 
+    private normalizeGame(game: any): ConnectFourGame | null {
+        if (!game) return null
+
+        // Ensure board
+        if (!game.board || !Array.isArray(game.board)) {
+            game.board = Array(6).fill(null).map(() => Array(7).fill(null))
+        } else {
+            // Handle sparse arrays/objects for rows
+            for (let r = 0; r < 6; r++) {
+                if (!game.board[r]) {
+                    game.board[r] = Array(7).fill(null)
+                } else if (!Array.isArray(game.board[r])) {
+                    const rowData = game.board[r]
+                    game.board[r] = Array(7).fill(null)
+                    for (let c = 0; c < 7; c++) {
+                        game.board[r][c] = rowData[c] !== undefined ? rowData[c] : null
+                    }
+                }
+            }
+        }
+
+        // Ensure moves
+        if (!game.moves || !Array.isArray(game.moves)) {
+            game.moves = []
+        }
+
+        // Ensure rematches
+        if (!game.rematches || !Array.isArray(game.rematches)) {
+            game.rematches = []
+        }
+
+        return game as ConnectFourGame
+    }
+
     // Create a new game
     async createGame(
         roomId: string,
@@ -100,7 +134,8 @@ export class ConnectFourManager {
                 return false
             }
 
-            const game = snapshot.val() as ConnectFourGame
+            const game = this.normalizeGame(snapshot.val())
+            if (!game) return false
 
             if (game.status !== "waiting") {
                 return false
@@ -136,7 +171,8 @@ export class ConnectFourManager {
                 return { success: false, error: "Game not found" }
             }
 
-            const game = snapshot.val() as ConnectFourGame
+            const game = this.normalizeGame(snapshot.val())
+            if (!game) return { success: false, error: "Game not found" }
 
             if (game.status !== "in_progress") {
                 return { success: false, error: "Game is not in progress" }
@@ -328,7 +364,8 @@ export class ConnectFourManager {
         const gameRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/games/connect4/${gameId}`)
 
         const unsubscribe = onValue(gameRef, (snapshot) => {
-            callback(snapshot.exists() ? (snapshot.val() as ConnectFourGame) : null)
+            const data = this.normalizeGame(snapshot.val())
+            callback(data)
         })
 
         this.listeners.push(unsubscribe)

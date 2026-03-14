@@ -56,6 +56,16 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
             const isHostPlayer = gameConfig.players[0]?.id === currentUserId
             const unsubscribe = manager.listenForGameUpdates(roomId, gameId, (gameState) => {
                 if (gameState) {
+                    // redundant safety check
+                    if (!gameState.board || !Array.isArray(gameState.board)) {
+                        gameState.board = Array(9).fill(null)
+                    }
+                    if (!gameState.moves || !Array.isArray(gameState.moves)) {
+                        gameState.moves = []
+                    }
+                    if (!gameState.rematches || !Array.isArray(gameState.rematches)) {
+                        gameState.rematches = []
+                    }
                     setGame(gameState)
                     setLoading(false)
 
@@ -266,7 +276,7 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
 
             {/* Board */}
             <div className="grid grid-cols-3 gap-4 bg-slate-800/50 p-4 rounded-3xl relative shadow-inner border border-white/5">
-                {(game?.board || []).map((cell, i) => (
+                {(Array.isArray(game?.board) ? game.board : []).map((cell, i) => (
                     <button
                         key={i}
                         onClick={() => handleCellClick(i)}
