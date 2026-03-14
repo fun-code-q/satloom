@@ -301,6 +301,13 @@ export function useChatCalls(params: UseChatCallsParams) {
                 params.setIsTheaterHost(true)
                 params.setShowTheaterFullscreen(true)
                 userPresence.updateActivity(roomId, currentUserId, "theater")
+                
+                // Request fullscreen when starting theater
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        console.warn("Fullscreen request failed:", err)
+                    })
+                }
             }
         } catch (error) {
             console.error("Error creating theater session:", error)
@@ -316,7 +323,20 @@ export function useChatCalls(params: UseChatCallsParams) {
                 params.setCurrentTheaterSession(session)
                 params.setShowTheaterFullscreen(true)
                 userPresence.updateActivity(roomId, currentUserId, "theater")
+
+                // Request fullscreen when joining theater
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        console.error("Error entering fullscreen on theater join:", err);
+                    });
+                }
             })
+            // Request fullscreen immediately after joining, in case the session listener takes time
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error("Error entering fullscreen on theater join:", err);
+                });
+            }
             params.setIsTheaterHost(false)
             params.setTheaterInvite(null)
         } catch (error) {

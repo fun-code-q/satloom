@@ -16,6 +16,7 @@ interface ReactionDrop {
     rotation: number
     scale: number
     opacity: number
+    isMajority?: boolean
 }
 
 interface ReactionEvent {
@@ -58,7 +59,7 @@ class ReactionRainManager {
     /**
      * Add a reaction and potentially trigger rain
      */
-    addReaction(emoji: ReactionEmoji, userId: string): void {
+    addReaction(emoji: ReactionEmoji, userId: string, totalUsers: number = 0): void {
         const now = Date.now()
         const queue = this.reactionQueue.get(emoji) || []
 
@@ -73,36 +74,46 @@ class ReactionRainManager {
         this.reactionQueue.set(emoji, recentReactions)
 
         // Check if we should trigger rain
-        const uniqueUsers = new Set(recentReactions.map((r) => r.userId)).size
-        if (uniqueUsers >= this.TRIGGER_COUNT) {
-            this.triggerRain(emoji, uniqueUsers)
+        const uniqueUsersCount = new Set(recentReactions.map((r) => r.userId)).size
+        
+        // Majority logic: 50% of total users (min 2 users unless it's a 1-person room)
+        const threshold = totalUsers > 0 ? Math.max(2, Math.ceil(totalUsers * 0.5)) : this.TRIGGER_COUNT
+        
+        if (uniqueUsersCount >= threshold) {
+            this.triggerRain(emoji, uniqueUsersCount, true) // Force "rain" mode
             // Clear queue after triggering
             this.reactionQueue.set(emoji, [])
+        } else {
+            // Just a single pop effect if not majority
+            this.triggerRain(emoji, 1, false)
         }
 
         // Notify listeners
-        this.notifyListeners(emoji, uniqueUsers)
+        this.notifyListeners(emoji, uniqueUsersCount)
     }
 
     /**
      * Trigger the rain effect for an emoji
      */
-    private triggerRain(emoji: ReactionEmoji, count: number): void {
+    private triggerRain(emoji: ReactionEmoji, count: number, isMajority: boolean = false): void {
         if (!this.container) return
 
         const drops: ReactionDrop[] = []
-        const dropCount = Math.min(count * 3, 30) // Max 30 drops at once
+        // If majority, rain heavily for ~4 seconds. 
+        // We'll spawn more drops if it's a majority.
+        const dropCount = isMajority ? Math.min(count * 10, 100) : Math.min(count * 3, 30)
 
         for (let i = 0; i < dropCount; i++) {
             drops.push({
                 id: `drop-${Date.now()}-${i}`,
                 emoji,
                 x: Math.random() * 100, // Percentage across screen
-                y: -10 - Math.random() * 20, // Start above screen
-                speed: 0.5 + Math.random() * 1.5, // Random fall speed
+                y: -10 - Math.random() * (isMajority ? 100 : 20), // Start above screen, more spread out for majority
+                speed: 0.3 + Math.random() * 1.0, // Slower speed so they last longer (~4s to cross)
                 rotation: Math.random() * 360,
                 scale: 0.5 + Math.random() * 1,
                 opacity: 1,
+                isMajority,
             })
         }
 
@@ -194,7 +205,7 @@ class ReactionRainManager {
           position: absolute;
           left: ${drop.x}%;
           top: ${drop.y}%;
-          font-size: ${drop.scale * 2}rem;
+          font-size: ${drop.scale * (drop.isMajority ? 4 : 2)}rem;
           transform: translate(-50%, -50%) rotate(${drop.rotation}deg);
           opacity: ${drop.opacity};
           transition: opacity 0.1s ease-out;

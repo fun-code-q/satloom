@@ -564,6 +564,8 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
                     onFileProcessed={() => props.setPendingMediaFile(null)}
                     pendingScreenStream={props.pendingScreenStream}
                     onScreenStreamProcessed={() => props.setPendingScreenStream(null)}
+                    showSoundboard={props.showSoundboard}
+                    setShowSoundboard={props.setShowSoundboard}
                 />
             )}
 
@@ -804,16 +806,7 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
                     props.setVanishDuration(duration)
                 }}
             />
-            {props.showMobileReactions && (
-                <div className="fixed bottom-0 left-0 right-0 z-[600] animate-in slide-in-from-bottom duration-300">
-                    <ReactionRain roomId={roomId} userId={currentUserId} inline={true} />
-                    <div className="absolute top-0 right-4 p-2">
-                        <Button variant="ghost" size="icon" onClick={() => props.setShowMobileReactions(false)} className="h-8 w-8 text-white bg-black/20 rounded-full">
-                            <X className="w-4 h-4" />
-                        </Button>
-                    </div>
-                </div>
-            )}
+            {/* Removed duplicate mobile reaction rendering as ChatInput handles it */}
         </>
     )
 })

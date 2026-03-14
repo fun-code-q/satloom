@@ -81,12 +81,12 @@ export function TheaterChatOverlay({
     }
 
     return (
-        <div className="fixed sm:absolute right-0 sm:right-4 bottom-0 sm:bottom-24 top-0 sm:top-24 w-full sm:w-80 bg-slate-900/95 sm:bg-slate-900/90 backdrop-blur-xl sm:backdrop-blur-md sm:rounded-xl border-l sm:border border-slate-700 flex flex-col shadow-2xl z-[70] animate-in fade-in slide-in-from-right-4">
+        <div className="fixed sm:absolute bottom-20 sm:bottom-24 right-4 left-4 sm:left-auto w-auto sm:w-80 max-h-[50vh] sm:max-h-[70vh] bg-slate-950/40 backdrop-blur-3xl rounded-3xl sm:rounded-2xl border border-white/10 flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[70] animate-in fade-in slide-in-from-bottom-4 sm:slide-in-from-right-4 overflow-hidden">
             {/* Header */}
-            <div className="p-3 border-b border-slate-700 flex items-center justify-between">
+            <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/5">
                 <div className="flex items-center gap-2 text-white">
                     <MessageSquare className="w-4 h-4 text-cyan-400" />
-                    <span className="font-medium text-sm">Live Chat</span>
+                    <span className="font-bold text-xs tracking-wider uppercase">Live Chat</span>
                 </div>
                 <Button
                     variant="ghost"
@@ -118,15 +118,15 @@ export function TheaterChatOverlay({
                         </div>
 
                         <div
-                            className={`px-3 py-2 rounded-lg max-w-[90%] text-sm break-words ${isOwnMessage(msg)
-                                ? "bg-cyan-600/50 text-white rounded-tr-none"
-                                : "bg-slate-700/50 text-white rounded-tl-none"
+                            className={`px-3 py-2 rounded-2xl max-w-[85%] text-xs break-words shadow-sm ${isOwnMessage(msg)
+                                ? "bg-cyan-500/30 text-white rounded-tr-none border border-cyan-500/20"
+                                : "bg-white/10 text-white rounded-tl-none border border-white/10"
                                 }`}
                         >
                             {(!msg.type || msg.type === "text") ? (
                                 msg.text
                             ) : (
-                                <span className="italic text-gray-300">[{msg.type} message]</span>
+                                <span className="italic opacity-60">[{msg.type} message]</span>
                             )}
                         </div>
                     </div>
@@ -134,22 +134,22 @@ export function TheaterChatOverlay({
             </div>
 
             {/* Input */}
-            <div className="p-3 border-t border-slate-700">
+            <div className="p-4 bg-white/5 border-t border-white/5">
                 <div className="relative">
                     <Input
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder="Type a message..."
-                        className="pr-10 bg-slate-800 border-slate-600 text-white placeholder-gray-400 focus-visible:ring-cyan-500"
+                        placeholder="Say something..."
+                        className="pr-12 bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-cyan-500/50 rounded-2xl h-11 text-xs"
                     />
                     <Button
                         size="icon"
-                        className="absolute right-1 top-1 h-8 w-8 bg-cyan-500 hover:bg-cyan-600 text-white rounded-md"
+                        className="absolute right-1 top-1 h-9 w-9 bg-cyan-500 hover:bg-cyan-600 text-white rounded-xl shadow-lg shadow-cyan-500/20"
                         onClick={handleSend}
                         disabled={!inputText.trim()}
                     >
-                        <Send className="w-3 h-3" />
+                        <Send className="w-3.5 h-3.5" />
                     </Button>
                 </div>
             </div>

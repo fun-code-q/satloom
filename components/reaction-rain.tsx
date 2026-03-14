@@ -6,6 +6,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button"
 import { Sparkles } from "lucide-react"
 import { telemetry } from "@/utils/core/telemetry"
+import { roomSignaling } from "@/utils/infra/room-signaling"
+import { useChatStore } from "@/stores/chat-store"
 
 interface ReactionRainProps {
     roomId: string
@@ -38,6 +40,8 @@ export function ReactionRain({ roomId, userId, inline = false }: ReactionRainPro
     })
     const [isOpen, setIsOpen] = useState(false)
 
+    const { onlineUsers } = useChatStore()
+
     useEffect(() => {
         if (!containerRef.current) return
 
@@ -52,14 +56,22 @@ export function ReactionRain({ roomId, userId, inline = false }: ReactionRainPro
             }))
         })
 
+        // Listen for remote reactions from signaling
+        const unsubscribeSignaling = roomSignaling.listenForReactions(roomId, (reaction) => {
+            // Pass total users count from store to calculate majority threshold
+            reactionRain.addReaction(reaction.emoji, reaction.userId, onlineUsers.length)
+        })
+
         return () => {
             unsubscribe()
+            unsubscribeSignaling()
             reactionRain.clear()
         }
-    }, [])
+    }, [roomId])
 
     const handleReaction = (emoji: ReactionEmoji) => {
-        reactionRain.addReaction(emoji, userId)
+        // Send to signaling instead of adding locally (it will come back via the listener)
+        roomSignaling.sendReaction(roomId, emoji, userId, "") 
         telemetry.logEvent('emoji_sent', roomId, userId, 'Room React', { emoji, type: 'rain' })
         setIsOpen(false)
     }
