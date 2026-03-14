@@ -631,56 +631,63 @@ export function TheaterFullscreen({
         </div>
 
         <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent p-4 sm:p-6 transition-opacity duration-300 z-50 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
-          <div className="space-y-1 mb-4">
-            <div className="flex items-center justify-between text-white/90 text-[10px] sm:text-xs px-0.5">
+          <div className="space-y-1 mb-2 sm:mb-4">
+            <div className="flex items-center gap-3">
+              <span className="hidden sm:inline-block font-medium bg-black/40 px-2 py-0.5 rounded-full text-white/90 text-[10px] sm:text-xs shrink-0">{formatTime(currentTime)}</span>
+              <div className="flex-1 relative group py-2">
+                <div className="w-full h-1 bg-white/20 rounded-full group-hover:h-1.5 transition-all overflow-hidden border border-white/5">
+                  <div className="h-full bg-cyan-400 rounded-full shadow-[0_0_10px_rgba(34,211,238,0.5)]" style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }} />
+                </div>
+                {isHost && <input type="range" min={0} max={duration} step="any" value={currentTime} onMouseDown={() => setIsDragging(true)} onMouseUp={() => { setIsDragging(false); handleSeek(currentTime) }}
+                  onChange={(e) => setCurrentTime(Number(e.target.value))} className="absolute inset-x-0 -top-1 bottom-0 w-full opacity-0 cursor-pointer z-10" />}
+              </div>
+              <span className="hidden sm:inline-block font-medium bg-black/40 px-2 py-0.5 rounded-full text-white/90 text-[10px] sm:text-xs shrink-0">{formatTime(duration)}</span>
+            </div>
+            {/* Mobile-only time bar below seekbar for portrait, but we'll hide it in landscape later with CSS or just keep it side-by-side */}
+            <div className="flex sm:hidden items-center justify-between text-white/90 text-[10px] px-0.5">
               <span className="font-medium bg-black/40 px-2 py-0.5 rounded-full">{formatTime(currentTime)}</span>
               <span className="font-medium bg-black/40 px-2 py-0.5 rounded-full">{formatTime(duration)}</span>
             </div>
-            <div className="relative group py-2">
-              <div className="w-full h-1 bg-white/20 rounded-full group-hover:h-1.5 transition-all overflow-hidden">
-                <div className="h-full bg-cyan-400 rounded-full shadow-[0_0_10px_rgba(34,211,238,0.5)]" style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }} />
-              </div>
-              {isHost && <input type="range" min={0} max={duration} step="any" value={currentTime} onMouseDown={() => setIsDragging(true)} onMouseUp={() => { setIsDragging(false); handleSeek(currentTime) }}
-                onChange={(e) => setCurrentTime(Number(e.target.value))} className="absolute inset-x-0 -top-1 bottom-0 w-full opacity-0 cursor-pointer z-10" />}
-            </div>
           </div>
 
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-3 sm:gap-4 overflow-hidden">
-            <div className="flex items-center gap-2 sm:gap-3 w-full lg:w-auto overflow-x-auto no-scrollbar pb-1 pt-0.5 px-0.5">
+          <div className="flex flex-row items-center justify-between gap-3 overflow-hidden">
+            {/* Left Controls */}
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {isHost ? (
-                <div className="flex items-center gap-1.5 bg-white/5 p-1 rounded-full border border-white/5">
+                <div className="flex items-center gap-1.5 bg-white/5 p-1 rounded-full border border-white/5 backdrop-blur-md">
                   <Button variant="ghost" size="icon" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full hover:bg-white/10" onClick={() => handleSkip(-10)}><SkipBack className="w-4 h-4 sm:w-5 sm:h-5 text-white" /></Button>
-                  <Button variant={"ghost" as any} size={"icon" as any} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-cyan-400 hover:bg-cyan-500 shadow-lg" onClick={handlePlay}>
-                    {isPlaying ? <Pause className="w-5 h-5 sm:w-6 sm:h-6 text-black" /> : <Play className="w-5 h-5 sm:w-6 sm:h-6 text-black" />}
+                  <Button variant={"ghost" as any} size={"icon" as any} className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-cyan-400 hover:bg-cyan-500 shadow-lg text-black" onClick={handlePlay}>
+                    {isPlaying ? <Pause className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5" />}
                   </Button>
                   <Button variant="ghost" size="icon" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full hover:bg-white/10" onClick={() => handleSkip(10)}><SkipForward className="w-4 h-4 sm:w-5 sm:h-5 text-white" /></Button>
                 </div>
-              ) : <div className="flex items-center gap-2 text-gray-400 text-[10px] sm:text-xs bg-white/5 px-3 py-1.5 rounded-full">Governed by Host</div>}
+              ) : <div className="flex items-center gap-2 text-white/50 text-[10px] sm:text-xs bg-white/5 px-3 py-1.5 rounded-full border border-white/5 backdrop-blur-md">Host Controlled</div>}
               {isHost && (
                 <div className="flex items-center gap-2">
                   <input type="file" ref={fileInputRef} className="hidden" accept="video/*,audio/*" onChange={handleFileSelect} />
-                  <Button variant="ghost" size="icon" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5" onClick={() => fileInputRef.current?.click()}><Film className="w-4 h-4 sm:w-5 sm:h-5 text-white" /></Button>
-                  <Button variant="ghost" size="icon" className="hidden sm:flex w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5" onClick={handleStartScreenShare}><Monitor className="w-4 h-4 sm:w-5 sm:h-5 text-white" /></Button>
+                  <Button variant="ghost" size="icon" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5 border border-white/5 hover:bg-white/10" onClick={() => fileInputRef.current?.click()}><Film className="w-4 h-4 sm:w-5 sm:h-5 text-white" /></Button>
+                  <Button variant="ghost" size="icon" className="hidden sm:flex w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5 border border-white/5 hover:bg-white/10" onClick={handleStartScreenShare}><Monitor className="w-4 h-4 sm:w-5 sm:h-5 text-white" /></Button>
                 </div>
               )}
             </div>
 
-            <div className="flex items-center justify-between lg:justify-end gap-2 sm:gap-3 w-full lg:w-auto overflow-x-auto no-scrollbar pb-1 pt-0.5 px-0.5">
-              <div className="flex items-center gap-1.5 bg-white/5 p-1 rounded-full border border-white/5 shrink-0">
-                <Button variant="ghost" size="icon" className={`relative w-8 h-8 sm:w-10 sm:h-10 rounded-full ${showChat ? "bg-cyan-500 text-white" : "text-white/70"}`} onClick={() => setShowChat(!showChat)}>
+            {/* Right Controls - Compact for landscape */}
+            <div className="flex items-center gap-1.5 sm:gap-3 overflow-x-auto no-scrollbar py-0.5 px-0.5 justify-end flex-1">
+              <div className="flex items-center gap-1 bg-white/5 p-1 rounded-full border border-white/5 backdrop-blur-md">
+                <Button variant="ghost" size="icon" className={`relative w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-colors ${showChat ? "bg-cyan-500 text-white" : "text-white/70 hover:bg-white/10"}`} onClick={() => setShowChat(!showChat)}>
                   <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
-                  {unreadMessagesCount > 0 && !showChat && <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 bg-red-500 text-[10px] animate-pulse">{unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}</Badge>}
+                  {unreadMessagesCount > 0 && !showChat && <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 bg-red-500 text-[10px] animate-pulse border-none">{unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}</Badge>}
                 </Button>
-                <Button variant="ghost" size="icon" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${showSoundboard ? "bg-cyan-500 text-white" : "text-white/70"}`} onClick={() => setShowSoundboard?.(!showSoundboard)}><Music2 className="w-4 h-4 sm:w-5 sm:h-5" /></Button>
-                <Button variant="ghost" size="icon" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${showEmojiPicker ? "bg-cyan-500 text-white" : "text-white/70"}`} onClick={() => setShowEmojiPicker(!showEmojiPicker)}><Smile className="w-4 h-4 sm:w-5 sm:h-5" /></Button>
-                <Button variant="ghost" size="icon" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${showPlaylist ? "bg-cyan-500 text-white" : "text-white/70"}`} onClick={() => setShowPlaylist(!showPlaylist)}><List className="w-4 h-4 sm:w-5 sm:h-5" /></Button>
-                <Button variant="ghost" size="icon" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${isPushToTalkActive ? "bg-green-500" : "text-white/70"}`} onMouseDown={() => handlePushToTalk(true)} onMouseUp={() => handlePushToTalk(false)} onTouchStart={(e) => { e.preventDefault(); handlePushToTalk(true) }} onTouchEnd={() => handlePushToTalk(false)}>{isMicMuted ? <MicOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Mic className="w-4 h-4 sm:w-5 sm:h-5" />}</Button>
+                <Button variant="ghost" size="icon" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-colors ${showSoundboard ? "bg-cyan-500 text-white" : "text-white/70 hover:bg-white/10"}`} onClick={() => setShowSoundboard?.(!showSoundboard)}><Music2 className="w-4 h-4 sm:w-5 sm:h-5" /></Button>
+                <Button variant="ghost" size="icon" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-colors ${showEmojiPicker ? "bg-cyan-500 text-white" : "text-white/70 hover:bg-white/10"}`} onClick={() => setShowEmojiPicker(!showEmojiPicker)}><Smile className="w-4 h-4 sm:w-5 sm:h-5" /></Button>
+                <Button variant="ghost" size="icon" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-colors ${showPlaylist ? "bg-cyan-500 text-white" : "text-white/70 hover:bg-white/10"}`} onClick={() => setShowPlaylist(!showPlaylist)}><List className="w-4 h-4 sm:w-5 sm:h-5" /></Button>
+                <Button variant="ghost" size="icon" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-colors ${isPushToTalkActive ? "bg-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.3)]" : "text-white/70 hover:bg-white/10"}`} onMouseDown={() => handlePushToTalk(true)} onMouseUp={() => handlePushToTalk(false)} onTouchStart={(e) => { e.preventDefault(); handlePushToTalk(true) }} onTouchEnd={() => handlePushToTalk(false)}>{isMicMuted ? <MicOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Mic className="w-4 h-4 sm:w-5 sm:h-5" />}</Button>
               </div>
 
-              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                <Button variant="ghost" size="icon" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5" onClick={onMinimize}><Minimize2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" /></Button>
-                <Button variant="ghost" size="icon" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5" onClick={toggleFullscreen}>{isFullscreen ? <Minimize className="w-4 h-4 sm:w-5 sm:h-5 text-white" /> : <Maximize className="w-4 h-4 sm:w-5 sm:h-5 text-white" />}</Button>
-                <Button variant="ghost" size="icon" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-red-500 shadow-red-500/20" onClick={handleClose}><X className="w-4 h-4 sm:w-5 sm:h-5 text-white" /></Button>
+              <div className="flex items-center gap-1 sm:gap-2">
+                <Button variant="ghost" size="icon" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5 border border-white/5 hover:bg-white/10" onClick={onMinimize}><Minimize2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" /></Button>
+                <Button variant="ghost" size="icon" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5 border border-white/5 hover:bg-white/10" onClick={toggleFullscreen}>{isFullscreen ? <Minimize className="w-4 h-4 sm:w-5 sm:h-5 text-white" /> : <Maximize className="w-4 h-4 sm:w-5 sm:h-5 text-white" />}</Button>
+                <Button variant="ghost" size="icon" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-red-500 border border-red-400/20 shadow-lg shadow-red-500/20 hover:bg-red-600" onClick={handleClose}><X className="w-4 h-4 sm:w-5 sm:h-5 text-white" /></Button>
               </div>
             </div>
           </div>

@@ -122,11 +122,11 @@ export function MessageList({
             {/* Chat Messages Area */}
             <div
                 ref={parentRef}
-                className="flex-1 px-4 pb-4 overflow-y-auto message-list"
+                className="flex-1 px-4 pb-4 overflow-y-auto message-list flex flex-col"
                 style={{ paddingTop: `${headerHeight}px` }}
             >
                 {filteredMessages.length === 0 && (
-                    <div className="min-h-[300px] flex flex-col items-center justify-center text-center text-gray-400 animate-in fade-in zoom-in duration-1000 p-8">
+                    <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-400 animate-in fade-in zoom-in duration-1000 p-8">
                         <div className="text-8xl mb-6 drop-shadow-[0_0_30px_rgba(34,211,238,0.3)] animate-bounce select-none">
                             {searchQuery ? "🔍" : "💬"}
                         </div>
