@@ -20,7 +20,7 @@ import type { MenuGroup } from "./chat-types"
 import { telemetry } from "@/utils/core/telemetry"
 import {
     Phone, Video, Monitor, Camera, BellRing, UserPlus, Users,
-    Film, Music, Volume2,
+    Film, Music, Volume2, Music2,
     Gamepad2, Ghost, Zap, Dices, Shuffle, Palette, Calendar, BarChart2,
     MonitorPlay, FileText, CheckSquare, Globe, Share2,
     Briefcase, Link, Shield, Settings, ShieldCheck, Info,
@@ -304,7 +304,13 @@ export function useChatCalls(params: UseChatCallsParams) {
                 
                 // Request fullscreen when starting theater
                 if (document.documentElement.requestFullscreen) {
-                    document.documentElement.requestFullscreen().catch(err => {
+                    document.documentElement.requestFullscreen().then(() => {
+                        if (window.screen.orientation && (window.screen.orientation as any).lock) {
+                            (window.screen.orientation as any).lock('landscape').catch((err: any) => {
+                                console.warn("Orientation lock failed:", err)
+                            })
+                        }
+                    }).catch(err => {
                         console.warn("Fullscreen request failed:", err)
                     })
                 }
@@ -326,17 +332,17 @@ export function useChatCalls(params: UseChatCallsParams) {
 
                 // Request fullscreen when joining theater
                 if (document.documentElement.requestFullscreen) {
-                    document.documentElement.requestFullscreen().catch(err => {
+                    document.documentElement.requestFullscreen().then(() => {
+                        if (window.screen.orientation && (window.screen.orientation as any).lock) {
+                            (window.screen.orientation as any).lock('landscape').catch((err: any) => {
+                                console.warn("Orientation lock failed:", err)
+                            })
+                        }
+                    }).catch(err => {
                         console.error("Error entering fullscreen on theater join:", err);
                     });
                 }
             })
-            // Request fullscreen immediately after joining, in case the session listener takes time
-            if (document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.error("Error entering fullscreen on theater join:", err);
-                });
-            }
             params.setIsTheaterHost(false)
             params.setTheaterInvite(null)
         } catch (error) {
@@ -673,7 +679,7 @@ export function useChatCalls(params: UseChatCallsParams) {
             { icon: Palette, label: "Room Vibe", action: () => params.setShowMoodSetup(true) },
             { icon: Film, label: "Movie Theater", action: handleStartTheater },
             { icon: Music, label: "Karaoke", action: () => params.setShowKaraokeSetup(true) },
-            { icon: Volume2, label: "Soundboard", action: () => params.setShowSoundboard(true) },
+            { icon: Music2, label: "Soundboard", action: () => params.setShowSoundboard(true) },
         ]
     }
 

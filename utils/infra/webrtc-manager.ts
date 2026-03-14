@@ -210,7 +210,14 @@ export class WebRTCManager {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: deviceId } } })
             const track = stream.getAudioTracks()[0]
-            if (track) await this.replaceAudioTrack(track)
+            if (track) {
+                await this.replaceAudioTrack(track)
+                // We don't stop the track here because it's now being used by the peer connection.
+                // However, we should stop any OTHER tracks that might have been opened by getUserMedia (though we only asked for audio)
+                stream.getTracks().forEach(t => {
+                    if (t !== track) t.stop()
+                })
+            }
         } catch (err) {
             console.error("Error switching microphone:", err)
         }

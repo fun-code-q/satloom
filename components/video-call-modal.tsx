@@ -533,10 +533,15 @@ export function VideoCallModal({
         audio: true // Keep audio
       })
 
+      // Stop old stream tracks to release the camera/mic
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => track.stop())
+      }
+
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = newStream
       }
-      setLocalStream(newStream)
+      updateLocalStream(newStream)
 
       await WebRTCManager.getInstance().switchCamera(newStream)
       setIsFrontCamera(!isFrontCamera)
@@ -549,6 +554,10 @@ export function VideoCallModal({
     const webrtc = WebRTCManager.getInstance()
     if (isScreenSharing) {
       setIsScreenSharing(false)
+      // Stop the screen share tracks
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => track.stop())
+      }
       const restoredStream = await webrtc.stopScreenShare(cameraStreamRef.current || undefined)
       if (restoredStream) {
         updateLocalStream(restoredStream)

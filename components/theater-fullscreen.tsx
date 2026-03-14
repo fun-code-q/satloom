@@ -18,7 +18,7 @@ import { theaterQueue, type QueuedVideo } from "@/utils/infra/theater-queue-mana
 import { theaterQuality } from "@/utils/infra/theater-quality-manager"
 import { WebRTCManager } from "@/utils/infra/webrtc-manager"
 import { SoundCloudPlayerController } from "@/utils/infra/soundcloud-widget"
-import { Settings, List, ChevronRight, ChevronLeft, FastForward } from "lucide-react"
+import { Settings, List, ChevronRight, ChevronLeft, FastForward, Music2 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Slider } from "@/components/ui/slider"
 import { Badge } from "@/components/ui/badge"
@@ -573,7 +573,26 @@ export function TheaterFullscreen({
 
   const handleClose = async () => { if (isHost) await theaterSignaling.endSession(roomId, session.id); onClose() }
   const formatTime = (time: number) => { const min = Math.floor(time / 60); const sec = Math.floor(time % 60); return `${min.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}` }
-  const toggleFullscreen = () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen() }
+  const toggleFullscreen = () => { 
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => {
+        // Try to lock orientation to landscape on mobile
+        if (window.screen.orientation && (window.screen.orientation as any).lock) {
+          (window.screen.orientation as any).lock('landscape').catch((err: any) => {
+            console.warn("Orientation lock failed:", err)
+          })
+        }
+      }).catch(err => {
+        console.error("Fullscreen request failed:", err)
+      })
+    } else { 
+      document.exitFullscreen() 
+      // Unlock orientation if it was locked
+      if (window.screen.orientation && (window.screen.orientation as any).unlock) {
+        (window.screen.orientation as any).unlock()
+      }
+    } 
+  }
 
   if (!mounted) return null
 
@@ -652,7 +671,7 @@ export function TheaterFullscreen({
                   <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
                   {unreadMessagesCount > 0 && !showChat && <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 bg-red-500 text-[10px] animate-pulse">{unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}</Badge>}
                 </Button>
-                <Button variant="ghost" size="icon" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${showSoundboard ? "bg-cyan-500 text-white" : "text-white/70"}`} onClick={() => setShowSoundboard?.(!showSoundboard)}><Volume2 className="w-4 h-4 sm:w-5 sm:h-5" /></Button>
+                <Button variant="ghost" size="icon" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${showSoundboard ? "bg-cyan-500 text-white" : "text-white/70"}`} onClick={() => setShowSoundboard?.(!showSoundboard)}><Music2 className="w-4 h-4 sm:w-5 sm:h-5" /></Button>
                 <Button variant="ghost" size="icon" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${showEmojiPicker ? "bg-cyan-500 text-white" : "text-white/70"}`} onClick={() => setShowEmojiPicker(!showEmojiPicker)}><Smile className="w-4 h-4 sm:w-5 sm:h-5" /></Button>
                 <Button variant="ghost" size="icon" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${showPlaylist ? "bg-cyan-500 text-white" : "text-white/70"}`} onClick={() => setShowPlaylist(!showPlaylist)}><List className="w-4 h-4 sm:w-5 sm:h-5" /></Button>
                 <Button variant="ghost" size="icon" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${isPushToTalkActive ? "bg-green-500" : "text-white/70"}`} onMouseDown={() => handlePushToTalk(true)} onMouseUp={() => handlePushToTalk(false)} onTouchStart={(e) => { e.preventDefault(); handlePushToTalk(true) }} onTouchEnd={() => handlePushToTalk(false)}>{isMicMuted ? <MicOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Mic className="w-4 h-4 sm:w-5 sm:h-5" />}</Button>
@@ -667,11 +686,62 @@ export function TheaterFullscreen({
           </div>
         </div>
 
-        <div className={`fixed sm:absolute top-0 right-0 bottom-0 w-full sm:w-80 bg-slate-950/95 sm:bg-slate-900/40 backdrop-blur-3xl transition-transform duration-500 ${showPlaylist ? "translate-x-0" : "translate-x-full"} z-[70]`}>
-          <div className="flex flex-col h-full"><div className="p-6 flex items-center justify-between"><h3 className="font-bold whitespace-nowrap">PLAYLIST</h3><Button variant="ghost" size="icon" onClick={() => setShowPlaylist(false)}><ChevronRight /></Button></div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">{queue.map((item, idx) => (<div key={item.id} className="p-3 bg-white/5 rounded-xl">{item.title}</div>))}</div>
-          {isHost && <div className="p-6 bg-white/5"><Input value={newQueueUrl} onChange={(e) => setNewQueueUrl(e.target.value)} placeholder="URL..." /><Button onClick={handleAddToQueue} className="mt-2 w-full">Add</Button></div>}</div>
-        </div>
+        {showPlaylist && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="w-full max-w-sm bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+              <div className="p-5 border-b border-white/5 flex items-center justify-between bg-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-cyan-500/20 rounded-xl">
+                    <List className="w-5 h-5 text-cyan-400" />
+                  </div>
+                  <h3 className="font-bold tracking-widest text-sm uppercase">PLAYLIST</h3>
+                </div>
+                <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10" onClick={() => setShowPlaylist(false)}>
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+              
+              <div className="max-h-[40vh] overflow-y-auto p-4 space-y-2 custom-scrollbar">
+                {queue.length > 0 ? queue.map((item, idx) => (
+                  <div key={item.id} className="p-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all group flex items-center gap-3">
+                    <div className="w-8 h-8 bg-black/40 rounded-lg flex items-center justify-center text-[10px] font-bold text-white/40 group-hover:text-cyan-400 transition-colors">
+                      {idx + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-white truncate">{item.title}</div>
+                      <div className="text-[10px] text-white/40">{item.addedByName || "System"}</div>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="py-8 text-center text-white/20">
+                    <List className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                    <p className="text-xs">Queue is empty</p>
+                  </div>
+                )}
+              </div>
+
+              {isHost && (
+                <div className="p-5 bg-white/5 border-t border-white/5 space-y-3">
+                  <div className="relative">
+                    <Input 
+                      value={newQueueUrl} 
+                      onChange={(e) => setNewQueueUrl(e.target.value)} 
+                      placeholder="Paste video URL..." 
+                      className="bg-black/40 border-white/5 rounded-xl h-11 text-sm focus:ring-cyan-500/30"
+                    />
+                  </div>
+                  <Button 
+                    onClick={handleAddToQueue} 
+                    disabled={isAddingToQueue || !newQueueUrl.trim()}
+                    className="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-bold h-11 rounded-xl shadow-lg shadow-cyan-500/20 transition-all active:scale-[0.98]"
+                  >
+                    {isAddingToQueue ? "Adding..." : "Add to Queue"}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
           {floatingEmojis.map((e) => (<div key={e.id} className="absolute text-4xl animate-bounce" style={{ left: `${e.x}%`, top: `${e.y}%` }}>{e.emoji}</div>))}

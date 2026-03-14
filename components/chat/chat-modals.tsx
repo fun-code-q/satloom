@@ -598,7 +598,7 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
                 currentUser={currentUserId}
                 currentUserName={userProfile.name}
             />
-            <Soundboard isOpen={props.showSoundboard} onClose={() => props.setShowSoundboard(false)} roomId={roomId} userId={currentUserId} userName={userProfile.name} />
+            {renderModal(<Soundboard isOpen={props.showSoundboard} onClose={() => props.setShowSoundboard(false)} roomId={roomId} userId={currentUserId} userName={userProfile.name} />)}
             <PasswordEntryModal isOpen={props.showPasswordEntry} roomId={roomId} onSuccess={() => { props.setShowPasswordEntry(false); props.setPasswordValidated(true) }} onCancel={() => props.setShowPasswordEntry(false)} />
             <HostPasswordModal isOpen={props.showHostPassword} roomId={roomId} isProtected={props.roomIsProtected} onClose={() => props.setShowHostPassword(false)} onProtectedChange={props.setRoomIsProtected} />
             <KaraokeSetupModal isOpen={props.showKaraokeSetup} onClose={() => props.setShowKaraokeSetup(false)} onStartSession={props.handleStartKaraoke} />
