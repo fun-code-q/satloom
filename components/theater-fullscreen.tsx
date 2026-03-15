@@ -493,7 +493,8 @@ export function TheaterFullscreen({
 
   const handleSkip = async (seconds: number) => {
     if (!isHost) return
-    handleSeek(Math.max(0, Math.min(duration, currentTime + seconds)))
+    const newTime = duration > 0 ? Math.max(0, Math.min(duration, currentTime + seconds)) : Math.max(0, currentTime + seconds)
+    handleSeek(newTime)
   }
 
   const handleProgress = () => {
@@ -637,8 +638,13 @@ export function TheaterFullscreen({
                 <div className="w-full h-1 bg-white/20 rounded-full group-hover:h-1.5 transition-all overflow-hidden border border-white/5">
                   <div className="h-full bg-cyan-400 rounded-full shadow-[0_0_10px_rgba(34,211,238,0.5)]" style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }} />
                 </div>
-                {isHost && <input type="range" min={0} max={duration} step="any" value={currentTime} onMouseDown={() => setIsDragging(true)} onMouseUp={() => { setIsDragging(false); handleSeek(currentTime) }}
-                  onChange={(e) => setCurrentTime(Number(e.target.value))} className="absolute inset-x-0 -top-1 bottom-0 w-full opacity-0 cursor-pointer z-10" />}
+                {isHost && <input type="range" min={0} max={duration || 100} step="any" value={currentTime}
+                  onMouseDown={() => setIsDragging(true)}
+                  onMouseUp={(e) => { setIsDragging(false); handleSeek(Number((e.target as HTMLInputElement).value)) }}
+                  onTouchStart={() => setIsDragging(true)}
+                  onTouchEnd={(e) => { setIsDragging(false); handleSeek(Number((e.target as HTMLInputElement).value)) }}
+                  onChange={(e) => setCurrentTime(Number(e.target.value))}
+                  className="absolute inset-x-0 -top-1 bottom-0 w-full opacity-0 cursor-pointer z-10" />}
               </div>
               <span className="hidden sm:inline-block font-medium bg-black/40 px-2 py-0.5 rounded-full text-white/90 text-[10px] sm:text-xs shrink-0">{formatTime(duration)}</span>
             </div>
