@@ -1,13 +1,12 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { reactionRain, ReactionEmoji } from "@/utils/infra/reaction-rain"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { Sparkles } from "lucide-react"
 import { telemetry } from "@/utils/core/telemetry"
 import { roomSignaling } from "@/utils/infra/room-signaling"
-import { useChatStore } from "@/stores/chat-store"
 
 interface ReactionRainProps {
     roomId: string
@@ -27,7 +26,6 @@ const REACTIONS: { emoji: ReactionEmoji; label: string; color: string }[] = [
 ]
 
 export function ReactionRain({ roomId, userId, inline = false }: ReactionRainProps) {
-    const containerRef = useRef<HTMLDivElement>(null)
     const [counts, setCounts] = useState<Record<ReactionEmoji, number>>({
         "❤️": 0,
         "😂": 0,
@@ -40,15 +38,8 @@ export function ReactionRain({ roomId, userId, inline = false }: ReactionRainPro
     })
     const [isOpen, setIsOpen] = useState(false)
 
-    const { onlineUsers } = useChatStore()
-
     useEffect(() => {
-        if (!containerRef.current) return
-
-        // Set up the container
-        reactionRain.setContainer(containerRef.current)
-
-        // Subscribe to reaction counts
+        // Subscribe to reaction counts for UI badges
         const unsubscribe = reactionRain.subscribe((emoji, count) => {
             setCounts((prev) => ({
                 ...prev,
@@ -56,21 +47,13 @@ export function ReactionRain({ roomId, userId, inline = false }: ReactionRainPro
             }))
         })
 
-        // Listen for remote reactions from signaling
-        const unsubscribeSignaling = roomSignaling.listenForReactions(roomId, (reaction) => {
-            // Pass total users count from store to calculate majority threshold
-            reactionRain.addReaction(reaction.emoji, reaction.userId, onlineUsers.length)
-        })
-
         return () => {
             unsubscribe()
-            unsubscribeSignaling()
-            reactionRain.clear()
         }
-    }, [roomId])
+    }, [])
 
     const handleReaction = (emoji: ReactionEmoji) => {
-        // Send to signaling instead of adding locally (it will come back via the listener)
+        // Send to signaling
         roomSignaling.sendReaction(roomId, emoji, userId, "") 
         telemetry.logEvent('emoji_sent', roomId, userId, 'Room React', { emoji, type: 'rain' })
         setIsOpen(false)
@@ -118,13 +101,6 @@ export function ReactionRain({ roomId, userId, inline = false }: ReactionRainPro
                     </PopoverContent>
                 </Popover>
             )}
-
-            {/* Rain Container */}
-            <div
-                ref={containerRef}
-                className="fixed inset-0 pointer-events-none z-[9999]"
-                style={{ position: "fixed" as const, inset: 0 }}
-            />
         </>
     )
 }

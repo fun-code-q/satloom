@@ -338,10 +338,13 @@ export function TheaterFullscreen({
         switch (action.type) {
           case "play":
             setIsPlaying(true)
+            syncIframePlayer("play")
+            if (session.videoType === "webrtc" && videoStreamManagerRef.current) videoStreamManagerRef.current.syncPlayback('play')
+            
             if (action.currentTime !== undefined && Math.abs(currentTime - action.currentTime) > 1) {
               if (videoRef.current) videoRef.current.currentTime = action.currentTime
-              syncIframePlayer("seek", action.currentTime); syncIframePlayer("play")
-              if (session.videoType === "webrtc" && videoStreamManagerRef.current) { videoStreamManagerRef.current.syncPlayback('seek', action.currentTime); videoStreamManagerRef.current.syncPlayback('play') }
+              syncIframePlayer("seek", action.currentTime)
+              if (session.videoType === "webrtc" && videoStreamManagerRef.current) videoStreamManagerRef.current.syncPlayback('seek', action.currentTime)
             }
             break
           case "pause":

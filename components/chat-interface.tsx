@@ -24,6 +24,7 @@ import { ChatModals } from "./chat/chat-modals"
 import { MoodPlayer } from "./mood/mood-player"
 import { KaraokePlayer } from "./karaoke/karaoke-player"
 import { Soundboard } from "./soundboard"
+import { ReactionRainView } from "./reaction-rain-view"
 import { soundboard } from "@/utils/games/soundboard"
 import { FilePreviewModal } from "./chat/file-preview-modal"
 import {
@@ -382,6 +383,9 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
       >
         {/* Room Background - renders below all content */}
         <SpaceBackground backgroundImage={feature.moodBackgroundImage} />
+
+        {/* Global Reaction Rain Container */}
+        <ReactionRainView roomId={roomId} />
 
         {/* Mood Player - invisible audio component */}
         <MoodPlayer roomId={roomId} />
