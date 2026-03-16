@@ -51,7 +51,7 @@ export function AnimatedLogo({ className = "" }: { className?: string }) {
         </svg>
       </div>
       <span
-        className="text-[22px] font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent"
+        className="text-[22px] font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent hidden md:block"
         style={{
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",

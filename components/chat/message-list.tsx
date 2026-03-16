@@ -3,9 +3,9 @@
 
 import { Message, MessageBubble } from "@/components/message-bubble"
 import { useChatStore } from "@/stores/chat-store"
-import { useEffect, useRef, useCallback, useState } from "react"
+import { useEffect, useRef, useCallback, useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { X } from "lucide-react"
+import { X, ChevronDown } from "lucide-react"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { ChatSearch } from "./chat-search"
 
@@ -38,7 +38,9 @@ export function MessageList({
     const { messages, currentUser, onlineUsers, roomMembers, roomId, replyingTo, setReplyingTo, searchQuery } = useChatStore()
     const parentRef = useRef<HTMLDivElement>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
-    const [headerHeight, setHeaderHeight] = useState(120) // Safe default — updated by ResizeObserver
+    const [headerHeight, setHeaderHeight] = useState(120)
+    const [showJumpToBottom, setShowJumpToBottom] = useState(false)
+    const [unreadInFab, setUnreadInFab] = useState(0)
 
     // Dynamically measure actual header height so first message is never hidden beneath it
     useEffect(() => {
@@ -66,14 +68,58 @@ export function MessageList({
         }
     }, [])
 
-    // Filter messages based on search query
-    const filteredMessages = messages.filter((msg) => {
-        const messageText = msg.text?.toLowerCase() || ""
-        return (
-            messageText.includes(searchQuery.toLowerCase()) ||
-            msg.sender?.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-    })
+    // List of items including messages and date separators
+    const filteredMessages = useMemo(() => {
+        return messages.filter((msg) => {
+            const messageText = msg.text?.toLowerCase() || ""
+            return (
+                messageText.includes(searchQuery.toLowerCase()) ||
+                msg.sender?.toLowerCase().includes(searchQuery.toLowerCase())
+            )
+        })
+    }, [messages, searchQuery])
+
+    const displayItems = useMemo(() => {
+        const items: (Message | { id: string; type: 'separator'; label: string })[] = []
+        let lastDateString = ""
+
+        filteredMessages.forEach((msg: Message) => {
+            const date = new Date(msg.timestamp)
+            const dateString = date.toLocaleDateString([], { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            })
+
+            if (dateString !== lastDateString) {
+                // Determine display label (Today, Yesterday, or Full Date)
+                const today = new Date().toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+                const yesterday = new Date(Date.now() - 86400000).toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+                
+                let label = dateString
+                if (dateString === today) label = "Today"
+                else if (dateString === yesterday) label = "Yesterday"
+
+                items.push({ 
+                    id: `date-${dateString}`, 
+                    type: 'separator', 
+                    label 
+                })
+                lastDateString = dateString
+            }
+            items.push(msg)
+        })
+        return items
+    }, [filteredMessages])
+
+    // Track scroll for FAB
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
+        const isFarUp = scrollHeight - scrollTop - clientHeight > 400
+        setShowJumpToBottom(isFarUp)
+        if (!isFarUp) setUnreadInFab(0)
+    }
 
     // Auto-scroll to bottom when new messages arrive
     const scrollToBottom = useCallback(() => {
@@ -96,24 +142,35 @@ export function MessageList({
 
     // Virtualizer for message list - significantly improves performance for large message lists
     const rowVirtualizer = useVirtualizer({
-        count: filteredMessages.length,
+        count: displayItems.length,
         getScrollElement: () => parentRef.current,
-        estimateSize: () => 120, // Better estimate for messages with avatars/formatting
-        overscan: 5, // Number of items to render outside visible area for smoother scrolling
+        estimateSize: (index) => displayItems[index]?.type === 'separator' ? 50 : 120,
+        overscan: 5,
     })
 
     // Force re-measurement when messages list changes to prevent overlaps
     useEffect(() => {
         rowVirtualizer.measure()
-    }, [filteredMessages.length, rowVirtualizer])
+        if (!showJumpToBottom) {
+             scrollToBottom()
+        } else {
+             setUnreadInFab(prev => prev + 1)
+        }
+    }, [displayItems.length, rowVirtualizer])
 
     const handleReplyClick = (replyId: string) => {
-        const element = document.getElementById(`message-${replyId}`)
-        if (element) {
-            element.scrollIntoView({ behavior: "smooth", block: "center" })
-            // Optional: Add highlight effect
-            element.classList.add("bg-slate-800/50")
-            setTimeout(() => element.classList.remove("bg-slate-800/50"), 1000)
+        const index = displayItems.findIndex(item => item.id === replyId)
+        if (index !== -1) {
+            rowVirtualizer.scrollToIndex(index, { align: 'center', behavior: 'smooth' })
+            
+            // Elite highlight after virtualization settles
+            setTimeout(() => {
+                const element = document.getElementById(`message-${replyId}`)
+                if (element) {
+                    element.classList.add("highlight-reply")
+                    setTimeout(() => element.classList.remove("highlight-reply"), 2000)
+                }
+            }, 600)
         }
     }
     return (
@@ -122,10 +179,11 @@ export function MessageList({
             {/* Chat Messages Area */}
             <div
                 ref={parentRef}
-                className="flex-1 px-4 pb-4 overflow-y-auto message-list flex flex-col"
+                className="flex-1 px-4 pb-4 overflow-y-auto message-list flex flex-col scroll-smooth"
                 style={{ paddingTop: `${headerHeight}px` }}
+                onScroll={handleScroll}
             >
-                {filteredMessages.length === 0 && (
+                {displayItems.length === 0 && (
                     <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-400 animate-in fade-in zoom-in duration-1000 p-8">
                         <div className="text-8xl mb-6 drop-shadow-[0_0_30px_rgba(34,211,238,0.3)] animate-bounce select-none">
                             {searchQuery ? "🔍" : "💬"}
@@ -148,7 +206,30 @@ export function MessageList({
                         }}
                     >
                         {rowVirtualizer.getVirtualItems().map((virtualItem) => {
-                            const msg = filteredMessages[virtualItem.index]
+                            const item = displayItems[virtualItem.index]
+                            
+                            if (item.type === 'separator') {
+                                return (
+                                    <div
+                                        key={virtualItem.key}
+                                        ref={rowVirtualizer.measureElement}
+                                        className="flex justify-center p-6 pb-2"
+                                        style={{
+                                            position: "absolute",
+                                            top: 0,
+                                            left: 0,
+                                            width: "100%",
+                                            transform: `translateY(${virtualItem.start}px)`,
+                                        }}
+                                    >
+                                        <div className="bg-slate-800/80 backdrop-blur-md px-4 py-1 rounded-full border border-white/5 text-[10px] uppercase tracking-[0.15em] font-bold text-gray-400 shadow-xl">
+                                            {(item as any).label}
+                                        </div>
+                                    </div>
+                                )
+                            }
+
+                            const msg = item as Message
                             return (
                                 <div
                                     key={virtualItem.key}
@@ -159,30 +240,50 @@ export function MessageList({
                                         top: 0,
                                         left: 0,
                                         width: "100%",
-                                        minHeight: "100px",
+                                        minHeight: "40px",
                                         transform: `translateY(${virtualItem.start}px)`,
                                     }}
                                 >
-                                    <MessageBubble
-                                        message={msg}
-                                        isOwnMessage={msg.sender === currentUser?.name}
-                                        userColor={getUserColor(msg.sender)}
-                                        currentUser={currentUser?.name || ""}
-                                        userAvatar={
-                                            roomMembers.find((m) => m.name === msg.sender)?.avatar ||
-                                            onlineUsers.find((u) => u.name === msg.sender)?.avatar
-                                        }
-                                        onReply={onReply}
-                                        onReact={onReact}
-                                        onDelete={onDelete}
-                                        onEdit={onEdit}
-                                        onCopy={onCopy}
-                                        onVote={onVote}
-                                        onRSVP={onRSVP}
-                                        onPin={onPin}
-                                        onReplyClick={handleReplyClick}
-                                        roomId={roomId || ""}
-                                    />
+                                    {(() => {
+                                        // Find neighbors while ignoring separators
+                                        let prevMsgIdx = virtualItem.index - 1
+                                        while (prevMsgIdx >= 0 && (displayItems[prevMsgIdx] as any).type === 'separator') prevMsgIdx--
+                                        const prevMsg = prevMsgIdx >= 0 ? displayItems[prevMsgIdx] as Message : null
+                                        
+                                        let nextMsgIdx = virtualItem.index + 1
+                                        while (nextMsgIdx < displayItems.length && (displayItems[nextMsgIdx] as any).type === 'separator') nextMsgIdx++
+                                        const nextMsg = nextMsgIdx < displayItems.length ? displayItems[nextMsgIdx] as Message : null
+                                        
+                                        const isFirstInGroup = !prevMsg || prevMsg.sender !== msg.sender
+                                        const isLastInGroup = !nextMsg || nextMsg.sender !== msg.sender
+                                        const isConsecutive = !isFirstInGroup
+                                        
+                                        return (
+                                            <MessageBubble
+                                                message={msg}
+                                                isOwnMessage={msg.sender === currentUser?.name}
+                                                userColor={getUserColor(msg.sender)}
+                                                currentUser={currentUser?.name || ""}
+                                                userAvatar={
+                                                    roomMembers.find((m) => m.name === msg.sender)?.avatar ||
+                                                    onlineUsers.find((u) => u.name === msg.sender)?.avatar
+                                                }
+                                                onReply={onReply}
+                                                onReact={onReact}
+                                                onDelete={onDelete}
+                                                onEdit={onEdit}
+                                                onCopy={onCopy}
+                                                onVote={onVote}
+                                                onRSVP={onRSVP}
+                                                onPin={onPin}
+                                                onReplyClick={handleReplyClick}
+                                                roomId={roomId || ""}
+                                                isFirstInGroup={isFirstInGroup}
+                                                isLastInGroup={isLastInGroup}
+                                                isConsecutive={isConsecutive}
+                                            />
+                                        )
+                                    })()}
                                 </div>
                             )
                         })}
@@ -228,6 +329,26 @@ export function MessageList({
                             is typing...
                         </span>
                     </div>
+                </div>
+            )}
+
+            {/* Jump to Bottom FAB */}
+            {showJumpToBottom && (
+                <div 
+                    className="absolute bottom-24 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 zoom-in duration-300"
+                    onClick={scrollToBottom}
+                >
+                    <Button
+                        size="icon"
+                        className="rounded-xl h-12 w-12 bg-slate-900/90 backdrop-blur-xl border border-white/10 text-cyan-400 shadow-2xl hover:scale-110 active:scale-95 transition-all relative"
+                    >
+                        <ChevronDown className="w-6 h-6" />
+                        {unreadInFab > 0 && (
+                            <span className="absolute -top-2 -right-2 bg-cyan-500 text-slate-950 text-[10px] font-black px-1.5 py-0.5 rounded-md shadow-lg animate-bounce">
+                                {unreadInFab}
+                            </span>
+                        )}
+                    </Button>
                 </div>
             )}
         </div>

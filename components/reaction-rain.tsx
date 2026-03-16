@@ -60,16 +60,16 @@ export function ReactionRain({ roomId, userId, inline = false }: ReactionRainPro
     }
 
     const renderEmojiList = () => (
-        <div className={`flex flex-wrap gap-2 ${inline ? 'justify-start' : 'justify-center w-[210px]'}`}>
+        <div className={`grid grid-cols-4 gap-1.5 ${inline ? 'w-fit' : 'w-[160px]'}`}>
             {REACTIONS.map((reaction) => (
                 <button
                     key={reaction.emoji}
                     onClick={() => handleReaction(reaction.emoji)}
-                    className="relative flex items-center justify-center w-10 h-10 rounded-full bg-slate-700 hover:bg-slate-600 transition-all active:scale-90"
-                    style={{ borderColor: reaction.color, borderWidth: "2px" }}
+                    className="relative flex items-center justify-center w-8 h-8 rounded-full bg-slate-800/80 hover:bg-slate-700 transition-all active:scale-90"
+                    style={{ borderColor: reaction.color, borderWidth: "1px" }}
                     title={reaction.label}
                 >
-                    <span className="text-xl">{reaction.emoji}</span>
+                    <span className="text-lg">{reaction.emoji}</span>
                     {counts[reaction.emoji] > 0 && (
                         <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-[10px] font-bold text-white z-10">
                             {counts[reaction.emoji]}

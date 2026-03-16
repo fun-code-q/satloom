@@ -298,6 +298,27 @@ export function ChatInput({
             }
         }
     }, [isRecording, roomId, currentUserId, userPresence])
+    
+    const mobileContainerRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (!isMobile) return
+        
+        const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+            if (mobileContainerRef.current && !mobileContainerRef.current.contains(event.target as Node)) {
+                setShowEmojiPicker(false)
+                setShowMobileReactions(false)
+                setShowAttachments(false)
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside)
+        document.addEventListener('touchstart', handleClickOutside)
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+            document.removeEventListener('touchstart', handleClickOutside)
+        }
+    }, [isMobile])
 
 
     if (isMobile) {
@@ -316,33 +337,26 @@ export function ChatInput({
         */
 
         return (
-            <div className="flex flex-col bg-slate-900/95 border-t border-slate-700 backdrop-blur-md z-30 flex-shrink-0 pb-safe">
+            <div ref={mobileContainerRef} className="flex flex-col z-30 flex-shrink-0 pb-safe pointer-events-none sticky bottom-0">
+                <div className="pointer-events-auto">
                 {/* Recording indicator */}
                 {isRecording && (
-                    <div className="px-4 py-2 bg-red-500/20 border-t border-red-500/30 flex items-center justify-center gap-2">
+                    <div className="px-4 py-2 bg-red-500/40 backdrop-blur-md border-t border-red-500/30 flex items-center justify-center gap-2">
                         <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                         <span className="text-sm text-red-400">Recording...</span>
                     </div>
                 )}
 
-                {/* Mobile Reactions Bar */}
+                {/* Mobile Reactions Bar - Compact floating grid on the right */}
                 {showMobileReactions && (
-                    <div className="px-4 py-3 border-b border-slate-700/50 bg-slate-800/60 animate-in slide-in-from-bottom-2">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-medium text-cyan-400">Room Reactions</span>
-                            <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setShowMobileReactions(false)}>
-                                <X className="w-3 h-3" />
-                            </Button>
-                        </div>
-                        <div className="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-hide">
-                            <ReactionRain roomId={roomId || ""} userId={currentUserId} inline={true} />
-                        </div>
+                    <div className="absolute bottom-full right-2 mb-2 p-2 bg-slate-900/40 backdrop-blur-xl rounded-2xl shadow-2xl animate-in slide-in-from-bottom-2 duration-200 z-[80]">
+                        <ReactionRain roomId={roomId || ""} userId={currentUserId} inline={true} />
                     </div>
                 )}
 
                 {/* Reply indicator */}
                 {replyingTo && (
-                    <div className="px-4 py-2 bg-slate-700/50 border-t border-slate-600 flex items-center justify-between">
+                    <div className="px-4 py-2 bg-slate-900/40 backdrop-blur-xl border-t border-slate-700/50 flex items-center justify-between">
                         <div className="flex-1 min-w-0">
                             <div className="text-xs text-cyan-400 font-medium">Replying to {replyingTo.sender}</div>
                             <div className="text-xs text-gray-300 truncate">{replyingTo.text}</div>
@@ -358,12 +372,10 @@ export function ChatInput({
                     </div>
                 )}
 
-                {/* Poll/Event Creator Modals are handled by ChatModals */}
-
                 {/* Attachment menu popup */}
                 {showAttachments && (
-                    <div className="absolute bottom-full mb-3 left-3 right-3 z-[70] animate-in slide-in-from-bottom-2 duration-200">
-                        <div className="shadow-2xl rounded-3xl overflow-hidden border border-slate-700/50">
+                    <div className="absolute bottom-full mb-3 left-4 z-[70] animate-in slide-in-from-bottom-2 duration-200">
+                        <div className="shadow-2xl rounded-3xl">
                             <AttachmentMenu
                                 isMobile={true}
                                 onFileSelect={onFileSelect}
@@ -400,88 +412,120 @@ export function ChatInput({
 
                 {/* Mobile input row */}
                 <form
-                    className="flex items-end gap-2 p-3"
+                    className="flex flex-col gap-2 p-3"
                     onSubmit={(e) => {
                         e.preventDefault()
                         handleSendMessage()
                     }}
                 >
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className={`h-10 w-10 rounded-full shrink-0 transition-colors ${showAttachments ? 'bg-cyan-500 text-white' : 'bg-slate-700 text-gray-300'}`}
-                        onClick={() => setShowAttachments(!showAttachments)}
-                    >
-                        <Plus className={`w-5 h-5 transition-transform ${showAttachments ? 'rotate-45' : ''}`} />
-                    </Button>
 
-                    <div className="flex-1 relative">
-                        <Input
-                            id="message-input"
-                            name="message"
-                            ref={inputRef}
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            onKeyPress={handleKeyPress}
-                            placeholder={vanishMode !== "off" ? `Vanish Mode Active (${vanishDuration}s)...` : "Type something..."}
-                            className={cn(
-                                "w-full bg-slate-700/50 border-slate-600 focus:ring-1 focus:ring-cyan-500/50 text-white placeholder-gray-400 py-3 scrollbar-hide text-base sm:text-lg min-h-[44px] leading-relaxed transition-all duration-300 rounded-2xl",
-                                vanishMode !== "off" && "text-purple-300 placeholder-purple-400/50 italic font-medium border-purple-500/50"
+
+                    <div className="flex items-end gap-2">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className={`h-10 w-10 rounded-full shrink-0 transition-colors ${showAttachments ? 'bg-cyan-500 text-white shadow-lg' : 'bg-white/5 text-gray-300'}`}
+                            onClick={() => {
+                                setShowAttachments(!showAttachments)
+                                setShowEmojiPicker(false)
+                            }}
+                        >
+                            <Plus className={`w-5 h-5 transition-transform ${showAttachments ? 'rotate-45' : ''}`} />
+                        </Button>
+
+                        <div className="flex-1 relative">
+                            <Input
+                                id="message-input"
+                                name="message"
+                                ref={inputRef}
+                                value={message}
+                                onChange={(e) => setMessage(e.target.value)}
+                                onKeyPress={handleKeyPress}
+                                placeholder={vanishMode !== "off" ? `Vanish Mode Active (${vanishDuration}s)...` : "Type something..."}
+                                className={cn(
+                                    "w-full bg-white/5 border-white/10 focus:ring-1 focus:ring-cyan-500/50 text-white placeholder-gray-400/50 py-3 scrollbar-hide text-base sm:text-lg min-h-[44px] leading-relaxed transition-all duration-300 rounded-2xl backdrop-blur-sm",
+                                    vanishMode !== "off" && "text-purple-300 placeholder-purple-400/50 italic font-medium border-purple-500/50"
+                                )}
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                            <div className="relative">
+                                {/* Stacked Quick Actions Row for Mobile Emoji Icon */}
+                                {showEmojiPicker && (
+                                    <div className="absolute bottom-full right-0 mb-2 flex flex-col gap-2 items-center animate-in slide-in-from-bottom-2 duration-200">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-10 w-10 bg-white/10 hover:bg-white/20 text-white rounded-full haptic shadow-lg backdrop-blur-md"
+                                            onClick={() => {
+                                                onSoundboard?.()
+                                                setShowEmojiPicker(false)
+                                            }}
+                                            title="Soundboard"
+                                        >
+                                            <Music2 className="w-5 h-5 text-orange-400" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-10 w-10 bg-white/10 hover:bg-white/20 text-white rounded-full haptic shadow-lg backdrop-blur-md"
+                                            onClick={() => {
+                                                setShowMobileReactions(true)
+                                                setShowEmojiPicker(false)
+                                            }}
+                                            title="Room React"
+                                        >
+                                            <Sparkles className="w-5 h-5 text-cyan-400" />
+                                        </Button>
+                                    </div>
+                                )}
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-10 w-10 rounded-full bg-white/5 text-gray-300 shrink-0 haptic"
+                                    onClick={() => {
+                                        if (showMobileReactions || showEmojiPicker) {
+                                            setShowEmojiPicker(false)
+                                            setShowMobileReactions(false)
+                                        } else {
+                                            setShowEmojiPicker(true)
+                                        }
+                                        setShowAttachments(false)
+                                    }}
+                                >
+                                    <Smile className={`w-5 h-5 ${showEmojiPicker ? 'text-cyan-400' : ''}`} />
+                                </Button>
+                            </div>
+
+                            {message.trim() ? (
+                                <Button
+                                    type="submit"
+                                    size="icon"
+                                    className="h-10 w-10 rounded-full bg-cyan-500 hover:bg-cyan-600 text-white shrink-0 shadow-lg"
+                                >
+                                    <Send className="w-5 h-5" />
+                                </Button>
+                            ) : (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-10 w-10 rounded-full bg-white/5 text-gray-300 shrink-0 haptic"
+                                    onClick={() => setIsRecording(!isRecording)}
+                                >
+                                    <Mic className={`w-5 h-5 ${isRecording ? 'text-red-400' : ''}`} />
+                                </Button>
                             )}
-                        />
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-10 w-10 rounded-full bg-slate-700 text-gray-300 shrink-0 haptic"
-                            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                        >
-                            <Smile className={`w-5 h-5 ${showEmojiPicker ? 'text-cyan-400' : ''}`} />
-                        </Button>
-
-                        {/* Virtual Keyboard Toggle - Temporarily disabled */}
-                        {/* 
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className={`h-10 w-10 rounded-full shrink-0 transition-colors ${isKeyboardEnabled ? 'bg-cyan-600 text-white' : 'bg-slate-700 text-gray-300'} haptic`}
-                            onClick={() => toggleKeyboard()}
-                            title="Toggle virtual keyboard"
-                        >
-                            <Keyboard className="w-5 h-5" />
-                        </Button>
-                        */}
-
-                        {message.trim() ? (
-                            <Button
-                                type="submit"
-                                size="icon"
-                                className="h-10 w-10 rounded-full bg-cyan-500 hover:bg-cyan-600 text-white shrink-0"
-                            >
-                                <Send className="w-5 h-5" />
-                            </Button>
-                        ) : (
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-10 w-10 rounded-full bg-slate-700 text-gray-300 shrink-0 haptic"
-                                onClick={() => setIsRecording(!isRecording)}
-                            >
-                                <Mic className={`w-5 h-5 ${isRecording ? 'text-red-400' : ''}`} />
-                            </Button>
-                        )}
+                        </div>
                     </div>
                 </form>
 
                 <EmojiPicker
-                    isOpen={showEmojiPicker}
+                    isOpen={!isMobile ? showEmojiPicker : false}
                     onClose={() => setShowEmojiPicker(false)}
                     onEmojiSelect={handleEmojiSelect}
                 />
-
-                {/* Vanish Mode Modal is handled by ChatModals */}
+                </div>
             </div>
         )
     }

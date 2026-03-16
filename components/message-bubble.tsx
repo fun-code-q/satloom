@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, memo, useMemo } from "react"
+import { useState, memo, useMemo, useRef } from "react"
 import { Button } from "./ui/button"
-import { Heart, ThumbsUp, Reply, MoreVertical, Trash2, Download, Play, User, Copy, Edit, Check, Zap, FileIcon, MapPin, Calendar, Clock } from "lucide-react"
+import { Heart, ThumbsUp, Reply, MoreVertical, Trash2, Download, Play, User, Copy, Edit, Check, Zap, FileIcon, MapPin, Calendar, Clock, X } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { parseUrls, parseEmojis } from "@/utils/core/message-formatter"
 import { FilePreview } from "./file-preview"
@@ -81,6 +81,9 @@ interface MessageBubbleProps {
   onPin?: (messageId: string) => void
   onReplyClick?: (messageId: string) => void
   roomId: string
+  isFirstInGroup?: boolean
+  isLastInGroup?: boolean
+  isConsecutive?: boolean
 }
 
 function MessageBubble({
@@ -99,6 +102,9 @@ function MessageBubble({
   onPin,
   onReplyClick,
   roomId,
+  isFirstInGroup = true,
+  isLastInGroup = true,
+  isConsecutive = false,
 }: MessageBubbleProps) {
   const [showReactions, setShowReactions] = useState(false)
   const [showFilePreview, setShowFilePreview] = useState(false)
@@ -106,6 +112,15 @@ function MessageBubble({
   const [editText, setEditText] = useState(message.text)
   const [transferProgress, setTransferProgress] = useState<TransferProgress | null>(null)
   const [p2pBlobUrl, setP2pBlobUrl] = useState<string | null>(null)
+  const [lastTap, setLastTap] = useState(0)
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [showHeartPulse, setShowHeartPulse] = useState(false)
+  const [showLightbox, setShowLightbox] = useState(false)
+  const [swipeX, setSwipeX] = useState(0)
+  const [isSwiping, setIsSwiping] = useState(false)
+  const [touchStart, setTouchStart] = useState(0)
+  const [hasTriggeredReply, setHasTriggeredReply] = useState(false)
 
 
   const heartCount = useMemo(() => message.reactions?.heart?.length || 0, [message.reactions])
@@ -118,6 +133,7 @@ function MessageBubble({
   const processedText = useMemo(() => parseEmojis(message.text), [message.text])
   const urls = useMemo(() => message.text.match(/(https?:\/\/[^\s]+)/g) || [], [message.text])
   const messageId = `message-${message.id}`
+  const fileUrl = p2pBlobUrl || message.file?.url
 
   const handleReaction = (reaction: "heart" | "thumbsUp") => {
     onReact(message.id, reaction, currentUser)
@@ -137,6 +153,73 @@ function MessageBubble({
     } else {
       navigator.clipboard.writeText(message.text)
     }
+  }
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX)
+    setIsSwiping(true)
+    setHasTriggeredReply(false)
+
+    // Long press detection for mobile
+    if (longPressTimer.current) clearTimeout(longPressTimer.current)
+    longPressTimer.current = setTimeout(() => {
+        if (navigator.vibrate) navigator.vibrate(40)
+        setIsMenuOpen(true)
+    }, 500)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isSwiping) return
+    
+    // If finger moves too much, cancel long press
+    const touchMoveX = e.targetTouches[0].clientX
+    const diff = touchMoveX - touchStart
+    
+    if (Math.abs(diff) > 10) {
+        if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current)
+            longPressTimer.current = null
+        }
+    }
+
+    // Only allow swiping right
+    if (diff > 0) {
+      // Limit swipe distance
+      const limitedDiff = Math.min(diff, 100)
+      setSwipeX(limitedDiff)
+
+      // Trigger threshold (60px)
+      if (limitedDiff >= 60 && !hasTriggeredReply) {
+        setHasTriggeredReply(true)
+        if (navigator.vibrate) {
+            navigator.vibrate(10) // Subtle haptic feedback
+        }
+      } else if (limitedDiff < 60 && hasTriggeredReply) {
+        setHasTriggeredReply(false)
+      }
+    } else {
+      setSwipeX(0)
+    }
+  }
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current)
+        longPressTimer.current = null
+    }
+    if (hasTriggeredReply) {
+      onReply(message)
+    }
+    setSwipeX(0)
+    setIsSwiping(false)
+    setHasTriggeredReply(false)
+  }
+
+  const handleDoubleClick = () => {
+    handleReaction("heart")
+    setShowHeartPulse(true)
+    if (navigator.vibrate) navigator.vibrate([30, 50])
+    setTimeout(() => setShowHeartPulse(false), 1000)
   }
 
   const handleVote = (index: number) => {
@@ -321,26 +404,24 @@ function MessageBubble({
       )
     }
 
-    const fileUrl = p2pBlobUrl || message.file.url
-
     if (isImage) {
       return (
-        <div className="mt-2 cursor-pointer" onClick={() => setShowFilePreview(true)}>
+        <div className="mt-2 cursor-pointer" onClick={() => setShowLightbox(true)}>
           {(message.file.encrypted && !p2pBlobUrl && !isOwnMessage) ? (
             <div className="w-64 h-48 rounded-lg bg-slate-700/50 flex flex-col items-center justify-center border border-dashed border-cyan-500/30">
               <span className="text-2xl mb-2">🔒</span>
               <span className="text-xs text-cyan-400">Encrypted Image</span>
             </div>
           ) : (
-            <div className="relative group/media">
+            <div className="relative group/media overflow-hidden rounded-xl shadow-2xl transition-all duration-500 hover:ring-2 ring-cyan-500/50">
               <img
                 src={fileUrl || "/placeholder.svg"}
                 alt={message.file.name}
-                className="max-w-64 max-h-48 rounded-lg object-cover shadow-lg transition-transform hover:scale-[1.02]"
+                className="max-w-64 max-h-64 object-cover transition-transform duration-700 group-hover:scale-110"
                 loading="lazy"
               />
-              <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/60 to-transparent rounded-b-lg opacity-0 group-hover/media:opacity-100 transition-opacity">
-                <p className="text-[10px] text-white truncate">{message.file.name}</p>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-3">
+                <p className="text-[10px] text-white/90 font-medium truncate">{message.file.name}</p>
               </div>
             </div>
           )}
@@ -350,7 +431,7 @@ function MessageBubble({
 
     if (isVideo) {
       return (
-        <div className="mt-2 cursor-pointer relative group/media" onClick={() => setShowFilePreview(true)}>
+        <div className="mt-2 cursor-pointer relative group/media overflow-hidden rounded-xl shadow-2xl transition-all duration-500 hover:ring-2 ring-cyan-500/50" onClick={() => setShowLightbox(true)}>
           {(message.file.encrypted && !p2pBlobUrl && !isOwnMessage) ? (
             <div className="w-64 h-48 rounded-lg bg-slate-700/50 flex flex-col items-center justify-center border border-dashed border-cyan-500/30">
               <span className="text-2xl mb-2">🎞️🔒</span>
@@ -358,16 +439,13 @@ function MessageBubble({
             </div>
           ) : (
             <>
-              <video className="max-w-64 max-h-48 rounded-lg object-cover shadow-lg" muted>
+              <video className="max-w-64 max-h-64 object-cover transition-transform duration-700 group-hover:scale-105" muted>
                 <source src={fileUrl} type={message.file.type} />
               </video>
-              <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover/media:bg-black/40 transition-colors rounded-lg">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30">
-                  <Play className="w-6 h-6 text-white fill-white" />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover/media:bg-black/40 transition-all duration-300">
+                <div className="w-14 h-14 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center border border-white/20 shadow-2xl group-hover:scale-110 transition-transform">
+                  <Play className="w-6 h-6 text-white fill-white ml-1" />
                 </div>
-              </div>
-              <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/60 to-transparent rounded-b-lg opacity-0 group-hover/media:opacity-100 transition-opacity">
-                <p className="text-[10px] text-white truncate">{message.file.name}</p>
               </div>
             </>
           )}
@@ -377,16 +455,26 @@ function MessageBubble({
 
     if (isAudio) {
       return (
-        <div className="mt-2 bg-slate-700/50 rounded-lg p-3">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center">
-              <Play className="w-4 h-4 text-white" />
+        <div className="mt-2 bg-slate-900/40 backdrop-blur-md rounded-2xl p-3 border border-white/5 flex items-center gap-3 min-w-[240px]">
+          <Button size="icon" className="h-10 w-10 rounded-full bg-cyan-500 hover:bg-cyan-600 text-white shadow-lg shrink-0 haptic">
+            <Play className="w-5 h-5 fill-current ml-0.5" />
+          </Button>
+          <div className="flex-1 space-y-1.5">
+            <div className="flex justify-between items-center px-1">
+                <span className="text-[10px] font-bold text-cyan-400 truncate max-w-[120px]">{message.file.name}</span>
+                <span className="text-[10px] font-medium text-gray-400 font-mono italic">0:42</span>
             </div>
-            <span className="text-sm font-medium">{message.file.name}</span>
+            {/* 2026 Waveform Visualizer */}
+            <div className="h-8 flex items-end gap-[2px] px-1 opacity-80">
+                {[4, 2, 5, 8, 3, 6, 4, 7, 2, 5, 9, 4, 6, 3, 7, 5, 8, 4, 3, 6, 8, 5, 4, 7, 3, 5, 6, 4].map((h, i) => (
+                    <div 
+                        key={i} 
+                        className="flex-1 bg-gradient-to-t from-cyan-500/40 to-cyan-400 rounded-t-sm"
+                        style={{ height: `${h * 10}%`, opacity: i > 12 ? 0.3 : 1 }}
+                    />
+                ))}
+            </div>
           </div>
-          <audio controls className="w-full">
-            <source src={fileUrl} type={message.file.type} />
-          </audio>
         </div>
       )
     }
@@ -411,9 +499,9 @@ function MessageBubble({
   return (
     <div
       id={messageId}
-      className={`flex ${isOwnMessage ? "justify-end" : "justify-start"} mb-6 min-h-[80px] scroll-mt-20 transition-colors duration-300 relative z-0 hover:z-50`}
+      className={`flex ${isOwnMessage ? "justify-end" : "justify-start"} ${isFirstInGroup ? "mt-6" : "mt-1"} mb-1 min-h-[auto] scroll-mt-20 transition-colors duration-300 relative z-0 hover:z-50`}
     >
-      <div className={`max-w-[85%] ${isOwnMessage ? "order-2" : "order-1"}`}>
+      <div className={`max-w-[85%] ${isOwnMessage ? "order-2" : "order-1"} flex flex-col ${isOwnMessage ? "items-end" : "items-start"}`}>
         {/* Reply indicator */}
         {message.replyTo && (
           <div
@@ -427,31 +515,64 @@ function MessageBubble({
 
         {/* Message bubble */}
         <div
-          className={`relative group rounded-2xl p-3 ${isOwnMessage ? "bg-cyan-600 text-white ml-auto" : "text-white"} ${isOwnMessage ? "rounded-br-md" : "rounded-bl-md"}`}
+          className={`relative group p-2.5 pb-1.5 px-3 ${isOwnMessage ? "text-white ml-auto" : "text-white"} ${!isSwiping ? "transition-transform duration-300 ease-out" : ""} shadow-sm overflow-hidden select-none`}
           style={{
             backgroundColor: isOwnMessage ? "#0891b2" : userColor,
+            backgroundImage: isOwnMessage 
+                ? "linear-gradient(135deg, #0891b2 0%, #0e7490 100%)" 
+                : "linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)",
+            backdropFilter: !isOwnMessage ? "blur(20px)" : "none",
+            border: !isOwnMessage ? "1px solid rgba(255,255,255,0.1)" : "none",
+            borderRadius: isOwnMessage
+                ? `${isFirstInGroup ? "20px" : "20px"} ${isFirstInGroup ? "20px" : "4px"} ${isLastInGroup ? "4px" : "20px"} ${isLastInGroup ? "20px" : "20px"}`
+                : `${isFirstInGroup ? "4px" : "20px"} ${isFirstInGroup ? "20px" : "20px"} ${isFirstInGroup ? "20px" : "20px"} ${isLastInGroup ? "4px" : "20px"}`,
+            transform: `translateX(${swipeX}px)`,
+            touchAction: "pan-y",
           }}
           onMouseEnter={() => setShowReactions(true)}
           onMouseLeave={() => setShowReactions(false)}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onDoubleClick={handleDoubleClick}
         >
-          {/* User info inside message bubble */}
-          <div className="flex items-center gap-2 mb-1.5">
-            <div className="w-7 h-7 rounded-full border border-slate-600 flex items-center justify-center bg-slate-700 overflow-hidden flex-shrink-0">
-              {userAvatar ? (
-                <img
-                  src={userAvatar || "/placeholder.svg"}
-                  alt={message.sender}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none"
-                    e.currentTarget.nextElementSibling?.classList.remove("hidden")
-                  }}
-                />
-              ) : null}
-              <User className={`w-4 h-4 text-gray-300 ${userAvatar ? "hidden" : ""}`} />
+          {/* Double Tap Heart Animation Overlay */}
+          {showHeartPulse && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
+              <Heart className="w-12 h-12 text-white fill-current animate-ping opacity-60" />
+              <Heart className="absolute w-12 h-12 text-white fill-current animate-pulse scale-110" />
             </div>
-            <span className="text-xs font-medium text-gray-200 opacity-90">{message.sender}</span>
+          )}
+          {/* Bubble Tail for Group Start */}
+          {isFirstInGroup && (
+            <div 
+              className={`absolute top-0 w-3 h-3 ${isOwnMessage ? "right-[-6px] -scale-x-100" : "left-[-6px]"}`}
+              style={{ color: isOwnMessage ? "#0891b2" : userColor }}
+            >
+              <svg viewBox="0 0 11 11" className="w-full h-full fill-current">
+                <path d="M10 0v11C10 5.4 6 1 0 0h10z" />
+              </svg>
+            </div>
+          )}
+
+          {/* Reply Icon Background (revealed on swipe) */}
+          <div 
+            className="absolute left-[-40px] top-1/2 -translate-y-1/2 opacity-0 transition-all duration-200"
+            style={{ 
+                opacity: Math.min(swipeX / 40, 1),
+                transform: `translateY(-50%) scale(${Math.min(0.5 + swipeX / 100, 1)})`,
+                color: hasTriggeredReply ? '#22d3ee' : '#94a3b8'
+            }}
+          >
+            <Reply className={`w-5 h-5 ${hasTriggeredReply ? "scale-125" : ""} transition-transform`} />
           </div>
+
+          {/* User info - only if first in group */}
+          {isFirstInGroup && !isOwnMessage && (
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[11px] font-bold text-cyan-400 opacity-90">{message.sender}</span>
+            </div>
+          )}
 
           {/* Message text with formatting */}
           {isEditing ? (
@@ -514,47 +635,41 @@ function MessageBubble({
           {/* File preview */}
           {renderFilePreview()}
 
-          {/* Timestamp and options */}
-          <div className="text-xs opacity-70 mt-1 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span>{message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-              {message.edited && <span className="text-xs opacity-50">(edited)</span>}
-              {isOwnMessage && (
-                <span className="ml-1">
-                  {(message.readBy && message.readBy.length > 0) ? (
-                    <div className="flex">
-                      <Check className="w-3 h-3 text-blue-400" />
-                      <Check className="w-3 h-3 -ml-1 text-blue-400" />
-                    </div>
-                  ) : (
-                    <Check className="w-3 h-3 text-gray-400" />
-                  )}
-                </span>
-              )}
-            </div>
+          {/* Timestamp and options - Overlay style */}
+          <div className="mt-1 flex items-center justify-end gap-1.5 float-right ml-2 mb-[-2px] relative z-10 select-none">
+            <span className="text-[10px] opacity-60 font-medium tracking-tight">
+              {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </span>
+            {message.edited && <span className="text-[9px] opacity-40 uppercase font-bold tracking-tighter">Edited</span>}
+            {isOwnMessage && (
+              <span className="flex-shrink-0">
+                {(message.readBy && message.readBy.length > 0) ? (
+                  <div className="flex scale-75 origin-right">
+                    <Check className="w-3.5 h-3.5 text-cyan-200 drop-shadow-sm" />
+                    <Check className="w-3.5 h-3.5 -ml-1 text-cyan-200 drop-shadow-sm" />
+                  </div>
+                ) : (
+                  <Check className="w-3.5 h-3.5 text-white/40 scale-75 origin-right" />
+                )}
+              </span>
+            )}
 
-            {/* Message options menu */}
-            <DropdownMenu>
+            {/* Hidden Options Trigger for Premium Feel */}
+            <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <MoreVertical className="w-3 h-3" />
-                </Button>
+                <div className="absolute inset-0 opacity-0 cursor-pointer" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700 text-white">
-                <DropdownMenuItem onClick={() => onReply(message)} className="hover:bg-slate-700 cursor-pointer">
+              <DropdownMenuContent align="end" className="bg-slate-900/90 backdrop-blur-xl border-white/10 text-white rounded-xl shadow-2xl">
+                <DropdownMenuItem onClick={() => onReply(message)} className="hover:bg-white/10 cursor-pointer haptic">
                   <Reply className="w-4 h-4 mr-2" />
                   Reply
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleCopy} className="hover:bg-slate-700 cursor-pointer">
+                <DropdownMenuItem onClick={handleCopy} className="hover:bg-white/10 cursor-pointer haptic">
                   <Copy className="w-4 h-4 mr-2" />
                   Copy
                 </DropdownMenuItem>
                 {isOwnMessage && onEdit && (
-                  <DropdownMenuItem onClick={() => setIsEditing(true)} className="hover:bg-slate-700 cursor-pointer">
+                  <DropdownMenuItem onClick={() => setIsEditing(true)} className="hover:bg-white/10 cursor-pointer haptic">
                     <Edit className="w-4 h-4 mr-2" />
                     Edit
                   </DropdownMenuItem>
@@ -562,21 +677,21 @@ function MessageBubble({
                 {isOwnMessage && (
                   <DropdownMenuItem
                     onClick={() => onDelete(message.id)}
-                    className="hover:bg-slate-700 cursor-pointer text-red-400"
+                    className="hover:bg-red-500/20 cursor-pointer text-red-400 haptic"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     Delete
                   </DropdownMenuItem>
                 )}
                 {onPin && (
-                  <DropdownMenuItem onClick={() => onPin(message.id)} className="hover:bg-slate-700 cursor-pointer">
-                    <span className="w-4 h-4 mr-2 flex items-center justify-center">📌</span>
+                  <DropdownMenuItem onClick={() => onPin(message.id)} className="hover:bg-white/10 cursor-pointer haptic">
+                    <span className="w-4 h-4 mr-2 flex items-center justify-center opacity-70">📌</span>
                     Pin Message
                   </DropdownMenuItem>
                 )}
                 {message.file?.url && (
                   <DropdownMenuItem asChild>
-                    <a href={message.file.url} download target="_blank" rel="noopener noreferrer" className="hover:bg-slate-700 cursor-pointer flex items-center">
+                    <a href={message.file.url} download target="_blank" rel="noopener noreferrer" className="hover:bg-white/10 cursor-pointer flex items-center haptic">
                       <Download className="w-4 h-4 mr-2" />
                       Download File
                     </a>
@@ -585,60 +700,59 @@ function MessageBubble({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-
-          {/* Reaction buttons (show on hover) */}
-          {/* Quick Actions - Visible on group hover (dap/touch on mobile) */}
-          {!isEditing && (
-            <div className="absolute -bottom-8 right-0 flex gap-1 bg-slate-800 rounded-full p-1 shadow-lg border border-slate-700 opacity-0 group-hover:opacity-100 transition-opacity z-[60]">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-gray-400 hover:text-white hover:bg-slate-700"
-                onClick={() => handleReaction("heart")}
-                title="Love"
-              >
-                <Heart className={`w-3.5 h-3.5 ${message.reactions?.heart?.includes(currentUser) ? "fill-pink-500 text-pink-500" : ""}`} />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-gray-400 hover:text-white hover:bg-slate-700"
-                onClick={() => handleReaction("thumbsUp")}
-                title="Like"
-              >
-                <ThumbsUp className={`w-3.5 h-3.5 ${message.reactions?.thumbsUp?.includes(currentUser) ? "fill-yellow-500 text-yellow-500" : ""}`} />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-gray-400 hover:text-white hover:bg-slate-700"
-                onClick={() => onReply(message)}
-                title="Reply"
-              >
-                <Reply className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-          )}
         </div>
+
+        {/* Reaction buttons (show on hover) */}
+        {!isEditing && (
+        <div className="absolute -bottom-8 right-0 flex gap-1 bg-slate-800 rounded-full p-1 shadow-lg border border-slate-700 opacity-0 group-hover:opacity-100 transition-opacity z-[60]">
+            <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-gray-400 hover:text-white hover:bg-slate-700"
+            onClick={() => handleReaction("heart")}
+            title="Love"
+            >
+            <Heart className={`w-3.5 h-3.5 ${message.reactions?.heart?.includes(currentUser) ? "fill-pink-500 text-pink-500" : ""}`} />
+            </Button>
+            <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-gray-400 hover:text-white hover:bg-slate-700"
+            onClick={() => handleReaction("thumbsUp")}
+            title="Like"
+            >
+            <ThumbsUp className={`w-3.5 h-3.5 ${message.reactions?.thumbsUp?.includes(currentUser) ? "fill-yellow-500 text-yellow-500" : ""}`} />
+            </Button>
+            <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-gray-400 hover:text-white hover:bg-slate-700"
+            onClick={() => onReply(message)}
+            title="Reply"
+            >
+            <Reply className="w-3.5 h-3.5" />
+            </Button>
+        </div>
+        )}
 
         {/* Reaction counts */}
         {(heartCount > 0 || thumbsUpCount > 0) && (
-          <div className="flex gap-2 mt-1 text-xs">
+          <div className="flex gap-1.5 mt-[-8px] text-[10px] px-1 relative z-20 select-none">
             {heartCount > 0 && (
               <div
-                className={`flex items-center gap-1 px-2 py-1 rounded-full cursor-pointer ${hasUserHearted ? "bg-red-500/20 text-red-400" : "bg-slate-700/50 text-gray-400"}`}
+                className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full cursor-pointer transition-all hover:scale-110 shadow-sm border ${hasUserHearted ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-slate-800/80 text-gray-400 border-white/5 backdrop-blur-md"}`}
                 onClick={() => handleReaction("heart")}
               >
-                <Heart className="w-3 h-3" />
+                <Heart className={`w-2.5 h-2.5 ${hasUserHearted ? "fill-current" : ""}`} />
                 <span>{heartCount}</span>
               </div>
             )}
             {thumbsUpCount > 0 && (
               <div
-                className={`flex items-center gap-1 px-2 py-1 rounded-full cursor-pointer ${hasUserThumbsUp ? "bg-blue-500/20 text-blue-400" : "bg-slate-700/50 text-gray-400"}`}
+                className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full cursor-pointer transition-all hover:scale-110 shadow-sm border ${hasUserThumbsUp ? "bg-blue-500/20 text-blue-400 border-blue-500/30" : "bg-slate-800/80 text-gray-400 border-white/5 backdrop-blur-md"}`}
                 onClick={() => handleReaction("thumbsUp")}
               >
-                <ThumbsUp className="w-3 h-3" />
+                <ThumbsUp className={`w-2.5 h-2.5 ${hasUserThumbsUp ? "fill-current" : ""}`} />
                 <span>{thumbsUpCount}</span>
               </div>
             )}
@@ -646,18 +760,56 @@ function MessageBubble({
         )}
       </div>
 
-      {/* File Preview Modal */}
-      {message.file && (
-        <FilePreview
-          isOpen={showFilePreview}
-          onClose={() => setShowFilePreview(false)}
-          file={{
-            ...message.file,
-            fileId: message.file.fileId || "",
-            senderId: message.file.senderId || ""
-          }}
-          roomId={roomId}
-        />
+      {/* 2026 Elite Media Lightbox Overlay */}
+      {showLightbox && message.file && (
+        <div 
+            className="fixed inset-0 z-[9999] bg-slate-950/95 backdrop-blur-3xl flex flex-col animate-in fade-in zoom-in duration-300"
+            onClick={() => setShowLightbox(false)}
+        >
+            <div className="flex justify-between items-center p-6 mt-10">
+                <div className="flex flex-col">
+                    <span className="text-white font-black text-lg tracking-tight">{message.file.name}</span>
+                    <span className="text-gray-400 text-xs uppercase tracking-widest font-bold mt-1">Shared by {message.sender}</span>
+                </div>
+                <Button variant="ghost" size="icon" className="h-12 w-12 rounded-full hover:bg-white/10 text-white" onClick={() => setShowLightbox(false)}>
+                    <X className="w-8 h-8" />
+                </Button>
+            </div>
+            
+            <div className="flex-1 flex items-center justify-center p-4">
+                {isImage && (
+                    <img 
+                        src={fileUrl || "/placeholder.svg"} 
+                        className="max-w-full max-h-[70vh] rounded-2xl shadow-2xl border border-white/10 animate-in zoom-in-95 duration-500 ease-out"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                )}
+                {isVideo && (
+                    <video 
+                        src={fileUrl} 
+                        controls 
+                        autoPlay
+                        className="max-w-full max-h-[70vh] rounded-2xl shadow-2xl border border-white/10 animate-in zoom-in-95 duration-500 ease-out"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                )}
+            </div>
+
+            <div className="p-8 flex justify-center gap-6 mb-10">
+                <Button className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/10 rounded-2xl px-8 h-12 flex gap-2 haptic" onClick={(e) => { e.stopPropagation(); onReply(message); setShowLightbox(false); }}>
+                    <Reply className="w-5 h-5" />
+                    <span>Reply</span>
+                </Button>
+                {message.file.url && (
+                    <Button asChild className="bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold rounded-2xl px-8 h-12 flex gap-2 shadow-lg shadow-cyan-500/20 haptic" onClick={(e) => e.stopPropagation()}>
+                        <a href={message.file.url} download target="_blank" rel="noopener noreferrer">
+                            <Download className="w-5 h-5" />
+                            <span>Download Full Case</span>
+                        </a>
+                    </Button>
+                )}
+            </div>
+        </div>
       )}
     </div>
   )
@@ -669,4 +821,3 @@ MemoizedMessageBubble.displayName = "MessageBubble"
 
 // Export the memoized version as MessageBubble
 export { MemoizedMessageBubble as MessageBubble }
-

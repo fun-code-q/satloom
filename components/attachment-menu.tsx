@@ -160,7 +160,7 @@ export function AttachmentMenu({
   ]
 
   const filteredOptions = isMobile
-    ? attachmentOptions
+    ? attachmentOptions.filter(opt => !["sounds", "react", "audio-call", "video-call"].includes(opt.type))
     : attachmentOptions.filter(opt => !["audio-call", "video-call"].includes(opt.type))
 
   const triggerFileInput = (accept: string, type: string) => {
@@ -280,19 +280,19 @@ export function AttachmentMenu({
 
   if (isMobile) {
     return (
-      <div className="w-full bg-slate-800/40 rounded-2xl p-2 md:p-3">
-        {/* Mobile attachment menu - simplified horizontal scroll */}
-        <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide snap-x">
+      <div className="w-fit bg-slate-900/40 backdrop-blur-xl rounded-2xl p-2 shadow-2xl transition-all">
+        {/* Mobile attachment menu - Compact Icon-only Grid */}
+        <div className="grid grid-cols-3 gap-1">
           {filteredOptions.map((option, index) => (
             <button
               key={index}
               onClick={option.action}
-              className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-slate-700/50 transition-colors snap-start min-w-[70px]"
+              className="flex items-center justify-center p-2 rounded-xl active:scale-95 transition-transform"
+              aria-label={option.label}
             >
-              <div className="w-11 h-11 rounded-2xl bg-cyan-500/90 flex items-center justify-center shadow-lg active:scale-90 transition-transform">
-                <option.icon className="w-5 h-5 text-white" />
+              <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center shadow-lg hover:bg-white/10">
+                <option.icon className="w-6 h-6 text-cyan-400" />
               </div>
-              <span className="text-[10px] font-medium text-gray-300">{option.label}</span>
             </button>
           ))}
         </div>

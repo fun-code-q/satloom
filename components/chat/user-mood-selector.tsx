@@ -49,26 +49,26 @@ export function UserMoodSelector({ currentMood, onMoodChange, open, onOpenChange
             <PopoverTrigger asChild>
                 <Button
                     variant="ghost"
-                    size="sm"
-                    className="h-8 gap-2 px-2 text-slate-400 hover:text-cyan-400 hover:bg-slate-800/50 transition-all rounded-full"
+                    size="icon"
+                    className="h-8 w-8 text-slate-400 hover:text-cyan-400 hover:bg-white/10 transition-all rounded-xl relative flex-shrink-0"
                     title="Set your mood"
                 >
                     {currentMood ? (
                         <>
                             <span className="text-base leading-none">{currentMood.emoji}</span>
-                            <span className="text-xs font-medium truncate max-w-[80px]">
+                            <span className="text-xs font-medium truncate max-w-[80px] hidden md:inline">
                                 {currentMood.text}
                             </span>
                         </>
                     ) : (
                         <>
                             <Smile className="w-4 h-4" />
-                            <span className="text-xs">Set Status</span>
+                            <span className="text-xs hidden md:inline">Set Status</span>
                         </>
                     )}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-64 bg-slate-900 border-slate-700 p-3 shadow-2xl z-[300]">
+            <PopoverContent className="w-64 bg-slate-900/95 backdrop-blur-xl border border-white/10 p-4 shadow-2xl z-[300] rounded-2xl animate-in fade-in zoom-in-95 duration-200">
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
                         <h4 className="text-sm font-semibold text-slate-200">Set Status</h4>
