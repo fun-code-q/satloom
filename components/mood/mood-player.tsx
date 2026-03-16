@@ -51,11 +51,19 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
             }
 
             // Normalize youtu.be short links to youtube.com/watch for consistent player parsing
-            if (host === "youtu.be") {
-                const videoId = parsed.pathname.replace("/", "")
+            if (host === "youtu.be" || host.includes("youtube.com")) {
+                let videoId = ""
+                if (host === "youtu.be") {
+                    videoId = parsed.pathname.replace("/", "")
+                } else {
+                    videoId = parsed.searchParams.get("v") || ""
+                    if (!videoId && parsed.pathname.includes("/embed/")) {
+                        videoId = parsed.pathname.split("/embed/")[1]?.split("?")[0]
+                    }
+                }
+                
                 if (videoId) {
-                    const search = parsed.search ? parsed.search : ""
-                    return `https://www.youtube.com/watch?v=${videoId}${search}`
+                    return `https://www.youtube.com/watch?v=${videoId}`
                 }
             }
 
@@ -252,8 +260,9 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
             {/* Use stable key to prevent unnecessary remounting */}
             {playlist.length > 0 && (
                 <div
-                    className="fixed top-[-100px] left-[-100px] w-16 h-16 pointer-events-none z-[-1] overflow-hidden"
+                    className="fixed top-0 left-0 w-1 h-1 pointer-events-none z-[-1] opacity-0 overflow-hidden"
                     aria-hidden="true"
+                    style={{ visibility: 'hidden' }}
                 >
                     <ReactPlayer
                         key="mood-player-stable"
@@ -308,10 +317,12 @@ export function MoodPlayer({ roomId }: MoodPlayerProps) {
                                 },
                                 youtube: {
                                     playerVars: {
-                                        showinfo: 0,
+                                        autoplay: 1,
                                         controls: 0,
-                                        modestbranding: 1,
+                                        showinfo: 0,
                                         rel: 0,
+                                        modestbranding: 1,
+                                        mute: 0,
                                         origin: typeof window !== 'undefined' ? window.location.origin : ''
                                     }
                                 }

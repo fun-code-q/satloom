@@ -56,7 +56,7 @@ export function useChatUIState() {
     const [isMoodSelectorOpen, setIsMoodSelectorOpen] = useState(false)
     const [showEmojiPicker, setShowEmojiPicker] = useState(false)
     const [showChatSearch, setShowChatSearch] = useState(false)
-    const [showParticipants, setShowParticipants] = useState(true)
+    const [showParticipants, setShowParticipants] = useState(false)
 
     // Game specific state
     const [playgroundGame, setPlaygroundGame] = useState<"dots" | "chess" | "tictactoe" | "connect4">("dots")

@@ -113,14 +113,27 @@ export function MoodSetupModal({ isOpen, onClose, roomId }: MoodSetupModalProps)
                             <ImageIcon className="w-4 h-4 text-cyan-400" />
                             Background Image
                         </Label>
-                        <Input
-                            id="mood-background-image"
-                            name="background-image"
-                            value={backgroundImage}
-                            onChange={(e) => setBackgroundImage(e.target.value)}
-                            placeholder="Paste image URL (e.g., https://...)"
-                            className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
-                        />
+                        <div className="flex gap-2">
+                            <Input
+                                id="mood-background-image"
+                                name="background-image"
+                                value={backgroundImage}
+                                onChange={(e) => setBackgroundImage(e.target.value)}
+                                placeholder="Paste image URL (e.g., https://...)"
+                                className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 flex-1"
+                            />
+                            {backgroundImage && (
+                                <Button 
+                                    onClick={() => setBackgroundImage("")} 
+                                    size="icon" 
+                                    variant="ghost"
+                                    className="text-slate-400 hover:text-red-400 hover:bg-red-400/10 shrink-0"
+                                    title="Clear background image"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </Button>
+                            )}
+                        </div>
                         {backgroundImage && (
                             <div className="relative w-full h-32 rounded-lg overflow-hidden border border-slate-700 mt-2 group">
                                 <img
