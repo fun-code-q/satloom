@@ -661,20 +661,12 @@ export function ChatInput({
                 onEmojiSelect={handleEmojiSelect}
             />
 
-            <Soundboard
-                isOpen={showSoundboard}
-                onClose={() => setShowSoundboard(false)}
-                roomId={roomId || ""}
-                userId={currentUserId}
-                userName={currentUser?.name || ""}
-            />
-
             <VanishModeModal
                 isOpen={showVanishModal}
                 onClose={() => setShowVanishModal(false)}
                 currentMode={vanishMode}
                 currentDuration={vanishDuration}
-                onVanishModeSelect={(mode, duration) => {
+                onVanishModeSelect={(mode: VanishModeType, duration: number) => {
                     setVanishMode(mode)
                     setVanishDuration(duration)
                 }}

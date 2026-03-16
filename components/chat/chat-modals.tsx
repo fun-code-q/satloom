@@ -570,6 +570,16 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
                 />
             )}
 
+            {renderModal(
+                <Soundboard
+                    isOpen={props.showSoundboard}
+                    onClose={() => props.setShowSoundboard(false)}
+                    roomId={roomId || ""}
+                    userId={currentUserId}
+                    userName={userProfile.name || ""}
+                />
+            )}
+
             {/* Popups */}
             {props.showLeaveConfirmation && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[650]">

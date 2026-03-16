@@ -11,6 +11,7 @@ interface UserMoodSelectorProps {
     onMoodChange: (mood: { emoji: string; text: string } | null) => void;
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
+    className?: string;
 }
 
 const PRESET_MOODS = [
@@ -24,7 +25,7 @@ const PRESET_MOODS = [
     { emoji: "🎮", text: "Gaming" },
 ];
 
-export function UserMoodSelector({ currentMood, onMoodChange, open, onOpenChange }: UserMoodSelectorProps) {
+export function UserMoodSelector({ currentMood, onMoodChange, open, onOpenChange, className }: UserMoodSelectorProps) {
     const [internalOpen, setInternalOpen] = useState(false);
     const isOpen = open !== undefined ? open : internalOpen;
     const setIsOpen = onOpenChange !== undefined ? onOpenChange : setInternalOpen;
@@ -50,7 +51,7 @@ export function UserMoodSelector({ currentMood, onMoodChange, open, onOpenChange
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-slate-400 hover:text-cyan-400 hover:bg-white/10 transition-all rounded-xl relative flex-shrink-0"
+                    className={`h-8 w-8 text-slate-400 hover:text-cyan-400 hover:bg-white/10 transition-all rounded-xl relative flex-shrink-0 ${className || ""}`}
                     title="Set your mood"
                 >
                     {currentMood ? (

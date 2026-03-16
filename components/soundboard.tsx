@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { Volume2, VolumeX, Keyboard } from "lucide-react"
+import { createPortal } from "react-dom"
 import { soundboard, DEFAULT_SOUNDS, SoundboardState } from "@/utils/games/soundboard"
 
 interface SoundboardProps {
@@ -61,84 +62,52 @@ export function Soundboard({ isOpen, onClose, roomId, userId, userName }: Soundb
 
     if (!isOpen) return null
 
-    return (
+    return createPortal(
         <>
             {/* Backdrop */}
-            <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
+            <div className="fixed inset-0 z-[99998] bg-black/20" onClick={onClose} />
 
             {/* Popup */}
             <div
-                className="absolute bottom-20 md:bottom-16 right-[188px] translate-x-1/2 z-[1200] bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-3xl p-4 md:p-5 shadow-2xl w-auto md:w-[410px] max-h-[80vh] flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-300"
+                className="fixed bottom-24 md:bottom-20 right-4 md:right-8 z-[99999] bg-white/5 backdrop-blur-[20px] border border-white/10 rounded-2xl p-3 md:p-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-[280px] md:w-[320px] max-h-[70vh] flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-300 ring-1 ring-white/5"
                 onClick={(e) => e.stopPropagation()}
             >
 
                 {/* Header controls hidden as per user request */}
                 <div className="hidden">
-                    <div className="flex items-center justify-between gap-3 px-3 py-2.5 md:px-4 md:py-3 bg-slate-700/40 rounded-2xl border border-slate-600/30">
-                        <div className="flex items-center gap-2">
-                            {soundState.volume > 0 ? (
-                                <Volume2 className="w-5 h-5 text-cyan-400" />
-                            ) : (
-                                <VolumeX className="w-5 h-5 text-red-400" />
-                            )}
-                            <span className="text-sm text-gray-300">Volume</span>
-                        </div>
-                        <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.1"
-                            value={soundState.volume}
-                            onInput={(e) => handleVolumeChange(parseFloat((e.target as HTMLInputElement).value))}
-                            className="w-24 md:w-32 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-                        />
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-cyan-400 w-8 md:w-9 text-right tabular-nums">
-                                {Math.round(soundState.volume * 100)}%
-                            </span>
-                            <div className="w-px h-5 bg-slate-600/50 mx-0.5 md:mx-1"></div>
-                            <button
-                                onClick={() => setShowHotkeys(!showHotkeys)}
-                                className={`p-1.5 md:p-2 rounded-xl transition-all ${showHotkeys ? 'bg-cyan-500/20 text-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.2)]' : 'text-gray-400 hover:text-gray-300 hover:bg-slate-700/60'}`}
-                                title="Toggle Hotkeys"
-                            >
-                                <Keyboard className="w-5 h-5" />
-                            </button>
-                        </div>
-                    </div>
+                    {/* ... (Keeping volume logic but visually hidden as per previous request) */}
                 </div>
 
-                {/* Sound Grid */}
-                <div className="grid grid-cols-5 gap-2 md:gap-2.5 py-3 md:py-4 overflow-y-auto custom-scrollbar pr-1">
-                    {DEFAULT_SOUNDS.map((sound) => (
+                {/* Sound Grid - 4x2 Layout */}
+                <div className="grid grid-cols-4 gap-2 py-1.5 overflow-y-auto custom-scrollbar pr-1">
+                    {DEFAULT_SOUNDS.slice(0, 8).map((sound) => (
                         <button
                             key={sound.id}
                             onClick={() => handlePlaySound(sound.id)}
                             disabled={soundState.isPlaying && soundState.currentSound === sound.id}
                             className={`
-                relative flex flex-col items-center justify-center p-2 h-14 md:h-16 rounded-2xl transition-all duration-200
-                ${soundState.currentSound === sound.id ? "ring-2 ring-white scale-105" : "hover:bg-slate-700/30 hover:scale-110 active:scale-95"}
+                relative flex flex-col items-center justify-center p-2 h-14 md:h-16 rounded-xl transition-all duration-300
+                ${soundState.currentSound === sound.id 
+                    ? "bg-white/20 ring-2 ring-white/50 scale-105" 
+                    : "bg-white/[0.03] hover:bg-white/[0.08] hover:scale-105 active:scale-95 border border-white/5"}
               `}
-                            style={{ backgroundColor: `${sound.color}15`, borderColor: `${sound.color}40`, borderWidth: "1.5px" }}
                         >
-                            <span className="text-lg md:text-xl mb-0.5">{sound.icon}</span>
-                            <span className="text-[8px] md:text-[9px] font-semibold text-gray-200 truncate w-full text-center leading-tight">{sound.name}</span>
-                            {showHotkeys && sound.hotkey && (
-                                <span className="absolute -top-1 -right-1 text-[7px] font-black text-white bg-cyan-600 px-1 rounded-full shadow-sm z-10 border border-slate-800">
-                                    {sound.hotkey.toUpperCase()}
-                                </span>
-                            )}
+                            <span className="text-xl md:text-2xl mb-1 filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">{sound.icon}</span>
+                            <span className="text-[8px] md:text-[9px] font-bold text-white/90 truncate w-full text-center leading-tight tracking-tight uppercase">{sound.name}</span>
+                            
                             {soundState.currentSound === sound.id && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-cyan-400/20 rounded-2xl">
-                                    <div className="w-1 h-1 bg-white rounded-full animate-ping" />
-                                </div>
+                                <div className="absolute inset-x-1 bottom-1 h-0.5 bg-cyan-400 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.8)] animate-pulse" />
                             )}
+                            
+                            {/* Subtle Glass Highlight */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-xl pointer-events-none" />
                         </button>
                     ))}
                 </div>
 
 
             </div>
-        </>
+        </>,
+        document.body
     )
 }

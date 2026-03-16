@@ -79,7 +79,7 @@ export function LandingPage({ onCreateRoom, onJoinRoom, error, initialRoomId }: 
       <SpaceBackground />
 
       <div className="absolute top-0 left-0 right-0 p-4 z-40 flex items-center justify-center md:justify-start">
-        <AnimatedLogo showTextOnMobile={true} />
+        <AnimatedLogo showTextOnMobile={false} />
       </div>
 
       <div className="w-full max-w-md mx-auto z-10">
@@ -92,7 +92,7 @@ export function LandingPage({ onCreateRoom, onJoinRoom, error, initialRoomId }: 
           {/* Logo */}
           <div className="text-center mb-6 sm:mb-8">
             <AdminPanelLogin>
-              <AnimatedLogo showTextOnMobile={true} className="justify-center mb-3 sm:mb-4 scale-90 sm:scale-100" />
+              <AnimatedLogo showTextOnMobile={false} className="justify-center mb-3 sm:mb-4 scale-90 sm:scale-100" />
             </AdminPanelLogin>
             <p className="text-gray-400 text-xs sm:text-sm px-2">Secure, anonymous, real-time communication</p>
           </div>

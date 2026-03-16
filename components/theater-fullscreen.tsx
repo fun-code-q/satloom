@@ -6,10 +6,11 @@ import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 // @ts-ignore
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, X, Mic, MicOff, Users, MessageSquare, Smile, Film, Minimize2, Monitor, Maximize, Minimize } from "lucide-react"
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, X, Mic, MicOff, Users, MessageSquare, Smile, Film, Minimize2, Monitor, Maximize, Minimize, Sparkles } from "lucide-react"
 import { TheaterSignaling, type TheaterSession, type TheaterAction } from "@/utils/infra/theater-signaling"
 import { TheaterChatOverlay, type Message } from "./theater-chat-overlay"
-import { EmojiPicker } from "./emoji-picker"
+import { ReactionRain } from "./reaction-rain"
+import { ReactionRainView } from "./reaction-rain-view"
 import { UserPresenceSystem } from "@/utils/infra/user-presence"
 import { AudioVisualizer } from "./audio-visualizer"
 import { PrivacyShield } from "./privacy-shield"
@@ -68,8 +69,6 @@ export function TheaterFullscreen({
   const [isMicMuted, setIsMicMuted] = useState(true)
   const [playerReady, setPlayerReady] = useState(false)
   const [showChat, setShowChat] = useState(false)
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
-  const [floatingEmojis, setFloatingEmojis] = useState<{ id: string; emoji: string; x: number; y: number }[]>([])
   const [isBuffering, setIsBuffering] = useState(false)
   const [playbackRate, setPlaybackRate] = useState(1.0)
   const [showPlaylist, setShowPlaylist] = useState(false)
@@ -108,6 +107,55 @@ export function TheaterFullscreen({
     sdpMid: c.sdpMid,
     sdpMLineIndex: c.sdpMLineIndex
   })
+
+  // State refs to fix stale closures in signaling listener
+  const stateRef = useRef({
+    currentTime,
+    duration,
+    isPlaying,
+    isBuffering,
+    playerReady,
+    playbackRate,
+    session,
+    isHost,
+    localMovieStream,
+    currentUserId,
+    roomId,
+    currentUser
+  });
+
+  // Keep stateRef in sync with real React state
+  useEffect(() => {
+    stateRef.current = {
+      currentTime,
+      duration,
+      isPlaying,
+      isBuffering,
+      playerReady,
+      playbackRate,
+      session,
+      isHost,
+      localMovieStream,
+      currentUserId,
+      roomId,
+      currentUser
+    };
+  }, [
+    currentTime,
+    duration,
+    isPlaying,
+    isBuffering,
+    playerReady,
+    playbackRate,
+    session,
+    isHost,
+    localMovieStream,
+    currentUserId,
+    roomId,
+    currentUser
+  ]);
+
+  const syncIframePlayerRef = useRef<((action: 'play' | 'pause' | 'seek', time?: number) => void) | null>(null);
 
   useEffect(() => {
     setMounted(true)
@@ -292,11 +340,11 @@ export function TheaterFullscreen({
 
     // Auto-hide after 3 seconds of inactivity
     controlsTimeoutRef.current = setTimeout(() => {
-      if (!showChat && !showEmojiPicker && !showPlaylist && !showSoundboard) {
+      if (!showChat && !showPlaylist && !showSoundboard) {
         setShowControls(false)
       }
     }, 3000)
-  }, [showChat, showEmojiPicker, showPlaylist, showSoundboard])
+  }, [showChat, showPlaylist, showSoundboard])
 
   useEffect(() => {
     reactivateControls()
@@ -328,115 +376,7 @@ export function TheaterFullscreen({
     }
   }, [session?.videoType])
 
-  useEffect(() => {
-    if (!session) return
-    const unsubscribe = theaterSignaling.listenForSession(roomId, session.id, (updatedSession: any) => {
-      if (updatedSession.status === "ended") { setTimeout(() => onClose(), 1000); return }
-      if (updatedSession.lastAction && updatedSession.lastAction.hostId !== currentUserId && updatedSession.lastAction.timestamp > (lastActionTimestampRef.current || 0)) {
-        lastActionTimestampRef.current = updatedSession.lastAction.timestamp;
-        const action = updatedSession.lastAction
-        switch (action.type) {
-          case "play":
-            setIsPlaying(true)
-            syncIframePlayer("play")
-            if (session.videoType === "webrtc" && videoStreamManagerRef.current) videoStreamManagerRef.current.syncPlayback('play')
-            if (session.videoType === "direct" && videoRef.current) videoRef.current.play().catch(err => console.error("Play error:", err))
-
-            if (action.currentTime !== undefined && Math.abs(currentTime - action.currentTime) > 1) {
-              if (videoRef.current) videoRef.current.currentTime = action.currentTime
-              syncIframePlayer("seek", action.currentTime)
-              if (session.videoType === "webrtc" && videoStreamManagerRef.current) videoStreamManagerRef.current.syncPlayback('seek', action.currentTime)
-            }
-            break
-          case "pause":
-            setIsPlaying(false); syncIframePlayer("pause")
-            if (session.videoType === "webrtc" && videoStreamManagerRef.current) videoStreamManagerRef.current.syncPlayback('pause')
-            if (session.videoType === "direct" && videoRef.current) videoRef.current.pause()
-            break
-          case "seek":
-            if (action.currentTime !== undefined) {
-              if (videoRef.current) videoRef.current.currentTime = action.currentTime
-              syncIframePlayer("seek", action.currentTime)
-              if (session.videoType === "webrtc" && videoStreamManagerRef.current) videoStreamManagerRef.current.syncPlayback('seek', action.currentTime)
-              if (session.videoType === "direct" && videoRef.current && isPlaying) videoRef.current.play().catch(err => console.error("Play error:", err))
-              setCurrentTime(action.currentTime)
-            }
-            break
-          case "buffering": setIsBuffering(true); setIsPlaying(false); break
-          case "reaction": if (action.payload?.emoji) addFloatingEmoji(action.payload.emoji); break
-          case "join_sync": if (isHost && action.payload?.requestorId) theaterSignaling.sendAction(roomId, session.id, "seek", currentTime, currentUserId, currentUser, { targetId: action.payload.requestorId }); break
-          case "quality_change": if (action.payload?.quality) theaterQuality.setQuality(action.payload.quality); break
-        }
-      }
-      if (updatedSession.queue) { theaterQueue.clearQueue(); updatedSession.queue.forEach((v: any) => theaterQueue.addToQueue(v)) }
-      if (updatedSession.status === 'buffering' && !isHost) { setIsBuffering(true); setIsPlaying(false) }
-      else if (updatedSession.status === 'playing' && isBuffering) { setIsBuffering(false); setIsPlaying(true) }
-      if (!isHost && updatedSession.status === 'playing' && playerReady) {
-        const drift = updatedSession.currentTime - currentTime
-        if (Math.abs(drift) > 5) {
-          if (videoRef.current) videoRef.current.currentTime = updatedSession.currentTime
-          setCurrentTime(updatedSession.currentTime); setPlaybackRate(1.0)
-        } else if (Math.abs(drift) > 0.5) { setPlaybackRate(drift > 0 ? 1.05 : 0.95) }
-        else if (playbackRate !== 1.0) setPlaybackRate(1.0)
-      }
-      if (isHost && updatedSession.videoType === "webrtc" && localMovieStream) {
-        const currentParticipants = updatedSession.participants || []
-        currentParticipants.forEach(async (participantId: string) => {
-          if (participantId !== currentUserId && !connectedPeersRef.current.has(participantId)) {
-            WebRTCManager.getInstance().initialize(participantId, localMovieStream,
-              (s, uid, label) => { if (uid === participantId && label === "theater") setRemoteMovieStream(s) },
-              (c, uid) => { if (uid === participantId) theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", toIcePayload(c), currentUserId, participantId) },
-              undefined, "theater")
-            const offer = await WebRTCManager.getInstance().createOffer(participantId)
-            theaterSignaling.sendSignal(roomId, session.id, "offer", offer, currentUserId, participantId)
-            connectedPeersRef.current.add(participantId)
-          }
-        })
-      }
-    })
-    return () => unsubscribe()
-  }, [session.id, roomId, currentUserId, onClose, isHost])
-
-  const addFloatingEmoji = (emoji: string) => {
-    const id = Math.random().toString(36).substr(2, 9)
-    const x = Math.random() * 80 + 10; const y = Math.random() * 50 + 25
-    setFloatingEmojis((prev) => [...prev, { id, emoji, x, y }])
-    setTimeout(() => setFloatingEmojis((prev) => prev.filter((e) => e.id !== id)), 2000)
-  }
-
-  const handleReaction = (emoji: string) => {
-    theaterSignaling.sendReaction(roomId, session.id, emoji, currentUserId, currentUser)
-    addFloatingEmoji(emoji); setShowEmojiPicker(false)
-  }
-
-  const getEmbedUrl = (url: string, type: string) => {
-    if (type === "youtube") {
-      const match = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|live\/)|youtu\.be\/)([^&\n?#]+)/)
-      return match ? `https://www.youtube.com/embed/${match[1]}?enablejsapi=1&autoplay=0&controls=0&origin=${typeof window !== 'undefined' ? window.location.origin : '*'}` : url
-    }
-    if (type === "vimeo") {
-      const match = url.match(/vimeo\.com\/(?:groups\/[^/]+\/videos\/|)(\d+)/)
-      return match ? `https://player.vimeo.com/video/${match[1]}?api=1&autoplay=0` : url
-    }
-    if (type === "twitch") {
-      const match = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/)
-      return match ? `https://player.twitch.tv/?channel=${match[1]}&parent=${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}&autoplay=false` : url
-    }
-    if (type === "dailymotion") {
-      const match = url.match(/(?:dailymotion\.com\/video\/|dai\.ly\/)([a-zA-Z0-9]+)/)
-      return match ? `https://www.dailymotion.com/embed/video/${match[1]}?autoplay=0&controls=0` : url
-    }
-    if (type === "soundcloud") return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true`
-    if (type === "archive") {
-      if (url.includes("/details/")) return url.replace("/details/", "/embed/")
-      if (url.includes("/embed/")) return url
-      const itemMatch = url.match(/archive\.org\/([a-zA-Z0-9_-]+)/)
-      return itemMatch ? `https://archive.org/embed/${itemMatch[1]}` : url
-    }
-    return url
-  }
-
-  const syncIframePlayer = (action: 'play' | 'pause' | 'seek', time?: number) => {
+  const syncIframePlayer = useCallback((action: 'play' | 'pause' | 'seek', time?: number) => {
     if (!iframeRef.current) return
     const iframe = iframeRef.current
     const type = session.videoType
@@ -468,6 +408,110 @@ export function TheaterFullscreen({
       }
     }
     executeCommand()
+  }, [session.videoType]);
+
+  useEffect(() => {
+    syncIframePlayerRef.current = syncIframePlayer;
+  }, [syncIframePlayer]);
+
+  useEffect(() => {
+    if (!session) return
+    const unsubscribe = theaterSignaling.listenForSession(roomId, session.id, (updatedSession: any) => {
+      const state = stateRef.current;
+      
+      if (updatedSession.status === "ended") { setTimeout(() => onClose(), 1000); return }
+      if (updatedSession.lastAction && updatedSession.lastAction.hostId !== state.currentUserId && updatedSession.lastAction.timestamp > (lastActionTimestampRef.current || 0)) {
+        lastActionTimestampRef.current = updatedSession.lastAction.timestamp;
+        const action = updatedSession.lastAction
+        switch (action.type) {
+          case "play":
+            setIsPlaying(true)
+            if (syncIframePlayerRef.current) syncIframePlayerRef.current("play")
+            if (state.session.videoType === "webrtc" && videoStreamManagerRef.current) videoStreamManagerRef.current.syncPlayback('play')
+            if (state.session.videoType === "direct" && videoRef.current) videoRef.current.play().catch(err => console.error("Play error:", err))
+
+            if (action.currentTime !== undefined && Math.abs(state.currentTime - action.currentTime) > 1) {
+              if (videoRef.current) videoRef.current.currentTime = action.currentTime
+              if (syncIframePlayerRef.current) syncIframePlayerRef.current("seek", action.currentTime)
+              if (state.session.videoType === "webrtc" && videoStreamManagerRef.current) videoStreamManagerRef.current.syncPlayback('seek', action.currentTime)
+            }
+            break
+          case "pause":
+            setIsPlaying(false)
+            if (syncIframePlayerRef.current) syncIframePlayerRef.current("pause")
+            if (state.session.videoType === "webrtc" && videoStreamManagerRef.current) videoStreamManagerRef.current.syncPlayback('pause')
+            if (state.session.videoType === "direct" && videoRef.current) videoRef.current.pause()
+            break
+          case "seek":
+            if (action.currentTime !== undefined) {
+              if (videoRef.current) videoRef.current.currentTime = action.currentTime
+              if (syncIframePlayerRef.current) syncIframePlayerRef.current("seek", action.currentTime)
+              if (state.session.videoType === "webrtc" && videoStreamManagerRef.current) videoStreamManagerRef.current.syncPlayback('seek', action.currentTime)
+              if (state.session.videoType === "direct" && videoRef.current && state.isPlaying) videoRef.current.play().catch(err => console.error("Play error:", err))
+              setCurrentTime(action.currentTime)
+            }
+            break
+          case "buffering": setIsBuffering(true); setIsPlaying(false); break
+          case "join_sync": if (state.isHost && action.payload?.requestorId) theaterSignaling.sendAction(state.roomId, state.session.id, "seek", state.currentTime, state.currentUserId, state.currentUser, { targetId: action.payload.requestorId }); break
+          case "quality_change": if (action.payload?.quality) theaterQuality.setQuality(action.payload.quality); break
+        }
+      }
+      if (updatedSession.queue) { theaterQueue.clearQueue(); updatedSession.queue.forEach((v: any) => theaterQueue.addToQueue(v)) }
+      if (updatedSession.status === 'buffering' && !state.isHost) { setIsBuffering(true); setIsPlaying(false) }
+      else if (updatedSession.status === 'playing' && state.isBuffering) { setIsBuffering(false); setIsPlaying(true) }
+      if (!state.isHost && updatedSession.status === 'playing' && state.playerReady) {
+        const drift = updatedSession.currentTime - state.currentTime
+        if (Math.abs(drift) > 5) {
+          if (videoRef.current) videoRef.current.currentTime = updatedSession.currentTime
+          setCurrentTime(updatedSession.currentTime); setPlaybackRate(1.0)
+        } else if (Math.abs(drift) > 0.5) { setPlaybackRate(drift > 0 ? 1.05 : 0.95) }
+        else if (state.playbackRate !== 1.0) setPlaybackRate(1.0)
+      }
+      if (state.isHost && updatedSession.videoType === "webrtc" && state.localMovieStream) {
+        const currentParticipants = updatedSession.participants || []
+        currentParticipants.forEach(async (participantId: string) => {
+          if (participantId !== state.currentUserId && !connectedPeersRef.current.has(participantId)) {
+            WebRTCManager.getInstance().initialize(participantId, state.localMovieStream!,
+              (s, uid, label) => { if (uid === participantId && label === "theater") setRemoteMovieStream(s) },
+              (c, uid) => { if (uid === participantId) theaterSignaling.sendSignal(state.roomId, state.session.id, "ice-candidate", toIcePayload(c), state.currentUserId, participantId) },
+              undefined, "theater")
+            const offer = await WebRTCManager.getInstance().createOffer(participantId)
+            theaterSignaling.sendSignal(state.roomId, state.session.id, "offer", offer, state.currentUserId, participantId)
+            connectedPeersRef.current.add(participantId)
+          }
+        })
+      }
+    })
+    return () => unsubscribe()
+  }, [session?.id])
+
+
+
+  const getEmbedUrl = (url: string, type: string) => {
+    if (type === "youtube") {
+      const match = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|live\/)|youtu\.be\/)([^&\n?#]+)/)
+      return match ? `https://www.youtube.com/embed/${match[1]}?enablejsapi=1&autoplay=0&controls=0&origin=${typeof window !== 'undefined' ? window.location.origin : '*'}` : url
+    }
+    if (type === "vimeo") {
+      const match = url.match(/vimeo\.com\/(?:groups\/[^/]+\/videos\/|)(\d+)/)
+      return match ? `https://player.vimeo.com/video/${match[1]}?api=1&autoplay=0` : url
+    }
+    if (type === "twitch") {
+      const match = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/)
+      return match ? `https://player.twitch.tv/?channel=${match[1]}&parent=${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}&autoplay=false` : url
+    }
+    if (type === "dailymotion") {
+      const match = url.match(/(?:dailymotion\.com\/video\/|dai\.ly\/)([a-zA-Z0-9]+)/)
+      return match ? `https://www.dailymotion.com/embed/video/${match[1]}?autoplay=0&controls=0` : url
+    }
+    if (type === "soundcloud") return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true`
+    if (type === "archive") {
+      if (url.includes("/details/")) return url.replace("/details/", "/embed/")
+      if (url.includes("/embed/")) return url
+      const itemMatch = url.match(/archive\.org\/([a-zA-Z0-9_-]+)/)
+      return itemMatch ? `https://archive.org/embed/${itemMatch[1]}` : url
+    }
+    return url
   }
 
   const processPendingCommands = () => {
@@ -606,7 +650,22 @@ export function TheaterFullscreen({
     <PrivacyShield enabled={isOpen}>
       <div className={!isOpen ? "fixed top-[-9999px] left-[-9999px] opacity-0" : "fixed inset-0 bg-black z-[500] flex flex-col overflow-hidden select-none"}
         onMouseMove={reactivateControls} onMouseLeave={() => setShowControls(false)} onTouchStart={reactivateControls}>
+        
+        {/* Top-right management controls */}
+        <div className={`absolute top-4 right-4 flex items-center gap-2 z-[60] transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+          <Button variant="ghost" size="icon" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/10 hover:bg-white/20 text-white shadow-xl" onClick={onMinimize}>
+            <Minimize2 className="w-4 h-4 sm:w-5 sm:h-5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/10 hover:bg-white/20 text-white shadow-xl" onClick={toggleFullscreen}>
+            {isFullscreen ? <Minimize className="w-4 h-4 sm:w-5 sm:h-5" /> : <Maximize className="w-4 h-4 sm:w-5 sm:h-5" />}
+          </Button>
+          <Button variant="ghost" size="icon" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-red-500/90 backdrop-blur-md border border-red-400/30 hover:bg-red-500 text-white shadow-xl" onClick={handleClose}>
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
+          </Button>
+        </div>
+
         <div className="flex-1 relative bg-black flex items-center justify-center">
+          <ReactionRainView roomId={roomId} />
           <div className="w-full h-full relative flex items-center justify-center">
             {["youtube", "vimeo", "twitch", "dailymotion", "soundcloud", "archive"].includes(session.videoType) ? (
               <iframe ref={iframeRef} src={getEmbedUrl(session.videoUrl || "", session.videoType)} className="w-full h-full border-0" allow="autoplay; fullscreen; encrypted-media; microphone" allowFullScreen
@@ -690,15 +749,11 @@ export function TheaterFullscreen({
                   {unreadMessagesCount > 0 && !showChat && <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 bg-red-500 text-[10px] animate-pulse border-none">{unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}</Badge>}
                 </Button>
                 <Button variant="ghost" size="icon" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-colors ${showSoundboard ? "bg-cyan-500 text-white" : "text-white/70 hover:bg-white/10"}`} onClick={() => setShowSoundboard?.(!showSoundboard)}><Music2 className="w-4 h-4 sm:w-5 sm:h-5" /></Button>
-                <Button variant="ghost" size="icon" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-colors ${showEmojiPicker ? "bg-cyan-500 text-white" : "text-white/70 hover:bg-white/10"}`} onClick={() => setShowEmojiPicker(!showEmojiPicker)}><Smile className="w-4 h-4 sm:w-5 sm:h-5" /></Button>
+                <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10">
+                  <ReactionRain roomId={roomId} userId={currentUserId} />
+                </div>
                 <Button variant="ghost" size="icon" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-colors ${showPlaylist ? "bg-cyan-500 text-white" : "text-white/70 hover:bg-white/10"}`} onClick={() => setShowPlaylist(!showPlaylist)}><List className="w-4 h-4 sm:w-5 sm:h-5" /></Button>
                 <Button variant="ghost" size="icon" className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-colors ${isPushToTalkActive ? "bg-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.3)]" : "text-white/70 hover:bg-white/10"}`} onMouseDown={() => handlePushToTalk(true)} onMouseUp={() => handlePushToTalk(false)} onTouchStart={(e) => { e.preventDefault(); handlePushToTalk(true) }} onTouchEnd={() => handlePushToTalk(false)}>{isMicMuted ? <MicOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Mic className="w-4 h-4 sm:w-5 sm:h-5" />}</Button>
-              </div>
-
-              <div className="flex items-center gap-1 sm:gap-2">
-                <Button variant="ghost" size="icon" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5 border border-white/5 hover:bg-white/10" onClick={onMinimize}><Minimize2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" /></Button>
-                <Button variant="ghost" size="icon" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5 border border-white/5 hover:bg-white/10" onClick={toggleFullscreen}>{isFullscreen ? <Minimize className="w-4 h-4 sm:w-5 sm:h-5 text-white" /> : <Maximize className="w-4 h-4 sm:w-5 sm:h-5 text-white" />}</Button>
-                <Button variant="ghost" size="icon" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-red-500 border border-red-400/20 shadow-lg shadow-red-500/20 hover:bg-red-600" onClick={handleClose}><X className="w-4 h-4 sm:w-5 sm:h-5 text-white" /></Button>
               </div>
             </div>
           </div>
@@ -761,12 +816,10 @@ export function TheaterFullscreen({
           </div>
         )}
 
-        <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
-          {floatingEmojis.map((e) => (<div key={e.id} className="absolute text-4xl animate-bounce" style={{ left: `${e.x}%`, top: `${e.y}%` }}>{e.emoji}</div>))}
-        </div>
+
 
         <TheaterChatOverlay isOpen={showChat} onClose={() => setShowChat(false)} messages={messages} roomId={roomId} currentUser={currentUser} currentUserId={currentUserId} />
-        <EmojiPicker isOpen={showEmojiPicker} onClose={() => setShowEmojiPicker(false)} onEmojiSelect={handleReaction} />
+
       </div>
     </PrivacyShield>,
     document.body

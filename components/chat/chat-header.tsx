@@ -207,20 +207,21 @@ export function ChatHeader({
                 {/* Header Background */}
                 <div className="bg-black/40 backdrop-blur-2xl shadow-xl border-b border-white/10 flex flex-col">
                     {/* Header Row */}
-                    <div className="flex items-center justify-between px-4 py-2 flex-shrink-0 gap-2">
-                        <div className={`flex items-center gap-2 md:gap-4 flex-shrink-0 ${(showChatSearch && !isMobile) ? 'opacity-50 grayscale scale-95 pointer-events-none' : ''} ${showChatSearch ? 'hidden sm:flex' : 'flex'}`}>
+                    <div className="flex items-center justify-between px-2 md:px-4 py-1.5 md:py-2 flex-shrink-0 gap-px md:gap-2">
+                        <div className={`flex items-center gap-px md:gap-4 flex-shrink-0 ${(showChatSearch && !isMobile) ? 'opacity-50 grayscale scale-95 pointer-events-none' : ''} ${showChatSearch ? 'hidden sm:flex' : 'flex'}`}>
                             <div 
-                                className="scale-110 transform-gpu overflow-visible flex-shrink-0 mr-10 cursor-pointer hover:opacity-80 transition-opacity active:scale-105"
+                                className="scale-110 transform-gpu overflow-visible flex-shrink-0 mr-0 md:mr-10 cursor-pointer hover:opacity-80 transition-opacity active:scale-105"
                                 onClick={() => setShowParticipants(!showParticipants)}
                                 title={showParticipants ? "Hide participants" : "Show participants"}
                             >
-                                <AnimatedLogo showTextOnMobile={true} />
+                                <AnimatedLogo showTextOnMobile={false} />
                             </div>
                             <UserMoodSelector
                                 currentMood={currentUserMood || undefined}
                                 onMoodChange={(mood) => setCurrentUserMood(mood)}
                                 open={isMoodSelectorOpen}
                                 onOpenChange={setIsMoodSelectorOpen}
+                                className="hidden md:flex"
                             />
                             {!firebaseConnected && (
                                 <div className="px-2 py-1 bg-red-500/20 border border-red-500/50 rounded text-[10px] text-red-400 font-bold animate-pulse">
@@ -235,10 +236,10 @@ export function ChatHeader({
                             )}
                         </div>
 
-                        <div className="flex items-center justify-end flex-shrink-0 gap-1.5 md:gap-2 ml-auto select-none">
+                        <div className="flex items-center justify-end flex-shrink-0 gap-px md:gap-2 ml-auto select-none">
                             <Button
                                 variant="ghost" size="icon"
-                                className={`rounded-xl h-10 w-10 flex-shrink-0 transition-all duration-300 md:h-8 md:w-8 ${showChatSearch 
+                                className={`rounded-xl h-8 w-8 flex-shrink-0 transition-all duration-300 md:h-8 md:w-8 ${showChatSearch 
                                     ? 'hidden' 
                                     : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
                                 onClick={() => setShowChatSearch(!showChatSearch)}
@@ -248,10 +249,10 @@ export function ChatHeader({
                             </Button>
 
                             {/* Mobile/Desktop Copy Action */}
-                            <div className={`${showChatSearch ? 'hidden' : 'flex'} items-center`}>
+                            <div className={`${showChatSearch ? 'hidden' : 'hidden md:flex'} items-center`}>
                                 <Button
                                     variant="ghost" size="icon"
-                                    className="text-gray-400 hover:text-white hover:bg-white/10 bg-white/[0.03] border border-white/[0.05] rounded-xl h-10 w-10 md:h-9 md:w-9 transition-all flex-shrink-0"
+                                    className="text-gray-400 hover:text-white hover:bg-white/10 bg-white/[0.03] border border-white/[0.05] rounded-xl h-8 w-8 md:h-9 md:w-9 transition-all flex-shrink-0"
                                     onClick={handleCopyRoomLink}
                                     title={`Copy Room Link (${roomId})`}
                                 >
@@ -613,7 +614,7 @@ export function ChatHeader({
                                 className="text-red-400 hover:text-red-300 hover:bg-red-500/10 md:bg-[#F44336] md:text-white rounded-xl md:rounded-full h-8 w-8 md:h-10 md:w-10 md:shadow-lg transition-transform hover:scale-105 active:scale-95 flex-shrink-0"
                                 onClick={handleLeaveRoom}
                                 title={isHost ? "Destroy Room" : "Leave Room"}
-                            >
+>
                                 <LogOut className="w-4 h-4 md:w-5 md:h-5" />
                             </Button>
                         </div>
@@ -638,10 +639,10 @@ export function ChatHeader({
                     )}
 
                     {/* Participants Bar (Persistent Members) */}
-                    {showParticipants && (roomMembers?.length > 1) && (
-                        <div className="px-3 py-2 bg-slate-800/50 border-b border-slate-700 animate-in slide-in-from-top-2 duration-300">
-                            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide online-users-bar flex-nowrap">
-                                <span className="text-xs text-gray-400 whitespace-nowrap flex-shrink-0">Participants:</span>
+                    {showParticipants && (roomMembers?.length > 0) && (
+                        <div className="px-2 md:px-3 py-1 md:py-2 bg-slate-800/50 border-b border-slate-700 animate-in slide-in-from-top-2 duration-300">
+                            <div className="flex items-center gap-1.5 md:gap-2 overflow-x-auto scrollbar-hide online-users-bar flex-nowrap">
+                                <span className="text-[10px] md:text-xs text-gray-400 whitespace-nowrap flex-shrink-0 hidden md:inline">Participants:</span>
                                 {(roomMembers || []).map((member) => {
                                     const onlineUser = (onlineUsers || []).find(u => u.name === member.name)
                                     const isOnline = !!onlineUser
@@ -649,16 +650,16 @@ export function ChatHeader({
                                     return (
                                         <Popover key={member.name}>
                                             <PopoverTrigger asChild>
-                                                <button className={`flex items-center gap-1.5 bg-slate-700/50 hover:bg-slate-700 rounded-full px-2.5 py-1.5 whitespace-nowrap flex-shrink-0 transition-colors haptic ${!isOnline ? 'opacity-60 grayscale-[0.5]' : ''}`}>
-                                                    <Avatar className="w-5 h-5 relative">
+                                                <button className={`flex items-center gap-1 md:gap-1.5 bg-slate-700/50 hover:bg-slate-700 rounded-full px-2 py-1 md:px-2.5 md:py-1.5 whitespace-nowrap flex-shrink-0 transition-colors haptic ${!isOnline ? 'opacity-60 grayscale-[0.5]' : ''}`}>
+                                                    <Avatar className="w-4 h-4 md:w-5 md:h-5 relative">
                                                         <AvatarImage src={member.avatar || onlineUser?.avatar} alt={member.name} />
-                                                        <AvatarFallback className="text-[10px] bg-slate-600">{member.name[0]}</AvatarFallback>
+                                                        <AvatarFallback className="text-[9px] md:text-[10px] bg-slate-600">{member.name[0]}</AvatarFallback>
                                                         {isOnline && (
                                                             <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 border border-slate-800 rounded-full" />
                                                         )}
                                                     </Avatar>
-                                                    <span className="text-xs text-white">{member.name}</span>
-                                                    {onlineUser?.mood && <span className="text-xs">{onlineUser.mood.emoji}</span>}
+                                                    <span className="text-[11px] md:text-xs text-white">{member.name}</span>
+                                                    {onlineUser?.mood && <span className="text-[10px] md:text-xs">{onlineUser.mood.emoji}</span>}
                                                 </button>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-64 bg-slate-800 border-slate-700 p-0 overflow-hidden rounded-2xl shadow-2xl animate-in zoom-in-95 z-[300]" sideOffset={8}>
@@ -684,6 +685,19 @@ export function ChatHeader({
                                                     {onlineUser?.mood?.text && (
                                                         <div className="bg-slate-700/50 px-3 py-1.5 rounded-lg text-sm text-gray-200 text-center italic w-full">
                                                             &quot;{onlineUser.mood.text}&quot;
+                                                        </div>
+                                                    )}
+
+                                                    {/* Status Selector for Current User on Mobile */}
+                                                    {member.name === currentUserName && (
+                                                        <div className="md:hidden w-full mt-2">
+                                                            <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-1.5 px-1 font-bold">Update Status</div>
+                                                            <div className="bg-slate-700/30 border border-white/5 rounded-xl p-1">
+                                                                <UserMoodSelector
+                                                                    currentMood={currentUserMood || undefined}
+                                                                    onMoodChange={(mood) => setCurrentUserMood(mood)}
+                                                                />
+                                                            </div>
                                                         </div>
                                                     )}
                                                     <div className="w-full h-px bg-slate-700/50 my-1" />
