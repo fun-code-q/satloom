@@ -9,6 +9,7 @@ import { EmojiPicker } from "@/components/emoji-picker"
 import { PollCreator } from "./poll-creator"
 import { EventCreator } from "./event-creator"
 import { AttachmentMenu } from "@/components/attachment-menu"
+import { Soundboard } from "@/components/soundboard"
 import { VanishModeModal } from "@/components/vanish-mode-modal"
 import { ReactionRain } from "@/components/reaction-rain"
 import { vanishModeManager, type VanishModeType } from "@/utils/infra/vanish-mode"
@@ -30,6 +31,8 @@ interface ChatInputProps {
     onQuizStart: () => void
     onMoodTrigger?: () => void
     onSoundboard?: () => void
+    showSoundboard: boolean
+    setShowSoundboard: (val: boolean) => void
     onStartAudioCall: () => void
     onStartVideoCall: () => void
     currentUserId: string
@@ -63,6 +66,8 @@ export function ChatInput({
     onQuizStart,
     onMoodTrigger,
     onSoundboard,
+    showSoundboard,
+    setShowSoundboard,
     onStartAudioCall,
     onStartVideoCall,
     currentUserId,
@@ -656,7 +661,24 @@ export function ChatInput({
                 onEmojiSelect={handleEmojiSelect}
             />
 
-            {/* Vanish Mode Modal is handled by ChatModals */}
+            <Soundboard
+                isOpen={showSoundboard}
+                onClose={() => setShowSoundboard(false)}
+                roomId={roomId || ""}
+                userId={currentUserId}
+                userName={currentUser?.name || ""}
+            />
+
+            <VanishModeModal
+                isOpen={showVanishModal}
+                onClose={() => setShowVanishModal(false)}
+                currentMode={vanishMode}
+                currentDuration={vanishDuration}
+                onVanishModeSelect={(mode, duration) => {
+                    setVanishMode(mode)
+                    setVanishDuration(duration)
+                }}
+            />
         </div>
     )
 }

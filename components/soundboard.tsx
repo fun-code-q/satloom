@@ -68,7 +68,7 @@ export function Soundboard({ isOpen, onClose, roomId, userId, userName }: Soundb
 
             {/* Popup */}
             <div
-                className="fixed bottom-20 md:bottom-20 left-4 right-4 md:left-auto md:right-8 z-[1200] bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-3xl p-4 md:p-5 shadow-2xl w-auto md:w-[410px] max-h-[80vh] landscape:max-h-[90vh] landscape:max-w-[380px] landscape:bottom-auto landscape:top-4 landscape:right-4 flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-300"
+                className="absolute bottom-20 md:bottom-16 right-[188px] translate-x-1/2 z-[1200] bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-3xl p-4 md:p-5 shadow-2xl w-auto md:w-[410px] max-h-[80vh] flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-300"
                 onClick={(e) => e.stopPropagation()}
             >
 

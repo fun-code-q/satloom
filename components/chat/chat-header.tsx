@@ -21,6 +21,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger, PopoverClose } from "../ui/popover"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { UserPresenceSystem } from "@/utils/infra/user-presence"
+import { ChatSearch } from "./chat-search"
 
 interface ChatHeaderProps {
     roomId: string
@@ -71,7 +72,10 @@ interface ChatHeaderProps {
     hasUnreadNotes: boolean
     hasUnreadTasks: boolean
     roomMembers: RoomMember[]
+    showParticipants: boolean
+    setShowParticipants: (val: boolean) => void
     autoHide?: boolean
+    isMobile: boolean
 }
 
 export function ChatHeader({
@@ -85,8 +89,10 @@ export function ChatHeader({
     onlineUsers, currentUserId, currentUserName, pinnedMessage, onKickUser,
     firebaseConnected,
     showChatSearch, setShowChatSearch,
+    showParticipants, setShowParticipants,
     hasUnreadNotes, hasUnreadTasks,
     roomMembers,
+    isMobile,
     autoHide = false,
 }: ChatHeaderProps) {
     const [isHeaderVisible, setIsHeaderVisible] = useState(true)
@@ -181,10 +187,14 @@ export function ChatHeader({
             >
                 {/* Header Background */}
                 <div className="bg-black/40 backdrop-blur-2xl shadow-xl border-b border-white/10 flex flex-col">
-                    {/* Header */}
+                    {/* Header Row */}
                     <div className="flex items-center justify-between px-4 py-2 flex-shrink-0 gap-2">
-                        <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
-                            <div className="scale-110 transform-gpu overflow-visible flex-shrink-0">
+                        <div className={`flex items-center gap-2 md:gap-4 flex-shrink-0 ${(showChatSearch && !isMobile) ? 'opacity-50 grayscale scale-95 pointer-events-none' : ''} ${showChatSearch ? 'hidden sm:flex' : 'flex'}`}>
+                            <div 
+                                className="scale-110 transform-gpu overflow-visible flex-shrink-0 mr-10 cursor-pointer hover:opacity-80 transition-opacity active:scale-105"
+                                onClick={() => setShowParticipants(!showParticipants)}
+                                title={showParticipants ? "Hide participants" : "Show participants"}
+                            >
                                 <AnimatedLogo />
                             </div>
                             <UserMoodSelector
@@ -200,24 +210,25 @@ export function ChatHeader({
                             )}
                         </div>
 
-                        <div className="flex-1 overflow-x-auto scrollbar-hide flex items-center justify-end min-w-0 ml-auto select-none md:overflow-visible md:flex-initial">
-                            <div className="flex items-center gap-0 md:gap-1.5 flex-nowrap px-1 md:px-0">
-                             <Button
-                                 variant="ghost" size="icon"
-                                 className={`rounded-xl h-8 w-8 transition-all duration-300 ${showChatSearch 
-                                     ? 'text-cyan-400' 
-                                     : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
-                                 onClick={() => setShowChatSearch(!showChatSearch)}
-                                 title="Search messages"
-                             >
-                                 <Search className="w-4 h-4" />
-                             </Button>
+                        {showChatSearch && <ChatSearch />}
 
-                            {/* Desktop Actions */}
-                            <div className="hidden md:flex items-center gap-2">
+                        <div className="flex items-center justify-end flex-shrink-0 gap-1.5 md:gap-2 ml-auto select-none">
+                            <Button
+                                variant="ghost" size="icon"
+                                className={`rounded-xl h-8 w-8 flex-shrink-0 transition-all duration-300 ${showChatSearch 
+                                    ? 'text-cyan-400' 
+                                    : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
+                                onClick={() => setShowChatSearch(!showChatSearch)}
+                                title="Search messages"
+                            >
+                                <Search className="w-4 h-4" />
+                            </Button>
+
+                            {/* Desktop Copy Action */}
+                            <div className="hidden md:flex items-center">
                                 <Button
                                     variant="ghost" size="icon"
-                                    className="text-gray-400 hover:text-white hover:bg-white/10 bg-white/[0.03] border border-white/[0.05] rounded-xl h-9 w-9 transition-all"
+                                    className="text-gray-400 hover:text-white hover:bg-white/10 bg-white/[0.03] border border-white/[0.05] rounded-xl h-9 w-9 transition-all flex-shrink-0"
                                     onClick={handleCopyRoomLink}
                                     title={`Copy Room Link (${roomId})`}
                                 >
@@ -231,7 +242,7 @@ export function ChatHeader({
                                     <DropdownMenuTrigger asChild>
                                         <Button
                                             variant="ghost" size="icon"
-                                            className="text-gray-400 hover:text-white hover:bg-white/10 rounded-xl h-8 w-8 transition-all"
+                                            className="text-gray-400 hover:text-white hover:bg-white/10 rounded-xl h-8 w-8 transition-all flex-shrink-0"
                                             title="Voice & Video Calls"
                                         >
                                             <Phone className="w-4 h-4" />
@@ -268,7 +279,7 @@ export function ChatHeader({
                                     <DropdownMenuTrigger asChild>
                                         <Button
                                             variant="ghost" size="icon"
-                                            className="text-gray-400 hover:text-white hover:bg-white/10 rounded-xl h-8 w-8 transition-all"
+                                            className="text-gray-400 hover:text-white hover:bg-white/10 rounded-xl h-8 w-8 transition-all flex-shrink-0"
                                             title="Media & Watch Together"
                                         >
                                             <Film className="w-4 h-4" />
@@ -305,7 +316,7 @@ export function ChatHeader({
                                     <DropdownMenuTrigger asChild>
                                         <Button
                                             variant="ghost" size="icon"
-                                            className="text-gray-400 hover:text-white hover:bg-white/10 rounded-xl h-8 w-8 transition-all"
+                                            className="text-gray-400 hover:text-white hover:bg-white/10 rounded-xl h-8 w-8 transition-all flex-shrink-0"
                                             title="Games & Entertainment"
                                         >
                                             <Gamepad2 className="w-4 h-4" />
@@ -339,7 +350,7 @@ export function ChatHeader({
                                     <DropdownMenuTrigger asChild>
                                         <Button
                                             variant="ghost" size="icon"
-                                            className="text-gray-400 hover:text-white hover:bg-white/10 rounded-xl h-8 w-8 transition-all relative"
+                                            className="text-gray-400 hover:text-white hover:bg-white/10 rounded-xl h-8 w-8 transition-all relative flex-shrink-0"
                                             title="Productivity & Collaboration"
                                         >
                                             <Briefcase className="w-4 h-4" />
@@ -379,12 +390,12 @@ export function ChatHeader({
                             {/* Main Menu (3-dot on Mobile) */}
                             <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                                 <DropdownMenuTrigger asChild>
-                                     <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-white/10 rounded-xl h-8 w-8 transition-all relative" title="Tools & Settings">
+                                    <Button variant="ghost" size="icon" 
+                                        className="text-gray-400 hover:text-white hover:bg-white/10 rounded-xl h-8 w-8 transition-all relative flex-shrink-0" 
+                                        title={isMenuOpen ? "Close Menu" : "Communication & Tools"}
+                                    >
                                         <MoreVertical className="md:hidden w-4.5 h-4.5" />
-                                        {/* Hide notification dot if all specific icons are present */}
-                                        {/* (hasUnreadNotes || hasUnreadTasks) && (
-                                            <span className="md:hidden absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse" />
-                                        )*/}
+                                        <Phone className="hidden md:block w-4.5 h-4.5" />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent 
@@ -474,15 +485,12 @@ export function ChatHeader({
                                     </div>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                        </div>
-                    </div>
 
                             <div className="hidden md:flex items-center gap-2">
-
                                 {/* Media Menu */}
                                 <DropdownMenu open={isMediaMenuOpen} onOpenChange={setIsMediaMenuOpen}>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 bg-white/5 rounded-xl h-10 w-10 transition-colors" title="Media & Watch Together">
+                                        <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 bg-white/5 rounded-xl h-10 w-10 transition-colors flex-shrink-0" title="Media & Watch Together">
                                             <Film className="w-5 h-5" />
                                         </Button>
                                     </DropdownMenuTrigger>
@@ -499,7 +507,7 @@ export function ChatHeader({
                                 {/* Games Menu */}
                                 <DropdownMenu open={isGamesMenuOpen} onOpenChange={setIsGamesMenuOpen}>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 bg-white/5 rounded-xl h-10 w-10 transition-colors" title="Games & Entertainment">
+                                        <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 bg-white/5 rounded-xl h-10 w-10 transition-colors flex-shrink-0" title="Games & Entertainment">
                                             <Gamepad2 className="w-5 h-5" />
                                         </Button>
                                     </DropdownMenuTrigger>
@@ -516,7 +524,7 @@ export function ChatHeader({
                                 {/* Productivity Menu */}
                                 <DropdownMenu open={isProductivityMenuOpen} onOpenChange={setIsProductivityMenuOpen}>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 bg-white/5 rounded-xl h-10 w-10 transition-colors relative" title="Productivity & Collaboration">
+                                        <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 bg-white/5 rounded-xl h-10 w-10 transition-colors relative flex-shrink-0" title="Productivity & Collaboration">
                                             <Briefcase className="w-5 h-5" />
                                             {(hasUnreadNotes || hasUnreadTasks) && (
                                                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse" />
@@ -543,7 +551,7 @@ export function ChatHeader({
                                 {/* Settings Menu */}
                                 <DropdownMenu open={isSettingsMenuOpen} onOpenChange={setIsSettingsMenuOpen}>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 bg-white/5 rounded-xl h-10 w-10 transition-colors" title="Tools & Settings">
+                                        <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 bg-white/5 rounded-xl h-10 w-10 transition-colors flex-shrink-0" title="Tools & Settings">
                                             <Hammer className="w-5 h-5" />
                                         </Button>
                                     </DropdownMenuTrigger>
@@ -560,7 +568,7 @@ export function ChatHeader({
                                 {/* App Settings Menu (Gear Icon) */}
                                 <DropdownMenu open={isAppMenuOpen} onOpenChange={setIsAppMenuOpen}>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 bg-white/5 rounded-xl h-10 w-10 transition-colors" title="Settings">
+                                        <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 bg-white/5 rounded-xl h-10 w-10 transition-colors flex-shrink-0" title="Settings">
                                             <Settings className="w-5 h-5" />
                                         </Button>
                                     </DropdownMenuTrigger>
@@ -575,17 +583,18 @@ export function ChatHeader({
                                 </DropdownMenu>
                             </div>
 
-                             <Button
-                                 variant="ghost" size="icon"
-                                 className="text-red-400 hover:text-red-300 hover:bg-red-500/10 md:bg-[#F44336] md:text-white rounded-xl md:rounded-full h-8 w-8 md:h-10 md:w-10 md:shadow-lg transition-transform hover:scale-105 active:scale-95 flex-shrink-0"
-                                 onClick={handleLeaveRoom}
-                                 title={isHost ? "Destroy Room" : "Leave Room"}
-                             >
-                                 <LogOut className="w-4 h-4 md:w-5 md:h-5" />
-                             </Button>
-                         </div>
+                            <Button
+                                variant="ghost" size="icon"
+                                className="text-red-400 hover:text-red-300 hover:bg-red-500/10 md:bg-[#F44336] md:text-white rounded-xl md:rounded-full h-8 w-8 md:h-10 md:w-10 md:shadow-lg transition-transform hover:scale-105 active:scale-95 flex-shrink-0"
+                                onClick={handleLeaveRoom}
+                                title={isHost ? "Destroy Room" : "Leave Room"}
+                            >
+                                <LogOut className="w-4 h-4 md:w-5 md:h-5" />
+                            </Button>
+                        </div>
+                    </div>
 
-                    {/* Pinned Message */}
+                    {/* Pinned Message and Activity (Below the main row) */}
                     {pinnedMessage && (
                         <div className="bg-slate-800/95 backdrop-blur-md border-b border-slate-700 px-3 py-2 flex items-center justify-between min-h-[48px] flex-shrink-0">
                             <div className="flex items-center gap-2 overflow-hidden flex-1 min-w-0">
@@ -604,8 +613,8 @@ export function ChatHeader({
                     )}
 
                     {/* Participants Bar (Persistent Members) */}
-                    {(roomMembers?.length > 1) && (
-                        <div className="px-3 py-2 bg-slate-800/50 border-b border-slate-700">
+                    {showParticipants && (roomMembers?.length > 1) && (
+                        <div className="px-3 py-2 bg-slate-800/50 border-b border-slate-700 animate-in slide-in-from-top-2 duration-300">
                             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide online-users-bar flex-nowrap">
                                 <span className="text-xs text-gray-400 whitespace-nowrap flex-shrink-0">Participants:</span>
                                 {(roomMembers || []).map((member) => {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 
-export function AnimatedLogo({ className = "" }: { className?: string }) {
+export function AnimatedLogo({ className = "", showTextOnMobile = false }: { className?: string; showTextOnMobile?: boolean }) {
   const [isAnimating, setIsAnimating] = useState(true)
 
   useEffect(() => {
@@ -51,7 +51,7 @@ export function AnimatedLogo({ className = "" }: { className?: string }) {
         </svg>
       </div>
       <span
-        className="text-[22px] font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent hidden md:block"
+        className={`text-[22px] font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent ${showTextOnMobile ? "block" : "hidden md:block"}`}
         style={{
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",

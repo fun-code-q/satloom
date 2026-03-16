@@ -52,7 +52,6 @@ import { MessageList } from "./message-list"
 import { BaseModal } from "../base-modal"
 import { PollCreator } from "./poll-creator"
 import { EventCreator } from "./event-creator"
-import { VanishModeModal } from "../vanish-mode-modal"
 import { VanishModeType } from "@/utils/infra/vanish-mode"
 import type { CallData } from "@/utils/infra/call-signaling"
 import type { TheaterSession, TheaterInvite } from "@/utils/infra/theater-signaling"
@@ -405,13 +404,15 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
             </div>
 
             {/* Message Input - Sits at its own level */}
-            <div className="relative z-[45]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+            <div className="relative z-[45] md:pb-12" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
                 <ChatInput
                     onFileSelect={props.handleFileSelect}
                     onStartRecording={props.handleStartMediaRecording}
                     onQuizStart={() => props.setShowQuizSetup(true)}
                     onMoodTrigger={() => props.setShowMoodSetup(true)}
                     onSoundboard={() => props.setShowSoundboard(!props.showSoundboard)}
+                    showSoundboard={props.showSoundboard}
+                    setShowSoundboard={props.setShowSoundboard}
                     onStartAudioCall={props.handleStartAudioCall}
                     onStartVideoCall={props.handleStartVideoCall}
                     currentUserId={currentUserId}
@@ -598,7 +599,7 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
                 currentUser={currentUserId}
                 currentUserName={userProfile.name}
             />
-            {renderModal(<Soundboard isOpen={props.showSoundboard} onClose={() => props.setShowSoundboard(false)} roomId={roomId} userId={currentUserId} userName={userProfile.name} />)}
+
             <PasswordEntryModal isOpen={props.showPasswordEntry} roomId={roomId} onSuccess={() => { props.setShowPasswordEntry(false); props.setPasswordValidated(true) }} onCancel={() => props.setShowPasswordEntry(false)} />
             <HostPasswordModal isOpen={props.showHostPassword} roomId={roomId} isProtected={props.roomIsProtected} onClose={() => props.setShowHostPassword(false)} onProtectedChange={props.setRoomIsProtected} />
             <KaraokeSetupModal isOpen={props.showKaraokeSetup} onClose={() => props.setShowKaraokeSetup(false)} onStartSession={props.handleStartKaraoke} />
@@ -796,16 +797,7 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
                 </div>
             )}
 
-            <VanishModeModal
-                isOpen={props.showVanishModal}
-                onClose={() => props.setShowVanishModal(false)}
-                currentMode={props.vanishMode}
-                currentDuration={props.vanishDuration}
-                onVanishModeSelect={(mode, duration) => {
-                    props.setVanishMode(mode)
-                    props.setVanishDuration(duration)
-                }}
-            />
+
             {/* Removed duplicate mobile reaction rendering as ChatInput handles it */}
         </>
     )

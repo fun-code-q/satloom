@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { createPortal } from "react-dom"
 import { Search, History, Smile, Hand, Heart, Box } from "lucide-react"
 
 interface EmojiPickerProps {
@@ -46,10 +45,10 @@ export function EmojiPicker({ onEmojiSelect, isOpen, onClose }: EmojiPickerProps
 
   if (!isOpen || !mounted) return null
 
-  return createPortal(
+  return (
     <>
       <div className="fixed inset-0 z-[600] bg-black/20" onClick={onClose} />
-      <div className="fixed bottom-20 right-4 md:absolute md:bottom-16 md:right-0 z-[601] bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-[32px] p-5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] w-[calc(100vw-32px)] max-w-[360px] max-h-[70vh] landscape:max-h-[85vh] landscape:max-w-[320px] landscape:bottom-auto landscape:top-4 landscape:right-2 animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300 ease-out flex flex-col gap-4">
+      <div className="fixed bottom-20 right-4 md:absolute md:bottom-16 md:right-[84px] md:translate-x-1/2 z-[601] bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-[32px] p-5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] w-[calc(100vw-32px)] max-w-[360px] max-h-[70vh] animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300 ease-out flex flex-col gap-4">
         {/* Search hidden as per user request */}
         <div className="hidden">
           <div className="relative group">
@@ -125,9 +124,8 @@ export function EmojiPicker({ onEmojiSelect, isOpen, onClose }: EmojiPickerProps
           </div>
         )}
 
-        <div className="absolute bottom-[-10px] right-6 w-5 h-5 bg-slate-900 shadow-[10px_10px_30px_rgba(0,0,0,0.5)] rotate-45 border-r border-b border-white/10 hidden md:block landscape:hidden" />
+        <div className="absolute bottom-[-10px] left-1/2 -translate-x-1/2 w-5 h-5 bg-slate-900 shadow-[10px_10px_30px_rgba(0,0,0,0.5)] rotate-45 border-r border-b border-white/10 hidden md:block" />
       </div>
-    </>,
-    document.body
+    </>
   )
 }

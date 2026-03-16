@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { ImageIcon, Camera, Video, FileText, Mic, MapPin, User, Paperclip, BarChart2, Calendar, X, HelpCircle, Palette, Eye, Music2, Sparkles } from "lucide-react"
+import { ImageIcon, Camera, Video, FileText, Mic, MapPin, User, Paperclip, BarChart2, Calendar, X, HelpCircle, Palette, Eye, Music2, Sparkles, Plus } from "lucide-react"
 import { toast } from "sonner"
 
 interface AttachmentMenuProps {
@@ -161,7 +161,7 @@ export function AttachmentMenu({
 
   const filteredOptions = isMobile
     ? attachmentOptions.filter(opt => !["sounds", "react", "audio-call", "video-call"].includes(opt.type))
-    : attachmentOptions.filter(opt => !["audio-call", "video-call"].includes(opt.type))
+    : attachmentOptions.filter(opt => !["audio-call", "video-call", "sounds", "vanish", "react"].includes(opt.type))
 
   const triggerFileInput = (accept: string, type: string) => {
     const input = document.createElement("input")
@@ -316,7 +316,7 @@ export function AttachmentMenu({
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <Paperclip className="w-4 h-4" aria-hidden="true" />
+        <Plus className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-45' : ''}`} aria-hidden="true" />
       </Button>
 
       {isOpen && (

@@ -175,7 +175,6 @@ export function MessageList({
     }
     return (
         <div className="flex-1 flex flex-col min-h-0 relative z-[10]">
-            {showSearch && <ChatSearch />}
             {/* Chat Messages Area */}
             <div
                 ref={parentRef}

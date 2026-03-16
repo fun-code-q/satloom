@@ -69,7 +69,7 @@ export function VanishModeModal({
             <div className="fixed inset-0 z-40" onClick={onClose} />
 
             {/* Vanish Mode Pop-up */}
-            <div className="absolute bottom-16 right-0 z-50 bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-[32px] p-6 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] w-[320px] animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300 ease-out flex flex-col gap-5">
+            <div className="absolute bottom-16 right-[240px] translate-x-1/2 z-50 bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-[32px] p-6 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] w-[320px] animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300 ease-out flex flex-col gap-5">
 
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -164,7 +164,7 @@ export function VanishModeModal({
                 </div>
 
                 {/* Arrow Pointer */}
-                <div className="absolute bottom-[-8px] right-24 w-4 h-4 bg-slate-900 shadow-[10px_10px_30px_rgba(0,0,0,0.5)] rotate-45 border-r border-b border-white/10" />
+                <div className="absolute bottom-[-8px] left-1/2 -translate-x-1/2 w-4 h-4 bg-slate-900 shadow-[10px_10px_30px_rgba(0,0,0,0.5)] rotate-45 border-r border-b border-white/10" />
             </div>
         </>
     )

@@ -101,6 +101,7 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
     isPlaygroundMinimized, setIsPlaygroundMinimized,
     isMoodSelectorOpen, setIsMoodSelectorOpen,
     showEmojiPicker, setShowEmojiPicker, showChatSearch, setShowChatSearch,
+    showParticipants, setShowParticipants,
     showPollCreator, setShowPollCreator,
     showEventCreator, setShowEventCreator,
     showVanishModal, setShowVanishModal,
@@ -441,6 +442,7 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
         <ChatHeader
           roomId={roomId}
           isHost={isHost}
+          isMobile={isMobile}
           currentUserMood={currentUserMood}
           setCurrentUserMood={setCurrentUserMood}
           isMoodSelectorOpen={isMoodSelectorOpen}
@@ -475,6 +477,8 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
           firebaseConnected={firebaseConnected}
           showChatSearch={showChatSearch}
           setShowChatSearch={setShowChatSearch}
+          showParticipants={showParticipants}
+          setShowParticipants={setShowParticipants}
           hasUnreadNotes={hasUnreadNotes}
           hasUnreadTasks={hasUnreadTasks}
           roomMembers={roomMembers}
