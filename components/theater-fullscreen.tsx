@@ -246,7 +246,7 @@ export function TheaterFullscreen({
     const participants = session.participants || []
     participants.forEach(async (participantId: string) => {
       if (participantId === currentUserId) return
-      webrtc.initialize(participantId, stream, 
+      webrtc.initialize(participantId, stream,
         (s, uid, label) => { if (uid === participantId && label === "theater") setRemoteMovieStream(s) },
         (c, uid) => { if (uid === participantId) theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", toIcePayload(c), currentUserId, participantId) },
         undefined, "theater")
@@ -289,7 +289,7 @@ export function TheaterFullscreen({
   const reactivateControls = useCallback(() => {
     setShowControls(true)
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
-    
+
     // Auto-hide after 3 seconds of inactivity
     controlsTimeoutRef.current = setTimeout(() => {
       if (!showChat && !showEmojiPicker && !showPlaylist && !showSoundboard) {
@@ -340,7 +340,8 @@ export function TheaterFullscreen({
             setIsPlaying(true)
             syncIframePlayer("play")
             if (session.videoType === "webrtc" && videoStreamManagerRef.current) videoStreamManagerRef.current.syncPlayback('play')
-            
+            if (session.videoType === "direct" && videoRef.current) videoRef.current.play().catch(err => console.error("Play error:", err))
+
             if (action.currentTime !== undefined && Math.abs(currentTime - action.currentTime) > 1) {
               if (videoRef.current) videoRef.current.currentTime = action.currentTime
               syncIframePlayer("seek", action.currentTime)
@@ -350,12 +351,14 @@ export function TheaterFullscreen({
           case "pause":
             setIsPlaying(false); syncIframePlayer("pause")
             if (session.videoType === "webrtc" && videoStreamManagerRef.current) videoStreamManagerRef.current.syncPlayback('pause')
+            if (session.videoType === "direct" && videoRef.current) videoRef.current.pause()
             break
           case "seek":
             if (action.currentTime !== undefined) {
               if (videoRef.current) videoRef.current.currentTime = action.currentTime
               syncIframePlayer("seek", action.currentTime)
               if (session.videoType === "webrtc" && videoStreamManagerRef.current) videoStreamManagerRef.current.syncPlayback('seek', action.currentTime)
+              if (session.videoType === "direct" && videoRef.current && isPlaying) videoRef.current.play().catch(err => console.error("Play error:", err))
               setCurrentTime(action.currentTime)
             }
             break
@@ -380,7 +383,7 @@ export function TheaterFullscreen({
         const currentParticipants = updatedSession.participants || []
         currentParticipants.forEach(async (participantId: string) => {
           if (participantId !== currentUserId && !connectedPeersRef.current.has(participantId)) {
-            WebRTCManager.getInstance().initialize(participantId, localMovieStream, 
+            WebRTCManager.getInstance().initialize(participantId, localMovieStream,
               (s, uid, label) => { if (uid === participantId && label === "theater") setRemoteMovieStream(s) },
               (c, uid) => { if (uid === participantId) theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", toIcePayload(c), currentUserId, participantId) },
               undefined, "theater")
@@ -535,7 +538,7 @@ export function TheaterFullscreen({
       await theaterSignaling.updateSessionMedia(roomId, session.id, "local://stream", "webrtc")
       session.participants.forEach(async (participantId) => {
         if (participantId === currentUserId) return
-        WebRTCManager.getInstance().initialize(participantId, stream, 
+        WebRTCManager.getInstance().initialize(participantId, stream,
           (s, uid, label) => { if (uid === participantId && label === "theater") setRemoteMovieStream(s) },
           (c, uid) => { if (uid === participantId) theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", toIcePayload(c), currentUserId, participantId) },
           undefined, "theater")
@@ -576,7 +579,7 @@ export function TheaterFullscreen({
 
   const handleClose = async () => { if (isHost) await theaterSignaling.endSession(roomId, session.id); onClose() }
   const formatTime = (time: number) => { const min = Math.floor(time / 60); const sec = Math.floor(time % 60); return `${min.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}` }
-  const toggleFullscreen = () => { 
+  const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().then(() => {
         // Try to lock orientation to landscape on mobile
@@ -588,13 +591,13 @@ export function TheaterFullscreen({
       }).catch(err => {
         console.error("Fullscreen request failed:", err)
       })
-    } else { 
-      document.exitFullscreen() 
+    } else {
+      document.exitFullscreen()
       // Unlock orientation if it was locked
       if (window.screen.orientation && (window.screen.orientation as any).unlock) {
         (window.screen.orientation as any).unlock()
       }
-    } 
+    }
   }
 
   if (!mounted) return null
@@ -715,7 +718,7 @@ export function TheaterFullscreen({
                   <X className="w-5 h-5" />
                 </Button>
               </div>
-              
+
               <div className="max-h-[40vh] overflow-y-auto p-4 space-y-2 custom-scrollbar">
                 {queue.length > 0 ? queue.map((item, idx) => (
                   <div key={item.id} className="p-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all group flex items-center gap-3">
@@ -738,15 +741,15 @@ export function TheaterFullscreen({
               {isHost && (
                 <div className="p-5 bg-white/5 border-t border-white/5 space-y-3">
                   <div className="relative">
-                    <Input 
-                      value={newQueueUrl} 
-                      onChange={(e) => setNewQueueUrl(e.target.value)} 
-                      placeholder="Paste video URL..." 
+                    <Input
+                      value={newQueueUrl}
+                      onChange={(e) => setNewQueueUrl(e.target.value)}
+                      placeholder="Paste video URL..."
                       className="bg-black/40 border-white/5 rounded-xl h-11 text-sm focus:ring-cyan-500/30"
                     />
                   </div>
-                  <Button 
-                    onClick={handleAddToQueue} 
+                  <Button
+                    onClick={handleAddToQueue}
                     disabled={isAddingToQueue || !newQueueUrl.trim()}
                     className="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-bold h-11 rounded-xl shadow-lg shadow-cyan-500/20 transition-all active:scale-[0.98]"
                   >

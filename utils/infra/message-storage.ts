@@ -6,16 +6,108 @@ export class MessageStorage {
   private static instance: MessageStorage
   private messageListeners: Map<string, () => void> = new Map()
   private currentRoomId: string | null = null
+  private lastActivityTime: number = Date.now()
+  private activityTimeout: NodeJS.Timeout | null = null
 
   // Constants
   private static readonly MESSAGE_RETENTION_MS = 24 * 60 * 60 * 1000 // 24 hours
   private static readonly DEFAULT_MESSAGE_LIMIT = 50
+  private static readonly LOCAL_STORAGE_KEY = "satloom_messages"
+  private static readonly CACHE_TIMEOUT_MS = 15 * 60 * 1000 // 15 minutes
 
   static getInstance(): MessageStorage {
     if (!MessageStorage.instance) {
       MessageStorage.instance = new MessageStorage()
     }
     return MessageStorage.instance
+  }
+
+  constructor() {
+    // Set up visibility change listener to detect tab being away for 15 min
+    if (typeof window !== "undefined") {
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") {
+          this.lastActivityTime = Date.now()
+        } else if (document.visibilityState === "visible") {
+          const timeAway = Date.now() - this.lastActivityTime
+          if (timeAway > MessageStorage.CACHE_TIMEOUT_MS) {
+            console.log("Tab was away for more than 15 minutes, clearing message cache")
+            this.clearLocalCache()
+          }
+        }
+      })
+
+      // Also handle beforeunload to clear cache
+      window.addEventListener("beforeunload", () => {
+        this.clearLocalCache()
+      })
+    }
+  }
+
+  // Local Storage Cache Methods
+  private getCacheKey(roomId: string): string {
+    return `${MessageStorage.LOCAL_STORAGE_KEY}_${roomId}`
+  }
+
+  private saveToLocalCache(roomId: string, messages: Message[]): void {
+    try {
+      const cacheData = {
+        messages: messages,
+        timestamp: Date.now()
+      }
+      localStorage.setItem(this.getCacheKey(roomId), JSON.stringify(cacheData))
+      console.log(`Saved ${messages.length} messages to local cache for room ${roomId}`)
+    } catch (error) {
+      console.warn("Failed to save messages to local cache:", error)
+    }
+  }
+
+  private loadFromLocalCache(roomId: string): Message[] | null {
+    try {
+      const cached = localStorage.getItem(this.getCacheKey(roomId))
+      if (!cached) return null
+
+      const cacheData = JSON.parse(cached)
+      const age = Date.now() - cacheData.timestamp
+
+      // Check if cache is expired (older than 15 minutes)
+      if (age > MessageStorage.CACHE_TIMEOUT_MS) {
+        console.log("Message cache expired, removing...")
+        localStorage.removeItem(this.getCacheKey(roomId))
+        return null
+      }
+
+      // Parse dates back to Date objects
+      const messages = cacheData.messages.map((msg: any) => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp),
+        editedAt: msg.editedAt ? new Date(msg.editedAt) : undefined
+      }))
+
+      console.log(`Loaded ${messages.length} messages from local cache for room ${roomId}`)
+      return messages
+    } catch (error) {
+      console.warn("Failed to load messages from local cache:", error)
+      return null
+    }
+  }
+
+  clearLocalCache(roomId?: string): void {
+    if (roomId) {
+      localStorage.removeItem(this.getCacheKey(roomId))
+      console.log(`Cleared local cache for room ${roomId}`)
+    } else {
+      // Clear all message caches
+      const keysToRemove: string[] = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key?.startsWith(MessageStorage.LOCAL_STORAGE_KEY)) {
+          keysToRemove.push(key)
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key))
+      console.log(`Cleared all message caches (${keysToRemove.length} rooms)`)
+    }
   }
 
   // Clean data before sending to Firebase (remove undefined values)
@@ -134,8 +226,17 @@ export class MessageStorage {
   listenForMessages(roomId: string, onMessage: (messages: Message[]) => void, limit = 50) {
     console.log("Setting up message listener for room:", roomId)
 
-    // Always clear messages immediately when setting up a new listener
-    onMessage([])
+    // Try to load from local cache first for instant display
+    const cachedMessages = this.loadFromLocalCache(roomId)
+    if (cachedMessages && cachedMessages.length > 0) {
+      console.log(`Using ${cachedMessages.length} cached messages for room ${roomId}`)
+      onMessage(cachedMessages)
+    }
+
+    // Always clear messages immediately when setting up a new listener (for new rooms)
+    if (!cachedMessages) {
+      onMessage([])
+    }
 
     // If switching rooms, clean up previous listeners aggressively
     if (this.currentRoomId && this.currentRoomId !== roomId) {
@@ -149,7 +250,12 @@ export class MessageStorage {
 
     if (!getFirebaseDatabase()!) {
       console.warn("Firebase database not initialized, no messages will be loaded")
-      onMessage([])
+      // If no Firebase, use cached messages if available
+      if (cachedMessages) {
+        onMessage(cachedMessages)
+      } else {
+        onMessage([])
+      }
       return () => { }
     }
 
@@ -229,15 +335,25 @@ export class MessageStorage {
           messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
           console.log(`Loaded ${messages.length} messages for room ${subscribedRoomId}`)
 
+          // Save to local cache for future use
+          this.saveToLocalCache(subscribedRoomId, messages)
+
           onMessage(messages)
         } else {
           console.log("No messages found for room:", subscribedRoomId)
-          onMessage([])
+          // If no Firebase messages but we have cached, keep showing cached
+          if (!cachedMessages || cachedMessages.length === 0) {
+            onMessage([])
+          }
         }
       },
       (error) => {
         // Log the error but do NOT wipe messages — transient errors should not blank the chat
         console.error("Error listening for messages:", error)
+        // If there's an error but we have cached messages, keep showing them
+        if (cachedMessages && cachedMessages.length > 0) {
+          console.log("Using cached messages due to Firebase error")
+        }
       },
     )
 
@@ -403,11 +519,17 @@ export class MessageStorage {
       unsubscribe()
       this.messageListeners.delete(roomId)
     }
+    // Clear local cache for this room
+    this.clearLocalCache(roomId)
   }
 
   // Enhanced clear messages for room switching
   clearMessages() {
     console.log("Clearing message cache and resetting current room")
+    // Clear local cache for current room if exists
+    if (this.currentRoomId) {
+      this.clearLocalCache(this.currentRoomId)
+    }
     this.currentRoomId = null
     // Force cleanup of all listeners to prevent cross-contamination
     this.cleanup()
@@ -426,6 +548,8 @@ export class MessageStorage {
     })
     this.messageListeners.clear()
     this.currentRoomId = null
+    // Clear all local caches
+    this.clearLocalCache()
   }
   // Mark a message as read
   async markMessageAsRead(roomId: string, messageId: string, userId: string): Promise<void> {

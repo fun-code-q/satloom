@@ -402,6 +402,7 @@ export function useChatEffects(params: UseChatEffectsParams) {
             if (invite) {
                 console.log("Incoming karaoke invite:", invite)
                 setKaraokeInvite(invite)
+                notificationSystem.karaokeInvite(invite.hostName)
                 // Auto-clear invite after 45 seconds
                 setTimeout(() => setKaraokeInvite(null), 45000)
             } else {

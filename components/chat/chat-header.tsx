@@ -87,7 +87,7 @@ export function ChatHeader({
     showChatSearch, setShowChatSearch,
     hasUnreadNotes, hasUnreadTasks,
     roomMembers,
-    autoHide = true,
+    autoHide = false,
 }: ChatHeaderProps) {
     const [isHeaderVisible, setIsHeaderVisible] = useState(true)
     const headerTimeoutRef = useRef<NodeJS.Timeout | null>(null)

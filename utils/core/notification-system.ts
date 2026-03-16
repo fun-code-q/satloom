@@ -19,7 +19,7 @@ export class NotificationSystem {
     return NotificationSystem.instance
   }
 
-  constructor() {}
+  constructor() { }
 
   setNotificationsEnabled(enabled: boolean) {
     this.notificationsEnabled = enabled
@@ -48,7 +48,7 @@ export class NotificationSystem {
     try {
       const key = `${frequency}-${duration}-${volume}-${type}`
       let audio = this.audioCache.get(key)
-      
+
       if (!audio) {
         const url = generateWavDataUri(frequency, duration, volume, type)
         audio = new Audio(url)
@@ -56,7 +56,7 @@ export class NotificationSystem {
       }
 
       this.notifyAudioActivity(true)
-      
+
       // Reset and play
       audio.currentTime = 0
       await audio.play().catch(e => {
@@ -212,6 +212,12 @@ export class NotificationSystem {
     await this.playTone(500, 0.3)
     await this.playTone(800, 0.3)
     this.showNotification("Whiteboard Invite", `${host} invited you to collaborate on the whiteboard`)
+  }
+
+  async karaokeInvite(host: string) {
+    await this.playChord([523, 659, 783], 0.3)
+    await this.playChord([587, 740, 880], 0.4)
+    this.showNotification("Karaoke Invite", `${host} invited you to sing karaoke!`)
   }
 
   async notesUpdated(userName: string) {
