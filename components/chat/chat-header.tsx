@@ -214,7 +214,7 @@ export function ChatHeader({
                                 onClick={() => setShowParticipants(!showParticipants)}
                                 title={showParticipants ? "Hide participants" : "Show participants"}
                             >
-                                <AnimatedLogo />
+                                <AnimatedLogo showTextOnMobile={true} />
                             </div>
                             <UserMoodSelector
                                 currentMood={currentUserMood || undefined}
@@ -229,7 +229,7 @@ export function ChatHeader({
                             )}
                         </div>
 
-                        <div ref={searchRef} className="flex-1 min-w-0 flex items-center">
+                        <div ref={searchRef} className={`flex-1 min-w-0 flex items-center ${showChatSearch ? 'mx-2' : ''}`}>
                             {showChatSearch && (
                                 <ChatSearch onClose={() => setShowChatSearch(false)} />
                             )}
@@ -238,24 +238,24 @@ export function ChatHeader({
                         <div className="flex items-center justify-end flex-shrink-0 gap-1.5 md:gap-2 ml-auto select-none">
                             <Button
                                 variant="ghost" size="icon"
-                                className={`rounded-xl h-8 w-8 flex-shrink-0 transition-all duration-300 ${showChatSearch 
+                                className={`rounded-xl h-10 w-10 flex-shrink-0 transition-all duration-300 md:h-8 md:w-8 ${showChatSearch 
                                     ? 'hidden' 
                                     : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
                                 onClick={() => setShowChatSearch(!showChatSearch)}
                                 title="Search messages"
                             >
-                                <Search className="w-4 h-4" />
+                                <Search className="w-5 h-5 md:w-4 md:h-4" />
                             </Button>
 
-                            {/* Desktop Copy Action */}
-                            <div className="hidden md:flex items-center">
+                            {/* Mobile/Desktop Copy Action */}
+                            <div className={`${showChatSearch ? 'hidden' : 'flex'} items-center`}>
                                 <Button
                                     variant="ghost" size="icon"
-                                    className="text-gray-400 hover:text-white hover:bg-white/10 bg-white/[0.03] border border-white/[0.05] rounded-xl h-9 w-9 transition-all flex-shrink-0"
+                                    className="text-gray-400 hover:text-white hover:bg-white/10 bg-white/[0.03] border border-white/[0.05] rounded-xl h-10 w-10 md:h-9 md:w-9 transition-all flex-shrink-0"
                                     onClick={handleCopyRoomLink}
                                     title={`Copy Room Link (${roomId})`}
                                 >
-                                    <Copy className="w-4 h-4" />
+                                    <Copy className="w-5 h-5 md:w-4 md:h-4" />
                                 </Button>
                             </div>
 

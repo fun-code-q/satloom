@@ -35,7 +35,7 @@ export function ChatSearch({ onClose }: { onClose?: () => void }) {
     }, [])
 
     return (
-        <div className="flex-1 min-w-0 max-w-xl mx-2 animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex-1 min-w-[120px] max-w-xl mx-2 animate-in fade-in zoom-in-95 duration-200">
             <div className="relative group flex items-center h-8 gap-2">
                 <div className="relative flex-1 items-center h-8 rounded-lg overflow-hidden border border-white/10 group-focus-within:border-cyan-500/50 bg-white/5 transition-all">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 group-focus-within:text-cyan-400 transition-colors pointer-events-none" />
