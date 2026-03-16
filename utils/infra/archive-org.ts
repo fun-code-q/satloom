@@ -46,39 +46,49 @@ export async function fetchArchiveVideoInfo(itemId: string): Promise<ArchiveVide
 
         const metadata = await response.json()
 
-        // Find the best video file
-        const videoFiles = metadata.files?.filter((file: any) =>
+        // Find the best media file (video or audio)
+        const mediaFiles = metadata.files?.filter((file: any) =>
+            // Video formats
             file.format === 'Video' ||
             file.format === 'MP4' ||
             file.format === 'WebM' ||
-            file.name?.endsWith('.mp4') ||
-            file.name?.endsWith('.webm')
+            file.name?.toLowerCase().endsWith('.mp4') ||
+            file.name?.toLowerCase().endsWith('.webm') ||
+            // Audio formats
+            file.format === 'Audio' ||
+            file.format === 'VBR MP3' ||
+            file.format === 'MP3' ||
+            file.format === 'Ogg Vorbis' ||
+            file.name?.toLowerCase().endsWith('.mp3') ||
+            file.name?.toLowerCase().endsWith('.ogg') ||
+            file.name?.toLowerCase().endsWith('.wav') ||
+            file.name?.toLowerCase().endsWith('.m4a')
         ) || []
 
-        if (videoFiles.length === 0) {
-            console.error('[Archive.org] No video files found')
+        if (mediaFiles.length === 0) {
+            console.error('[Archive.org] No media files found')
             return null
         }
 
-        // Sort by size (prefer larger files for better quality)
-        videoFiles.sort((a: any, b: any) => (b.size || 0) - (a.size || 0))
+        // Sort by size (prefer larger files for better quality/completeness)
+        mediaFiles.sort((a: any, b: any) => (parseInt(b.size) || 0) - (parseInt(a.size) || 0))
 
-        const bestVideo = videoFiles[0]
+        const bestMedia = mediaFiles[0]
 
         // Construct direct URL
-        const directVideoUrl = `https://archive.org/download/${itemId}/${bestVideo.name}`
+        const directVideoUrl = `https://archive.org/download/${itemId}/${bestMedia.name}`
 
         // Get thumbnail
         const thumbnailUrl = `https://archive.org/services/img/${itemId}`
 
         return {
             identifier: itemId,
-            title: metadata.title || 'Untitled',
-            description: metadata.description || '',
-            duration: parseFloat(bestVideo.length) || 0,
+            title: metadata.title || (metadata.metadata ? metadata.metadata.title : 'Untitled'),
+            description: metadata.description || (metadata.metadata ? metadata.metadata.description : ''),
+            duration: parseFloat(bestMedia.length) || 0,
             directVideoUrl,
             thumbnailUrl,
-            format: bestVideo.format || 'Unknown'
+            format: bestMedia.format || 'Unknown'
         }
     } catch (error) {
         console.error('[Archive.org] Error fetching video info:', error)

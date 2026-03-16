@@ -301,19 +301,6 @@ export function useChatCalls(params: UseChatCallsParams) {
                 params.setIsTheaterHost(true)
                 params.setShowTheaterFullscreen(true)
                 userPresence.updateActivity(roomId, currentUserId, "theater")
-                
-                // Request fullscreen when starting theater
-                if (document.documentElement.requestFullscreen) {
-                    document.documentElement.requestFullscreen().then(() => {
-                        if (window.screen.orientation && (window.screen.orientation as any).lock) {
-                            (window.screen.orientation as any).lock('landscape').catch((err: any) => {
-                                console.warn("Orientation lock failed:", err)
-                            })
-                        }
-                    }).catch(err => {
-                        console.warn("Fullscreen request failed:", err)
-                    })
-                }
             }
         } catch (error) {
             console.error("Error creating theater session:", error)
@@ -329,19 +316,6 @@ export function useChatCalls(params: UseChatCallsParams) {
                 params.setCurrentTheaterSession(session)
                 params.setShowTheaterFullscreen(true)
                 userPresence.updateActivity(roomId, currentUserId, "theater")
-
-                // Request fullscreen when joining theater
-                if (document.documentElement.requestFullscreen) {
-                    document.documentElement.requestFullscreen().then(() => {
-                        if (window.screen.orientation && (window.screen.orientation as any).lock) {
-                            (window.screen.orientation as any).lock('landscape').catch((err: any) => {
-                                console.warn("Orientation lock failed:", err)
-                            })
-                        }
-                    }).catch(err => {
-                        console.error("Error entering fullscreen on theater join:", err);
-                    });
-                }
             })
             params.setIsTheaterHost(false)
             params.setTheaterInvite(null)

@@ -5,7 +5,7 @@ import { Message, MessageBubble } from "@/components/message-bubble"
 import { useChatStore } from "@/stores/chat-store"
 import { useEffect, useRef, useCallback, useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { X, ChevronDown } from "lucide-react"
+import { ChevronDown } from "lucide-react"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { ChatSearch } from "./chat-search"
 
@@ -35,7 +35,7 @@ export function MessageList({
     getUserColor,
     showSearch
 }: MessageListProps) {
-    const { messages, currentUser, onlineUsers, roomMembers, roomId, replyingTo, setReplyingTo, searchQuery } = useChatStore()
+    const { messages, currentUser, onlineUsers, roomMembers, roomId, searchQuery } = useChatStore()
     const parentRef = useRef<HTMLDivElement>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const [headerHeight, setHeaderHeight] = useState(120)
@@ -291,26 +291,6 @@ export function MessageList({
                 <div ref={messagesEndRef} />
             </div>
  
-            {/* Reply indicator */}
-            {replyingTo && (
-                <div className="px-4 py-2 bg-slate-800/60 border-t border-slate-700">
-                    <div className="flex items-center justify-between bg-slate-700/50 rounded-lg p-2">
-                        <div className="flex-1">
-                            <div className="text-xs text-cyan-400 font-medium">Replying to {replyingTo.sender}</div>
-                            <div className="text-xs text-gray-300 truncate">{replyingTo.text}</div>
-                        </div>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 text-gray-400 hover:text-white haptic"
-                            onClick={() => setReplyingTo(null)}
-                        >
-                            <X className="w-4 h-4" />
-                        </Button>
-                    </div>
-                </div>
-            )}
-
             {/* Typing Indicator */}
             {onlineUsers.some((u) => u.isTyping && u.name !== currentUser?.name) && (
                 <div className="px-4 py-2 flex justify-start z-10 sticky bottom-0 pointer-events-none">

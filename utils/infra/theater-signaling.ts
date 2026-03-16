@@ -1,5 +1,5 @@
 import { getFirebaseDatabase } from "@/lib/firebase"
-import { ref, set, onValue, remove, off, get, update } from "firebase/database"
+import { ref, set, onValue, remove, off, get, update, onChildAdded } from "firebase/database"
 
 export interface TheaterSession {
   id: string
@@ -152,13 +152,14 @@ export class TheaterSignaling {
   ) {
     if (!getFirebaseDatabase()!) return
 
+    // Firebase rejects objects with explicit undefined values → spread payload only when it exists
     const action: TheaterAction = {
       type,
       currentTime,
       timestamp: Date.now(),
       hostId,
       hostName,
-      payload
+      ...(payload !== undefined ? { payload } : {}),
     }
 
     const actionRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}/lastAction`)
@@ -423,8 +424,6 @@ export class TheaterSignaling {
     const db = getFirebaseDatabase()
     if (!db) return () => { }
 
-    // @ts-ignore
-    const { onChildAdded } = require("firebase/database")
     const signalsRef = ref(db, `rooms/${roomId}/theater/${sessionId}/signals/${userId}`)
 
     const unsubscribe = onChildAdded(signalsRef, (snapshot: any) => {

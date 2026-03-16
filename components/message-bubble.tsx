@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, memo, useMemo, useRef } from "react"
+import { useState, memo, useMemo, useRef, useEffect, useCallback } from "react"
 import { Button } from "./ui/button"
-import { Heart, ThumbsUp, Reply, MoreVertical, Trash2, Download, Play, User, Copy, Edit, Check, Zap, FileIcon, MapPin, Calendar, Clock, X } from "lucide-react"
+import { Heart, ThumbsUp, Reply, MoreVertical, Trash2, Download, Play, Pause, User, Copy, Edit, Check, Zap, FileIcon, MapPin, Calendar, Clock, Maximize2 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { parseUrls, parseEmojis } from "@/utils/core/message-formatter"
 import { FilePreview } from "./file-preview"
@@ -116,7 +116,10 @@ function MessageBubble({
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [showHeartPulse, setShowHeartPulse] = useState(false)
-  const [showLightbox, setShowLightbox] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [audioDuration, setAudioDuration] = useState(0)
+  const [audioCurrentTime, setAudioCurrentTime] = useState(0)
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false)
   const [swipeX, setSwipeX] = useState(0)
   const [isSwiping, setIsSwiping] = useState(false)
   const [touchStart, setTouchStart] = useState(0)
@@ -134,6 +137,74 @@ function MessageBubble({
   const urls = useMemo(() => message.text.match(/(https?:\/\/[^\s]+)/g) || [], [message.text])
   const messageId = `message-${message.id}`
   const fileUrl = p2pBlobUrl || message.file?.url
+
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes || bytes <= 0) return "Unknown size"
+    const units = ["B", "KB", "MB", "GB"]
+    const power = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+    const value = bytes / Math.pow(1024, power)
+    return `${value.toFixed(power === 0 ? 0 : 1)} ${units[power]}`
+  }
+
+  const formatAudioTime = (seconds: number) => {
+    if (!Number.isFinite(seconds) || seconds <= 0) return "0:00"
+    const safeSeconds = Math.floor(seconds)
+    const mins = Math.floor(safeSeconds / 60)
+    const secs = safeSeconds % 60
+    return `${mins}:${secs.toString().padStart(2, "0")}`
+  }
+
+  const handleAudioToggle = useCallback(async () => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    if (audio.paused) {
+      try {
+        await audio.play()
+      } catch (error) {
+        console.error("Audio playback failed:", error)
+      }
+      return
+    }
+
+    audio.pause()
+  }, [])
+
+  const handleAudioMetadataLoaded = useCallback(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    setAudioDuration(Number.isFinite(audio.duration) ? audio.duration : 0)
+  }, [])
+
+  const handleAudioTimeUpdate = useCallback(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    setAudioCurrentTime(audio.currentTime || 0)
+  }, [])
+
+  const handleAudioEnded = useCallback(() => {
+    setIsAudioPlaying(false)
+    setAudioCurrentTime(0)
+  }, [])
+
+  const handleAudioSeek = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    const audio = audioRef.current
+    if (!audio || !audioDuration) return
+
+    const rect = event.currentTarget.getBoundingClientRect()
+    const clickPosition = event.clientX - rect.left
+    const ratio = Math.min(1, Math.max(0, clickPosition / rect.width))
+    audio.currentTime = ratio * audioDuration
+    setAudioCurrentTime(audio.currentTime)
+  }, [audioDuration])
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause()
+      }
+    }
+  }, [])
 
   const handleReaction = (reaction: "heart" | "thumbsUp") => {
     onReact(message.id, reaction, currentUser)
@@ -351,6 +422,7 @@ function MessageBubble({
 
   const renderFilePreview = () => {
     if (!message.file) return null
+    const isEncryptedLocked = message.file.encrypted && !p2pBlobUrl && !isOwnMessage
 
     // P2P Transfer UI
     if (message.file.p2p && !p2pBlobUrl) {
@@ -406,22 +478,36 @@ function MessageBubble({
 
     if (isImage) {
       return (
-        <div className="mt-2 cursor-pointer" onClick={() => setShowLightbox(true)}>
-          {(message.file.encrypted && !p2pBlobUrl && !isOwnMessage) ? (
+        <div
+          className={`mt-2 ${isEncryptedLocked ? "cursor-default" : "cursor-pointer"}`}
+          onClick={() => {
+            if (isEncryptedLocked) return
+            setShowFilePreview(true)
+          }}
+        >
+          {isEncryptedLocked ? (
             <div className="w-64 h-48 rounded-lg bg-slate-700/50 flex flex-col items-center justify-center border border-dashed border-cyan-500/30">
               <span className="text-2xl mb-2">🔒</span>
               <span className="text-xs text-cyan-400">Encrypted Image</span>
             </div>
           ) : (
-            <div className="relative group/media overflow-hidden rounded-xl shadow-2xl transition-all duration-500 hover:ring-2 ring-cyan-500/50">
+            <div className="relative group/media overflow-hidden rounded-2xl border border-white/15 bg-slate-900/40 shadow-[0_14px_30px_rgba(2,6,23,0.45)] transition-all duration-300 hover:shadow-[0_20px_35px_rgba(6,182,212,0.18)] hover:border-cyan-400/50">
               <img
                 src={fileUrl || "/placeholder.svg"}
                 alt={message.file.name}
-                className="max-w-64 max-h-64 object-cover transition-transform duration-700 group-hover:scale-110"
+                className="max-w-72 max-h-72 object-cover transition-transform duration-500 group-hover:scale-105"
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-3">
-                <p className="text-[10px] text-white/90 font-medium truncate">{message.file.name}</p>
+              <div className="absolute top-2 right-2 rounded-full bg-black/45 backdrop-blur-md border border-white/20 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <Maximize2 className="w-3.5 h-3.5 text-white" />
+              </div>
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent p-3">
+                <p className="text-[11px] text-white font-semibold truncate">{message.file.name}</p>
+                <div className="flex items-center gap-2 mt-1 text-[10px] text-white/75">
+                  <span>{formatFileSize(message.file.size)}</span>
+                  <span className="h-1 w-1 rounded-full bg-white/40" />
+                  <span>Tap to open</span>
+                </div>
               </div>
             </div>
           )}
@@ -431,8 +517,14 @@ function MessageBubble({
 
     if (isVideo) {
       return (
-        <div className="mt-2 cursor-pointer relative group/media overflow-hidden rounded-xl shadow-2xl transition-all duration-500 hover:ring-2 ring-cyan-500/50" onClick={() => setShowLightbox(true)}>
-          {(message.file.encrypted && !p2pBlobUrl && !isOwnMessage) ? (
+        <div
+          className={`mt-2 relative group/media overflow-hidden rounded-xl shadow-2xl transition-all duration-500 ${isEncryptedLocked ? "cursor-default" : "cursor-pointer hover:ring-2 ring-cyan-500/50"}`}
+          onClick={() => {
+            if (isEncryptedLocked) return
+            setShowFilePreview(true)
+          }}
+        >
+          {isEncryptedLocked ? (
             <div className="w-64 h-48 rounded-lg bg-slate-700/50 flex flex-col items-center justify-center border border-dashed border-cyan-500/30">
               <span className="text-2xl mb-2">🎞️🔒</span>
               <span className="text-xs text-cyan-400">Encrypted Video</span>
@@ -454,28 +546,66 @@ function MessageBubble({
     }
 
     if (isAudio) {
+      const progressPercent = audioDuration > 0 ? (audioCurrentTime / audioDuration) * 100 : 0
       return (
-        <div className="mt-2 bg-slate-900/40 backdrop-blur-md rounded-2xl p-3 border border-white/5 flex items-center gap-3 min-w-[240px]">
-          <Button size="icon" className="h-10 w-10 rounded-full bg-cyan-500 hover:bg-cyan-600 text-white shadow-lg shrink-0 haptic">
-            <Play className="w-5 h-5 fill-current ml-0.5" />
-          </Button>
-          <div className="flex-1 space-y-1.5">
-            <div className="flex justify-between items-center px-1">
-                <span className="text-[10px] font-bold text-cyan-400 truncate max-w-[120px]">{message.file.name}</span>
-                <span className="text-[10px] font-medium text-gray-400 font-mono italic">0:42</span>
-            </div>
-            {/* 2026 Waveform Visualizer */}
-            <div className="h-8 flex items-end gap-[2px] px-1 opacity-80">
-                {[4, 2, 5, 8, 3, 6, 4, 7, 2, 5, 9, 4, 6, 3, 7, 5, 8, 4, 3, 6, 8, 5, 4, 7, 3, 5, 6, 4].map((h, i) => (
-                    <div 
-                        key={i} 
-                        className="flex-1 bg-gradient-to-t from-cyan-500/40 to-cyan-400 rounded-t-sm"
-                        style={{ height: `${h * 10}%`, opacity: i > 12 ? 0.3 : 1 }}
-                    />
-                ))}
+        isEncryptedLocked ? (
+          <div className="mt-2 w-64 h-28 rounded-lg bg-slate-700/50 flex flex-col items-center justify-center border border-dashed border-cyan-500/30">
+            <span className="text-2xl mb-2">🔒</span>
+            <span className="text-xs text-cyan-400">Encrypted Audio</span>
+          </div>
+        ) : (
+          <div className="mt-2 bg-slate-900/40 backdrop-blur-md rounded-2xl p-3 border border-white/5 flex items-center gap-3 min-w-[240px] max-w-xs">
+            <audio
+              ref={audioRef}
+              preload="metadata"
+              className="hidden"
+              onLoadedMetadata={handleAudioMetadataLoaded}
+              onTimeUpdate={handleAudioTimeUpdate}
+              onPlay={() => setIsAudioPlaying(true)}
+              onPause={() => setIsAudioPlaying(false)}
+              onEnded={handleAudioEnded}
+            >
+              <source src={fileUrl} type={message.file.type} />
+            </audio>
+
+            <Button
+              type="button"
+              size="icon"
+              className="h-10 w-10 rounded-full bg-cyan-500 hover:bg-cyan-600 text-white shadow-lg shrink-0 haptic"
+              onClick={(event) => {
+                event.stopPropagation()
+                void handleAudioToggle()
+              }}
+            >
+              {isAudioPlaying ? (
+                <Pause className="w-5 h-5 fill-current" />
+              ) : (
+                <Play className="w-5 h-5 fill-current ml-0.5" />
+              )}
+            </Button>
+
+            <div className="flex-1 space-y-2">
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-[10px] font-bold text-cyan-400 truncate">{message.file.name}</span>
+                <span className="text-[10px] font-medium text-gray-400 font-mono">
+                  {formatAudioTime(audioCurrentTime)} / {formatAudioTime(audioDuration)}
+                </span>
+              </div>
+              <div
+                className="h-1.5 bg-slate-700 rounded-full overflow-hidden cursor-pointer"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  handleAudioSeek(event)
+                }}
+              >
+                <div
+                  className="h-full bg-gradient-to-r from-cyan-500 to-cyan-300 transition-all duration-150"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
             </div>
           </div>
-        </div>
+        )
       )
     }
 
@@ -760,56 +890,16 @@ function MessageBubble({
         )}
       </div>
 
-      {/* 2026 Elite Media Lightbox Overlay */}
-      {showLightbox && message.file && (
-        <div 
-            className="fixed inset-0 z-[9999] bg-slate-950/95 backdrop-blur-3xl flex flex-col animate-in fade-in zoom-in duration-300"
-            onClick={() => setShowLightbox(false)}
-        >
-            <div className="flex justify-between items-center p-6 mt-10">
-                <div className="flex flex-col">
-                    <span className="text-white font-black text-lg tracking-tight">{message.file.name}</span>
-                    <span className="text-gray-400 text-xs uppercase tracking-widest font-bold mt-1">Shared by {message.sender}</span>
-                </div>
-                <Button variant="ghost" size="icon" className="h-12 w-12 rounded-full hover:bg-white/10 text-white" onClick={() => setShowLightbox(false)}>
-                    <X className="w-8 h-8" />
-                </Button>
-            </div>
-            
-            <div className="flex-1 flex items-center justify-center p-4">
-                {isImage && (
-                    <img 
-                        src={fileUrl || "/placeholder.svg"} 
-                        className="max-w-full max-h-[70vh] rounded-2xl shadow-2xl border border-white/10 animate-in zoom-in-95 duration-500 ease-out"
-                        onClick={(e) => e.stopPropagation()}
-                    />
-                )}
-                {isVideo && (
-                    <video 
-                        src={fileUrl} 
-                        controls 
-                        autoPlay
-                        className="max-w-full max-h-[70vh] rounded-2xl shadow-2xl border border-white/10 animate-in zoom-in-95 duration-500 ease-out"
-                        onClick={(e) => e.stopPropagation()}
-                    />
-                )}
-            </div>
-
-            <div className="p-8 flex justify-center gap-6 mb-10">
-                <Button className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/10 rounded-2xl px-8 h-12 flex gap-2 haptic" onClick={(e) => { e.stopPropagation(); onReply(message); setShowLightbox(false); }}>
-                    <Reply className="w-5 h-5" />
-                    <span>Reply</span>
-                </Button>
-                {message.file.url && (
-                    <Button asChild className="bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold rounded-2xl px-8 h-12 flex gap-2 shadow-lg shadow-cyan-500/20 haptic" onClick={(e) => e.stopPropagation()}>
-                        <a href={message.file.url} download target="_blank" rel="noopener noreferrer">
-                            <Download className="w-5 h-5" />
-                            <span>Download Full Case</span>
-                        </a>
-                    </Button>
-                )}
-            </div>
-        </div>
+      {message.file && (
+        <FilePreview
+          isOpen={showFilePreview}
+          onClose={() => setShowFilePreview(false)}
+          file={{
+            ...message.file,
+            url: fileUrl || message.file.url,
+          }}
+          roomId={roomId}
+        />
       )}
     </div>
   )

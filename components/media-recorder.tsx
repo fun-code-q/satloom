@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Mic, Video, Camera, RotateCcw, Square, Loader2, Sparkles, Smile } from "lucide-react"
+import { Mic, Video, Camera, RotateCcw, Square, Loader2, Sparkles, Send } from "lucide-react"
 import { VoiceFilterModal } from "./voice-filter-modal"
 import { voiceFilterProcessor, type VoiceFilterType } from "@/utils/hardware/voice-filters"
 import { toast } from "sonner"
@@ -27,6 +27,8 @@ export function MediaRecorder({ isOpen, onClose, mode, onMediaReady, onRecording
   const [showVoiceFilters, setShowVoiceFilters] = useState(false)
   const [voiceFilter, setVoiceFilter] = useState<VoiceFilterType>("none")
   const [currentMode, setCurrentMode] = useState<"audio" | "video" | "photo">(mode)
+  const [recordedPreviewUrl, setRecordedPreviewUrl] = useState<string | null>(null)
+  const [recordingSeconds, setRecordingSeconds] = useState(0)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const mediaRecorderRef = useRef<any>(null)
@@ -36,6 +38,35 @@ export function MediaRecorder({ isOpen, onClose, mode, onMediaReady, onRecording
   useEffect(() => {
     setCurrentMode(mode)
   }, [mode])
+
+  useEffect(() => {
+    if (!recordedBlob) {
+      setRecordedPreviewUrl(null)
+      return
+    }
+
+    const previewUrl = URL.createObjectURL(recordedBlob)
+    setRecordedPreviewUrl(previewUrl)
+
+    return () => {
+      URL.revokeObjectURL(previewUrl)
+    }
+  }, [recordedBlob])
+
+  useEffect(() => {
+    if (!isRecording) {
+      setRecordingSeconds(0)
+      return
+    }
+
+    const timer = window.setInterval(() => {
+      setRecordingSeconds((prev) => prev + 1)
+    }, 1000)
+
+    return () => {
+      window.clearInterval(timer)
+    }
+  }, [isRecording])
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -118,6 +149,7 @@ export function MediaRecorder({ isOpen, onClose, mode, onMediaReady, onRecording
     if (!stream) return
 
     chunksRef.current = []
+    setRecordingSeconds(0)
     const mediaRecorder = new window.MediaRecorder(stream)
     mediaRecorderRef.current = mediaRecorder
 
@@ -132,11 +164,13 @@ export function MediaRecorder({ isOpen, onClose, mode, onMediaReady, onRecording
         type: currentMode === "audio" ? "audio/wav" : "video/mp4",
       })
       setRecordedBlob(blob)
+      onRecordingEnd?.()
       toast.success(currentMode === "audio" ? "Audio recorded!" : currentMode === "video" ? "Video recorded!" : "Photo taken!")
     }
 
     mediaRecorder.start()
     setIsRecording(true)
+    onRecordingStart?.()
   }
 
   const stopRecording = () => {
@@ -178,9 +212,14 @@ export function MediaRecorder({ isOpen, onClose, mode, onMediaReady, onRecording
   }
 
   const handleClose = () => {
+    if (isRecording) {
+      stopRecording()
+    }
+    stopCamera()
     setRecordedBlob(null)
     setIsRecording(false)
     setError(null)
+    setRecordingSeconds(0)
     onClose()
   }
 
@@ -188,16 +227,33 @@ export function MediaRecorder({ isOpen, onClose, mode, onMediaReady, onRecording
     setFacingMode((prev) => (prev === "user" ? "environment" : "user"))
   }
 
+  const switchMode = (nextMode: "photo" | "video") => {
+    if (isRecording) return
+    stopCamera()
+    setRecordedBlob(null)
+    setCurrentMode(nextMode)
+    setIsLoading(true)
+  }
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+  }
+
+  const isCameraMode = currentMode === "video" || currentMode === "photo"
+  const canCapture = !isLoading && !error
+
   if (!isOpen) return null
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent
-        className="bg-slate-800 border-slate-700 text-white max-w-2xl"
+        className="bg-slate-900 border-slate-700 text-white w-[95vw] max-w-xl p-0 overflow-hidden"
         aria-label={currentMode === "audio" ? "Record audio" : currentMode === "video" ? "Record video" : "Take photo"}
       >
-        <DialogHeader>
-          <DialogTitle className="text-center text-cyan-400 flex items-center justify-center gap-2">
+        <DialogHeader className="px-4 py-3 border-b border-slate-800 bg-slate-900/95">
+          <DialogTitle className="text-cyan-300 flex items-center justify-center gap-2 text-base">
             {currentMode === "audio" && <Mic className="w-5 h-5" />}
             {currentMode === "video" && <Video className="w-5 h-5" />}
             {currentMode === "photo" && <Camera className="w-5 h-5" />}
@@ -205,15 +261,42 @@ export function MediaRecorder({ isOpen, onClose, mode, onMediaReady, onRecording
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="p-3 sm:p-4 space-y-3">
           {error && (
-            <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-lg flex items-center gap-2">
+            <div className="p-2.5 bg-red-500/20 border border-red-500/50 rounded-xl flex items-center gap-2">
               <span className="text-red-400 text-sm">{error}</span>
             </div>
           )}
 
-          {(currentMode === "video" || currentMode === "photo") && (
-            <div className="relative bg-black rounded-lg overflow-hidden h-64">
+          {!recordedBlob && isCameraMode && (
+            <div className="flex items-center justify-center">
+              <div className="inline-flex rounded-full p-1 bg-slate-800 border border-slate-700">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`rounded-full px-4 h-8 ${currentMode === "photo" ? "bg-cyan-500/20 text-cyan-300" : "text-slate-400 hover:text-slate-200"}`}
+                  onClick={() => switchMode("photo")}
+                  disabled={isRecording}
+                >
+                  <Camera className="w-4 h-4 mr-1.5" />
+                  Photo
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`rounded-full px-4 h-8 ${currentMode === "video" ? "bg-cyan-500/20 text-cyan-300" : "text-slate-400 hover:text-slate-200"}`}
+                  onClick={() => switchMode("video")}
+                  disabled={isRecording}
+                >
+                  <Video className="w-4 h-4 mr-1.5" />
+                  Video
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {isCameraMode && !recordedBlob && (
+            <div className="relative bg-black rounded-2xl overflow-hidden aspect-video border border-slate-700">
               <video
                 ref={videoRef}
                 autoPlay
@@ -223,10 +306,19 @@ export function MediaRecorder({ isOpen, onClose, mode, onMediaReady, onRecording
                 style={{ transform: facingMode === "user" ? "scaleX(-1)" : "none" }}
               />
 
+              {isRecording && currentMode === "video" && (
+                <div className="absolute top-2 left-2 px-2 py-1 rounded-full bg-red-500/90 text-white text-xs font-semibold flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                  {formatDuration(recordingSeconds)}
+                </div>
+              )}
+
               {isLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-slate-900 z-20">
-                  <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
-                  <span className="sr-only">Loading camera...</span>
+                  <div className="flex items-center gap-2 text-slate-300 text-sm">
+                    <Loader2 className="w-5 h-5 text-cyan-400 animate-spin" />
+                    Loading camera...
+                  </div>
                 </div>
               )}
 
@@ -234,7 +326,7 @@ export function MediaRecorder({ isOpen, onClose, mode, onMediaReady, onRecording
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white z-10"
+                  className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white z-10 h-9 w-9"
                   onClick={switchCamera}
                   title="Switch Camera"
                 >
@@ -244,158 +336,124 @@ export function MediaRecorder({ isOpen, onClose, mode, onMediaReady, onRecording
             </div>
           )}
 
-          {currentMode === "audio" && (
-            <div className="h-32 bg-slate-900 rounded-lg flex items-center justify-center">
-              <div className="flex items-center gap-4">
-                <div className={`flex items-center gap-2 ${isRecording ? "text-red-400" : "text-gray-400"}`}>
-                  {isRecording ? (
-                    <>
-                      <div className="w-3 h-3 bg-red-400 rounded-full animate-pulse" />
-                      <span>Recording...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Mic className="w-8 h-8" />
-                      <span className="text-lg">Ready to record</span>
-                    </>
-                  )}
-                </div>
+          {currentMode === "audio" && !recordedBlob && (
+            <div className="h-32 bg-slate-900 rounded-2xl border border-slate-700 flex items-center justify-center">
+              <div className={`flex items-center gap-3 ${isRecording ? "text-red-400" : "text-slate-300"}`}>
+                {isRecording ? (
+                  <>
+                    <div className="w-2.5 h-2.5 bg-red-400 rounded-full animate-pulse" />
+                    <span className="text-sm font-medium">Recording {formatDuration(recordingSeconds)}</span>
+                  </>
+                ) : (
+                  <>
+                    <Mic className="w-6 h-6 text-cyan-300" />
+                    <span className="text-sm">Ready to record audio</span>
+                  </>
+                )}
               </div>
             </div>
           )}
 
           {recordedBlob && (
-            <div className="bg-slate-900 rounded-lg p-4">
-              <h4 className="text-sm font-medium mb-2 text-gray-300">Preview:</h4>
+            <div className="bg-slate-900 rounded-2xl border border-slate-700 p-3 space-y-2">
+              <h4 className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Preview</h4>
               {currentMode === "audio" && (
                 <audio controls className="w-full">
-                  <source src={URL.createObjectURL(recordedBlob)} type="audio/wav" />
+                  <source src={recordedPreviewUrl || undefined} type="audio/wav" />
                 </audio>
               )}
               {currentMode === "video" && (
-                <video controls className="w-full max-h-48">
-                  <source src={URL.createObjectURL(recordedBlob)} type="video/mp4" />
+                <video controls className="w-full max-h-52 rounded-xl bg-black">
+                  <source src={recordedPreviewUrl || undefined} type="video/mp4" />
                 </video>
               )}
               {currentMode === "photo" && (
                 <img
-                  src={URL.createObjectURL(recordedBlob) || "/placeholder.svg"}
+                  src={recordedPreviewUrl || "/placeholder.svg"}
                   alt="Captured"
-                  className="w-full max-h-48 object-contain rounded-lg"
+                  className="w-full max-h-52 object-contain rounded-xl bg-black"
                 />
               )}
             </div>
           )}
 
-          <div className="flex flex-col items-center gap-4">
+          <div className="space-y-3">
             {!recordedBlob && (
-              <div className="flex flex-col items-center gap-4">
-                {currentMode === "photo" || currentMode === "video" ? (
-                  <div className="flex items-center gap-2 mb-2 bg-slate-900/50 p-1 rounded-full">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  {(currentMode === "audio" || currentMode === "video") && !isRecording && (
                     <Button
-                      variant={currentMode === "photo" ? "secondary" : "ghost"}
-                      size="sm"
-                      className={`rounded-full px-4 ${currentMode === "photo" ? "bg-cyan-500/20 text-cyan-400" : "text-gray-400"}`}
-                      onClick={() => {
-                        stopCamera()
-                        setCurrentMode("photo")
-                        setIsLoading(true)
-                      }}
-                      disabled={isRecording}
+                      variant="outline"
+                      size="icon"
+                      className="bg-slate-800 border-slate-700 text-cyan-300 hover:bg-slate-700 hover:text-cyan-200 h-10 w-10 rounded-full"
+                      onClick={() => setShowVoiceFilters(true)}
+                      title="Voice Filters"
                     >
-                      <Camera className="w-4 h-4 mr-2" />
-                      Photo
+                      <Sparkles className="w-5 h-5" />
                     </Button>
-                    <Button
-                      variant={currentMode === "video" ? "secondary" : "ghost"}
-                      size="sm"
-                      className={`rounded-full px-4 ${currentMode === "video" ? "bg-cyan-500/20 text-cyan-400" : "text-gray-400"}`}
-                      onClick={() => {
-                        stopCamera()
-                        setCurrentMode("video")
-                        setIsLoading(true)
-                      }}
-                      disabled={isRecording}
-                    >
-                      <Video className="w-4 h-4 mr-2" />
-                      Video
-                    </Button>
-                  </div>
-                ) : null}
+                  )}
+                </div>
 
                 {currentMode === "photo" ? (
                   <Button
                     onClick={takePhoto}
-                    className="bg-cyan-500 hover:bg-cyan-600"
-                    disabled={isLoading || !!error}
+                    className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 h-11 px-6 rounded-full font-semibold"
+                    disabled={!canCapture}
                   >
                     <Camera className="w-4 h-4 mr-2" />
-                    Take Photo
+                    Capture
                   </Button>
                 ) : (
                   <Button
                     onClick={isRecording ? stopRecording : startRecording}
-                    className={`${isRecording ? "bg-red-500 hover:bg-red-600" : "bg-cyan-500 hover:bg-cyan-600"} h-12 px-8 rounded-full shadow-lg haptic`}
-                    disabled={isLoading || !!error}
+                    className={`${isRecording ? "bg-red-500 hover:bg-red-400" : "bg-cyan-500 hover:bg-cyan-400 text-slate-950"} h-11 px-6 rounded-full font-semibold`}
+                    disabled={!canCapture}
                   >
                     {isRecording ? (
                       <>
-                        <Square className="w-5 h-5 mr-2" />
-                        Stop Recording
+                        <Square className="w-4 h-4 mr-2" />
+                        Stop
                       </>
                     ) : (
                       <>
-                        {currentMode === "audio" ? <Mic className="w-5 h-5 mr-2" /> : <Video className="w-5 h-5 mr-2" />}
-                        Start Recording
+                        {currentMode === "audio" ? <Mic className="w-4 h-4 mr-2" /> : <Video className="w-4 h-4 mr-2" />}
+                        Record
                       </>
                     )}
                   </Button>
-                )}
-
-                {!recordedBlob && !isRecording && (
-                  <div className="flex gap-4">
-                    {(currentMode === "audio" || currentMode === "video") && (
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="bg-slate-700/50 border-slate-600 text-cyan-400 hover:bg-slate-700 hover:text-cyan-300 w-12 h-12 rounded-full haptic"
-                        onClick={() => setShowVoiceFilters(true)}
-                        title="Voice Filters"
-                      >
-                        <Sparkles className="w-6 h-6" />
-                      </Button>
-                    )}
-                  </div>
                 )}
               </div>
             )}
 
             {recordedBlob && (
-              <div className="flex justify-center gap-4">
+              <div className="flex justify-between gap-2">
                 <Button
                   onClick={() => setRecordedBlob(null)}
                   variant="outline"
-                  className="border-slate-600"
+                  className="border-slate-600 bg-transparent flex-1 h-10"
                 >
                   <RotateCcw className="w-4 h-4 mr-2" />
                   Retake
                 </Button>
                 <Button
                   onClick={sendMedia}
-                  className="bg-green-500 hover:bg-green-600"
+                  className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold flex-1 h-10"
                 >
+                  <Send className="w-4 h-4 mr-2" />
                   Send
                 </Button>
               </div>
             )}
 
-            <Button
-              onClick={handleClose}
-              variant="outline"
-              className="border-slate-600 bg-transparent mt-4"
-            >
-              Cancel
-            </Button>
+            <div className="flex justify-end">
+              <Button
+                onClick={handleClose}
+                variant="ghost"
+                className="text-slate-300 hover:text-white hover:bg-slate-800 h-9 px-3"
+              >
+                Close
+              </Button>
+            </div>
           </div>
         </div>
         <VoiceFilterModal

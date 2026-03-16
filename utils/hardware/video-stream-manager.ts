@@ -1,3 +1,6 @@
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { toBlobURL, fetchFile } from '@ffmpeg/util';
+
 export class VideoStreamManager {
     private videoElement: HTMLVideoElement | null = null;
     private stream: MediaStream | null = null;
@@ -18,11 +21,8 @@ export class VideoStreamManager {
         return new Promise<void>(async (resolve, reject) => {
             try {
                 // Load FFmpeg from CDN
-                // Load FFmpeg from NPM packages
                 const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
-                const { FFmpeg } = await import('@ffmpeg/ffmpeg');
-                const { toBlobURL } = await import('@ffmpeg/util');
-
+                
                 this.ffmpeg = new FFmpeg();
 
                 this.ffmpeg.on('log', ({ message }: { message: string }) => {
@@ -69,8 +69,6 @@ export class VideoStreamManager {
                             onProgress(Math.round(progress * 100));
                         });
                     }
-
-                    const { fetchFile } = await import('@ffmpeg/util');
 
                     // Use a fast remux if possible, but for broadly supported output, we'll go to webm
                     await this.ffmpeg.writeFile('input', await fetchFile(file));

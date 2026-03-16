@@ -11,6 +11,7 @@ export class WebRTCManager {
     private onStateChangeListeners: Map<string, Set<(state: RTCPeerConnectionState, userId: string) => void>> = new Map() // userId -> listeners
     private isCleanupInProgress = false
     private iceCandidateBuffers: Map<string, RTCIceCandidateInit[]> = new Map()
+    private signalingLock: Map<string, boolean> = new Map()
 
     private config: RTCConfiguration = WEBRTC_CONFIG
 
@@ -130,6 +131,12 @@ export class WebRTCManager {
         const pc = this.peerConnections.get(targetUserId)
         if (!pc) throw new Error(`No PC for user ${targetUserId}`)
 
+        // If we are already stable or have an offer, check if we can restart ICE
+        if (pc.signalingState !== "stable" && pc.signalingState !== "have-local-offer") {
+            console.warn(`[WebRTC] createOffer: PC state is ${pc.signalingState}, cannot create offer`)
+            throw new Error(`Invalid signaling state: ${pc.signalingState}`)
+        }
+
         const offer = await pc.createOffer({
             offerToReceiveAudio: true,
             offerToReceiveVideo: true
@@ -142,17 +149,35 @@ export class WebRTCManager {
         const pc = this.peerConnections.get(targetUserId)
         if (!pc) throw new Error(`No PC for user ${targetUserId}`)
 
-        await pc.setRemoteDescription(new RTCSessionDescription(remoteOffer))
-        const answer = await pc.createAnswer()
-        await pc.setLocalDescription(answer)
+        if (this.signalingLock.get(targetUserId)) {
+            console.log(`[WebRTC] Signaling lock active for ${targetUserId}, skipping createAnswer`)
+            throw new Error("Signaling lock active")
+        }
 
-        await this.processIceBuffer(targetUserId)
-        return answer
+        this.signalingLock.set(targetUserId, true)
+        try {
+            await pc.setRemoteDescription(new RTCSessionDescription(remoteOffer))
+            const answer = await pc.createAnswer()
+            await pc.setLocalDescription(answer)
+
+            await this.processIceBuffer(targetUserId)
+            return answer
+        } finally {
+            this.signalingLock.set(targetUserId, false)
+        }
     }
 
     async handleAnswer(targetUserId: string, remoteAnswer: RTCSessionDescriptionInit) {
         const pc = this.peerConnections.get(targetUserId)
-        if (!pc || pc.signalingState === "stable") return
+        if (!pc || pc.signalingState === "stable") {
+            console.log(`[WebRTC] handleAnswer: PC ${targetUserId} already stable or missing, skipping`)
+            return
+        }
+
+        if (pc.signalingState !== "have-local-offer") {
+            console.warn(`[WebRTC] handleAnswer: PC ${targetUserId} is in state ${pc.signalingState}, cannot handle answer`)
+            return
+        }
 
         await pc.setRemoteDescription(new RTCSessionDescription(remoteAnswer))
         await this.processIceBuffer(targetUserId)

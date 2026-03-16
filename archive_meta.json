@@ -1,0 +1,172 @@
+{
+  "alternate_locations": {
+    "servers": [
+      {
+        "server": "dn710702.ca.archive.org",
+        "dir": "/0/items/windows_xp_startup_sound"
+      }
+    ],
+    "workable": [
+      {
+        "server": "dn710702.ca.archive.org",
+        "dir": "/0/items/windows_xp_startup_sound"
+      }
+    ]
+  },
+  "created": 1773690439,
+  "d1": "ia903103.us.archive.org",
+  "d2": "ia803103.us.archive.org",
+  "dir": "/11/items/windows_xp_startup_sound",
+  "files": [
+    {
+      "name": "__ia_thumb.jpg",
+      "source": "original",
+      "mtime": "1613797992",
+      "size": "2460",
+      "md5": "b5db2e646fe354f446f0a75cf57f2bec",
+      "crc32": "d7a55ed3",
+      "sha1": "aa38e52aeeeacfb19a39d4c97c591fe9c97f50e0",
+      "format": "Item Tile",
+      "rotation": "0"
+    },
+    {
+      "name": "windows_xp_startup.afpk",
+      "source": "derivative",
+      "format": "Columbia Peaks",
+      "original": "windows_xp_startup.mp3",
+      "mtime": "1571557447",
+      "size": "672",
+      "md5": "f96275e544273c9e3a3a906bc010faf2",
+      "crc32": "051b14fc",
+      "sha1": "e4199d98813396ddcb78b5c6ffed6cd5db14ffde"
+    },
+    {
+      "name": "windows_xp_startup.mp3",
+      "source": "original",
+      "mtime": "1571556874",
+      "size": "77321",
+      "md5": "f2be9d9099fea130d70d0b85fb69ce1c",
+      "crc32": "eebc7756",
+      "sha1": "e5a0a655ce203d1741a6b0398860f4aba94b6fba",
+      "format": "VBR MP3",
+      "length": "4.81",
+      "height": "0",
+      "width": "0",
+      "track": "01"
+    },
+    {
+      "name": "windows_xp_startup.ogg",
+      "source": "derivative",
+      "format": "Ogg Vorbis",
+      "original": "windows_xp_startup.mp3",
+      "mtime": "1571557438",
+      "size": "48926",
+      "md5": "dfb3192936d014a10dd0aa8456930023",
+      "crc32": "6bfc72ab",
+      "sha1": "cca41858d5fa8a00ac80a219d1ac43c0fe216cca",
+      "length": "4.75",
+      "height": "0",
+      "width": "0"
+    },
+    {
+      "name": "windows_xp_startup.png",
+      "source": "derivative",
+      "format": "PNG",
+      "original": "windows_xp_startup.mp3",
+      "mtime": "1571557443",
+      "size": "27722",
+      "md5": "1f2025c4d075c9292cabf2445d3ce66b",
+      "crc32": "e9f58260",
+      "sha1": "7bd585f4129fceaf001759548de71299edb9dd51"
+    },
+    {
+      "name": "windows_xp_startup_sound_archive.torrent",
+      "source": "metadata",
+      "btih": "3994e0c189cfdceb2dd668a7baf50ed66470c2b1",
+      "mtime": "1613797992",
+      "size": "2617",
+      "md5": "dac4971460f1fee67ed63be16354fbe4",
+      "crc32": "130112df",
+      "sha1": "0aba3e15b4e02d518cc78d2c11035442253d4b64",
+      "format": "Archive BitTorrent"
+    },
+    {
+      "name": "windows_xp_startup_sound_files.xml",
+      "source": "original",
+      "format": "Metadata",
+      "md5": "d760120946b528990f724651a633d9ab",
+      "summation": "md5"
+    },
+    {
+      "name": "windows_xp_startup_sound_meta.sqlite",
+      "source": "original",
+      "mtime": "1571556901",
+      "size": "11264",
+      "format": "Metadata",
+      "md5": "974ebed8c72fbd3d6c06d4943a8bd8bd",
+      "crc32": "43368492",
+      "sha1": "d93e55d2aee5e4e303047940329c7cf70e4b4cf6"
+    },
+    {
+      "name": "windows_xp_startup_sound_meta.xml",
+      "source": "original",
+      "mtime": "1613797992",
+      "size": "1119",
+      "format": "Metadata",
+      "md5": "33fa675861c527f8601af2c2046bb8c8",
+      "crc32": "886ac651",
+      "sha1": "039cef466dc4ca4699f39092ac4820909db473b1"
+    },
+    {
+      "name": "windows_xp_startup_spectrogram.png",
+      "source": "derivative",
+      "format": "Spectrogram",
+      "original": "windows_xp_startup.mp3",
+      "mtime": "1571557444",
+      "size": "199236",
+      "md5": "6de582a2d845c76f68baf56add1dda6c",
+      "crc32": "00d26268",
+      "sha1": "cae9e78765df47a51f56b8694ac50a9e2cee322b"
+    }
+  ],
+  "files_count": 10,
+  "item_last_updated": 1613797992,
+  "item_size": 371337,
+  "metadata": {
+    "identifier": "windows_xp_startup_sound",
+    "mediatype": "audio",
+    "collection": [
+      "opensource_audio",
+      "community"
+    ],
+    "description": "Windows XP startup sound",
+    "scanner": "Internet Archive HTML5 Uploader 1.6.4",
+    "subject": [
+      "Windows",
+      "XP",
+      "Windows XP",
+      "startup",
+      "sound",
+      "audio",
+      "ljud",
+      "startup sound",
+      "Windows XP startup sound",
+      "Windows XP startup",
+      "Windows startup",
+      "Windows startup sound"
+    ],
+    "title": "Windows XP startup sound",
+    "publicdate": "2019-10-20 07:34:35",
+    "uploader": "hejda.sep@gmail.com",
+    "addeddate": "2019-10-20 07:34:35",
+    "curation": "[curator]validator@archive.org[/curator][date]20191020073508[/date][comment]checked for malware[/comment]",
+    "creator": "Microsoft",
+    "backup_location": "ia907004_6"
+  },
+  "server": "ia903103.us.archive.org",
+  "uniq": 1139631979,
+  "workable_servers": [
+    "ia903103.us.archive.org",
+    "ia803103.us.archive.org"
+  ]
+}

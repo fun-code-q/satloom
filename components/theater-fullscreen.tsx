@@ -23,6 +23,7 @@ import { Settings, List, ChevronRight, ChevronLeft, FastForward, Music2 } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Slider } from "@/components/ui/slider"
 import { Badge } from "@/components/ui/badge"
+import { buildVimeoEmbedUrl } from "@/utils/infra/vimeo-url"
 
 interface TheaterFullscreenProps {
   isOpen: boolean
@@ -77,6 +78,7 @@ export function TheaterFullscreen({
   const [queue, setQueue] = useState<QueuedVideo[]>([])
   const [qualitySettings, setQualitySettings] = useState(theaterQuality.getSettings())
   const [canReactPlayerPlay, setCanReactPlayerPlay] = useState(true)
+  const [isAutoplayBlocked, setIsAutoplayBlocked] = useState(false)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -84,6 +86,7 @@ export function TheaterFullscreen({
   const theaterSignaling = TheaterSignaling.getInstance()
   const userPresence = UserPresenceSystem.getInstance()
   const localStreamRef = useRef<MediaStream | null>(null)
+  const localMovieStreamRef = useRef<MediaStream | null>(null)
   const videoStreamManagerRef = useRef<VideoStreamManager | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const connectedPeersRef = useRef<Set<string>>(new Set())
@@ -97,11 +100,21 @@ export function TheaterFullscreen({
   const [participantsCount, setParticipantsCount] = useState(0)
   const [mounted, setMounted] = useState(false)
   const lastPlaybackToggleRef = useRef<number>(0)
+  const initialInteractionBlockUntilRef = useRef<number>(0)
+  const signalingQueueRef = useRef<Promise<any>>(Promise.resolve())
   const playerReadyTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   const iframePlayerReadyRef = useRef<boolean>(false)
+  const vimeoPlayerReadyRef = useRef(false)
   const pendingCommandsRef = useRef<Array<{ action: 'play' | 'pause' | 'seek', time?: number }>>([])
   const soundcloudControllerRef = useRef<SoundCloudPlayerController | null>(null)
+  // Ref so HLS setup effect can read latest isPlaying without being in its dep array
+  const isPlayingRef = useRef(false)
+  // YouTube IFrame Player API
+  const ytPlayerRef = useRef<any>(null)
+  const ytIframeId = useRef(`yt-theater-${Math.random().toString(36).substr(2, 9)}`)
+  const vimeoIframeId = useRef(`vimeo-theater-${Math.random().toString(36).substr(2, 9)}`)
+  const VIMEO_ORIGIN = "https://player.vimeo.com"
   const toIcePayload = (c: RTCIceCandidate) => ({
     candidate: c.candidate,
     sdpMid: c.sdpMid,
@@ -155,6 +168,17 @@ export function TheaterFullscreen({
     currentUser
   ]);
 
+  useEffect(() => {
+    localMovieStreamRef.current = localMovieStream
+  }, [localMovieStream])
+
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent accidental first click-through from opening transition buttons.
+      initialInteractionBlockUntilRef.current = Date.now() + 450
+    }
+  }, [isOpen, session?.id])
+
   const syncIframePlayerRef = useRef<((action: 'play' | 'pause' | 'seek', time?: number) => void) | null>(null);
 
   useEffect(() => {
@@ -200,15 +224,20 @@ export function TheaterFullscreen({
     }
   }, [messages, showChat])
 
+  // Keep isPlayingRef in sync for use in effects that must not re-run on every play/pause toggle
+  useEffect(() => { isPlayingRef.current = isPlaying }, [isPlaying])
+
   useEffect(() => {
     const video = videoRef.current
     if (video) {
       if (isPlaying && video.paused) {
         video.play().catch(err => {
-          if (err.name !== 'AbortError') console.error("Video play error:", err)
+          if (err.name === 'NotAllowedError') { setIsAutoplayBlocked(true) }
+          else if (err.name !== 'AbortError') { console.error("Video play error:", err) }
         })
       } else if (!isPlaying && !video.paused) {
         video.pause()
+        setIsAutoplayBlocked(false)
       }
     }
   }, [isPlaying])
@@ -237,7 +266,14 @@ export function TheaterFullscreen({
             const hls = new Hls()
             hls.loadSource(session.videoUrl as string)
             hls.attachMedia(video)
-            hls.on(Hls.Events.MANIFEST_PARSED, () => { if (isPlaying) video.play() })
+            // Use ref so this callback always reads the latest isPlaying without causing re-init on toggle
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+              if (!isPlayingRef.current) return
+              video.play().catch(err => {
+                if (err.name === "NotAllowedError") setIsAutoplayBlocked(true)
+                else if (err.name !== "AbortError") console.error("HLS play error:", err)
+              })
+            })
             return () => hls.destroy()
           } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
             video.src = session.videoUrl as string
@@ -247,7 +283,9 @@ export function TheaterFullscreen({
       const cleanup = initHls()
       return () => { cleanup.then(fn => fn?.()) }
     } else { video.srcObject = null }
-  }, [session.videoType, isHost, localMovieStream, remoteMovieStream, session.videoUrl, isPlaying])
+    // NOTE: isPlaying intentionally excluded from deps — play/pause is managed by its own useEffect above.
+    // Including it here re-initializes HLS on every toggle which resets the video to the beginning.
+  }, [session.videoType, isHost, localMovieStream, remoteMovieStream, session.videoUrl])
 
   useEffect(() => { if (videoRef.current) videoRef.current.volume = isMuted ? 0 : volume }, [volume, isMuted])
   useEffect(() => { if (videoRef.current) videoRef.current.playbackRate = playbackRate }, [playbackRate])
@@ -271,6 +309,17 @@ export function TheaterFullscreen({
       if (videoRef.current) videoRef.current.currentTime = session.currentTime;
       setCurrentTime(session.currentTime);
     }
+    // If session is already playing when the player becomes ready, start playback immediately
+    if (isOpen && playerReady && !isHost && session.status === 'playing' && !isPlaying) {
+      setIsPlaying(true)
+      setIsAutoplayBlocked(false)
+      if (syncIframePlayerRef.current) syncIframePlayerRef.current("play")
+      if (session.videoType === "direct" && videoRef.current) {
+        videoRef.current.play().catch(err => {
+          if (err.name === 'NotAllowedError') { setIsAutoplayBlocked(true) }
+        })
+      }
+    }
   }, [isOpen, playerReady, isHost, session.currentTime])
 
   useEffect(() => {
@@ -287,7 +336,32 @@ export function TheaterFullscreen({
     }
   }, [isOpen, isHost, pendingScreenStream, onScreenStreamProcessed])
 
+  // Participate in session (for joiners)
+  useEffect(() => {
+    if (!isHost && isOpen && session && roomId && currentUserId) {
+      console.log(`[TheaterFullscreen] Joining session ${session.id} as participant`)
+      theaterSignaling.joinSession(roomId, session.id, currentUserId)
+    }
+  }, [isHost, isOpen, session?.id, roomId, currentUserId])
+
+  // Cleanup signals on unmount or session change
+  useEffect(() => {
+    return () => {
+      if (roomId && session && currentUserId) {
+        console.log("[TheaterFullscreen] Cleaning up signals on exit/change")
+        theaterSignaling.clearSignals(roomId, session.id, currentUserId)
+      }
+    }
+  }, [roomId, session?.id, currentUserId])
+
+  const runInSignalingQueue = (task: () => Promise<any>) => {
+    signalingQueueRef.current = signalingQueueRef.current.then(task).catch(err => {
+      console.error("[TheaterFullscreen] Signaling queue error:", err)
+    })
+  }
+
   const handleScreenStreamReady = async (stream: MediaStream) => {
+    localMovieStreamRef.current = stream
     setLocalMovieStream(stream)
     await theaterSignaling.updateSessionMedia(roomId, session.id, "screen://share", "webrtc")
     const webrtc = WebRTCManager.getInstance()
@@ -295,7 +369,7 @@ export function TheaterFullscreen({
     participants.forEach(async (participantId: string) => {
       if (participantId === currentUserId) return
       webrtc.initialize(participantId, stream,
-        (s, uid, label) => { if (uid === participantId && label === "theater") setRemoteMovieStream(s) },
+        (s, uid) => { if (uid === participantId) setRemoteMovieStream(s) },
         (c, uid) => { if (uid === participantId) theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", toIcePayload(c), currentUserId, participantId) },
         undefined, "theater")
       const offer = await webrtc.createOffer(participantId)
@@ -305,7 +379,14 @@ export function TheaterFullscreen({
     setIsBuffering(false); setIsPlaying(true); setCurrentTime(0)
     try { await theaterSignaling.sendAction(roomId, session.id, "play", 0, currentUserId, currentUser) } catch (err) { console.error("Failed to send play action:", err) }
     const videoTrack = stream.getVideoTracks()[0]
-    if (videoTrack) { videoTrack.onended = () => { stream.getTracks().forEach(t => t.stop()); setLocalMovieStream(null); setIsPlaying(false) } }
+    if (videoTrack) {
+      videoTrack.onended = () => {
+        stream.getTracks().forEach(t => t.stop())
+        localMovieStreamRef.current = null
+        setLocalMovieStream(null)
+        setIsPlaying(false)
+      }
+    }
   }
 
   const handleStartScreenShare = async () => {
@@ -320,19 +401,49 @@ export function TheaterFullscreen({
     const webrtc = WebRTCManager.getInstance()
     const unsubscribeSignals = theaterSignaling.listenForSignals(roomId, session.id, currentUserId, async (type, payload, fromUserId) => {
       if (type === "offer") {
-        const streamToUse = localMovieStream || localStreamRef.current || new MediaStream()
-        webrtc.initialize(fromUserId, streamToUse, (s, uid, label) => { if (uid === fromUserId && label === "theater") setRemoteMovieStream(s) },
-          (c, uid) => { if (uid === fromUserId) theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", { candidate: c.candidate, sdpMid: c.sdpMid, sdpMLineIndex: c.sdpMLineIndex }, currentUserId, fromUserId) },
-          undefined, "theater")
-        const answer = await webrtc.createAnswer(fromUserId, payload)
-        theaterSignaling.sendSignal(roomId, session.id, "answer", answer, currentUserId, fromUserId)
-      } else if (type === "answer") { await webrtc.handleAnswer(fromUserId, payload) }
-      else if (type === "ice-candidate") { await webrtc.addIceCandidate(fromUserId, payload) }
+        runInSignalingQueue(async () => {
+          console.log(`[TheaterFullscreen] Handling WebRTC offer from ${fromUserId}`)
+          const streamToUse = localMovieStreamRef.current || localStreamRef.current || new MediaStream()
+          webrtc.initialize(fromUserId, streamToUse, (s, uid) => { if (uid === fromUserId) setRemoteMovieStream(s) },
+            (c, uid) => { if (uid === fromUserId) theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", toIcePayload(c), currentUserId, fromUserId) },
+            undefined, "theater")
+          try {
+            const answer = await webrtc.createAnswer(fromUserId, payload)
+            await theaterSignaling.sendSignal(roomId, session.id, "answer", answer, currentUserId, fromUserId)
+          } catch (error) {
+            if (error instanceof Error && error.message === "Signaling lock active") return
+            console.error("Error creating WebRTC answer:", error)
+          }
+        })
+      } else if (type === "answer") {
+        runInSignalingQueue(async () => {
+          console.log(`[TheaterFullscreen] Handling WebRTC answer from ${fromUserId}`)
+          await webrtc.handleAnswer(fromUserId, payload)
+        })
+      } else if (type === "ice-candidate") {
+        runInSignalingQueue(async () => {
+          await webrtc.addIceCandidate(fromUserId, payload)
+        })
+      }
     })
     return () => unsubscribeSignals()
   }, [session.id, roomId, currentUserId])
 
-  useEffect(() => { return () => WebRTCManager.getInstance().cleanup() }, [])
+  useEffect(() => {
+    return () => {
+      // Destroy YT player on unmount
+      if (ytPlayerRef.current) {
+        try { ytPlayerRef.current.destroy() } catch {}
+        ytPlayerRef.current = null
+      }
+      // Destroy SoundCloud controller on unmount
+      if (soundcloudControllerRef.current) {
+        try { soundcloudControllerRef.current.destroy() } catch {}
+        soundcloudControllerRef.current = null
+      }
+      WebRTCManager.getInstance().cleanup()
+    }
+  }, [])
 
   const reactivateControls = useCallback(() => {
     setShowControls(true)
@@ -372,24 +483,100 @@ export function TheaterFullscreen({
 
   useEffect(() => {
     if (session?.videoType) {
-      iframePlayerReadyRef.current = false; pendingCommandsRef.current = []; setPlayerReady(false)
+      // Destroy existing YT player when video type changes
+      if (ytPlayerRef.current) {
+        try { ytPlayerRef.current.destroy() } catch {}
+        ytPlayerRef.current = null
+      }
+      // Destroy SoundCloud controller when video type changes
+      if (soundcloudControllerRef.current) {
+        try { soundcloudControllerRef.current.destroy() } catch {}
+        soundcloudControllerRef.current = null
+      }
+      iframePlayerReadyRef.current = false; vimeoPlayerReadyRef.current = false; pendingCommandsRef.current = []; setPlayerReady(false)
     }
   }, [session?.videoType])
 
+  // Initialize the YouTube IFrame Player API and wrap the existing iframe
+  const initYouTubePlayer = useCallback(() => {
+    if (session.videoType !== 'youtube') return
+    const iframeId = ytIframeId.current
+
+    const doCreate = () => {
+      if (ytPlayerRef.current) {
+        try { ytPlayerRef.current.destroy() } catch {}
+        ytPlayerRef.current = null
+      }
+      // Wrap the existing iframe element — YT.Player takes control without reloading it
+      ytPlayerRef.current = new (window as any).YT.Player(iframeId, {
+        events: {
+          onReady: () => {
+            iframePlayerReadyRef.current = true
+            setPlayerReady(true)
+            // Flush any commands that arrived before the player was ready
+            setTimeout(() => {
+              const cmds = [...pendingCommandsRef.current]
+              pendingCommandsRef.current = []
+              cmds.forEach(cmd => {
+                if (cmd.action === 'play') ytPlayerRef.current?.playVideo?.()
+                else if (cmd.action === 'pause') ytPlayerRef.current?.pauseVideo?.()
+                else if (cmd.action === 'seek' && cmd.time !== undefined) ytPlayerRef.current?.seekTo?.(cmd.time, true)
+              })
+            }, 100)
+          },
+        }
+      })
+    }
+
+    const win = window as any
+    if (win.YT?.Player) {
+      doCreate()
+    } else {
+      // Load the YouTube IFrame API script if not already loading
+      if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+        const tag = document.createElement('script')
+        tag.src = 'https://www.youtube.com/iframe_api'
+        document.head.appendChild(tag)
+      }
+      // Chain onto any existing onYouTubeIframeAPIReady callback
+      const prev = win.onYouTubeIframeAPIReady
+      win.onYouTubeIframeAPIReady = () => {
+        prev?.()
+        doCreate()
+      }
+    }
+  }, [session.videoType])
+
   const syncIframePlayer = useCallback((action: 'play' | 'pause' | 'seek', time?: number) => {
-    if (!iframeRef.current) return
-    const iframe = iframeRef.current
     const type = session.videoType
-    if (!iframePlayerReadyRef.current) { pendingCommandsRef.current.push({ action, time }); return }
+    if (!iframeRef.current) {
+      if (["youtube", "vimeo", "dailymotion", "soundcloud", "twitch"].includes(type)) {
+        pendingCommandsRef.current.push({ action, time })
+      }
+      return
+    }
+    const iframe = iframeRef.current
+    
+    // Wait for players to be ready
+    if (type === 'vimeo' && !vimeoPlayerReadyRef.current) { pendingCommandsRef.current.push({ action, time }) }
+    if (!iframePlayerReadyRef.current && type !== 'vimeo') { pendingCommandsRef.current.push({ action, time }); return }
     const executeCommand = () => {
       if (type === "youtube") {
-        const msg = action === 'play' ? '{"event":"command","func":"playVideo","args":""}' :
-          action === 'pause' ? '{"event":"command","func":"pauseVideo","args":""}' :
-            `{"event":"command","func":"seekTo","args":[${time}, true]}`
-        iframe.contentWindow?.postMessage(msg, '*')
+        // Use official YT.Player API — far more reliable than raw postMessage
+        if (ytPlayerRef.current) {
+          if (action === 'play') ytPlayerRef.current.playVideo?.()
+          else if (action === 'pause') ytPlayerRef.current.pauseVideo?.()
+          else if (action === 'seek' && time !== undefined) ytPlayerRef.current.seekTo?.(time, true)
+        } else {
+          // Fallback to corrected postMessage format (args must be array, not string)
+          const msg = action === 'play' ? '{"event":"command","func":"playVideo","args":[]}' :
+            action === 'pause' ? '{"event":"command","func":"pauseVideo","args":[]}' :
+              `{"event":"command","func":"seekTo","args":[${time}, true]}`
+          iframe.contentWindow?.postMessage(msg, 'https://www.youtube.com')
+        }
       } else if (type === "vimeo") {
-        const msg = action === 'play' ? '{"method":"play"}' : action === 'pause' ? '{"method":"pause"}' : `{"method":"seekTo","value":${time}}`
-        iframe.contentWindow?.postMessage(msg, '*')
+        const msg = action === 'play' ? { method: 'play' } : action === 'pause' ? { method: 'pause' } : { method: 'seekTo', value: time }
+        iframe.contentWindow?.postMessage(JSON.stringify(msg), VIMEO_ORIGIN)
       } else if (type === "dailymotion") {
         const msg = action === 'play' ? '{"command":"play"}' : action === 'pause' ? '{"command":"pause"}' : `{"command":"seek","parameters":[${time}]}`
         iframe.contentWindow?.postMessage(msg, '*')
@@ -420,16 +607,21 @@ export function TheaterFullscreen({
       const state = stateRef.current;
       
       if (updatedSession.status === "ended") { setTimeout(() => onClose(), 1000); return }
-      if (updatedSession.lastAction && updatedSession.lastAction.hostId !== state.currentUserId && updatedSession.lastAction.timestamp > (lastActionTimestampRef.current || 0)) {
+      if (updatedSession.lastAction && updatedSession.lastAction.timestamp > (lastActionTimestampRef.current || 0)) {
         lastActionTimestampRef.current = updatedSession.lastAction.timestamp;
         const action = updatedSession.lastAction
         switch (action.type) {
           case "play":
             setIsPlaying(true)
+            setIsAutoplayBlocked(false)
             if (syncIframePlayerRef.current) syncIframePlayerRef.current("play")
             if (state.session.videoType === "webrtc" && videoStreamManagerRef.current) videoStreamManagerRef.current.syncPlayback('play')
-            if (state.session.videoType === "direct" && videoRef.current) videoRef.current.play().catch(err => console.error("Play error:", err))
-
+            if (state.session.videoType === "direct" && videoRef.current) {
+              videoRef.current.play().catch(err => {
+                if (err.name === 'NotAllowedError') { setIsAutoplayBlocked(true) }
+                else if (err.name !== 'AbortError') { console.error("Play error:", err) }
+              })
+            }
             if (action.currentTime !== undefined && Math.abs(state.currentTime - action.currentTime) > 1) {
               if (videoRef.current) videoRef.current.currentTime = action.currentTime
               if (syncIframePlayerRef.current) syncIframePlayerRef.current("seek", action.currentTime)
@@ -447,7 +639,7 @@ export function TheaterFullscreen({
               if (videoRef.current) videoRef.current.currentTime = action.currentTime
               if (syncIframePlayerRef.current) syncIframePlayerRef.current("seek", action.currentTime)
               if (state.session.videoType === "webrtc" && videoStreamManagerRef.current) videoStreamManagerRef.current.syncPlayback('seek', action.currentTime)
-              if (state.session.videoType === "direct" && videoRef.current && state.isPlaying) videoRef.current.play().catch(err => console.error("Play error:", err))
+              if ((state.session.videoType === "direct" || state.session.videoType === "archive") && videoRef.current && state.isPlaying) videoRef.current.play().catch(err => console.error("Play error:", err))
               setCurrentTime(action.currentTime)
             }
             break
@@ -458,21 +650,49 @@ export function TheaterFullscreen({
       }
       if (updatedSession.queue) { theaterQueue.clearQueue(); updatedSession.queue.forEach((v: any) => theaterQueue.addToQueue(v)) }
       if (updatedSession.status === 'buffering' && !state.isHost) { setIsBuffering(true); setIsPlaying(false) }
-      else if (updatedSession.status === 'playing' && state.isBuffering) { setIsBuffering(false); setIsPlaying(true) }
+      // Always trigger play for joiners when session becomes 'playing'
+      // Always trigger play for joiners when session becomes 'playing'
+      if (updatedSession.status === 'playing' && !state.isHost) {
+        setIsBuffering(false)
+        if (!state.isPlaying) {
+          setIsPlaying(true)
+          setIsAutoplayBlocked(false)
+          if (syncIframePlayerRef.current) syncIframePlayerRef.current("play")
+          if ((state.session.videoType === "direct" || state.session.videoType === "archive") && videoRef.current) {
+            videoRef.current.play().catch(err => {
+              if (err.name === 'NotAllowedError') { setIsAutoplayBlocked(true) }
+              else if (err.name !== 'AbortError') { console.error("Play error:", err) }
+            })
+          }
+        }
+      }
       if (!state.isHost && updatedSession.status === 'playing' && state.playerReady) {
         const drift = updatedSession.currentTime - state.currentTime
         if (Math.abs(drift) > 5) {
-          if (videoRef.current) videoRef.current.currentTime = updatedSession.currentTime
+          // Hard seek if drift is large
+          if ((state.session.videoType === "direct" || state.session.videoType === "archive") && videoRef.current) videoRef.current.currentTime = updatedSession.currentTime
+          if (state.session.videoType === "youtube" && ytPlayerRef.current?.seekTo) ytPlayerRef.current.seekTo(updatedSession.currentTime, true)
+          if (state.session.videoType === "soundcloud" && soundcloudControllerRef.current) soundcloudControllerRef.current.seekTo(updatedSession.currentTime * 1000)
+          if (state.session.videoType === "vimeo" && iframeRef.current) {
+            iframeRef.current.contentWindow?.postMessage(
+              JSON.stringify({ method: "seekTo", value: updatedSession.currentTime }),
+              VIMEO_ORIGIN
+            )
+          }
           setCurrentTime(updatedSession.currentTime); setPlaybackRate(1.0)
-        } else if (Math.abs(drift) > 0.5) { setPlaybackRate(drift > 0 ? 1.05 : 0.95) }
+        } else if (Math.abs(drift) > 0.5) { 
+          // Soft catchup using playbackRate (only works well on direct video for now)
+          if (state.session.videoType === "direct" || state.session.videoType === "archive") setPlaybackRate(drift > 0 ? 1.05 : 0.95) 
+        }
         else if (state.playbackRate !== 1.0) setPlaybackRate(1.0)
       }
-      if (state.isHost && updatedSession.videoType === "webrtc" && state.localMovieStream) {
+      const hostMovieStream = localMovieStreamRef.current || state.localMovieStream
+      if (state.isHost && updatedSession.videoType === "webrtc" && hostMovieStream) {
         const currentParticipants = updatedSession.participants || []
         currentParticipants.forEach(async (participantId: string) => {
           if (participantId !== state.currentUserId && !connectedPeersRef.current.has(participantId)) {
-            WebRTCManager.getInstance().initialize(participantId, state.localMovieStream!,
-              (s, uid, label) => { if (uid === participantId && label === "theater") setRemoteMovieStream(s) },
+            WebRTCManager.getInstance().initialize(participantId, hostMovieStream!,
+              (s, uid) => { if (uid === participantId) setRemoteMovieStream(s) },
               (c, uid) => { if (uid === participantId) theaterSignaling.sendSignal(state.roomId, state.session.id, "ice-candidate", toIcePayload(c), state.currentUserId, participantId) },
               undefined, "theater")
             const offer = await WebRTCManager.getInstance().createOffer(participantId)
@@ -493,12 +713,8 @@ export function TheaterFullscreen({
       return match ? `https://www.youtube.com/embed/${match[1]}?enablejsapi=1&autoplay=0&controls=0&origin=${typeof window !== 'undefined' ? window.location.origin : '*'}` : url
     }
     if (type === "vimeo") {
-      const match = url.match(/vimeo\.com\/(?:groups\/[^/]+\/videos\/|)(\d+)/)
-      return match ? `https://player.vimeo.com/video/${match[1]}?api=1&autoplay=0` : url
-    }
-    if (type === "twitch") {
-      const match = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/)
-      return match ? `https://player.twitch.tv/?channel=${match[1]}&parent=${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}&autoplay=false` : url
+      const embed = buildVimeoEmbedUrl(url, { autoplay: false, playerId: vimeoIframeId.current })
+      return embed || url
     }
     if (type === "dailymotion") {
       const match = url.match(/(?:dailymotion\.com\/video\/|dai\.ly\/)([a-zA-Z0-9]+)/)
@@ -514,6 +730,86 @@ export function TheaterFullscreen({
     return url
   }
 
+  const [isDragging, setIsDragging] = useState(false)
+
+  // Add interval to track YouTube progress since it has no onTimeUpdate event
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+    if (session?.videoType === 'youtube' && playerReady) {
+      interval = setInterval(() => {
+        if (ytPlayerRef.current && ytPlayerRef.current.getCurrentTime && !isDragging) {
+          const ytTime = ytPlayerRef.current.getCurrentTime()
+          const ytDuration = ytPlayerRef.current.getDuration()
+          if (ytDuration > 0 && duration !== ytDuration) setDuration(ytDuration)
+          setCurrentTime(ytTime)
+          if (isHost && ytPlayerRef.current.getPlayerState() === 1 /* PLAYING */ && ytTime % 5 < 0.2) {
+            theaterSignaling.updateCurrentTime(roomId, session.id, ytTime)
+          }
+        }
+      }, 1000)
+    }
+    return () => { if (interval) clearInterval(interval) }
+  }, [session?.videoType, playerReady, isHost, isDragging, duration, roomId, session?.id])
+
+  // Add interval to track SoundCloud progress
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+    if (session?.videoType === 'soundcloud' && playerReady) {
+      interval = setInterval(() => {
+        if (soundcloudControllerRef.current && !isDragging) {
+          soundcloudControllerRef.current.getDuration((scDuration) => {
+            if (scDuration > 0 && duration !== scDuration) setDuration(scDuration)
+          })
+          soundcloudControllerRef.current.getPosition((scTime) => {
+            setCurrentTime(scTime)
+            if (isHost && isPlaying && scTime % 5 < 0.2) {
+              theaterSignaling.updateCurrentTime(roomId, session.id, scTime)
+            }
+          })
+        }
+      }, 1000)
+    }
+    return () => { if (interval) clearInterval(interval) }
+  }, [session?.videoType, playerReady, isHost, isDragging, duration, roomId, session?.id, isPlaying])
+
+  // Track Vimeo progress via window messages
+  useEffect(() => {
+    if (session?.videoType !== 'vimeo') return
+    const handleVimeoMessage = (event: MessageEvent) => {
+      if (event.origin !== VIMEO_ORIGIN) return
+      if (iframeRef.current?.contentWindow && event.source !== iframeRef.current.contentWindow) return
+
+      let data = event.data
+      if (typeof data === 'string') {
+        try { data = JSON.parse(data) } catch (e) { return }
+      }
+      
+      if (!data) return
+
+      if (data.event === 'ready') {
+        vimeoPlayerReadyRef.current = true
+        setPlayerReady(true)
+        iframePlayerReadyRef.current = true
+        // Important: Vimeo needs to be told to send timeupdate events
+        if (iframeRef.current?.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(JSON.stringify({ method: 'addEventListener', value: 'timeupdate' }), VIMEO_ORIGIN)
+          iframeRef.current.contentWindow.postMessage(JSON.stringify({ method: 'addEventListener', value: 'finish' }), VIMEO_ORIGIN)
+        }
+        processPendingCommands()
+      } else if (data.event === 'timeupdate') {
+        const vimeoTime = data.data?.seconds || 0
+        const vimeoDuration = data.data?.duration || 0
+        if (vimeoDuration > 0 && duration !== vimeoDuration) setDuration(vimeoDuration)
+        if (!isDragging) setCurrentTime(vimeoTime)
+        if (isHost && isPlaying && vimeoTime % 5 < 0.2) theaterSignaling.updateCurrentTime(roomId, session.id, vimeoTime)
+      } else if (data.event === 'finish') {
+        if (isHost) setIsPlaying(false)
+      }
+    }
+    window.addEventListener('message', handleVimeoMessage)
+    return () => window.removeEventListener('message', handleVimeoMessage)
+  }, [session?.videoType, playerReady, isHost, isDragging, duration, roomId, session?.id, isPlaying, VIMEO_ORIGIN])
+
   const processPendingCommands = () => {
     const commands = [...pendingCommandsRef.current]; pendingCommandsRef.current = []
     commands.forEach(cmd => syncIframePlayer(cmd.action, cmd.time))
@@ -524,18 +820,22 @@ export function TheaterFullscreen({
     const now = Date.now(); if (now - lastPlaybackToggleRef.current < 800) return
     lastPlaybackToggleRef.current = now
     const newIsPlaying = !isPlaying; setIsPlaying(newIsPlaying)
-    if (session.videoType === "direct" && videoRef.current) {
+    if ((session.videoType === "direct" || session.videoType === "archive") && videoRef.current) {
       if (newIsPlaying) videoRef.current.play().catch(err => console.error("Play error:", err))
       else videoRef.current.pause()
     }
-    if (session.videoType !== "direct" && session.videoType !== "webrtc") syncIframePlayer(newIsPlaying ? 'play' : 'pause')
+    if (session.videoType !== "direct" && session.videoType !== "archive" && session.videoType !== "webrtc") {
+      syncIframePlayer(newIsPlaying ? 'play' : 'pause')
+    }
     if (session.videoType === "webrtc" && videoStreamManagerRef.current) videoStreamManagerRef.current.syncPlayback(newIsPlaying ? 'play' : 'pause')
     try { await theaterSignaling.sendAction(roomId, session.id, newIsPlaying ? "play" : "pause", currentTime, currentUserId, currentUser) } catch (err) { console.error("Failed to send playback action:", err) }
   }
 
   const handleSeek = async (newTime: number) => {
     if (!isHost) return
-    if (videoRef.current) videoRef.current.currentTime = newTime
+    if ((session.videoType === "direct" || session.videoType === "archive") && videoRef.current) videoRef.current.currentTime = newTime
+    if (session.videoType === "youtube" && ytPlayerRef.current) ytPlayerRef.current.seekTo?.(newTime, true)
+    if (session.videoType === "soundcloud" && soundcloudControllerRef.current) soundcloudControllerRef.current.seekTo(newTime * 1000)
     if (session.videoType === "webrtc" && videoStreamManagerRef.current) videoStreamManagerRef.current.syncPlayback('seek', newTime)
     syncIframePlayer("seek", newTime); setCurrentTime(newTime)
     await theaterSignaling.sendAction(roomId, session.id, "seek", newTime, currentUserId, currentUser)
@@ -557,7 +857,6 @@ export function TheaterFullscreen({
   const handleBuffer = () => { if (isHost && !isBuffering) { theaterSignaling.sendBuffering(roomId, session.id, currentUserId, currentUser); setIsBuffering(true) } }
   const handleBufferEnd = () => { if (isHost && isBuffering) { theaterSignaling.sendAction(roomId, session.id, "play", videoRef.current ? videoRef.current.currentTime : 0, currentUserId, currentUser); setIsBuffering(false) } }
 
-  const [isDragging, setIsDragging] = useState(false)
   const toggleMute = () => setIsMuted(!isMuted)
 
   const handlePushToTalk = async (active: boolean) => {
@@ -578,21 +877,30 @@ export function TheaterFullscreen({
       setIsBuffering(true); setTranscodingProgress(null)
       await videoStreamManagerRef.current.loadFile(file, (p) => setTranscodingProgress(p))
       setTranscodingProgress(null)
-      const stream = videoStreamManagerRef.current.captureStream(); setLocalMovieStream(stream)
+      const stream = videoStreamManagerRef.current.captureStream()
+      localMovieStreamRef.current = stream
+      setLocalMovieStream(stream)
       await theaterSignaling.updateSessionMedia(roomId, session.id, "local://stream", "webrtc")
       session.participants.forEach(async (participantId) => {
         if (participantId === currentUserId) return
         WebRTCManager.getInstance().initialize(participantId, stream,
-          (s, uid, label) => { if (uid === participantId && label === "theater") setRemoteMovieStream(s) },
+          (s, uid) => { if (uid === participantId) setRemoteMovieStream(s) },
           (c, uid) => { if (uid === participantId) theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", toIcePayload(c), currentUserId, participantId) },
           undefined, "theater")
         const offer = await WebRTCManager.getInstance().createOffer(participantId)
         theaterSignaling.sendSignal(roomId, session.id, "offer", offer, currentUserId, participantId)
         connectedPeersRef.current.add(participantId)
       })
-      setIsBuffering(false); setIsPlaying(true); setCurrentTime(0)
-      try { await theaterSignaling.sendAction(roomId, session.id, "play", 0, currentUserId, currentUser) } catch (err) { console.error("Failed to send play action:", err) }
-      videoStreamManagerRef.current.syncPlayback('play')
+      setIsBuffering(false)
+      setIsPlaying(false)
+      setCurrentTime(0)
+      videoStreamManagerRef.current.syncPlayback('seek', 0)
+      videoStreamManagerRef.current.syncPlayback('pause')
+      try {
+        await theaterSignaling.sendAction(roomId, session.id, "pause", 0, currentUserId, currentUser)
+      } catch (err) {
+        console.error("Failed to send initial pause action:", err)
+      }
     } catch (err: any) { console.error("Streaming error:", err); setIsBuffering(false) }
   }
 
@@ -667,20 +975,81 @@ export function TheaterFullscreen({
         <div className="flex-1 relative bg-black flex items-center justify-center">
           <ReactionRainView roomId={roomId} />
           <div className="w-full h-full relative flex items-center justify-center">
-            {["youtube", "vimeo", "twitch", "dailymotion", "soundcloud", "archive"].includes(session.videoType) ? (
-              <iframe ref={iframeRef} src={getEmbedUrl(session.videoUrl || "", session.videoType)} className="w-full h-full border-0" allow="autoplay; fullscreen; encrypted-media; microphone" allowFullScreen
+            {(["youtube", "vimeo", "dailymotion", "soundcloud"].includes(session.videoType) || (session.videoType === "archive" && !session.videoUrl?.includes("/download/"))) ? (
+              <iframe
+                ref={iframeRef}
+                id={session.videoType === 'youtube' ? ytIframeId.current : session.videoType === 'vimeo' ? vimeoIframeId.current : undefined}
+                src={getEmbedUrl(session.videoUrl || "", session.videoType)}
+                className="w-full h-full border-0"
+                allow="autoplay; fullscreen; encrypted-media; microphone"
+                allowFullScreen
                 onLoad={() => {
-                  setPlayerReady(true); iframePlayerReadyRef.current = true
-                  if (session.videoType === "soundcloud" && iframeRef.current) {
-                    const ctrl = new SoundCloudPlayerController(); ctrl.initialize(iframeRef.current).then(() => { soundcloudControllerRef.current = ctrl })
+                  if (session.videoType === 'youtube') {
+                    // For YouTube, let the YT.Player API set iframePlayerReadyRef via onReady
+                    initYouTubePlayer()
+                  } else if (session.videoType === 'vimeo') {
+                    setPlayerReady(true)
+                    iframePlayerReadyRef.current = true
+                    if (iframeRef.current?.contentWindow) {
+                      iframeRef.current.contentWindow.postMessage(JSON.stringify({ method: "addEventListener", value: "ready" }), VIMEO_ORIGIN)
+                      iframeRef.current.contentWindow.postMessage(JSON.stringify({ method: "addEventListener", value: "timeupdate" }), VIMEO_ORIGIN)
+                      iframeRef.current.contentWindow.postMessage(JSON.stringify({ method: "addEventListener", value: "finish" }), VIMEO_ORIGIN)
+                    }
+                    // Some Vimeo embeds do not emit a "ready" event reliably.
+                    // Fallback: mark ready shortly after load so queued host commands are not stranded.
+                    setTimeout(() => {
+                      if (!vimeoPlayerReadyRef.current) {
+                        vimeoPlayerReadyRef.current = true
+                      }
+                      processPendingCommands()
+                    }, 350)
+                  } else {
+                    setPlayerReady(true); iframePlayerReadyRef.current = true
+                    if (session.videoType === "soundcloud" && iframeRef.current) {
+                      const ctrl = new SoundCloudPlayerController(); ctrl.initialize(iframeRef.current).then(() => { soundcloudControllerRef.current = ctrl })
+                    }
+                    setTimeout(() => processPendingCommands(), 500)
+                    setTimeout(() => { if (pendingCommandsRef.current.length > 0) processPendingCommands() }, 1500)
                   }
-                  setTimeout(() => processPendingCommands(), 500)
                 }} />
             ) : (
-              <video ref={videoRef} src={session.videoType !== "webrtc" && !session.videoUrl?.includes(".m3u8") ? (session.videoUrl || "") : undefined} className="w-full h-full object-contain" playsInline autoPlay={isPlaying} muted={isMuted}
-                onTimeUpdate={handleProgress} onLoadedMetadata={handleMetadata} onWaiting={handleBuffer} onPlaying={handleBufferEnd} />
+              <video 
+                ref={videoRef} 
+                src={session.videoType !== "webrtc" && !session.videoUrl?.includes(".m3u8") ? (session.videoUrl || "") : undefined} 
+                className="w-full h-full object-contain" 
+                playsInline 
+                autoPlay={false} 
+                muted={isMuted}
+                poster={session.videoType === "archive" ? `https://archive.org/services/img/${session.videoUrl?.split('/download/')[1]?.split('/')[0]}` : undefined}
+                onTimeUpdate={handleProgress} 
+                onLoadedMetadata={handleMetadata} 
+                onWaiting={handleBuffer} 
+                onPlaying={handleBufferEnd} 
+              />
             )}
-            <div className="absolute inset-0 z-40 cursor-default bg-transparent" onClick={() => { if (isHost) handlePlay() }} onDoubleClick={toggleFullscreen} />
+            <div
+              className="absolute inset-0 z-40 cursor-default bg-transparent"
+              onClick={() => {
+                if (Date.now() < initialInteractionBlockUntilRef.current) return
+                if (isHost) handlePlay()
+                else if (isAutoplayBlocked) {
+                  videoRef.current?.play().catch(() => { })
+                  setIsAutoplayBlocked(false)
+                }
+              }}
+              onDoubleClick={toggleFullscreen}
+            />
+            {/* Tap-to-Play overlay shown to joiners when browser blocks autoplay */}
+            {isAutoplayBlocked && !isHost && (
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-none">
+                <div className="flex flex-col items-center gap-3 text-white pointer-events-none">
+                  <div className="w-16 h-16 rounded-full bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center animate-pulse">
+                    <Play className="w-7 h-7 text-cyan-400 ml-1" />
+                  </div>
+                  <p className="text-sm font-medium text-white/80">Tap anywhere to start playback</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {(!playerReady || session.status === "loading" || isBuffering || transcodingProgress !== null) && (

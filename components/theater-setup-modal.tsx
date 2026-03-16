@@ -4,22 +4,24 @@ import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Film, Play, Youtube, Video, Loader2, Twitch, Monitor, Globe, Paperclip } from "lucide-react"
+import { Film, Play, Youtube, Video, Loader2, Monitor, Globe, Paperclip } from "lucide-react"
 import { toast } from "sonner"
+import { fetchArchiveVideoInfo, extractArchiveId } from "@/utils/infra/archive-org"
+import { buildVimeoEmbedUrl, extractVimeoVideoRef } from "@/utils/infra/vimeo-url"
 
 interface TheaterSetupModalProps {
   isOpen: boolean
   onClose: () => void
   onCreateSession: (
     videoUrl: string,
-    videoType: "direct" | "youtube" | "vimeo" | "twitch" | "dailymotion" | "archive" | "soundcloud" | "webrtc",
+    videoType: "direct" | "youtube" | "vimeo" | "dailymotion" | "archive" | "soundcloud" | "webrtc",
     file?: File
   ) => void
 }
 
 export function TheaterSetupModal({ isOpen, onClose, onCreateSession }: TheaterSetupModalProps) {
   const [videoUrl, setVideoUrl] = useState("")
-  const [selectedType, setSelectedType] = useState<"direct" | "youtube" | "vimeo" | "twitch" | "dailymotion" | "archive" | "soundcloud" | "webrtc">("direct")
+  const [selectedType, setSelectedType] = useState<"direct" | "youtube" | "vimeo" | "dailymotion" | "archive" | "soundcloud" | "webrtc">("direct")
   const [isLoading, setIsLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -41,12 +43,6 @@ export function TheaterSetupModal({ isOpen, onClose, onCreateSession }: TheaterS
       label: "Vimeo",
       icon: Play,
       description: "Vimeo videos",
-    },
-    {
-      id: "twitch" as const,
-      label: "Twitch",
-      icon: Twitch,
-      description: "Twitch Streams/VODs",
     },
     {
       id: "dailymotion" as const,
@@ -89,17 +85,17 @@ export function TheaterSetupModal({ isOpen, onClose, onCreateSession }: TheaterS
           embedUrl = `https://www.youtube.com/embed/${match[1]}?enablejsapi=1&controls=1&origin=${typeof window !== 'undefined' ? window.location.origin : '*'}`
         }
       } else if (selectedType === "vimeo") {
-        // Handle vimeo.com/ID and vimeo.com/groups/ID
-        const vimeoRegex = /vimeo\.com\/(?:groups\/[^/]+\/videos\/|)(\d+)/
-        const match = processedUrl.match(vimeoRegex)
-        if (match) {
-          embedUrl = `https://player.vimeo.com/video/${match[1]}?api=1`
+        const vimeoInfo = extractVimeoVideoRef(processedUrl)
+        if (!vimeoInfo) {
+          toast.error("Invalid Vimeo URL")
+          setIsLoading(false)
+          return
         }
-      } else if (selectedType === "twitch") {
-        const twitchRegex = /twitch\.tv\/([a-zA-Z0-9_]+)/
-        const match = processedUrl.match(twitchRegex)
-        if (match) {
-          embedUrl = `https://player.twitch.tv/?channel=${match[1]}&parent=${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}`
+        const normalizedEmbed = buildVimeoEmbedUrl(processedUrl, { autoplay: false })
+        if (normalizedEmbed) {
+          // Store canonical Vimeo embed URL so playback controls always have API enabled.
+          processedUrl = normalizedEmbed
+          embedUrl = normalizedEmbed
         }
       } else if (selectedType === "dailymotion") {
         // Handle dailymotion.com and dai.ly
@@ -109,14 +105,18 @@ export function TheaterSetupModal({ isOpen, onClose, onCreateSession }: TheaterS
           embedUrl = `https://www.dailymotion.com/embed/video/${match[1]}?autoplay=1`
         }
       } else if (selectedType === "archive") {
-        if (processedUrl.includes("/details/") || processedUrl.includes("/download/")) {
-          // If it ends in a media extension, treat as direct for better control
-          if (processedUrl.match(/\.(mp4|mp3|ogg|webm|wav|m4a)$/i)) {
-            onCreateSession(processedUrl, "direct");
-            onClose();
-            return;
+        const itemId = extractArchiveId(processedUrl)
+        if (itemId) {
+          const info = await fetchArchiveVideoInfo(itemId)
+          if (info && info.directVideoUrl) {
+            processedUrl = info.directVideoUrl
+            embedUrl = info.directVideoUrl
+          } else {
+            // Fallback to iframe if metadata fetch fails
+            embedUrl = processedUrl.replace("/details/", "/embed/")
           }
-          // Otherwise use iframe embed
+        } else if (processedUrl.includes("/details/") || processedUrl.includes("/download/")) {
+          // Fallback regex-based replacement if extractArchiveId fails
           embedUrl = processedUrl.replace("/details/", "/embed/")
         }
       } else if (selectedType === "soundcloud") {
@@ -203,9 +203,8 @@ export function TheaterSetupModal({ isOpen, onClose, onCreateSession }: TheaterS
                     selectedType === "direct" ? "Paste direct video URL" :
                       selectedType === "youtube" ? "Paste YouTube URL" :
                         selectedType === "vimeo" ? "Paste Vimeo URL" :
-                          selectedType === "twitch" ? "Paste Twitch URL" :
-                            selectedType === "dailymotion" ? "Paste Dailymotion URL" :
-                              selectedType === "soundcloud" ? "Paste Soundcloud URL" : "Paste Archive.org URL"
+                          selectedType === "dailymotion" ? "Paste Dailymotion URL" :
+                            selectedType === "soundcloud" ? "Paste Soundcloud URL" : "Paste Archive.org URL"
                   }
                   className="bg-slate-700 border-slate-600 text-white placeholder-gray-400 pr-12 h-12 rounded-xl"
                 />

@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Mic, Video, Camera, Smile, Send, Plus, X, EyeOff, Eye, Music2, BarChart2, HelpCircle, Palette, Keyboard, Sparkles } from "lucide-react"
@@ -60,6 +60,12 @@ interface PendingMessage {
     status: 'sending' | 'sent' | 'failed'
 }
 
+interface MentionCandidate {
+    name: string
+    avatar?: string
+    isOnline: boolean
+}
+
 export function ChatInput({
     onFileSelect,
     onStartRecording,
@@ -85,11 +91,15 @@ export function ChatInput({
     showMobileReactions,
     setShowMobileReactions,
 }: ChatInputProps) {
-    const { roomId, currentUser, replyingTo, setReplyingTo, setIsTyping, isTyping } = useChatStore()
+    const { roomId, currentUser, replyingTo, setReplyingTo, setIsTyping, isTyping, roomMembers, onlineUsers } = useChatStore()
     const [message, setMessage] = useState("")
     const [showEmojiPicker, setShowEmojiPicker] = useState(false)
     const [showAttachments, setShowAttachments] = useState(false)
     const [isRecording, setIsRecording] = useState(false)
+    const [showMentionSuggestions, setShowMentionSuggestions] = useState(false)
+    const [mentionQuery, setMentionQuery] = useState("")
+    const [mentionStartIndex, setMentionStartIndex] = useState<number | null>(null)
+    const [selectedMentionIndex, setSelectedMentionIndex] = useState(0)
     const isMobile = useIsMobile()
 
     // Virtual keyboard
@@ -100,6 +110,127 @@ export function ChatInput({
     const userPresence = UserPresenceSystem.getInstance()
     const notificationSystem = NotificationSystem.getInstance()
     const lastSentTimeRef = useRef<number>(0)
+    const mentionMenuRef = useRef<HTMLDivElement>(null)
+
+    const getMentionHandle = useCallback((name: string) => {
+        const cleaned = name
+            .trim()
+            .replace(/\s+/g, "_")
+            .replace(/[^\w]/g, "")
+        return cleaned || "user"
+    }, [])
+
+    const mentionCandidates = useMemo(() => {
+        const membersByName = new Map<string, MentionCandidate>()
+
+        roomMembers.forEach((member) => {
+            const key = member.name.trim().toLowerCase()
+            if (!key) return
+            membersByName.set(key, {
+                name: member.name.trim(),
+                avatar: member.avatar,
+                isOnline: false,
+            })
+        })
+
+        onlineUsers.forEach((onlineUser) => {
+            const key = (onlineUser.name || "").trim().toLowerCase()
+            if (!key) return
+            const existing = membersByName.get(key)
+            membersByName.set(key, {
+                name: onlineUser.name,
+                avatar: onlineUser.avatar || existing?.avatar,
+                isOnline: true,
+            })
+        })
+
+        return Array.from(membersByName.values())
+            .filter((candidate) => candidate.name !== "System")
+            .sort((a, b) => {
+                if (a.isOnline !== b.isOnline) return a.isOnline ? -1 : 1
+                return a.name.localeCompare(b.name)
+            })
+    }, [onlineUsers, roomMembers])
+
+    const filteredMentionCandidates = useMemo(() => {
+        const query = mentionQuery.toLowerCase()
+
+        return mentionCandidates
+            .filter((candidate) => {
+                if (!query) return true
+                const displayName = candidate.name.toLowerCase()
+                const handle = getMentionHandle(candidate.name).toLowerCase()
+                return displayName.includes(query) || handle.includes(query)
+            })
+            .slice(0, 8)
+    }, [getMentionHandle, mentionCandidates, mentionQuery])
+
+    const updateMentionSuggestions = useCallback((nextMessage: string, caretPosition?: number | null) => {
+        const fallbackCaret = nextMessage.length
+        const caret = typeof caretPosition === "number" ? caretPosition : fallbackCaret
+
+        const beforeCaret = nextMessage.slice(0, caret)
+        const atIndex = beforeCaret.lastIndexOf("@")
+
+        if (atIndex === -1) {
+            setShowMentionSuggestions(false)
+            setMentionQuery("")
+            setMentionStartIndex(null)
+            return
+        }
+
+        const charBeforeAt = atIndex > 0 ? beforeCaret[atIndex - 1] : ""
+        if (charBeforeAt && !/\s/.test(charBeforeAt)) {
+            setShowMentionSuggestions(false)
+            setMentionQuery("")
+            setMentionStartIndex(null)
+            return
+        }
+
+        const queryPart = beforeCaret.slice(atIndex + 1)
+        if (!/^[A-Za-z0-9_]*$/.test(queryPart)) {
+            setShowMentionSuggestions(false)
+            setMentionQuery("")
+            setMentionStartIndex(null)
+            return
+        }
+
+        setMentionStartIndex(atIndex)
+        setMentionQuery(queryPart)
+        setShowMentionSuggestions(true)
+    }, [])
+
+    const handleMentionSelect = useCallback((candidate: MentionCandidate) => {
+        if (mentionStartIndex === null) return
+
+        const inputElement = inputRef.current
+        const selectionEnd = inputElement?.selectionStart ?? message.length
+        const mentionToken = `@${getMentionHandle(candidate.name)}`
+        const nextMessage =
+            message.slice(0, mentionStartIndex) +
+            mentionToken +
+            " " +
+            message.slice(selectionEnd)
+
+        setMessage(nextMessage)
+        setShowMentionSuggestions(false)
+        setMentionQuery("")
+        setMentionStartIndex(null)
+        setSelectedMentionIndex(0)
+
+        requestAnimationFrame(() => {
+            if (!inputElement) return
+            const nextCursor = mentionStartIndex + mentionToken.length + 1
+            inputElement.focus()
+            inputElement.setSelectionRange(nextCursor, nextCursor)
+        })
+    }, [getMentionHandle, inputRef, mentionStartIndex, message])
+
+    const handleMessageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const nextMessage = event.target.value
+        setMessage(nextMessage)
+        updateMentionSuggestions(nextMessage, event.target.selectionStart)
+    }
 
     const handleSendMessage = async () => {
         if (!message.trim() || !roomId || !currentUser) return
@@ -138,6 +269,10 @@ export function ChatInput({
             // Clear input immediately to prevent double-send or concatenation
             setMessage("")
             setReplyingTo(null)
+            setShowMentionSuggestions(false)
+            setMentionQuery("")
+            setMentionStartIndex(null)
+            setSelectedMentionIndex(0)
 
             // Stop typing indicator
             setIsTyping(false)
@@ -254,34 +389,107 @@ export function ChatInput({
         [roomId, currentUserId, userPresence]
     )
 
-    const handleKeyPress = (e: React.KeyboardEvent) => {
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (showMentionSuggestions) {
+            if (e.key === "ArrowDown") {
+                e.preventDefault()
+                if (!filteredMentionCandidates.length) return
+                setSelectedMentionIndex((prev) => (prev + 1) % filteredMentionCandidates.length)
+                return
+            }
+
+            if (e.key === "ArrowUp") {
+                e.preventDefault()
+                if (!filteredMentionCandidates.length) return
+                setSelectedMentionIndex((prev) => (prev - 1 + filteredMentionCandidates.length) % filteredMentionCandidates.length)
+                return
+            }
+
+            if ((e.key === "Enter" || e.key === "Tab") && filteredMentionCandidates.length > 0) {
+                e.preventDefault()
+                handleMentionSelect(filteredMentionCandidates[selectedMentionIndex])
+                return
+            }
+
+            if (e.key === "Escape") {
+                e.preventDefault()
+                setShowMentionSuggestions(false)
+                setMentionStartIndex(null)
+                return
+            }
+        }
+
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault()
             handleSendMessage()
-        } else {
-            if (!roomId || !currentUser) return
-
-            // Handle typing indicator with throttle
-            if (!isTyping) {
-                setIsTyping(true)
-                handleTypingIndicator(true)
-            }
-
-            if (typingTimeoutRef.current) {
-                clearTimeout(typingTimeoutRef.current)
-            }
-
-            typingTimeoutRef.current = setTimeout(() => {
-                setIsTyping(false)
-                handleTypingIndicator(false)
-            }, 2000)
+            return
         }
+
+        if (!roomId || !currentUser) return
+
+        const shouldTrackTyping = e.key.length === 1 || e.key === "Backspace" || e.key === "Delete"
+        if (!shouldTrackTyping) return
+
+        // Handle typing indicator with throttle
+        if (!isTyping) {
+            setIsTyping(true)
+            handleTypingIndicator(true)
+        }
+
+        if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current)
+        }
+
+        typingTimeoutRef.current = setTimeout(() => {
+            setIsTyping(false)
+            handleTypingIndicator(false)
+        }, 2000)
+    }
+
+    const handleInputCursorChanged = (event: React.SyntheticEvent<HTMLInputElement>) => {
+        const inputElement = event.currentTarget
+        updateMentionSuggestions(inputElement.value, inputElement.selectionStart)
     }
 
     const handleEmojiSelect = (emoji: string) => {
-        setMessage((prev) => prev + emoji)
+        setMessage((prev) => {
+            const nextMessage = prev + emoji
+            setShowMentionSuggestions(false)
+            setMentionStartIndex(null)
+            setMentionQuery("")
+            return nextMessage
+        })
         setShowEmojiPicker(false)
     }
+
+    useEffect(() => {
+        setSelectedMentionIndex(0)
+    }, [mentionQuery, showMentionSuggestions])
+
+    useEffect(() => {
+        if (selectedMentionIndex < filteredMentionCandidates.length) return
+        setSelectedMentionIndex(0)
+    }, [filteredMentionCandidates.length, selectedMentionIndex])
+
+    useEffect(() => {
+        if (!showMentionSuggestions) return
+
+        const handlePointerDownOutside = (event: MouseEvent | TouchEvent) => {
+            const target = event.target as Node
+            if (inputRef.current?.contains(target)) return
+            if (mentionMenuRef.current?.contains(target)) return
+            setShowMentionSuggestions(false)
+            setMentionQuery("")
+            setMentionStartIndex(null)
+        }
+
+        document.addEventListener("mousedown", handlePointerDownOutside)
+        document.addEventListener("touchstart", handlePointerDownOutside)
+        return () => {
+            document.removeEventListener("mousedown", handlePointerDownOutside)
+            document.removeEventListener("touchstart", handlePointerDownOutside)
+        }
+    }, [inputRef, showMentionSuggestions])
 
     // Cleanup typing timeout
     useEffect(() => {
@@ -324,6 +532,54 @@ export function ChatInput({
             document.removeEventListener('touchstart', handleClickOutside)
         }
     }, [isMobile])
+
+    const renderMentionSuggestions = (mobileLayout: boolean) => {
+        if (!showMentionSuggestions) return null
+
+        return (
+            <div
+                ref={mentionMenuRef}
+                className={cn(
+                    "absolute left-0 right-0 z-[95] bg-slate-900/95 border border-slate-700 rounded-2xl shadow-2xl backdrop-blur-xl overflow-hidden",
+                    mobileLayout ? "bottom-full mb-2" : "bottom-full mb-3"
+                )}
+            >
+                {filteredMentionCandidates.length === 0 ? (
+                    <div className="px-3 py-2 text-xs text-slate-400">No matching members</div>
+                ) : (
+                    filteredMentionCandidates.map((candidate, index) => {
+                        const mentionHandle = getMentionHandle(candidate.name)
+                        return (
+                            <button
+                                key={`${candidate.name}-${index}`}
+                                type="button"
+                                className={cn(
+                                    "w-full px-3 py-2 flex items-center justify-between text-left transition-colors",
+                                    index === selectedMentionIndex ? "bg-cyan-500/20 text-white" : "hover:bg-white/5 text-slate-200"
+                                )}
+                                onMouseDown={(event) => {
+                                    event.preventDefault()
+                                    handleMentionSelect(candidate)
+                                }}
+                                onTouchStart={(event) => {
+                                    event.preventDefault()
+                                    handleMentionSelect(candidate)
+                                }}
+                            >
+                                <div className="min-w-0">
+                                    <div className="text-sm font-medium truncate">{candidate.name}</div>
+                                    <div className="text-[11px] text-slate-400 truncate">@{mentionHandle}</div>
+                                </div>
+                                <div className="flex items-center gap-2 pl-2">
+                                    {candidate.isOnline && <span className="w-2 h-2 rounded-full bg-emerald-400" />}
+                                </div>
+                            </button>
+                        )
+                    })
+                )}
+            </div>
+        )
+    }
 
 
     if (isMobile) {
@@ -444,14 +700,17 @@ export function ChatInput({
                                 name="message"
                                 ref={inputRef}
                                 value={message}
-                                onChange={(e) => setMessage(e.target.value)}
-                                onKeyPress={handleKeyPress}
+                                onChange={handleMessageChange}
+                                onKeyDown={handleKeyDown}
+                                onKeyUp={handleInputCursorChanged}
+                                onClick={handleInputCursorChanged}
                                 placeholder={vanishMode !== "off" ? `Vanish Mode Active (${vanishDuration}s)...` : "Type something..."}
                                 className={cn(
                                     "w-full bg-white/5 border-white/10 focus:ring-1 focus:ring-cyan-500/50 text-white placeholder-gray-400/50 py-3 scrollbar-hide text-base sm:text-lg min-h-[44px] leading-relaxed transition-all duration-300 rounded-2xl backdrop-blur-sm",
                                     vanishMode !== "off" && "text-purple-300 placeholder-purple-400/50 italic font-medium border-purple-500/50"
                                 )}
                             />
+                            {renderMentionSuggestions(true)}
                         </div>
 
                         <div className="flex items-center gap-1">
@@ -585,17 +844,22 @@ export function ChatInput({
                     />
                 </div>
 
-                <Input
-                    id="desktop-chat-input"
-                    name="message"
-                    ref={inputRef}
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Type a message..."
-                    className="flex-1 bg-slate-800/80 border-transparent text-white placeholder-gray-400 min-h-[44px] text-base rounded-full"
-                    maxLength={1000}
-                />
+                <div className="flex-1 relative">
+                    <Input
+                        id="desktop-chat-input"
+                        name="message"
+                        ref={inputRef}
+                        value={message}
+                        onChange={handleMessageChange}
+                        onKeyDown={handleKeyDown}
+                        onKeyUp={handleInputCursorChanged}
+                        onClick={handleInputCursorChanged}
+                        placeholder="Type a message..."
+                        className="flex-1 bg-slate-800/80 border-transparent text-white placeholder-gray-400 min-h-[44px] text-base rounded-full"
+                        maxLength={1000}
+                    />
+                    {renderMentionSuggestions(false)}
+                </div>
 
                 <Button
                     variant="ghost"

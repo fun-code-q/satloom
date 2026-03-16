@@ -124,17 +124,19 @@ function formatText(text: string, formatType: string, key: number): React.ReactN
 
 // Mention detection
 export function parseMentions(text: string): React.ReactNode[] {
-  const mentionRegex = /(@\w+)/g
-  const parts = text.split(mentionRegex)
+  const mentionSplitRegex = /(@[A-Za-z0-9_]+)/g
+  const mentionTokenRegex = /^@[A-Za-z0-9_]+$/
+  const parts = text.split(mentionSplitRegex)
 
   return parts.map((part, index) => {
-    if (mentionRegex.test(part)) {
+    if (mentionTokenRegex.test(part)) {
+      const readableMention = part.replace(/_/g, " ")
       return (
         <span
           key={index}
           className="text-cyan-400 font-medium bg-cyan-900/30 px-1 rounded"
         >
-          {part}
+          {readableMention}
         </span>
       )
     }
@@ -144,11 +146,12 @@ export function parseMentions(text: string): React.ReactNode[] {
 
 // URL detection and linking with safety warnings
 export function parseUrls(text: string): React.ReactNode[] {
-  const urlRegex = /(https?:\/\/[^\s]+)/g
-  const parts = text.split(urlRegex)
+  const urlSplitRegex = /(https?:\/\/[^\s]+)/g
+  const urlTokenRegex = /^https?:\/\/[^\s]+$/
+  const parts = text.split(urlSplitRegex)
 
   return parts.map((part, index) => {
-    if (urlRegex.test(part)) {
+    if (urlTokenRegex.test(part)) {
       return (
         <a
           key={index}

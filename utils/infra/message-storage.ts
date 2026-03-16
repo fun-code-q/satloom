@@ -134,6 +134,36 @@ export class MessageStorage {
     return obj
   }
 
+  private normalizeTimestamp(input: unknown, fallback: Date = new Date()): string {
+    if (input instanceof Date) {
+      return isNaN(input.getTime()) ? fallback.toISOString() : input.toISOString()
+    }
+
+    if (typeof input === "number") {
+      const fromNumber = new Date(input)
+      return isNaN(fromNumber.getTime()) ? fallback.toISOString() : fromNumber.toISOString()
+    }
+
+    if (typeof input === "string") {
+      const trimmed = input.trim()
+      if (!trimmed) return fallback.toISOString()
+
+      // Support both ISO strings and numeric epoch strings.
+      const asNumber = Number(trimmed)
+      if (!Number.isNaN(asNumber)) {
+        const fromNumericString = new Date(asNumber)
+        if (!isNaN(fromNumericString.getTime())) {
+          return fromNumericString.toISOString()
+        }
+      }
+
+      const fromString = new Date(trimmed)
+      return isNaN(fromString.getTime()) ? fallback.toISOString() : fromString.toISOString()
+    }
+
+    return fallback.toISOString()
+  }
+
   // Send a message
   async sendMessage(roomId: string, message: Omit<Message, "id">, userId: string): Promise<string> {
     try {
@@ -144,6 +174,7 @@ export class MessageStorage {
 
       const messagesRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/messages`)
       const newMessageRef = push(messagesRef)
+      const now = new Date()
 
       // Clean the message data to remove undefined values
       const messageData = this.cleanData({
@@ -151,7 +182,7 @@ export class MessageStorage {
         id: newMessageRef.key,
         userId: userId, // Required by Firebase rules
         roomId: roomId, // Explicitly add room ID
-        timestamp: message.timestamp.toISOString(),
+        timestamp: this.normalizeTimestamp((message as any).timestamp, now),
         // Ensure replyTo is either a complete object or null
         replyTo: message.replyTo
           ? {
@@ -176,7 +207,7 @@ export class MessageStorage {
           : null,
         // Handle optional fields
         edited: message.edited || false,
-        editedAt: message.editedAt ? message.editedAt.toISOString() : null,
+        editedAt: (message as any).editedAt ? this.normalizeTimestamp((message as any).editedAt, now) : null,
       })
 
       console.log("Sending message to room:", roomId, messageData)

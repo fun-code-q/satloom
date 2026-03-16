@@ -57,7 +57,7 @@ export function useChatHandlers({
                 text: cleanedText,
                 sender: userProfile.name,
                 roomId: roomId,
-                timestamp: Date.now(),
+                timestamp: new Date(),
             }
 
             await messageStorage.sendMessage(roomId, newMessage as any, currentUserId)
@@ -232,7 +232,7 @@ export function useChatHandlers({
                 text: `Shared a file: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`,
                 sender: userProfile.name,
                 roomId: roomId,
-                timestamp: Date.now(),
+                timestamp: new Date(),
                 file: {
                     url: localPreviewUrl,
                     name: file.name,
