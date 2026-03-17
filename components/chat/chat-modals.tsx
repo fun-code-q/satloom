@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState, useCallback } from "react"
+import React, { useEffect, useState, useCallback, useRef } from "react"
 import { createPortal } from "react-dom"
 import dynamic from "next/dynamic"
 import { Button } from "../ui/button"
@@ -296,7 +296,19 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
     const lastGameMessageIdRef = React.useRef<string | null>(null)
     const [showGameMessageComposer, setShowGameMessageComposer] = useState(false)
     const [showGameQuickActions, setShowGameQuickActions] = useState(false)
+    const [showGameReactionPicker, setShowGameReactionPicker] = useState(false)
+    const [gameDockPosition, setGameDockPosition] = useState({ x: 16, y: 16 })
+    const [gameDockReady, setGameDockReady] = useState(false)
     const keyboardInputRef = React.useRef<HTMLInputElement>(null)
+    const gameDockRef = useRef<HTMLDivElement | null>(null)
+    const gameDockDragRef = useRef({
+        active: false,
+        pointerId: -1,
+        startX: 0,
+        startY: 0,
+        originX: 0,
+        originY: 0,
+    })
 
     useEffect(() => {
         setMounted(true)
@@ -368,6 +380,94 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
             }
         }
     }, [props.messages, showGameMessageComposer])
+
+    const clampGameDockPosition = useCallback((x: number, y: number) => {
+        const margin = 12
+        const dockWidth = gameDockRef.current?.offsetWidth || 170
+        const dockHeight = gameDockRef.current?.offsetHeight || 56
+        const maxX = Math.max(margin, window.innerWidth - dockWidth - margin)
+        const maxY = Math.max(margin, window.innerHeight - dockHeight - margin)
+
+        return {
+            x: Math.min(Math.max(x, margin), maxX),
+            y: Math.min(Math.max(y, margin), maxY),
+        }
+    }, [])
+
+    useEffect(() => {
+        if (!isGameOverlayActive || !mounted) return
+
+        const positionDock = () => {
+            const dockWidth = gameDockRef.current?.offsetWidth || 170
+            const dockHeight = gameDockRef.current?.offsetHeight || 56
+            const defaultPos = {
+                x: Math.max(12, window.innerWidth - dockWidth - 16),
+                y: Math.max(12, window.innerHeight - dockHeight - 90),
+            }
+
+            if (!gameDockReady) {
+                setGameDockPosition(defaultPos)
+                setGameDockReady(true)
+                return
+            }
+
+            setGameDockPosition((prev) => clampGameDockPosition(prev.x, prev.y))
+        }
+
+        const rafId = window.requestAnimationFrame(positionDock)
+        window.addEventListener("resize", positionDock)
+
+        return () => {
+            window.cancelAnimationFrame(rafId)
+            window.removeEventListener("resize", positionDock)
+        }
+    }, [clampGameDockPosition, gameDockReady, isGameOverlayActive, mounted])
+
+    useEffect(() => {
+        if (!isGameOverlayActive) {
+            setShowGameQuickActions(false)
+            setShowGameReactionPicker(false)
+            return
+        }
+    }, [isGameOverlayActive])
+
+    const handleGameDockPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+        const target = event.target as HTMLElement
+        if (target.closest("[data-game-dock-button='true']")) {
+            return
+        }
+
+        gameDockDragRef.current = {
+            active: true,
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startY: event.clientY,
+            originX: gameDockPosition.x,
+            originY: gameDockPosition.y,
+        }
+
+        event.currentTarget.setPointerCapture(event.pointerId)
+    }, [gameDockPosition.x, gameDockPosition.y])
+
+    const handleGameDockPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+        if (!gameDockDragRef.current.active) return
+
+        const diffX = event.clientX - gameDockDragRef.current.startX
+        const diffY = event.clientY - gameDockDragRef.current.startY
+        const nextX = gameDockDragRef.current.originX + diffX
+        const nextY = gameDockDragRef.current.originY + diffY
+
+        setGameDockPosition(clampGameDockPosition(nextX, nextY))
+    }, [clampGameDockPosition])
+
+    const stopGameDockDrag = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+        if (!gameDockDragRef.current.active) return
+
+        gameDockDragRef.current.active = false
+        if (event.currentTarget.hasPointerCapture(gameDockDragRef.current.pointerId)) {
+            event.currentTarget.releasePointerCapture(gameDockDragRef.current.pointerId)
+        }
+    }, [])
 
     return (
         <>
@@ -639,13 +739,60 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
 
             {isGameOverlayActive && renderModal(
                 <>
-                    <div className="fixed right-4 sm:right-6 bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] sm:bottom-5 z-[760] flex items-center gap-2">
-                        <div className="flex items-center gap-1.5 rounded-full bg-black/55 border border-white/10 backdrop-blur-xl p-1 shadow-2xl">
+                    <div
+                        ref={gameDockRef}
+                        className="fixed z-[860] flex flex-col items-end touch-none"
+                        style={{ left: `${gameDockPosition.x}px`, top: `${gameDockPosition.y}px` }}
+                        onPointerDown={handleGameDockPointerDown}
+                        onPointerMove={handleGameDockPointerMove}
+                        onPointerUp={stopGameDockDrag}
+                        onPointerCancel={stopGameDockDrag}
+                    >
+                        <div className="mb-1 h-1.5 w-10 rounded-full bg-white/25 backdrop-blur-sm" />
+                        <div className="relative flex items-center gap-1.5 rounded-full bg-black/55 border border-white/10 backdrop-blur-xl p-1 shadow-2xl">
+                            {showGameQuickActions && (
+                                <div data-game-dock-button="true" className="absolute bottom-full right-0 mb-2 flex flex-col items-center gap-2">
+                                    {showGameReactionPicker && (
+                                        <div data-game-dock-button="true" className="p-2 rounded-2xl bg-black/65 border border-white/15 backdrop-blur-xl shadow-2xl">
+                                            <ReactionRain roomId={roomId || ""} userId={currentUserId} inline={true} />
+                                        </div>
+                                    )}
+                                    <Button
+                                        data-game-dock-button="true"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 border border-white/15"
+                                        onClick={() => {
+                                            props.setShowSoundboard(true)
+                                            setShowGameQuickActions(false)
+                                            setShowGameReactionPicker(false)
+                                        }}
+                                        title="Soundboard"
+                                    >
+                                        <Music2 className="w-5 h-5 text-orange-300" />
+                                    </Button>
+                                    <Button
+                                        data-game-dock-button="true"
+                                        variant="ghost"
+                                        size="icon"
+                                        className={`w-10 h-10 rounded-full border border-white/15 ${showGameReactionPicker ? "bg-cyan-500 text-white" : "bg-white/10 text-white hover:bg-white/20"}`}
+                                        onClick={() => setShowGameReactionPicker((prev) => !prev)}
+                                        title="Room React"
+                                    >
+                                        <Sparkles className="w-5 h-5" />
+                                    </Button>
+                                </div>
+                            )}
                             <Button
+                                data-game-dock-button="true"
                                 variant="ghost"
                                 size="icon"
                                 className={`relative w-9 h-9 sm:w-10 sm:h-10 rounded-full transition-colors ${showGameMessageComposer ? "bg-cyan-500 text-white" : "text-white/80 hover:bg-white/15 hover:text-white"}`}
-                                onClick={() => setShowGameMessageComposer((prev) => !prev)}
+                                onClick={() => {
+                                    setShowGameMessageComposer((prev) => !prev)
+                                    setShowGameQuickActions(false)
+                                    setShowGameReactionPicker(false)
+                                }}
                             >
                                 <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
                                 {gameUnreadCount > 0 && !showGameMessageComposer && (
@@ -655,16 +802,22 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
                                 )}
                             </Button>
                             <Button
+                                data-game-dock-button="true"
                                 variant="ghost"
                                 size="icon"
-                                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full transition-colors ${props.showSoundboard ? "bg-cyan-500 text-white" : "text-white/80 hover:bg-white/15 hover:text-white"}`}
-                                onClick={() => props.setShowSoundboard(true)}
+                                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full transition-colors ${showGameQuickActions ? "bg-cyan-500 text-white" : "text-white/80 hover:bg-white/15 hover:text-white"}`}
+                                onClick={() => {
+                                    setShowGameQuickActions((prev) => {
+                                        const next = !prev
+                                        if (!next) {
+                                            setShowGameReactionPicker(false)
+                                        }
+                                        return next
+                                    })
+                                }}
                             >
-                                <Music2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                                <Smile className="w-4 h-4 sm:w-5 sm:h-5" />
                             </Button>
-                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center">
-                                <ReactionRain roomId={roomId || ""} userId={currentUserId} />
-                            </div>
                         </div>
                     </div>
 

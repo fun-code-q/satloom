@@ -232,7 +232,7 @@ export function AttachmentMenu({
           "quiz",
         ].includes(opt.type)
     )
-    : attachmentOptions.filter(opt => !["audio-call", "video-call", "sounds", "vanish", "react", "gallery", "camera", "location", "contact", "document", "audio"].includes(opt.type))
+    : attachmentOptions.filter(opt => !["audio-call", "video-call", "sounds", "react", "gallery", "camera", "location", "contact", "document", "audio"].includes(opt.type))
 
   const triggerFileInput = (accept: string, type: string) => {
     const input = document.createElement("input")
@@ -357,6 +357,7 @@ export function AttachmentMenu({
           {filteredOptions.map((option, index) => (
             <button
               key={index}
+              type="button"
               onClick={option.action}
               className="flex items-center justify-center p-2 rounded-xl active:scale-95 transition-transform"
               aria-label={option.label}
@@ -378,6 +379,7 @@ export function AttachmentMenu({
   return (
     <div className="relative">
       <Button
+        type="button"
         variant="ghost"
         size="icon"
         className="text-gray-400 hover:text-white hover:bg-slate-700 relative z-[70]"
@@ -403,6 +405,7 @@ export function AttachmentMenu({
             {filteredOptions.map((option, index) => (
               <button
                 key={index}
+                type="button"
                 onClick={option.action}
                 className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-slate-700/50 transition-colors group"
                 role="menuitem"

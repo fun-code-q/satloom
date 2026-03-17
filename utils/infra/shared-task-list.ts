@@ -52,6 +52,45 @@ class TaskListManager {
 
     private constructor() { }
 
+    private normalizeTask(rawTask: unknown, fallbackId: string): TaskItem | null {
+        if (!rawTask || typeof rawTask !== "object") return null
+
+        const candidate = rawTask as Partial<TaskItem> & Record<string, unknown>
+        const text = typeof candidate.text === "string" ? candidate.text.trim() : ""
+        if (!text) return null
+
+        const priority =
+            candidate.priority === "low" || candidate.priority === "medium" || candidate.priority === "high"
+                ? candidate.priority
+                : "medium"
+
+        const createdAt =
+            typeof candidate.createdAt === "number" && Number.isFinite(candidate.createdAt)
+                ? candidate.createdAt
+                : Date.now()
+
+        const normalizedTask: TaskItem = {
+            id: typeof candidate.id === "string" && candidate.id.trim().length > 0 ? candidate.id : fallbackId,
+            text,
+            completed: Boolean(candidate.completed),
+            createdAt,
+            createdBy:
+                typeof candidate.createdBy === "string" && candidate.createdBy.trim().length > 0
+                    ? candidate.createdBy
+                    : "Unknown",
+            priority,
+        }
+
+        if (typeof candidate.assignedTo === "string" && candidate.assignedTo.trim().length > 0) {
+            normalizedTask.assignedTo = candidate.assignedTo
+        }
+        if (typeof candidate.dueDate === "number" && Number.isFinite(candidate.dueDate)) {
+            normalizedTask.dueDate = candidate.dueDate
+        }
+
+        return normalizedTask
+    }
+
     static getInstance(): TaskListManager {
         if (!TaskListManager.instance) {
             TaskListManager.instance = new TaskListManager()
@@ -249,7 +288,13 @@ class TaskListManager {
      * Get filtered and sorted tasks
      */
     getFilteredTasks(): TaskItem[] {
-        let filtered = [...this.state.tasks]
+        let filtered = this.state.tasks.filter(
+            (task): task is TaskItem =>
+                Boolean(task) &&
+                typeof task.id === "string" &&
+                typeof task.text === "string" &&
+                typeof task.createdAt === "number"
+        )
 
         // Apply filter
         switch (this.state.filter) {
@@ -265,14 +310,14 @@ class TaskListManager {
         switch (this.state.sortBy) {
             case "priority":
                 const priorityOrder = { high: 0, medium: 1, low: 2 }
-                filtered.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority])
+                filtered.sort((a, b) => (priorityOrder[a.priority] ?? 1) - (priorityOrder[b.priority] ?? 1))
                 break
             case "alphabetical":
-                filtered.sort((a, b) => a.text.localeCompare(b.text))
+                filtered.sort((a, b) => (a.text || "").localeCompare(b.text || ""))
                 break
             case "date":
             default:
-                filtered.sort((a, b) => b.createdAt - a.createdAt)
+                filtered.sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0))
         }
 
         return filtered
@@ -324,9 +369,13 @@ class TaskListManager {
         const unsubscribe = onValue(tasksRef, (snapshot) => {
             const data = snapshot.val() as TaskList | null
 
-            if (data?.tasks) {
+            if (data?.tasks && typeof data.tasks === "object") {
+                const normalizedTasks = Object.entries(data.tasks as Record<string, unknown>)
+                    .map(([taskId, rawTask]) => this.normalizeTask(rawTask, taskId))
+                    .filter((task): task is TaskItem => Boolean(task))
+
                 this.state.isActive = true
-                this.state.tasks = Object.values(data.tasks)
+                this.state.tasks = normalizedTasks
                 this.state.title = data.title || "Tasks"
             } else {
                 this.state.isActive = false

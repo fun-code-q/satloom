@@ -4,7 +4,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Video, Camera, Smile, Send, Plus, X, EyeOff, Eye, Music2, BarChart2, HelpCircle, Palette, Keyboard, Sparkles } from "lucide-react"
+import { Video, Camera, Smile, Send, Plus, X, Music2, BarChart2, HelpCircle, Palette, Keyboard, Sparkles } from "lucide-react"
 import { EmojiPicker } from "@/components/emoji-picker"
 import { PollCreator } from "./poll-creator"
 import { EventCreator } from "./event-creator"
@@ -989,6 +989,16 @@ export function ChatInput({
                     onClose={() => setShowEmojiPicker(false)}
                     onEmojiSelect={handleEmojiSelect}
                 />
+                <VanishModeModal
+                    isOpen={showVanishModal}
+                    onClose={() => setShowVanishModal(false)}
+                    currentMode={vanishMode}
+                    currentDuration={vanishDuration}
+                    onVanishModeSelect={(mode: VanishModeType, duration: number) => {
+                        setVanishMode(mode)
+                        setVanishDuration(duration)
+                    }}
+                />
                 </div>
             </div>
         )
@@ -1046,8 +1056,14 @@ export function ChatInput({
                         onVideoRecord={() => onStartRecording("video")}
                         onPhotoCapture={() => onStartRecording("photo")}
                         onMoodTrigger={onMoodTrigger}
+                        onVanishMode={() => setShowVanishModal(true)}
                         onAudioCall={onStartAudioCall}
                         onVideoCall={onStartVideoCall}
+                        onWhiteboard={onWhiteboard}
+                        onPresentation={onPresentation}
+                        onNotes={onNotes}
+                        onCheckList={onCheckList}
+                        onQuizStart={onQuizStart}
                         hasUnreadNotes={hasUnreadNotes}
                         hasUnreadTasks={hasUnreadTasks}
                     />
@@ -1069,16 +1085,6 @@ export function ChatInput({
                     />
                     {renderMentionSuggestions(false)}
                 </div>
-
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className={`text-gray-400 hover:text-white hover:bg-slate-700 h-10 w-10 flex-shrink-0 haptic ${vanishMode !== "off" ? "bg-purple-500/20 text-purple-400" : ""}`}
-                    onClick={() => setShowVanishModal(!showVanishModal)}
-                    title={vanishMode !== "off" ? `Vanish: ${vanishMode}` : "Vanish Mode"}
-                >
-                    {vanishMode !== "off" ? <Eye className="w-5 h-5 text-purple-400" /> : <Eye className="w-5 h-5" />}
-                </Button>
 
                 {/* Soundboard */}
                 {onSoundboard && (
