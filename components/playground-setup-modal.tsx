@@ -30,6 +30,11 @@ export interface GameConfig {
   difficulty: "easy" | "medium" | "hard"
   voiceChatEnabled: boolean
   gameId?: string
+  maxPlayers?: number
+  matchmakingMode?: "direct" | "series"
+  seriesId?: string
+  seriesRound?: number
+  assignedMatchId?: string
 }
 
 const playerColors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#06b6d4"]
@@ -141,7 +146,8 @@ export function PlaygroundSetupModal(props: PlaygroundSetupModalProps) {
       gridSize: selectedGame === "dots" ? gridSize : undefined,
       difficulty,
       voiceChatEnabled,
-      gameId: `${selectedGame}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      gameId: `${selectedGame}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      maxPlayers: getMaxPlayers()
     }
 
     // Simulate loading for better UX
@@ -170,10 +176,10 @@ export function PlaygroundSetupModal(props: PlaygroundSetupModalProps) {
       <DialogContent className="bg-slate-800 border-slate-700 text-white w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto pt-8 rounded-3xl" aria-label="Game setup modal">
         <DialogHeader></DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-4 py-2 sm:py-4">
           {/* Game Selection */}
           <div>
-            <h3 className="text-white font-medium mb-3">Select Game</h3>
+            <h3 className="text-white font-bold text-xs uppercase tracking-wider mb-2 opacity-50">Select Game</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
               {[
                 { id: "dots", name: "Dots & Boxes" },
@@ -199,8 +205,8 @@ export function PlaygroundSetupModal(props: PlaygroundSetupModalProps) {
 
           {/* Game Type Selection */}
           <div>
-            <h3 className="text-white font-medium mb-3">Game Mode</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+            <h3 className="text-white font-bold text-xs uppercase tracking-wider mb-2 opacity-50">Game Mode</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
               <Button
                 variant={gameType === "single" ? "default" : "outline"}
                 className={`p-4 h-auto flex flex-col gap-2 ${gameType === "single"
@@ -247,10 +253,10 @@ export function PlaygroundSetupModal(props: PlaygroundSetupModalProps) {
           </div>
 
           {/* Grid Size&Voice Chat */}
-          <div className="flex gap-8">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-8">
             {selectedGame === "dots" && (
               <div className="flex-1">
-                <h3 className="text-white font-medium mb-3">Grid Size</h3>
+                <h3 className="text-white font-bold text-xs uppercase tracking-wider mb-2 opacity-50">Grid Size</h3>
                 <div className="flex flex-wrap gap-2">
                   {[4, 5, 6, 7, 8].map((size) => (
                     <Button
@@ -272,7 +278,7 @@ export function PlaygroundSetupModal(props: PlaygroundSetupModalProps) {
 
             {(gameType === "double" || gameType === "multi") && (
               <div className="flex-1">
-                <h3 className="text-white font-medium mb-3">Voice Chat</h3>
+                <h3 className="text-white font-bold text-xs uppercase tracking-wider mb-2 opacity-50">Voice Chat</h3>
                 <div className="flex gap-3">
                   <Button
                     variant={voiceChatEnabled ? "default" : "outline"}
@@ -305,8 +311,8 @@ export function PlaygroundSetupModal(props: PlaygroundSetupModalProps) {
 
           {/* Players Configuration */}
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-white font-medium">Players</h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-white font-bold text-xs uppercase tracking-wider opacity-50">Players</h3>
               {gameType === "multi" && playerNames.length < getMaxPlayers() && (
                 <Button
                   variant="outline"

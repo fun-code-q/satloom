@@ -2,48 +2,27 @@
 
 import React, { useEffect, useState, useCallback } from "react"
 import { createPortal } from "react-dom"
+import dynamic from "next/dynamic"
 import { Button } from "../ui/button"
-import { X, Smile, Palette, Monitor, Gamepad2, Mic, Film } from "lucide-react"
-import { AudioCallModal } from "../audio-call-modal"
-import { VideoCallModal } from "../video-call-modal"
+import { X, Smile, Palette, Monitor, Gamepad2, Mic, Film, Music2, MessageSquare, Send, Sparkles } from "lucide-react"
+import { Badge } from "../ui/badge"
 import { SettingsModal } from "../settings-modal"
 import { AboutModal } from "../about-modal"
-import { MediaRecorder } from "../media-recorder"
-import { PlaygroundSetupModal, type GameConfig } from "../playground-setup-modal"
-import { TheaterSetupModal } from "../theater-setup-modal"
-import { TheaterFullscreen } from "../theater-fullscreen"
+import type { GameConfig } from "../playground-setup-modal"
 import { TheaterInviteNotification } from "../theater-invite-notification"
-import { DotsAndBoxesGameComponent } from "../dots-and-boxes-game"
 import { GameInviteNotification } from "../game-invite-notification"
 import { QuizSetupModal } from "../quiz-setup-modal"
 import { QuizQuestionBubble } from "../quiz-question-bubble"
 import { QuizResultsBubble } from "../quiz-results-bubble"
 import { MoodSetupModal } from "../mood/mood-setup-modal"
-import { WhiteboardModal } from "../whiteboard-modal"
 import { WhiteboardInviteNotification } from "../whiteboard-invite-notification"
-import { Soundboard } from "../soundboard"
 import { PasswordEntryModal } from "../password-entry-modal"
 import { HostPasswordModal } from "../host-password-modal"
-import { KaraokeSetupModal, KaraokePlayer } from "../karaoke"
 import { KaraokeInviteNotification } from "../karaoke-invite-notification"
-import { MafiaSetupModal, MafiaGame } from "../mafia"
-import { SharedNotesPanel } from "../shared-notes-panel"
-import { SharedTaskListPanel } from "../shared-task-list-panel"
-import { RemoteBuzzerPanel } from "../remote-buzzer-panel"
 import { BurnerLinkModal } from "../burner-link-modal"
 import { GifAvatarPicker } from "../gif-avatar-picker"
-import { BreakoutRoomsModal } from "../breakout-rooms-modal"
 import { PrivacyTermsModal } from "../privacy-terms-modal"
-import { RandomMatchButton } from "../random-match-button"
-import { BingoSetupModal } from "../bingo/bingo-setup-modal"
-import { BingoGame } from "../bingo/bingo-game"
-import { PresentationSetupModal } from "../presentation/presentation-setup-modal"
-import { PresentationViewer } from "../presentation/presentation-viewer"
 import { PresentationInviteNotification } from "../presentation/presentation-invite-notification"
-import { GameMenu } from "../game-menu"
-import { ChessBoard } from "../games/chess-board"
-import { ConnectFourBoard } from "../games/connect-four-board"
-import { TicTacToeBoard } from "../games/tic-tac-toe-board"
 import { EmojiPicker } from "../emoji-picker"
 import { ReactionRain } from "../reaction-rain"
 import { VirtualKeyboard } from "../virtual-keyboard"
@@ -62,6 +41,36 @@ import type { KaraokeSong, KaraokeInvite } from "@/utils/games/karaoke"
 import type { WhiteboardInvite } from "@/utils/infra/whiteboard-signaling"
 import type { UserPresence } from "@/utils/infra/user-presence"
 import type { RoomMember } from "@/stores/chat-store"
+import type { GameSeries, GameSeriesMatch } from "@/utils/games/game-series-manager"
+
+const TheaterChatOverlay = dynamic(() => import("../theater-chat-overlay").then((mod) => mod.TheaterChatOverlay), { ssr: false })
+const AudioCallModal = dynamic(() => import("../audio-call-modal").then((mod) => mod.AudioCallModal), { ssr: false })
+const VideoCallModal = dynamic(() => import("../video-call-modal").then((mod) => mod.VideoCallModal), { ssr: false })
+const MediaRecorder = dynamic(() => import("../media-recorder").then((mod) => mod.MediaRecorder), { ssr: false })
+const PlaygroundSetupModal = dynamic(() => import("../playground-setup-modal").then((mod) => mod.PlaygroundSetupModal), { ssr: false })
+const TheaterSetupModal = dynamic(() => import("../theater-setup-modal").then((mod) => mod.TheaterSetupModal), { ssr: false })
+const TheaterFullscreen = dynamic(() => import("../theater-fullscreen").then((mod) => mod.TheaterFullscreen), { ssr: false })
+const DotsAndBoxesGameComponent = dynamic(() => import("../dots-and-boxes-game").then((mod) => mod.DotsAndBoxesGameComponent), { ssr: false })
+const GameSeriesViewer = dynamic(() => import("../game-series-viewer").then((mod) => mod.GameSeriesViewer), { ssr: false })
+const WhiteboardModal = dynamic(() => import("../whiteboard-modal").then((mod) => mod.WhiteboardModal), { ssr: false })
+const Soundboard = dynamic(() => import("../soundboard").then((mod) => mod.Soundboard), { ssr: false })
+const KaraokeSetupModal = dynamic(() => import("../karaoke").then((mod) => mod.KaraokeSetupModal), { ssr: false })
+const KaraokePlayer = dynamic(() => import("../karaoke").then((mod) => mod.KaraokePlayer), { ssr: false })
+const MafiaSetupModal = dynamic(() => import("../mafia").then((mod) => mod.MafiaSetupModal), { ssr: false })
+const MafiaGame = dynamic(() => import("../mafia").then((mod) => mod.MafiaGame), { ssr: false })
+const SharedNotesPanel = dynamic(() => import("../shared-notes-panel").then((mod) => mod.SharedNotesPanel), { ssr: false })
+const SharedTaskListPanel = dynamic(() => import("../shared-task-list-panel").then((mod) => mod.SharedTaskListPanel), { ssr: false })
+const RemoteBuzzerPanel = dynamic(() => import("../remote-buzzer-panel").then((mod) => mod.RemoteBuzzerPanel), { ssr: false })
+const BreakoutRoomsModal = dynamic(() => import("../breakout-rooms-modal").then((mod) => mod.BreakoutRoomsModal), { ssr: false })
+const RandomMatchButton = dynamic(() => import("../random-match-button").then((mod) => mod.RandomMatchButton), { ssr: false })
+const BingoSetupModal = dynamic(() => import("../bingo/bingo-setup-modal").then((mod) => mod.BingoSetupModal), { ssr: false })
+const BingoGame = dynamic(() => import("../bingo/bingo-game").then((mod) => mod.BingoGame), { ssr: false })
+const PresentationSetupModal = dynamic(() => import("../presentation/presentation-setup-modal").then((mod) => mod.PresentationSetupModal), { ssr: false })
+const PresentationViewer = dynamic(() => import("../presentation/presentation-viewer").then((mod) => mod.PresentationViewer), { ssr: false })
+const GameMenu = dynamic(() => import("../game-menu").then((mod) => mod.GameMenu), { ssr: false })
+const ChessBoard = dynamic(() => import("../games/chess-board").then((mod) => mod.ChessBoard), { ssr: false })
+const ConnectFourBoard = dynamic(() => import("../games/connect-four-board").then((mod) => mod.ConnectFourBoard), { ssr: false })
+const TicTacToeBoard = dynamic(() => import("../games/tic-tac-toe-board").then((mod) => mod.TicTacToeBoard), { ssr: false })
 
 interface ChatModalsProps {
     roomId: string
@@ -135,7 +144,10 @@ interface ChatModalsProps {
     playgroundGame: "dots" | "chess" | "tictactoe" | "connect4"
     setPlaygroundGame: (val: "dots" | "chess" | "tictactoe" | "connect4") => void
     showPlayground: boolean
+    showGameSeriesViewer: boolean
+    setShowGameSeriesViewer: (val: boolean) => void
     playgroundConfig: GameConfig | null
+    activeGameSeries: GameSeries | null
     handleStartPlayground: (config: GameConfig) => void
     handleExitPlayground: () => void
     // Theater
@@ -184,7 +196,7 @@ interface ChatModalsProps {
     currentKaraokeSession: any
     isKaraokeMinimized: boolean
     setIsKaraokeMinimized: (val: boolean) => void
-    handleStartKaraoke: (song: KaraokeSong) => void
+    handleStartKaraoke: (song: KaraokeSong, options?: { inviteAudience?: boolean }) => void
     handleExitKaraoke: () => void
     karaokeInvite: KaraokeInvite | null
     setKaraokeInvite: (val: KaraokeInvite | null) => void
@@ -246,8 +258,14 @@ interface ChatModalsProps {
     setShowTermsOfService: (val: boolean) => void
     // Game invites
     gameInvite: GameInvite | null
-    handleAcceptGameInvite: () => void
+    handleAcceptGameInvite: (guestName?: string) => void
+    handleAcceptGameInviteAsViewer: () => void
     handleDeclineGameInvite: () => void
+    handleWatchSeriesMatch: (match: GameSeriesMatch) => void
+    handleSeriesPrediction: (match: GameSeriesMatch, winnerId: string) => void
+    handleSeriesVote: (match: GameSeriesMatch, winnerId: string) => void
+    handleSeriesBet: (match: GameSeriesMatch, winnerId: string, amount: number) => void
+    handleSeriesComputerResult: (match: GameSeriesMatch, winnerId: string, winnerName: string) => void
     // Leave Handlers
     showLeaveConfirmation: boolean
     handleConfirmLeave: () => void
@@ -262,6 +280,9 @@ interface ChatModalsProps {
     setPendingScreenStream: (stream: MediaStream | null) => void
     isQuizMinimized: boolean
     setIsQuizMinimized: (val: boolean) => void
+    hasUnreadNotes?: boolean
+    hasUnreadTasks?: boolean
+    onSearch?: (query: string) => void
 }
 
 export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps) {
@@ -271,6 +292,10 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
     } = props
 
     const [mounted, setMounted] = useState(false)
+    const [gameUnreadCount, setGameUnreadCount] = useState(0)
+    const lastGameMessageIdRef = React.useRef<string | null>(null)
+    const [showGameMessageComposer, setShowGameMessageComposer] = useState(false)
+    const [showGameQuickActions, setShowGameQuickActions] = useState(false)
     const keyboardInputRef = React.useRef<HTMLInputElement>(null)
 
     useEffect(() => {
@@ -309,6 +334,40 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
             })
         }
     }, [props.showAudioCall, props.showVideoCall, props.currentCall, props.incomingCall])
+
+    const canViewKaraokeStage = Boolean(
+        props.currentKaraokeSession &&
+        (
+            props.currentKaraokeSession.hostId === currentUserId ||
+            props.currentKaraokeSession.players?.[currentUserId]?.hasJoined
+        )
+    )
+    const isKaraokeStageVisible = canViewKaraokeStage && !props.isKaraokeMinimized
+
+    const isGameOverlayActive = Boolean(
+        (props.showPlayground && !props.isPlaygroundMinimized && props.playgroundConfig) ||
+        props.activeGame ||
+        props.showMafiaGame ||
+        props.showBingoGame ||
+        (props.currentQuizSession && !props.isQuizMinimized) ||
+        isKaraokeStageVisible
+    )
+
+    // Sync game unread count logic matching theater
+    useEffect(() => {
+        if (!showGameMessageComposer && props.messages.length > 0) {
+            const lastMsg = props.messages[props.messages.length - 1]
+            if (lastMsg.id !== lastGameMessageIdRef.current) {
+                setGameUnreadCount(prev => prev + 1)
+                lastGameMessageIdRef.current = lastMsg.id
+            }
+        } else if (showGameMessageComposer) {
+            setGameUnreadCount(0)
+            if (props.messages.length > 0) {
+                lastGameMessageIdRef.current = props.messages[props.messages.length - 1].id
+            }
+        }
+    }, [props.messages, showGameMessageComposer])
 
     return (
         <>
@@ -382,7 +441,7 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
                             <span className="text-xs font-black tracking-widest uppercase">Restore Cinema</span>
                         </Button>
                     )}
-                    {props.currentKaraokeSession && props.isKaraokeMinimized && (
+                    {canViewKaraokeStage && props.isKaraokeMinimized && (
                         <Button
                             onClick={() => props.setIsKaraokeMinimized(false)}
                             className="bg-purple-600/90 hover:bg-purple-500 text-white rounded-2xl p-4 shadow-2xl backdrop-blur-md border border-purple-400/30 flex items-center gap-3 animate-in slide-in-from-right-10 duration-300"
@@ -409,6 +468,13 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
                     onFileSelect={props.handleFileSelect}
                     onStartRecording={props.handleStartMediaRecording}
                     onQuizStart={() => props.setShowQuizSetup(true)}
+                    onWhiteboard={() => {
+                        props.setShowWhiteboard(true)
+                        props.setIsWhiteboardMinimized(false)
+                    }}
+                    onPresentation={() => props.setShowPresentationSetup(true)}
+                    onNotes={() => props.setShowSharedNotes(true)}
+                    onCheckList={() => props.setShowSharedTaskList(true)}
                     onMoodTrigger={() => props.setShowMoodSetup(true)}
                     onSoundboard={() => props.setShowSoundboard(!props.showSoundboard)}
                     showSoundboard={props.showSoundboard}
@@ -429,6 +495,9 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
                     setVanishDuration={props.setVanishDuration}
                     showMobileReactions={props.showMobileReactions}
                     setShowMobileReactions={props.setShowMobileReactions}
+                    hasUnreadNotes={props.hasUnreadNotes}
+                    hasUnreadTasks={props.hasUnreadTasks}
+                    onSearch={props.onSearch}
                 />
             </div>
 
@@ -491,7 +560,12 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
                 <TheaterInviteNotification invite={props.theaterInvite} onAccept={props.handleAcceptTheaterInvite} onDecline={props.handleDeclineTheaterInvite} />
             )}
             {props.gameInvite && renderModal(
-                <GameInviteNotification invite={props.gameInvite} onAccept={props.handleAcceptGameInvite} onDecline={props.handleDeclineGameInvite} />
+                <GameInviteNotification
+                    invite={props.gameInvite}
+                    onAccept={props.handleAcceptGameInvite}
+                    onAcceptAsSpectator={props.handleAcceptGameInviteAsViewer}
+                    onDecline={props.handleDeclineGameInvite}
+                />
             )}
             {props.presentationInvite && renderModal(
                 <PresentationInviteNotification
@@ -518,6 +592,18 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
                     onDecline={() => props.setWhiteboardInvite(null)}
                 />
             )}
+            {props.showGameSeriesViewer && props.activeGameSeries && renderModal(
+                <GameSeriesViewer
+                    series={props.activeGameSeries}
+                    currentUserId={currentUserId}
+                    onClose={() => props.setShowGameSeriesViewer(false)}
+                    onWatchMatch={props.handleWatchSeriesMatch}
+                    onPredict={props.handleSeriesPrediction}
+                    onVote={props.handleSeriesVote}
+                    onBet={props.handleSeriesBet}
+                    onReportComputerResult={props.handleSeriesComputerResult}
+                />
+            )}
 
             {/* Global Modals - Rendered inline since they manage their own overlays/z-index */}
             <AudioCallModal isOpen={props.showAudioCall} onClose={props.handleEndCall} onAnswer={props.handleAnswerCall} roomId={roomId} currentUser={userProfile.name} currentUserId={currentUserId} callData={props.currentCall || props.incomingCall} isIncoming={!!(props.currentCall || props.incomingCall) && (props.currentCall || props.incomingCall)?.callerId !== currentUserId} onSwitchToVideo={() => props.handleSwitchCallType("video")} />
@@ -535,7 +621,7 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
 
             {/* Overlays - Portalled to document.body so they are never clipped by overflow:hidden parents */}
             {props.showPlayground && !props.isPlaygroundMinimized && props.playgroundConfig && renderModal(
-                <div className="fixed inset-0 z-[500] bg-slate-900 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[500] bg-slate-900 flex items-center justify-center p-4 pb-[calc(env(safe-area-inset-bottom)+6rem)] sm:pb-4">
                     {props.playgroundConfig.selectedGame === "dots" && (
                         <DotsAndBoxesGameComponent gameConfig={props.playgroundConfig} roomId={roomId} currentUserId={currentUserId} onExit={props.handleExitPlayground} onMinimize={() => props.setIsPlaygroundMinimized(true)} />
                     )}
@@ -549,6 +635,48 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
                         <TicTacToeBoard gameConfig={props.playgroundConfig} roomId={roomId} currentUserId={currentUserId} onClose={props.handleExitPlayground} onMinimize={() => props.setIsPlaygroundMinimized(true)} />
                     )}
                 </div>
+            )}
+
+            {isGameOverlayActive && renderModal(
+                <>
+                    <div className="fixed right-4 sm:right-6 bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] sm:bottom-5 z-[760] flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 rounded-full bg-black/55 border border-white/10 backdrop-blur-xl p-1 shadow-2xl">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className={`relative w-9 h-9 sm:w-10 sm:h-10 rounded-full transition-colors ${showGameMessageComposer ? "bg-cyan-500 text-white" : "text-white/80 hover:bg-white/15 hover:text-white"}`}
+                                onClick={() => setShowGameMessageComposer((prev) => !prev)}
+                            >
+                                <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
+                                {gameUnreadCount > 0 && !showGameMessageComposer && (
+                                    <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 bg-red-500 text-[10px] animate-pulse border-none flex items-center justify-center">
+                                        {gameUnreadCount > 9 ? "9+" : gameUnreadCount}
+                                    </Badge>
+                                )}
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full transition-colors ${props.showSoundboard ? "bg-cyan-500 text-white" : "text-white/80 hover:bg-white/15 hover:text-white"}`}
+                                onClick={() => props.setShowSoundboard(true)}
+                            >
+                                <Music2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </Button>
+                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center">
+                                <ReactionRain roomId={roomId || ""} userId={currentUserId} />
+                            </div>
+                        </div>
+                    </div>
+
+                    <TheaterChatOverlay
+                        isOpen={showGameMessageComposer}
+                        onClose={() => setShowGameMessageComposer(false)}
+                        messages={props.messages as any[]}
+                        roomId={roomId || ""}
+                        currentUser={userProfile.name}
+                        currentUserId={currentUserId}
+                    />
+                </>
             )}
             {props.currentTheaterSession && (
                 <TheaterFullscreen
@@ -613,7 +741,7 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
             <PasswordEntryModal isOpen={props.showPasswordEntry} roomId={roomId} onSuccess={() => { props.setShowPasswordEntry(false); props.setPasswordValidated(true) }} onCancel={() => props.setShowPasswordEntry(false)} />
             <HostPasswordModal isOpen={props.showHostPassword} roomId={roomId} isProtected={props.roomIsProtected} onClose={() => props.setShowHostPassword(false)} onProtectedChange={props.setRoomIsProtected} />
             <KaraokeSetupModal isOpen={props.showKaraokeSetup} onClose={() => props.setShowKaraokeSetup(false)} onStartSession={props.handleStartKaraoke} />
-            {props.currentKaraokeSession && !props.isKaraokeMinimized && renderModal(
+            {isKaraokeStageVisible && renderModal(
                 <KaraokePlayer
                     session={props.currentKaraokeSession}
                     onEnd={props.handleExitKaraoke}
@@ -730,7 +858,7 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
 
             {/* Active Game Boards (Join existing) - portalled to body */}
             {props.activeGame && renderModal(
-                <div className="fixed inset-0 z-[510] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-[510] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 pb-[calc(env(safe-area-inset-bottom)+6rem)] sm:pb-4 animate-in fade-in duration-200">
                     {props.activeGame.type === "chess" && (
                         <ChessBoard
                             gameConfig={{

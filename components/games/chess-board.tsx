@@ -228,9 +228,9 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose, onMinim
     const isMyTurn = turn === myColor
 
     return (
-        <div className="flex flex-col items-center gap-3 sm:gap-6 p-4 sm:p-8 pt-12 sm:pt-10 bg-slate-900/95 rounded-2xl sm:rounded-3xl border border-white/10 shadow-2xl backdrop-blur-2xl w-[95vw] sm:max-w-2xl mx-auto relative overflow-hidden">
+        <div className="game-shell flex flex-col items-center gap-1 sm:gap-5 p-2 sm:p-6 w-full max-w-2xl mx-auto relative h-full">
             {/* Header */}
-            <div className="flex flex-wrap justify-between items-center w-full gap-3 px-1 sm:px-2">
+            <div className="game-header-bar w-full">
                 <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                     <div className="p-1.5 sm:p-2 bg-gradient-to-br from-purple-500/20 to-cyan-500/20 rounded-xl border border-white/10">
                         <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" />
@@ -243,11 +243,11 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose, onMinim
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-1.5 sm:gap-2 ml-auto">
+                <div className="flex items-center gap-2 ml-auto">
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-700 hover:bg-slate-600 text-white"
+                        className="game-action-btn haptic"
                         onClick={handlePause}
                     >
                         {isPaused ? <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Pause className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
@@ -256,7 +256,7 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose, onMinim
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-700 hover:bg-slate-600 text-white"
+                            className="game-action-btn haptic"
                             onClick={onMinimize}
                         >
                             <Minimize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -265,13 +265,13 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose, onMinim
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-700 hover:bg-slate-600 text-white"
+                        className="game-action-btn haptic"
                         onClick={handleSettings}
                     >
                         <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </Button>
                     {onClose && (
-                        <Button variant="ghost" size="icon" onClick={onClose} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full hover:bg-white/10 text-slate-400">
+                        <Button variant="ghost" size="icon" onClick={onClose} className="game-action-btn game-action-btn-danger haptic">
                             <X className="w-4 h-4 sm:w-5 sm:h-5" />
                         </Button>
                     )}
@@ -279,7 +279,7 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose, onMinim
             </div>
 
             {/* Players Area */}
-            <div className="grid grid-cols-2 gap-2 sm:gap-4 w-full">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 w-full game-info-panel p-2 sm:p-3">
                 <PlayerPanel
                     name={session?.blackPlayer?.name || "Black"}
                     color="black"
@@ -318,7 +318,7 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose, onMinim
                                             key={`${row}-${col}`}
                                             onClick={() => handleSquareClick(row, col)}
                                             className={cn(
-                                                "w-9 h-9 sm:w-14 sm:h-14 flex items-center justify-center select-none cursor-pointer transition-all duration-200 relative",
+                                                "w-9 h-9 sm:w-14 sm:h-14 flex items-center justify-center select-none cursor-pointer touch-manipulation transition-all duration-200 relative",
                                                 isBlackSquare ? "bg-[#769656]" : "bg-[#eeeed2]",
                                                 isSelected && "bg-[#bac34b] ring-inset ring-2 ring-white/30 z-10",
                                                 !isSelected && isValidMove && "relative after:content-[''] after:absolute after:w-3 after:h-3 after:bg-black/10 after:rounded-full after:z-20",
@@ -382,7 +382,7 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose, onMinim
             </div>
 
             {/* Status Footer */}
-            <div className="w-full flex justify-between items-center px-5 py-4 bg-slate-800/50 rounded-2xl border border-white/10 mt-2 shadow-inner">
+            <div className="w-full flex justify-between items-center px-4 sm:px-5 py-3 sm:py-4 game-info-panel mt-2">
                 <div className="flex items-center gap-4">
                     {session.status === "check" && (
                         <div className="px-4 py-1.5 bg-red-500/20 border border-red-500/40 rounded-lg animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.3)]">
@@ -395,7 +395,7 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose, onMinim
                 </div>
                 <div className="flex flex-col items-end">
                     <span className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">Game Status</span>
-                    <div className="text-sm font-bold flex items-center gap-2">
+                    <div className="text-sm font-bold flex items-center gap-2 game-turn-chip">
                         {isMyTurn ? (
                             <span className="text-cyan-400 animate-pulse flex items-center gap-1.5">
                                 <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
@@ -413,22 +413,22 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose, onMinim
 
             {/* Pause Menu Overlay */}
             {showPauseMenu && (
-                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] animate-in fade-in duration-300 backdrop-blur-md">
-                    <div className="bg-slate-800 rounded-[32px] p-8 w-full max-w-sm mx-4 border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col items-center">
+                <div className="game-pause-overlay animate-in fade-in duration-300">
+                    <div className="game-pause-card flex flex-col items-center">
                         <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mb-6 shadow-inner border border-white/5">
                             <Pause className="w-8 h-8 text-white" />
                         </div>
-                        <h2 className="text-2xl font-black text-center mb-2 text-white uppercase tracking-tighter">Match Paused</h2>
-                        <p className="text-slate-400 text-sm mb-8 text-center px-4 font-medium">The board is frozen. Ready to resume the battle?</p>
+                        <h2 className="game-modal-title text-center mb-2">Match Paused</h2>
+                        <p className="game-modal-subtitle text-center mb-6 px-2">The board is frozen. Ready to resume the battle?</p>
 
                         <div className="space-y-3 w-full">
-                            <Button onClick={handleResume} className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white h-14 rounded-2xl flex items-center justify-center gap-3 font-black shadow-lg border-t border-white/20">
+                            <Button onClick={handleResume} className="w-full game-modal-btn bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white flex items-center justify-center gap-3 font-black shadow-lg border-t border-white/20">
                                 <Play className="w-5 h-5 fill-current" /> RESUME DUEL
                             </Button>
-                            <Button onClick={handleRestart} className="w-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 h-14 rounded-2xl flex items-center justify-center gap-3 font-bold border border-amber-500/30">
+                            <Button onClick={handleRestart} className="w-full game-modal-btn bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 flex items-center justify-center gap-3 font-bold border border-amber-500/30">
                                 <RotateCcw className="w-5 h-5" /> RESTART GAME
                             </Button>
-                            <Button onClick={handleSettings} className="w-full bg-slate-700 hover:bg-slate-600 text-white h-14 rounded-2xl flex items-center justify-center gap-3 font-bold border border-white/5">
+                            <Button onClick={handleSettings} className="w-full game-modal-btn bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center gap-3 font-bold border border-white/5">
                                 <Settings className="w-5 h-5" /> ADJUST SETTINGS
                             </Button>
                             <Button onClick={handleExitGame} className="w-full bg-transparent hover:bg-red-500/10 text-red-400 h-11 rounded-xl flex items-center justify-center gap-2 font-semibold transition-all">

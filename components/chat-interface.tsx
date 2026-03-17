@@ -22,8 +22,6 @@ import { useChatFeatureState } from "./chat/use-chat-feature-state"
 import { ChatHeader } from "./chat/chat-header"
 import { ChatModals } from "./chat/chat-modals"
 import { MoodPlayer } from "./mood/mood-player"
-import { KaraokePlayer } from "./karaoke/karaoke-player"
-import { Soundboard } from "./soundboard"
 import { ReactionRainView } from "./reaction-rain-view"
 import { soundboard } from "@/utils/games/soundboard"
 import { FilePreviewModal } from "./chat/file-preview-modal"
@@ -36,6 +34,7 @@ import {
 } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Button } from "@/components/ui/button"
+import { useShallow } from "zustand/react/shallow"
 
 interface ChatInterfaceProps {
   roomId: string
@@ -59,13 +58,39 @@ function getUserColor(username: string): string {
 }
 
 export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: currentUserIdProp }: ChatInterfaceProps) {
-  console.log("ChatInterface: Initialized with roomId:", roomId)
-
   const {
-    messages, onlineUsers, setMessages, setOnlineUsers, setReplyingTo, setCurrentUser, setRoomId,
-    hasUnreadNotes, hasUnreadTasks, setHasUnreadNotes, setHasUnreadTasks,
-    roomMembers, setRoomMembers,
-  } = useChatStore()
+    messages,
+    onlineUsers,
+    setMessages,
+    setOnlineUsers,
+    setReplyingTo,
+    setCurrentUser,
+    setRoomId,
+    hasUnreadNotes,
+    hasUnreadTasks,
+    setHasUnreadNotes,
+    setHasUnreadTasks,
+    roomMembers,
+    setRoomMembers,
+    setSearchQuery,
+  } = useChatStore(
+    useShallow((state) => ({
+      messages: state.messages,
+      onlineUsers: state.onlineUsers,
+      setMessages: state.setMessages,
+      setOnlineUsers: state.setOnlineUsers,
+      setReplyingTo: state.setReplyingTo,
+      setCurrentUser: state.setCurrentUser,
+      setRoomId: state.setRoomId,
+      hasUnreadNotes: state.hasUnreadNotes,
+      hasUnreadTasks: state.hasUnreadTasks,
+      setHasUnreadNotes: state.setHasUnreadNotes,
+      setHasUnreadTasks: state.setHasUnreadTasks,
+      roomMembers: state.roomMembers,
+      setRoomMembers: state.setRoomMembers,
+      setSearchQuery: state.setSearchQuery,
+    }))
+  )
 
   // Use modular hooks for state
   const ui = useChatUIState()
@@ -96,7 +121,7 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
     showBreakoutRooms, setShowBreakoutRooms, showPrivacyPolicy, setShowPrivacyPolicy,
     showTermsOfService, setShowTermsOfService, playgroundGame, setPlaygroundGame,
     showPlaygroundSetup, setShowPlaygroundSetup, showPlayground, setShowPlayground,
-    playgroundConfig, setPlaygroundConfig, showTheaterSetup, setShowTheaterSetup,
+    playgroundConfig, setPlaygroundConfig, showGameSeriesViewer, setShowGameSeriesViewer, showTheaterSetup, setShowTheaterSetup,
     showTheaterFullscreen, setShowTheaterFullscreen,
     isPlaygroundMinimized, setIsPlaygroundMinimized,
     isMoodSelectorOpen, setIsMoodSelectorOpen,
@@ -121,6 +146,7 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
     pinnedMessage, setPinnedMessage, passwordValidated, setPasswordValidated,
     roomIsProtected, setRoomIsProtected,
     presentationInvite, setPresentationInvite,
+    activeGameSeries, setActiveGameSeries,
     currentKaraokeSession, setCurrentKaraokeSession,
     karaokeInvite, setKaraokeInvite,
     moodBackgroundImage, setMoodBackgroundImage, moodBackgroundMusic, setMoodBackgroundMusic,
@@ -137,6 +163,11 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
   const quizTimerRef = useRef<NodeJS.Timeout | null>(null)
   const quizSessionUnsubscribeRef = useRef<(() => void) | null>(null)
   const quizAnswersUnsubscribeRef = useRef<(() => void) | null>(null)
+
+  const handleSearch = React.useCallback((query: string) => {
+    setSearchQuery(query)
+    setShowChatSearch(true)
+  }, [setSearchQuery, setShowChatSearch])
 
   React.useEffect(() => {
     if (roomId) setRoomId(roomId)
@@ -218,31 +249,65 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
       if (wakeLockRef.current) wakeLockRef.current.release()
     }
   }, [isMobile])
-  const [viewportStyles, setViewportStyles] = useState<React.CSSProperties>({})
+  const [viewportStyles, setViewportStyles] = useState<React.CSSProperties>({
+    position: "fixed",
+    inset: 0,
+    overflow: "hidden",
+  })
 
   React.useEffect(() => {
-    if (!isMobile || typeof window === 'undefined' || !window.visualViewport) return
+    if (!isMobile || typeof window === "undefined") return
 
     const vv = window.visualViewport
-    const updateViewport = () => {
+    if (!vv) {
       setViewportStyles({
-        height: `${vv.height}px`,
-        transform: `translateY(${vv.offsetTop}px)`,
-        position: 'fixed' as const,
-        top: 0,
+        position: "fixed",
+        inset: 0,
+        overflow: "hidden",
+      })
+      return
+    }
+
+    let rafId: number | null = null
+    let prevHeight = -1
+    let prevTop = -1
+
+    const commitViewport = () => {
+      rafId = null
+      const nextHeight = Math.round(vv.height)
+      const nextTop = Math.round(vv.offsetTop)
+
+      if (nextHeight === prevHeight && nextTop === prevTop) return
+
+      prevHeight = nextHeight
+      prevTop = nextTop
+      setViewportStyles({
+        position: "fixed",
+        top: nextTop,
         left: 0,
         right: 0,
-        overflow: 'hidden'
+        height: nextHeight,
+        overflow: "hidden",
       })
     }
 
-    vv.addEventListener('resize', updateViewport)
-    vv.addEventListener('scroll', updateViewport)
-    updateViewport()
+    const scheduleViewportSync = () => {
+      if (rafId !== null) return
+      rafId = window.requestAnimationFrame(commitViewport)
+    }
+
+    vv.addEventListener("resize", scheduleViewportSync)
+    vv.addEventListener("scroll", scheduleViewportSync)
+    window.addEventListener("orientationchange", scheduleViewportSync)
+    scheduleViewportSync()
 
     return () => {
-      vv.removeEventListener('resize', updateViewport)
-      vv.removeEventListener('scroll', updateViewport)
+      vv.removeEventListener("resize", scheduleViewportSync)
+      vv.removeEventListener("scroll", scheduleViewportSync)
+      window.removeEventListener("orientationchange", scheduleViewportSync)
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId)
+      }
     }
   }, [isMobile])
 
@@ -294,6 +359,8 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
   const calls = useChatCalls({
     roomId, userProfile, currentUserId, isHost,
     onlineUsersCount: onlineUsers.length,
+    onlineUsers,
+    roomMembers,
     incomingCall: feature.incomingCall,
     currentCall: feature.currentCall,
     isInCall: feature.isInCall,
@@ -301,6 +368,7 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
     isTheaterHost: feature.isTheaterHost,
     theaterInvite: feature.theaterInvite,
     gameInvite: feature.gameInvite,
+    activeGameSeries: feature.activeGameSeries,
     currentQuizSession: feature.currentQuizSession,
     quizTimeRemaining: feature.quizTimeRemaining,
     userQuizAnswer: feature.userQuizAnswer,
@@ -315,6 +383,7 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
     setCurrentTheaterSession, setTheaterInvite, setIsTheaterHost,
     setShowPlaygroundSetup, setShowPlayground,
     setPlaygroundConfig, setPlaygroundGame,
+    setActiveGameSeries, setShowGameSeriesViewer,
     setGameInvite, setActiveGame,
     setShowKaraokeSetup, setCurrentKaraokeSession,
     setShowQuizSetup, setCurrentQuizSession,
@@ -342,7 +411,7 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
     setCurrentQuizSession, setQuizAnswers, setQuizResults, setUserQuizAnswer,
     setShowQuizResults, setQuizTimeRemaining,
     setCurrentTheaterSession, setTheaterInvite, setIsTheaterHost,
-    setGameInvite, setKaraokeInvite, setCurrentKaraokeSession: feature.setCurrentKaraokeSession, setPresentationInvite, setWhiteboardInvite, setPinnedMessageId, setPinnedMessage, setIsHost,
+    setGameInvite, setActiveGameSeries, setKaraokeInvite, setCurrentKaraokeSession: feature.setCurrentKaraokeSession, setPresentationInvite, setWhiteboardInvite, setPinnedMessageId, setPinnedMessage, setIsHost,
     setRoomIsProtected, setPasswordValidated,
     setMoodBackgroundImage, setMoodBackgroundMusic, setMoodPlaylist: feature.setMoodPlaylist,
     showSharedNotes, showSharedTaskList,
@@ -375,6 +444,14 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
       </div>
     )
   }
+
+  const canViewKaraokeStage = Boolean(
+    feature.currentKaraokeSession &&
+    (
+      feature.currentKaraokeSession.hostId === currentUserId ||
+      feature.currentKaraokeSession.players?.[currentUserId]?.hasJoined
+    )
+  )
 
   return (
     <PrivacyShield>
@@ -420,7 +497,7 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
         )}
 
         {/* Karaoke Restore Button */}
-        {feature.currentKaraokeSession && isKaraokeMinimized && (
+        {canViewKaraokeStage && isKaraokeMinimized && (
           <div className="fixed bottom-24 right-6 z-50 animate-in slide-in-from-right-10 duration-500">
             <button
               onClick={() => setIsKaraokeMinimized(false)}
@@ -482,13 +559,14 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
           hasUnreadNotes={hasUnreadNotes}
           hasUnreadTasks={hasUnreadTasks}
           roomMembers={roomMembers}
+          activeGameSeries={activeGameSeries}
           autoHide={!!(
             showPlayground || activeGame ||
             showTheaterFullscreen ||
             showWhiteboard ||
             showAudioCall || showVideoCall ||
             showPresentationViewer ||
-            (currentKaraokeSession && !isKaraokeMinimized) ||
+            (canViewKaraokeStage && !isKaraokeMinimized) ||
             showBreakoutRooms
           )}
         />
@@ -572,9 +650,12 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
           showPlaygroundSetup={showPlaygroundSetup}
           setShowPlaygroundSetup={setShowPlaygroundSetup}
           showPlayground={showPlayground}
+          showGameSeriesViewer={showGameSeriesViewer}
+          setShowGameSeriesViewer={setShowGameSeriesViewer}
           isPlaygroundMinimized={isPlaygroundMinimized}
           setIsPlaygroundMinimized={setIsPlaygroundMinimized}
           playgroundConfig={playgroundConfig}
+          activeGameSeries={activeGameSeries}
           handleStartPlayground={calls.handleStartPlayground}
           handleExitPlayground={calls.handleExitPlayground}
           onOpenPlayground={calls.handleOpenPlayground}
@@ -647,7 +728,13 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
           setShowTermsOfService={setShowTermsOfService}
           gameInvite={gameInvite}
           handleAcceptGameInvite={calls.handleAcceptGameInvite}
+          handleAcceptGameInviteAsViewer={calls.handleAcceptGameInviteAsViewer}
           handleDeclineGameInvite={calls.handleDeclineGameInvite}
+          handleWatchSeriesMatch={calls.handleWatchSeriesMatch}
+          handleSeriesPrediction={calls.handleSeriesPrediction}
+          handleSeriesVote={calls.handleSeriesVote}
+          handleSeriesBet={calls.handleSeriesBet}
+          handleSeriesComputerResult={calls.handleSeriesComputerResult}
           handleSwitchCallType={calls.handleSwitchCallType}
           pendingMediaFile={calls.pendingMediaFile}
           setPendingMediaFile={calls.setPendingMediaFile}
@@ -682,25 +769,10 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
           handleCreateTheaterSession={calls.handleCreateTheaterSession}
           pendingScreenStream={pendingScreenStream}
           setPendingScreenStream={setPendingScreenStream}
+          hasUnreadNotes={hasUnreadNotes}
+          hasUnreadTasks={hasUnreadTasks}
+          onSearch={handleSearch}
         />
-
-        {/* Karaoke Stage */}
-        {feature.currentKaraokeSession && !isKaraokeMinimized && (() => {
-          const session = feature.currentKaraokeSession;
-          const isHost = session.hostId === currentUserId;
-          const hasJoined = session.players?.[currentUserId]?.hasJoined;
-
-          if (isHost || hasJoined) {
-            return (
-              <KaraokePlayer
-                session={session}
-                onEnd={calls.handleExitKaraoke}
-                onMinimize={() => setIsKaraokeMinimized(true)}
-              />
-            );
-          }
-          return null;
-        })()}
 
         {/* File Preview before sending */}
         <FilePreviewModal

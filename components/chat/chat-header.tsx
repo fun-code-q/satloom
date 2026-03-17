@@ -22,6 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger, PopoverClose } from "../ui/pop
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { UserPresenceSystem } from "@/utils/infra/user-presence"
 import { ChatSearch } from "./chat-search"
+import type { GameSeries } from "@/utils/games/game-series-manager"
 
 interface ChatHeaderProps {
     roomId: string
@@ -76,6 +77,7 @@ interface ChatHeaderProps {
     setShowParticipants: (val: boolean) => void
     autoHide?: boolean
     isMobile: boolean
+    activeGameSeries?: GameSeries | null
 }
 
 export function ChatHeader({
@@ -93,11 +95,14 @@ export function ChatHeader({
     hasUnreadNotes, hasUnreadTasks,
     roomMembers,
     isMobile,
+    activeGameSeries = null,
     autoHide = false,
 }: ChatHeaderProps) {
     const [isHeaderVisible, setIsHeaderVisible] = useState(true)
     const headerTimeoutRef = useRef<NodeJS.Timeout | null>(null)
     const userPresence = UserPresenceSystem.getInstance()
+
+    console.log("ChatHeader: Render started", { roomId, isMobile, hasUnreadNotes, hasUnreadTasks })
     const [isFullscreen, setIsFullscreen] = useState(false)
     const [isSettingsFolded, setIsSettingsFolded] = useState(true)
 
@@ -187,6 +192,16 @@ export function ChatHeader({
         }
     }, [])
 
+    const currentRoundMatches = activeGameSeries
+        ? activeGameSeries.matches
+            .filter((match) => match.round === activeGameSeries.currentRound)
+            .sort((a, b) => a.position - b.position)
+        : []
+    const roundCompletedCount = currentRoundMatches.filter((match) => match.status === "completed").length
+    const roundLiveCount = currentRoundMatches.filter((match) => match.status !== "completed").length
+    const roundTotalCount = currentRoundMatches.length
+    const currentFinalMatch = currentRoundMatches.length === 1 ? currentRoundMatches[0] : null
+
     return (
         <>
             {/* Invisible hover zone at the top to re-summon the header */}
@@ -214,7 +229,7 @@ export function ChatHeader({
                                 onClick={() => setShowParticipants(!showParticipants)}
                                 title={showParticipants ? "Hide participants" : "Show participants"}
                             >
-                                <AnimatedLogo showTextOnMobile={false} />
+                                <AnimatedLogo showTextOnMobile={true} />
                             </div>
                             <UserMoodSelector
                                 currentMood={currentUserMood || undefined}
@@ -239,7 +254,7 @@ export function ChatHeader({
                         <div className="flex items-center justify-end flex-shrink-0 gap-px md:gap-2 ml-auto select-none">
                             <Button
                                 variant="ghost" size="icon"
-                                className={`rounded-xl h-8 w-8 flex-shrink-0 transition-all duration-300 md:h-8 md:w-8 ${showChatSearch 
+                                className={`rounded-xl h-8 w-8 flex-shrink-0 transition-all duration-300 md:h-8 md:w-8 hidden md:flex ${showChatSearch 
                                     ? 'hidden' 
                                     : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
                                 onClick={() => setShowChatSearch(!showChatSearch)}
@@ -368,48 +383,6 @@ export function ChatHeader({
                                 </DropdownMenu>
                             </div>
 
-                            {/* Mobile Productivity Icon and Dropdown */}
-                            <div className={`md:hidden ${showChatSearch ? 'hidden' : 'block'}`}>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button
-                                            variant="ghost" size="icon"
-                                            className="text-gray-400 hover:text-white hover:bg-white/10 rounded-xl h-8 w-8 transition-all relative flex-shrink-0"
-                                            title="Productivity & Collaboration"
-                                        >
-                                            <Briefcase className="w-4 h-4" />
-                                            {(hasUnreadNotes || hasUnreadTasks) && (
-                                                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse" />
-                                            )}
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent
-                                        align="end" side="bottom"
-                                        className="bg-slate-900/95 backdrop-blur-xl border border-white/10 text-white min-w-[220px] rounded-2xl shadow-2xl z-[300] p-1.5 animate-in fade-in zoom-in-95 duration-200"
-                                        sideOffset={8}
-                                    >
-                                        <DropdownMenuLabel className="text-[10px] text-slate-500 uppercase tracking-[0.2em] px-3 py-2 font-bold">
-                                            {productivityGroup.label}
-                                        </DropdownMenuLabel>
-                                        {productivityGroup.items.map((item, i) => (
-                                            <DropdownMenuItem
-                                                key={i}
-                                                onClick={item.action}
-                                                className="hover:bg-white/10 rounded-xl cursor-pointer min-h-[44px] haptic flex items-center justify-between px-3 transition-colors group"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <item.icon className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
-                                                    <span className="text-sm font-medium">{item.label}</span>
-                                                </div>
-                                                {((item.label.toLowerCase().includes("notes") && hasUnreadNotes) ||
-                                                    (item.label.toLowerCase().includes("task") && hasUnreadTasks)) && (
-                                                        <span className="w-1.5 h-1.5 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
-                                                    )}
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
 
                             {/* Main Menu (3-dot on Mobile) */}
                             <div className={`${showChatSearch ? 'hidden' : 'block'}`}>
@@ -547,32 +520,6 @@ export function ChatHeader({
                                     </DropdownMenuContent>
                                 </DropdownMenu>
 
-                                {/* Productivity Menu */}
-                                <DropdownMenu open={isProductivityMenuOpen} onOpenChange={setIsProductivityMenuOpen}>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 bg-white/5 rounded-xl h-10 w-10 transition-colors relative flex-shrink-0" title="Productivity & Collaboration">
-                                            <Briefcase className="w-5 h-5" />
-                                            {(hasUnreadNotes || hasUnreadTasks) && (
-                                                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse" />
-                                            )}
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" side="bottom" className="bg-slate-800 border-slate-700 text-white min-w-56 animate-none rounded-xl shadow-2xl z-[300]" sideOffset={5}>
-                                        <DropdownMenuLabel className="text-xs text-slate-400 uppercase tracking-wider px-2 py-1.5 font-semibold">{productivityGroup.label}</DropdownMenuLabel>
-                                        {productivityGroup.items.map((item, i) => (
-                                            <DropdownMenuItem key={i} onClick={item.action} className="hover:bg-slate-700 cursor-pointer min-h-[44px] haptic flex items-center justify-between px-3 transition-colors">
-                                                <div className="flex items-center gap-3">
-                                                    <item.icon className="w-4 h-4 flex-shrink-0" />
-                                                    <span>{item.label}</span>
-                                                </div>
-                                                {((item.label.toLowerCase().includes("notes") && hasUnreadNotes) ||
-                                                    (item.label.toLowerCase().includes("task") && hasUnreadTasks)) && (
-                                                        <span className="w-2 h-2 bg-red-500 rounded-full" />
-                                                    )}
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
 
                                 {/* Settings Menu */}
                                 <DropdownMenu open={isSettingsMenuOpen} onOpenChange={setIsSettingsMenuOpen}>
@@ -635,6 +582,29 @@ export function ChatHeader({
                                     <X className="w-3 h-3" />
                                 </Button>
                             )}
+                        </div>
+                    )}
+
+                    {activeGameSeries && (
+                        <div className="px-2.5 md:px-3 py-1.5 bg-gradient-to-r from-slate-900/95 via-slate-800/90 to-slate-900/95 border-b border-cyan-500/20">
+                            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide whitespace-nowrap text-[11px] md:text-xs">
+                                <span className="px-2 py-0.5 rounded-full border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 font-black uppercase tracking-widest">
+                                    {activeGameSeries.gameType} series
+                                </span>
+                                <span className="text-slate-200 font-semibold">Round {activeGameSeries.currentRound}</span>
+                                <span className="text-slate-400">{roundCompletedCount}/{roundTotalCount || 0} complete</span>
+                                <span className="text-slate-400">{roundLiveCount} live</span>
+                                {currentFinalMatch && (
+                                    <span className="text-amber-300/90 font-medium">
+                                        Final: {currentFinalMatch.player1.name} vs {currentFinalMatch.player2?.name || "TBD"}
+                                    </span>
+                                )}
+                                {activeGameSeries.status === "completed" && activeGameSeries.finalWinnerName && (
+                                    <span className="text-emerald-300 font-semibold">
+                                        Winner: {activeGameSeries.finalWinnerName}
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     )}
 

@@ -241,17 +241,17 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
     const isPlayer = game.players.X.id === currentUserId || game.players.O.id === currentUserId
 
     return (
-        <div className="flex flex-col items-center gap-6 p-6 bg-slate-900/90 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-xl max-w-[450px] w-full mx-auto relative overflow-hidden">
+        <div className="game-shell flex flex-col items-center gap-2 sm:gap-6 p-2 sm:p-5 max-w-[450px] w-full mx-auto relative h-full">
             {/* Header */}
-            <div className="flex justify-between items-center w-full">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gradient-to-br from-purple-500/20 to-cyan-500/20 rounded-xl border border-white/10">
-                        <Trophy className="w-5 h-5 text-yellow-500" />
+            <div className="game-header-bar w-full">
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                    <div className="p-1 sm:p-2 bg-gradient-to-br from-purple-500/20 to-cyan-500/20 rounded-lg sm:rounded-xl border border-white/10">
+                        <Trophy className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-yellow-500" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-white tracking-tight">Tic Tac Toe</h2>
-                        <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                            <Clock className="w-3.5 h-3.5" />
+                        <h2 className="text-sm sm:text-xl font-bold text-white tracking-tight leading-tight">Tic Tac Toe</h2>
+                        <div className="flex items-center gap-1 text-[9px] sm:text-xs text-slate-400 mt-0.5">
+                            <Clock className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5" />
                             <span className="font-mono text-cyan-400/80">{formatTime(gameTime)}</span>
                         </div>
                     </div>
@@ -260,7 +260,7 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 text-white"
+                        className="game-action-btn haptic"
                         onClick={handlePause}
                     >
                         {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
@@ -269,7 +269,7 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 text-white"
+                            className="game-action-btn haptic"
                             onClick={onMinimize}
                         >
                             <Minimize2 className="w-4 h-4" />
@@ -278,13 +278,13 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 text-white"
+                        className="game-action-btn haptic"
                         onClick={handleSettings}
                     >
                         <Settings className="w-4 h-4" />
                     </Button>
                     {onClose && (
-                        <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-white/10 text-slate-400">
+                        <Button variant="ghost" size="icon" onClick={onClose} className="game-action-btn game-action-btn-danger haptic">
                             <X className="w-5 h-5" />
                         </Button>
                     )}
@@ -292,21 +292,21 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
             </div>
 
             {/* Players */}
-            <div className="flex justify-between w-full items-center px-4 py-3 bg-white/5 rounded-2xl">
+            <div className="flex justify-between w-full items-center px-4 py-3 game-info-panel">
                 <PlayerInfo name={game?.players?.X?.name || "X"} symbol="X" active={game?.currentPlayer === "X" && game?.status === "in_progress"} color="text-cyan-400" />
                 <div className="text-slate-600 font-bold italic">VS</div>
                 <PlayerInfo name={game?.players?.O?.name || "O"} symbol="O" active={game?.currentPlayer === "O" && game?.status === "in_progress"} color="text-pink-400" />
             </div>
 
             {/* Board */}
-            <div className="grid grid-cols-3 gap-4 bg-slate-800/50 p-4 rounded-3xl relative shadow-inner border border-white/5">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 bg-slate-800/50 p-2 sm:p-4 rounded-3xl relative shadow-inner border border-white/5">
                 {(Array.isArray(game?.board) ? game.board : []).map((cell, i) => (
                     <button
                         key={i}
                         onClick={() => handleCellClick(i)}
                         disabled={!!cell || game.status !== "in_progress" || processing || isPaused}
                         className={cn(
-                            "w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center rounded-2xl text-5xl transition-all duration-300",
+                            "w-20 h-20 sm:w-28 sm:h-28 flex items-center justify-center rounded-2xl text-4xl sm:text-5xl transition-all duration-300 touch-manipulation",
                             cell === "X" ? "bg-cyan-500/10 text-cyan-400 shadow-[inset_0_0_30px_rgba(6,182,212,0.15)]" :
                                 cell === "O" ? "bg-pink-500/10 text-pink-400 shadow-[inset_0_0_30px_rgba(236,72,153,0.15)]" :
                                     "bg-slate-700/40 hover:bg-slate-600/50 border border-slate-600/20",
@@ -314,8 +314,8 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
                             (!isMyTurn || cell || isPaused) && "cursor-default opacity-90"
                         )}
                     >
-                        {cell === "X" && <X className="w-14 h-14 animate-in zoom-in duration-300" strokeWidth={3} />}
-                        {cell === "O" && <Circle className="w-12 h-12 animate-in zoom-in duration-300" strokeWidth={3.5} />}
+                        {cell === "X" && <X className="w-10 h-10 sm:w-14 sm:h-14 animate-in zoom-in duration-300" strokeWidth={3} />}
+                        {cell === "O" && <Circle className="w-9 h-9 sm:w-12 sm:h-12 animate-in zoom-in duration-300" strokeWidth={3.5} />}
                     </button>
                 ))}
 
@@ -350,9 +350,9 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
             </div>
 
             {/* Turn Status */}
-            <div className="text-center h-6">
+            <div className="text-center min-h-6">
                 {game.status === "in_progress" && (
-                    <p className={cn("text-base font-bold animate-pulse tracking-tight", isMyTurn ? "text-cyan-400" : "text-slate-500")}>
+                    <p className={cn("text-sm sm:text-base font-bold animate-pulse tracking-tight game-turn-chip inline-flex items-center", isMyTurn ? "text-cyan-400" : "text-slate-500")}>
                         {isMyTurn ? "Your Turn" : `Waiting for ${game.currentPlayer === "X" ? game.players.X.name : game.players.O.name}...`}
                     </p>
                 )}
@@ -367,20 +367,21 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
 
             {/* Pause Menu Overlay */}
             {showPauseMenu && (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] animate-in fade-in duration-300">
-                    <div className="bg-slate-800 rounded-3xl p-6 w-full max-w-xs mx-4 border border-white/10 shadow-2xl">
-                        <h2 className="text-xl font-black text-center mb-6 text-white uppercase tracking-tight">Game Paused</h2>
+                <div className="game-pause-overlay animate-in fade-in duration-300">
+                    <div className="game-pause-card">
+                        <h2 className="game-modal-title text-center mb-2">Game Paused</h2>
+                        <p className="game-modal-subtitle text-center mb-6">Take a quick break and continue when ready.</p>
                         <div className="space-y-3">
-                            <Button onClick={handleResume} className="w-full bg-cyan-500 hover:bg-cyan-600 text-white h-12 rounded-xl flex items-center justify-center gap-2 font-bold shadow-lg">
+                            <Button onClick={handleResume} className="w-full game-modal-btn bg-cyan-500 hover:bg-cyan-600 text-white flex items-center justify-center gap-2 font-bold shadow-lg">
                                 <Play className="w-4 h-4" /> Resume Game
                             </Button>
-                            <Button onClick={handleRestart} className="w-full bg-amber-500 hover:bg-amber-600 text-white h-12 rounded-xl flex items-center justify-center gap-2 font-bold shadow-lg">
+                            <Button onClick={handleRestart} className="w-full game-modal-btn bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center gap-2 font-bold shadow-lg">
                                 <RotateCcw className="w-4 h-4" /> Restart Game
                             </Button>
-                            <Button onClick={handleSettings} className="w-full bg-slate-700 hover:bg-slate-600 text-white h-12 rounded-xl flex items-center justify-center gap-2 font-bold shadow-lg">
+                            <Button onClick={handleSettings} className="w-full game-modal-btn bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center gap-2 font-bold shadow-lg">
                                 <Settings className="w-4 h-4" /> Game Settings
                             </Button>
-                            <Button onClick={handleExitGame} className="w-full bg-red-500 hover:bg-red-600 text-white h-12 rounded-xl flex items-center justify-center gap-2 font-bold shadow-lg">
+                            <Button onClick={handleExitGame} className="w-full game-modal-btn bg-red-500 hover:bg-red-600 text-white flex items-center justify-center gap-2 font-bold shadow-lg">
                                 <X className="w-4 h-4" /> Exit Game
                             </Button>
                         </div>
@@ -409,12 +410,12 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
 function PlayerInfo({ name, symbol, active, color }: { name: string, symbol: string, active: boolean, color: string }) {
     return (
         <div className={cn(
-            "flex flex-col items-center p-3 rounded-2xl transition-all duration-500 min-w-[100px]",
+            "flex flex-col items-center p-2 sm:p-3 rounded-2xl transition-all duration-500 min-w-[80px] sm:min-w-[100px]",
             active ? "bg-slate-800 shadow-lg ring-1 ring-white/10 scale-105" : "opacity-40 grayscale-[0.5]"
         )}>
-            <div className={cn("text-2xl font-black mb-1", color)}>{symbol}</div>
-            <div className="text-xs font-semibold text-slate-200 truncate w-full text-center">{name}</div>
-            {active && <div className={cn("mt-1 w-1.5 h-1.5 rounded-full animate-ping", symbol === "X" ? "bg-cyan-400" : "bg-pink-400")} />}
+            <div className={cn("text-xl sm:text-2xl font-black mb-0.5", color)}>{symbol}</div>
+            <div className="text-[10px] sm:text-xs font-semibold text-slate-200 truncate w-full text-center">{name}</div>
+            {active && <div className={cn("mt-1 w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full animate-ping", symbol === "X" ? "bg-cyan-400" : "bg-pink-400")} />}
         </div>
     )
 }

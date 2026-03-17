@@ -127,16 +127,23 @@ export function Board({ gameState, isPaused, onMove, gridSize, canMove }: BoardP
 
     useEffect(() => { drawGame() }, [drawGame])
 
-    const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
-        if (!gameState || isPaused || !canMove) return
+    const getCanvasPoint = (clientX: number, clientY: number) => {
         const rect = canvasRef.current?.getBoundingClientRect()
-        if (!rect) return
+        if (!rect) return null
         const scaleX = CANVAS_SIZE / rect.width
         const scaleY = CANVAS_SIZE / rect.height
-        const x = (event.clientX - rect.left) * scaleX
-        const y = (event.clientY - rect.top) * scaleY
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        }
+    }
 
-        const clickedDot = findDotAt(x, y)
+    const handleCanvasInteraction = (clientX: number, clientY: number) => {
+        if (!gameState || isPaused || !canMove) return
+        const point = getCanvasPoint(clientX, clientY)
+        if (!point) return
+
+        const clickedDot = findDotAt(point.x, point.y)
         if (!clickedDot) return
 
         if (!selectedDot) {
@@ -157,12 +164,17 @@ export function Board({ gameState, isPaused, onMove, gridSize, canMove }: BoardP
         }
     }
 
+    const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
+        event.preventDefault()
+        handleCanvasInteraction(event.clientX, event.clientY)
+    }
+
     return (
         <div className="flex-1 flex items-center justify-center p-4">
             <canvas
                 ref={canvasRef}
-                onClick={handleCanvasClick}
-                className="max-w-full max-h-full rounded-lg shadow-2xl cursor-pointer touch-none"
+                onPointerDown={handlePointerDown}
+                className="max-w-full max-h-full rounded-xl shadow-2xl cursor-pointer touch-none haptic-subtle"
                 style={{ width: "min(400px, 90vw)", height: "min(400px, 90vw)" }}
             />
         </div>

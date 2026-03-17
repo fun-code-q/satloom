@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo, useEffect } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import { ref, onValue, set, remove } from "firebase/database"
 import { getFirebaseDatabase } from "../../lib/firebase"
 import { NotificationSystem } from "@/utils/core/notification-system"
@@ -18,6 +18,9 @@ import { ConnectFourManager } from "@/utils/games/connect-four"
 import { DotsBoxesManager } from "@/utils/games/dots-boxes-manager"
 import type { MenuGroup } from "./chat-types"
 import { telemetry } from "@/utils/core/telemetry"
+import { gameSeriesManager, type GameSeries, type GameSeriesMatch } from "@/utils/games/game-series-manager"
+import type { UserPresence } from "@/utils/infra/user-presence"
+import type { RoomMember } from "@/stores/chat-store"
 import {
     Phone, Video, Monitor, Camera, BellRing, UserPlus, Users,
     Film, Music, Volume2, Music2,
@@ -32,6 +35,8 @@ interface UseChatCallsParams {
     currentUserId: string
     isHost: boolean
     onlineUsersCount: number
+    onlineUsers: UserPresence[]
+    roomMembers: RoomMember[]
     // Call state & setters
     incomingCall: any
     currentCall: any
@@ -40,6 +45,7 @@ interface UseChatCallsParams {
     isTheaterHost: boolean
     theaterInvite: any
     gameInvite: GameInvite | null
+    activeGameSeries: GameSeries | null
     currentQuizSession: QuizSession | null
     quizTimeRemaining: number
     userQuizAnswer: string
@@ -64,6 +70,8 @@ interface UseChatCallsParams {
     setPlaygroundConfig: (val: any) => void
     setPlaygroundGame: (val: "dots" | "chess" | "tictactoe" | "connect4") => void
     setGameInvite: (val: any) => void
+    setActiveGameSeries: (val: GameSeries | null) => void
+    setShowGameSeriesViewer: (val: boolean) => void
     setActiveGame: (val: any) => void
     setShowKaraokeSetup: (val: boolean) => void
     setCurrentKaraokeSession: (val: any) => void
@@ -105,7 +113,7 @@ export function useChatCalls(params: UseChatCallsParams) {
     const {
         roomId, userProfile, currentUserId, isHost,
         incomingCall, currentCall, isInCall,
-        currentTheaterSession, isTheaterHost, theaterInvite, gameInvite,
+        currentTheaterSession, isTheaterHost, theaterInvite, gameInvite, activeGameSeries,
         currentQuizSession, quizTimeRemaining, userQuizAnswer, currentKaraokeSession,
     } = params
 
@@ -114,6 +122,100 @@ export function useChatCalls(params: UseChatCallsParams) {
     const callSignaling = CallSignaling.getInstance()
     const theaterSignaling = TheaterSignaling.getInstance()
     const quizSystem = QuizSystem.getInstance()
+
+    const toBoardType = useCallback((gameType: string): "chess" | "connect4" | "tictactoe" | null => {
+        if (gameType === "chess") return "chess"
+        if (gameType === "connect4") return "connect4"
+        if (gameType === "tictactoe") return "tictactoe"
+        return null
+    }, [])
+
+    const seriesBaseConfigRef = useRef<GameConfig | null>(null)
+    const openedSeriesMatchRef = useRef<string | null>(null)
+    const completedSeriesNoticeRef = useRef<string | null>(null)
+
+    useEffect(() => {
+        if (!roomId || !activeGameSeries?.id) return
+
+        const unsubscribe = gameSeriesManager.listenForSeries(roomId, activeGameSeries.id, (series) => {
+            params.setActiveGameSeries(series)
+        })
+
+        const sync = async () => {
+            await gameSeriesManager.syncSeriesProgress(roomId, activeGameSeries.id)
+        }
+        sync()
+        const timer = setInterval(sync, 5000)
+
+        return () => {
+            unsubscribe()
+            clearInterval(timer)
+        }
+    }, [roomId, activeGameSeries?.id])
+
+    useEffect(() => {
+        if (!activeGameSeries) {
+            openedSeriesMatchRef.current = null
+            return
+        }
+
+        if (activeGameSeries.status === "completed") {
+            if (completedSeriesNoticeRef.current === activeGameSeries.id) return
+            completedSeriesNoticeRef.current = activeGameSeries.id
+            if (activeGameSeries.finalWinnerId && activeGameSeries.finalWinnerId === currentUserId) {
+                notificationSystem.success("Series completed. You are the winner.")
+            } else if (activeGameSeries.finalWinnerName) {
+                notificationSystem.info(`Series completed. Winner: ${activeGameSeries.finalWinnerName}`)
+            }
+            return
+        }
+
+        const assignedMatch = gameSeriesManager.getAssignedMatch(activeGameSeries, currentUserId)
+        if (!assignedMatch || assignedMatch.winnerId) return
+        if (openedSeriesMatchRef.current === assignedMatch.id) return
+
+        const baseConfig = seriesBaseConfigRef.current || {
+            gameType: assignedMatch.isComputerMatch ? "single" : "double",
+            selectedGame: assignedMatch.gameType,
+            players: [],
+            difficulty: "medium",
+            voiceChatEnabled: false,
+            matchmakingMode: "series",
+            seriesId: activeGameSeries.id,
+            seriesRound: assignedMatch.round,
+            maxPlayers: activeGameSeries.participants.length
+        }
+
+        const matchConfig = gameSeriesManager.toMatchConfig(
+            {
+                ...baseConfig,
+                matchmakingMode: "series",
+                seriesId: activeGameSeries.id,
+                seriesRound: assignedMatch.round
+            },
+            assignedMatch,
+            currentUserId
+        )
+
+        openedSeriesMatchRef.current = assignedMatch.id
+        seriesBaseConfigRef.current = {
+            ...baseConfig,
+            selectedGame: matchConfig.selectedGame,
+            gameType: matchConfig.gameType,
+            players: matchConfig.players,
+            gameId: matchConfig.gameId,
+            matchmakingMode: "series",
+            seriesId: activeGameSeries.id,
+            seriesRound: assignedMatch.round,
+            assignedMatchId: assignedMatch.id
+        }
+
+        params.setActiveGame(null)
+        params.setPlaygroundConfig(matchConfig as any)
+        params.setShowPlayground(true)
+        params.setShowGameSeriesViewer(true)
+        notificationSystem.info(`Round ${assignedMatch.round} match is ready`)
+    }, [activeGameSeries?.id, activeGameSeries?.currentRound, activeGameSeries?.updatedAt, currentUserId])
 
     // --- Call handlers ---
     const handleStartAudioCall = useCallback(async () => {
@@ -365,15 +467,82 @@ export function useChatCalls(params: UseChatCallsParams) {
         params.setShowPlaygroundSetup(true)
     }, [params.setPlaygroundGame, params.setShowPlaygroundSetup])
 
+    const maybeStartSeries = useCallback(async (baseConfig: GameConfig) => {
+        if (!gameSeriesManager.supportsSeriesMode(baseConfig.selectedGame)) return false
+        if (baseConfig.gameType !== "double") return false
+
+        const participants = gameSeriesManager.buildParticipantsFromPresence(
+            params.onlineUsers,
+            currentUserId,
+            userProfile.name,
+            userProfile.avatar
+        )
+
+        if (participants.length <= 2) return false
+
+        const seriesGameType = gameSeriesManager.getSeriesGameType(baseConfig.selectedGame)
+        if (!seriesGameType) return false
+
+        const series = await gameSeriesManager.createSeries(
+            roomId,
+            seriesGameType,
+            currentUserId,
+            userProfile.name,
+            participants
+        )
+        if (!series) return false
+
+        const seriesConfig: GameConfig = {
+            ...baseConfig,
+            matchmakingMode: "series",
+            seriesId: series.id,
+            seriesRound: 1,
+            maxPlayers: participants.length
+        }
+
+        seriesBaseConfigRef.current = seriesConfig
+        openedSeriesMatchRef.current = null
+        completedSeriesNoticeRef.current = null
+
+        await sendGameInvite(seriesConfig)
+
+        params.setActiveGameSeries(series)
+        params.setShowGameSeriesViewer(true)
+        params.setShowPlaygroundSetup(false)
+        params.setShowPlayground(false)
+
+        const assignedMatch = gameSeriesManager.getAssignedMatch(series, currentUserId)
+        if (assignedMatch) {
+            const matchConfig = gameSeriesManager.toMatchConfig(seriesConfig, assignedMatch, currentUserId)
+            openedSeriesMatchRef.current = assignedMatch.id
+            params.setPlaygroundConfig(matchConfig as any)
+            params.setActiveGame(null)
+            params.setShowPlayground(true)
+        }
+
+        telemetry.logEvent("game_started", roomId, currentUserId, userProfile.name, {
+            game: baseConfig.selectedGame,
+            mode: "series",
+            participants: participants.length
+        })
+        notificationSystem.success(`Series started with ${participants.length} players`)
+        return true
+    }, [roomId, currentUserId, userProfile.name, userProfile.avatar, params.onlineUsers, sendGameInvite, toBoardType])
+
     const handleStartPlayground = useCallback(async (config: GameConfig) => {
         const gameId = (config as any).gameId || `game_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        const configWithId = { ...config, gameId }
+        const configWithId = { ...config, gameId, maxPlayers: config.maxPlayers || (config.gameType === "multi" ? 6 : 2) }
         if (config.gameType === "single") {
             params.setPlaygroundConfig(configWithId as any)
             params.setShowPlaygroundSetup(false)
             params.setShowPlayground(true)
             userPresence.updateActivity(roomId, currentUserId, "game")
         } else {
+            const startedSeries = await maybeStartSeries(configWithId as GameConfig)
+            if (startedSeries) {
+                userPresence.updateActivity(roomId, currentUserId, "game")
+                return
+            }
             await sendGameInvite(configWithId)
             params.setPlaygroundConfig(configWithId as any)
             params.setShowPlaygroundSetup(false)
@@ -381,50 +550,185 @@ export function useChatCalls(params: UseChatCallsParams) {
             userPresence.updateActivity(roomId, currentUserId, "game")
             telemetry.logEvent('game_started', roomId, currentUserId, userProfile.name, { game: config.gameType, mode: config.gameType })
         }
-    }, [roomId, currentUserId, sendGameInvite])
+    }, [roomId, currentUserId, sendGameInvite, maybeStartSeries])
 
     const handleAcceptGameInvite = useCallback(async (guestName?: string) => {
-        if (gameInvite) {
-            const updatedConfig = { ...gameInvite.gameConfig } as any
-            if (updatedConfig.players && updatedConfig.players.length > 1) {
-                const newPlayers = [...updatedConfig.players]
-                newPlayers[1] = {
-                    ...newPlayers[1],
-                    id: currentUserId,
-                    name: guestName || userProfile.name,
-                    isComputer: false
-                }
-                updatedConfig.players = newPlayers
+        if (!gameInvite) return
+
+        const updatedConfig = { ...gameInvite.gameConfig } as any
+        const isSeries = updatedConfig.matchmakingMode === "series" && !!updatedConfig.seriesId
+
+        if (isSeries) {
+            const series = await gameSeriesManager.getSeries(roomId, updatedConfig.seriesId)
+            if (!series) {
+                notificationSystem.error("Series not found or already ended")
+                params.setGameInvite(null)
+                return
             }
 
-            // Register guest in the database session
-            try {
-                if (gameInvite.gameId) {
-                    const gameType = updatedConfig.selectedGame || params.playgroundGame
-                    if (gameType === "chess") {
-                        await ChessManager.getInstance().joinGame(roomId, gameInvite.gameId, currentUserId, guestName || userProfile.name, userProfile.avatar)
-                    } else if (gameType === "tictactoe") {
-                        await TicTacToeManager.getInstance().joinGame(roomId, gameInvite.gameId, currentUserId, guestName || userProfile.name, userProfile.avatar)
-                    } else if (gameType === "connect4") {
-                        await ConnectFourManager.getInstance().joinGame(roomId, gameInvite.gameId, currentUserId, guestName || userProfile.name, userProfile.avatar)
-                    } else if (gameType === "dots") {
-                        await DotsBoxesManager.getInstance().joinGame(roomId, gameInvite.gameId, currentUserId, guestName || userProfile.name, userProfile.avatar)
+            seriesBaseConfigRef.current = updatedConfig
+            openedSeriesMatchRef.current = null
+            completedSeriesNoticeRef.current = null
+            params.setActiveGameSeries(series)
+            params.setShowGameSeriesViewer(true)
+            await gameSeriesManager.joinAsViewer(roomId, series.id, {
+                id: currentUserId,
+                name: userProfile.name,
+                avatar: userProfile.avatar
+            })
+
+            const assignedMatch = gameSeriesManager.getAssignedMatch(series, currentUserId)
+            if (!assignedMatch) {
+                const firstWatchable = gameSeriesManager.getWatchableMatches(series)[0]
+                if (firstWatchable?.gameId) {
+                    const boardType = toBoardType(firstWatchable.gameType)
+                    if (boardType) {
+                        params.setActiveGame({ type: boardType, id: firstWatchable.gameId })
                     }
                 }
-            } catch (error) {
-                console.error("Error joining game in database:", error)
+                notificationSystem.info("No assigned player slot. Joined as viewer.")
+                params.setGameInvite(null)
+                return
             }
 
-            params.setPlaygroundConfig(updatedConfig)
+            const matchConfig = gameSeriesManager.toMatchConfig(updatedConfig, assignedMatch, currentUserId)
+            openedSeriesMatchRef.current = assignedMatch.id
+            params.setPlaygroundConfig(matchConfig)
+            params.setActiveGame(null)
             params.setShowPlayground(true)
+
             params.setGameInvite(null)
             userPresence.updateActivity(roomId, currentUserId, "game")
+            return
         }
-    }, [roomId, currentUserId, gameInvite, userProfile, params.playgroundGame])
 
-    const handleDeclineGameInvite = useCallback(() => {
+        if (updatedConfig.players && updatedConfig.players.length > 1) {
+            const newPlayers = [...updatedConfig.players]
+            newPlayers[1] = {
+                ...newPlayers[1],
+                id: currentUserId,
+                name: guestName || userProfile.name,
+                isComputer: false
+            }
+            updatedConfig.players = newPlayers
+        }
+
+        // Register guest in the database session
+        try {
+            if (gameInvite.gameId) {
+                const gameType = updatedConfig.selectedGame || params.playgroundGame
+                if (gameType === "chess") {
+                    await ChessManager.getInstance().joinGame(roomId, gameInvite.gameId, currentUserId, guestName || userProfile.name, userProfile.avatar)
+                } else if (gameType === "tictactoe") {
+                    await TicTacToeManager.getInstance().joinGame(roomId, gameInvite.gameId, currentUserId, guestName || userProfile.name, userProfile.avatar)
+                } else if (gameType === "connect4") {
+                    await ConnectFourManager.getInstance().joinGame(roomId, gameInvite.gameId, currentUserId, guestName || userProfile.name, userProfile.avatar)
+                } else if (gameType === "dots") {
+                    await DotsBoxesManager.getInstance().joinGame(roomId, gameInvite.gameId, currentUserId, guestName || userProfile.name, userProfile.avatar)
+                }
+            }
+        } catch (error) {
+            console.error("Error joining game in database:", error)
+        }
+
+        params.setPlaygroundConfig(updatedConfig)
+        params.setShowPlayground(true)
         params.setGameInvite(null)
-    }, [])
+        userPresence.updateActivity(roomId, currentUserId, "game")
+    }, [roomId, currentUserId, gameInvite, userProfile, params.playgroundGame, toBoardType])
+
+    const handleAcceptGameInviteAsViewer = useCallback(async () => {
+        if (!gameInvite) return
+
+        const updatedConfig = { ...gameInvite.gameConfig } as any
+        const isSeries = updatedConfig.matchmakingMode === "series" && !!updatedConfig.seriesId
+
+        if (isSeries) {
+            const currentSeries = await gameSeriesManager.getSeries(roomId, updatedConfig.seriesId)
+            if (!currentSeries) {
+                notificationSystem.error("Series not found or already ended")
+                params.setGameInvite(null)
+                return
+            }
+
+            // Choosing viewer mode forfeits any active assigned player slot to keep the bracket progressing.
+            const series =
+                (await gameSeriesManager.forfeitParticipant(roomId, updatedConfig.seriesId, currentUserId, userProfile.name)) ||
+                currentSeries
+
+            seriesBaseConfigRef.current = updatedConfig
+            completedSeriesNoticeRef.current = null
+            params.setActiveGameSeries(series)
+            params.setShowGameSeriesViewer(true)
+            await gameSeriesManager.joinAsViewer(roomId, series.id, {
+                id: currentUserId,
+                name: userProfile.name,
+                avatar: userProfile.avatar
+            })
+
+            const firstWatchable = gameSeriesManager.getWatchableMatches(series)[0]
+            if (firstWatchable?.gameId) {
+                const boardType = toBoardType(firstWatchable.gameType)
+                if (boardType) {
+                    params.setActiveGame({ type: boardType, id: firstWatchable.gameId })
+                }
+            }
+            params.setGameInvite(null)
+            userPresence.updateActivity(roomId, currentUserId, "game")
+            return
+        }
+
+        if (gameInvite.gameId) {
+            const boardType = toBoardType(updatedConfig.selectedGame || params.playgroundGame)
+            if (boardType) {
+                params.setActiveGame({ type: boardType, id: gameInvite.gameId })
+            }
+        }
+        params.setGameInvite(null)
+        userPresence.updateActivity(roomId, currentUserId, "game")
+    }, [roomId, currentUserId, gameInvite, userProfile, params.playgroundGame, toBoardType])
+
+    const handleWatchSeriesMatch = useCallback((match: GameSeriesMatch) => {
+        if (!match.gameId) {
+            notificationSystem.info("This match is local (player vs computer) and cannot be watched live.")
+            return
+        }
+        const boardType = toBoardType(match.gameType)
+        if (!boardType) return
+        params.setActiveGame({ type: boardType, id: match.gameId })
+    }, [toBoardType])
+
+    const handleSeriesPrediction = useCallback(async (match: GameSeriesMatch, winnerId: string) => {
+        if (!activeGameSeries?.id) return
+        await gameSeriesManager.submitPrediction(roomId, activeGameSeries.id, match.id, currentUserId, userProfile.name, winnerId)
+    }, [roomId, activeGameSeries?.id, currentUserId, userProfile.name])
+
+    const handleSeriesVote = useCallback(async (match: GameSeriesMatch, winnerId: string) => {
+        if (!activeGameSeries?.id) return
+        await gameSeriesManager.submitVote(roomId, activeGameSeries.id, match.id, currentUserId, userProfile.name, winnerId)
+    }, [roomId, activeGameSeries?.id, currentUserId, userProfile.name])
+
+    const handleSeriesBet = useCallback(async (match: GameSeriesMatch, winnerId: string, amount: number) => {
+        if (!activeGameSeries?.id) return
+        if (!Number.isFinite(amount) || amount <= 0) {
+            notificationSystem.error("Bet amount must be greater than 0")
+            return
+        }
+        await gameSeriesManager.submitBet(roomId, activeGameSeries.id, match.id, currentUserId, userProfile.name, winnerId, amount)
+    }, [roomId, activeGameSeries?.id, currentUserId, userProfile.name])
+
+    const handleSeriesComputerResult = useCallback(async (match: GameSeriesMatch, winnerId: string, winnerName: string) => {
+        if (!activeGameSeries?.id) return
+        await gameSeriesManager.reportComputerMatchResult(roomId, activeGameSeries.id, match.id, winnerId, winnerName)
+        await gameSeriesManager.syncSeriesProgress(roomId, activeGameSeries.id)
+    }, [roomId, activeGameSeries?.id])
+
+    const handleDeclineGameInvite = useCallback(async () => {
+        if (gameInvite?.gameConfig?.matchmakingMode === "series" && gameInvite.gameConfig?.seriesId) {
+            await gameSeriesManager.forfeitParticipant(roomId, gameInvite.gameConfig.seriesId, currentUserId, userProfile.name)
+        }
+        params.setGameInvite(null)
+    }, [roomId, currentUserId, gameInvite, userProfile.name])
 
     const handleExitPlayground = useCallback(() => {
         params.setShowPlayground(false)
@@ -442,7 +746,12 @@ export function useChatCalls(params: UseChatCallsParams) {
                 Object.values(invites).forEach((invite: any) => {
                     if (invite.hostId !== currentUserId && !gameInvite) {
                         params.setGameInvite(invite as any)
-                        notificationSystem.success(`${invite.hostName} invited you to play ${invite.gameConfig.gameType} game!`)
+                        const isSeries = invite?.gameConfig?.matchmakingMode === "series"
+                        notificationSystem.success(
+                            isSeries
+                                ? `${invite.hostName} invited you to join a multi-room ${invite.gameConfig.selectedGame} series.`
+                                : `${invite.hostName} invited you to play ${invite.gameConfig.gameType} game!`
+                        )
                     }
                 })
             }
@@ -451,16 +760,22 @@ export function useChatCalls(params: UseChatCallsParams) {
     }, [roomId, currentUserId, gameInvite])
 
     // --- Karaoke handlers ---
-    const handleStartKaraoke = useCallback(async (song: KaraokeSong) => {
+    const handleStartKaraoke = useCallback(async (song: KaraokeSong, options?: { inviteAudience?: boolean }) => {
         try {
             karaokeManager.initialize(roomId, currentUserId, userProfile.name)
             const session = await karaokeManager.createSession(song)
             if (session) {
                 params.setCurrentKaraokeSession(session)
-                // await karaokeManager.startSession() // Don't start automatically
-                await karaokeManager.broadcastInvite(song)
+                const shouldInviteAudience = options?.inviteAudience !== false
+                if (shouldInviteAudience) {
+                    await karaokeManager.broadcastInvite(song)
+                }
                 telemetry.logEvent('karaoke_started', roomId, currentUserId, userProfile.name, { song: song.title })
-                // notificationSystem.success(`Karaoke invited: ${song.title}`)
+                if (shouldInviteAudience) {
+                    notificationSystem.success(`Karaoke invite sent: ${song.title}`)
+                } else {
+                    notificationSystem.success(`Karaoke started privately: ${song.title}`)
+                }
             }
         } catch (error) {
             console.error("Error starting karaoke:", error)
@@ -662,7 +977,6 @@ export function useChatCalls(params: UseChatCallsParams) {
         items: [
             { icon: Gamepad2, label: "Games Menu", action: () => params.setShowGameMenu(true) },
             { icon: Ghost, label: "Mafia/Werewolf", action: () => params.setShowMafiaSetup(true) },
-            { icon: Zap, label: "Start Quiz", action: () => params.setShowQuizSetup(true) },
             { icon: Dices, label: "Buzzword Bingo", action: () => params.setShowBingoSetup(true) },
         ]
     }
@@ -710,7 +1024,8 @@ export function useChatCalls(params: UseChatCallsParams) {
         handleAcceptTheaterInvite, handleDeclineTheaterInvite, handleExitTheater,
         // Game handlers
         listenForGameInvites, sendGameInvite,
-        handleStartPlayground, handleAcceptGameInvite, handleDeclineGameInvite, handleExitPlayground, handleOpenPlayground,
+        handleStartPlayground, handleAcceptGameInvite, handleAcceptGameInviteAsViewer, handleDeclineGameInvite, handleExitPlayground, handleOpenPlayground,
+        handleWatchSeriesMatch, handleSeriesPrediction, handleSeriesVote, handleSeriesBet, handleSeriesComputerResult,
         // Karaoke handlers
         handleStartKaraoke, handleExitKaraoke, handleAcceptKaraokeInvite, handleDeclineKaraokeInvite,
         // Quiz handlers

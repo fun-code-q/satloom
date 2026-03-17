@@ -106,13 +106,11 @@ function MessageBubble({
   isLastInGroup = true,
   isConsecutive = false,
 }: MessageBubbleProps) {
-  const [showReactions, setShowReactions] = useState(false)
   const [showFilePreview, setShowFilePreview] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editText, setEditText] = useState(message.text)
   const [transferProgress, setTransferProgress] = useState<TransferProgress | null>(null)
   const [p2pBlobUrl, setP2pBlobUrl] = useState<string | null>(null)
-  const [lastTap, setLastTap] = useState(0)
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [showHeartPulse, setShowHeartPulse] = useState(false)
@@ -122,8 +120,17 @@ function MessageBubble({
   const [isAudioPlaying, setIsAudioPlaying] = useState(false)
   const [swipeX, setSwipeX] = useState(0)
   const [isSwiping, setIsSwiping] = useState(false)
-  const [touchStart, setTouchStart] = useState(0)
   const [hasTriggeredReply, setHasTriggeredReply] = useState(false)
+  const swipeStartRef = useRef({ x: 0, y: 0 })
+  const swipeQueuedXRef = useRef(0)
+  const swipeRafRef = useRef<number | null>(null)
+  const replyTriggeredRef = useRef(false)
+
+  const SWIPE_REPLY_THRESHOLD = 64
+  const SWIPE_MAX_DISTANCE = 120
+  const SWIPE_ELASTIC_START = 72
+  const SWIPE_CANCEL_VERTICAL = 18
+  const SWIPE_MOVE_CANCEL_LONG_PRESS = 8
 
 
   const heartCount = useMemo(() => message.reactions?.heart?.length || 0, [message.reactions])
@@ -134,6 +141,7 @@ function MessageBubble({
   const isVideo = useMemo(() => message.file?.type.startsWith("video/"), [message.file])
   const isAudio = useMemo(() => message.file?.type.startsWith("audio/"), [message.file])
   const processedText = useMemo(() => parseEmojis(message.text), [message.text])
+  const parsedMessageParts = useMemo(() => parseUrls(processedText), [processedText])
   const urls = useMemo(() => message.text.match(/(https?:\/\/[^\s]+)/g) || [], [message.text])
   const messageId = `message-${message.id}`
   const fileUrl = p2pBlobUrl || message.file?.url
@@ -162,7 +170,9 @@ function MessageBubble({
       try {
         await audio.play()
       } catch (error) {
-        console.error("Audio playback failed:", error)
+        if ((error as DOMException)?.name !== "AbortError") {
+          console.error("Audio playback failed:", error)
+        }
       }
       return
     }
@@ -206,9 +216,16 @@ function MessageBubble({
     }
   }, [])
 
+  useEffect(() => {
+    return () => {
+      if (p2pBlobUrl) {
+        URL.revokeObjectURL(p2pBlobUrl)
+      }
+    }
+  }, [p2pBlobUrl])
+
   const handleReaction = (reaction: "heart" | "thumbsUp") => {
     onReact(message.id, reaction, currentUser)
-    setShowReactions(false)
   }
 
   const handleEdit = () => {
@@ -226,13 +243,43 @@ function MessageBubble({
     }
   }
 
+  const clearLongPressTimer = useCallback(() => {
+    if (!longPressTimer.current) return
+    clearTimeout(longPressTimer.current)
+    longPressTimer.current = null
+  }, [])
+
+  const queueSwipeXUpdate = useCallback((nextSwipeX: number) => {
+    swipeQueuedXRef.current = nextSwipeX
+    if (swipeRafRef.current !== null) return
+
+    swipeRafRef.current = window.requestAnimationFrame(() => {
+      swipeRafRef.current = null
+      setSwipeX(swipeQueuedXRef.current)
+    })
+  }, [])
+
+  const setReplyTriggeredState = useCallback((nextValue: boolean) => {
+    if (replyTriggeredRef.current === nextValue) return
+    replyTriggeredRef.current = nextValue
+    setHasTriggeredReply(nextValue)
+    if (nextValue && navigator.vibrate) {
+      navigator.vibrate(10)
+    }
+  }, [])
+
   const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX)
+    const touch = e.targetTouches[0]
+    swipeStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+    }
     setIsSwiping(true)
-    setHasTriggeredReply(false)
+    setReplyTriggeredState(false)
+    queueSwipeXUpdate(0)
 
     // Long press detection for mobile
-    if (longPressTimer.current) clearTimeout(longPressTimer.current)
+    clearLongPressTimer()
     longPressTimer.current = setTimeout(() => {
         if (navigator.vibrate) navigator.vibrate(40)
         setIsMenuOpen(true)
@@ -241,50 +288,66 @@ function MessageBubble({
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isSwiping) return
-    
-    // If finger moves too much, cancel long press
-    const touchMoveX = e.targetTouches[0].clientX
-    const diff = touchMoveX - touchStart
-    
-    if (Math.abs(diff) > 10) {
-        if (longPressTimer.current) {
-            clearTimeout(longPressTimer.current)
-            longPressTimer.current = null
-        }
+
+    const touch = e.targetTouches[0]
+    const diffX = touch.clientX - swipeStartRef.current.x
+    const diffY = touch.clientY - swipeStartRef.current.y
+
+    // Let vertical scroll gestures pass through quickly.
+    if (Math.abs(diffY) > SWIPE_CANCEL_VERTICAL && Math.abs(diffY) > Math.abs(diffX)) {
+      clearLongPressTimer()
+      setIsSwiping(false)
+      setReplyTriggeredState(false)
+      queueSwipeXUpdate(0)
+      return
+    }
+
+    if (Math.abs(diffX) > SWIPE_MOVE_CANCEL_LONG_PRESS || Math.abs(diffY) > SWIPE_MOVE_CANCEL_LONG_PRESS) {
+      clearLongPressTimer()
     }
 
     // Only allow swiping right
-    if (diff > 0) {
-      // Limit swipe distance
-      const limitedDiff = Math.min(diff, 100)
-      setSwipeX(limitedDiff)
-
-      // Trigger threshold (60px)
-      if (limitedDiff >= 60 && !hasTriggeredReply) {
-        setHasTriggeredReply(true)
-        if (navigator.vibrate) {
-            navigator.vibrate(10) // Subtle haptic feedback
-        }
-      } else if (limitedDiff < 60 && hasTriggeredReply) {
-        setHasTriggeredReply(false)
-      }
-    } else {
-      setSwipeX(0)
+    if (diffX <= 0) {
+      queueSwipeXUpdate(0)
+      setReplyTriggeredState(false)
+      return
     }
+
+    const clampedDiff = Math.min(diffX, SWIPE_MAX_DISTANCE)
+    const easedDiff =
+      clampedDiff <= SWIPE_ELASTIC_START
+        ? clampedDiff
+        : SWIPE_ELASTIC_START + (clampedDiff - SWIPE_ELASTIC_START) * 0.35
+
+    queueSwipeXUpdate(easedDiff)
+    setReplyTriggeredState(clampedDiff >= SWIPE_REPLY_THRESHOLD)
   }
 
   const handleTouchEnd = () => {
-    if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current)
-        longPressTimer.current = null
-    }
-    if (hasTriggeredReply) {
+    clearLongPressTimer()
+    if (replyTriggeredRef.current) {
       onReply(message)
     }
-    setSwipeX(0)
+    setReplyTriggeredState(false)
+    queueSwipeXUpdate(0)
     setIsSwiping(false)
-    setHasTriggeredReply(false)
   }
+
+  const handleTouchCancel = () => {
+    clearLongPressTimer()
+    setReplyTriggeredState(false)
+    queueSwipeXUpdate(0)
+    setIsSwiping(false)
+  }
+
+  useEffect(() => {
+    return () => {
+      clearLongPressTimer()
+      if (swipeRafRef.current !== null) {
+        window.cancelAnimationFrame(swipeRafRef.current)
+      }
+    }
+  }, [clearLongPressTimer])
 
   const handleDoubleClick = () => {
     handleReaction("heart")
@@ -413,7 +476,10 @@ function MessageBubble({
         (progress) => setTransferProgress(progress)
       )
       const url = URL.createObjectURL(blob)
-      setP2pBlobUrl(url)
+      setP2pBlobUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev)
+        return url
+      })
     } catch (err) {
       console.error("P2P download failed:", err)
       setTransferProgress({ percentage: 0, status: "error", error: "Transfer failed" })
@@ -659,11 +725,10 @@ function MessageBubble({
             transform: `translateX(${swipeX}px)`,
             touchAction: "pan-y",
           }}
-          onMouseEnter={() => setShowReactions(true)}
-          onMouseLeave={() => setShowReactions(false)}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchCancel}
           onDoubleClick={handleDoubleClick}
         >
           {/* Double Tap Heart Animation Overlay */}
@@ -735,7 +800,7 @@ function MessageBubble({
             <>
               {message.text && !message.text.startsWith("📊 Poll: ") && !message.text.startsWith("📅 Event: ") && (
                 <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                  {parseUrls(processedText).map((part, index) => (
+                  {parsedMessageParts.map((part, index) => (
                     <span key={index}>{part}</span>
                   ))}
                 </div>
@@ -905,8 +970,132 @@ function MessageBubble({
   )
 }
 
+const toTimestamp = (value: unknown): number => {
+  if (value instanceof Date) return value.getTime()
+  if (typeof value === "number") return value
+  if (typeof value === "string") {
+    const parsed = new Date(value).getTime()
+    return Number.isNaN(parsed) ? 0 : parsed
+  }
+  return 0
+}
+
+const areStringArraysEqual = (left?: string[], right?: string[]) => {
+  if (left === right) return true
+  if (!left || !right) return !left && !right
+  if (left.length !== right.length) return false
+  for (let index = 0; index < left.length; index += 1) {
+    if (left[index] !== right[index]) return false
+  }
+  return true
+}
+
+const areReplyEqual = (left?: Message["replyTo"], right?: Message["replyTo"]) => {
+  if (left === right) return true
+  if (!left || !right) return !left && !right
+  return left.id === right.id && left.text === right.text && left.sender === right.sender
+}
+
+const areFileEqual = (left?: Message["file"], right?: Message["file"]) => {
+  if (left === right) return true
+  if (!left || !right) return !left && !right
+  return (
+    left.name === right.name &&
+    left.type === right.type &&
+    left.url === right.url &&
+    left.size === right.size &&
+    left.p2p === right.p2p &&
+    left.fileId === right.fileId &&
+    left.senderId === right.senderId &&
+    left.encrypted === right.encrypted
+  )
+}
+
+const arePollEqual = (left?: Message["poll"], right?: Message["poll"]) => {
+  if (left === right) return true
+  if (!left || !right) return !left && !right
+  if (left.question !== right.question || left.isOpen !== right.isOpen) return false
+  if (left.options.length !== right.options.length) return false
+
+  for (let index = 0; index < left.options.length; index += 1) {
+    const leftOption = left.options[index]
+    const rightOption = right.options[index]
+    if (!rightOption) return false
+    if (leftOption.text !== rightOption.text) return false
+    if (!areStringArraysEqual(leftOption.votes, rightOption.votes)) return false
+  }
+
+  return true
+}
+
+const areEventEqual = (left?: Message["event"], right?: Message["event"]) => {
+  if (left === right) return true
+  if (!left || !right) return !left && !right
+
+  return (
+    left.title === right.title &&
+    left.date === right.date &&
+    left.time === right.time &&
+    left.location === right.location &&
+    left.description === right.description &&
+    areStringArraysEqual(left.attendees?.going, right.attendees?.going) &&
+    areStringArraysEqual(left.attendees?.maybe, right.attendees?.maybe) &&
+    areStringArraysEqual(left.attendees?.notGoing, right.attendees?.notGoing)
+  )
+}
+
+const areReactionsEqual = (left?: Message["reactions"], right?: Message["reactions"]) => {
+  if (left === right) return true
+  if (!left || !right) return !left && !right
+  return (
+    areStringArraysEqual(left.heart, right.heart) &&
+    areStringArraysEqual(left.thumbsUp, right.thumbsUp)
+  )
+}
+
+const areMessagesEqual = (left: Message, right: Message) => {
+  return (
+    left.id === right.id &&
+    left.text === right.text &&
+    left.sender === right.sender &&
+    toTimestamp(left.timestamp) === toTimestamp(right.timestamp) &&
+    left.edited === right.edited &&
+    toTimestamp(left.editedAt) === toTimestamp(right.editedAt) &&
+    left.type === right.type &&
+    areReplyEqual(left.replyTo, right.replyTo) &&
+    areReactionsEqual(left.reactions, right.reactions) &&
+    areFileEqual(left.file, right.file) &&
+    arePollEqual(left.poll, right.poll) &&
+    areEventEqual(left.event, right.event) &&
+    areStringArraysEqual(left.readBy, right.readBy)
+  )
+}
+
+const areMessageBubblePropsEqual = (prevProps: MessageBubbleProps, nextProps: MessageBubbleProps) => {
+  return (
+    areMessagesEqual(prevProps.message, nextProps.message) &&
+    prevProps.isOwnMessage === nextProps.isOwnMessage &&
+    prevProps.userColor === nextProps.userColor &&
+    prevProps.currentUser === nextProps.currentUser &&
+    prevProps.userAvatar === nextProps.userAvatar &&
+    prevProps.roomId === nextProps.roomId &&
+    prevProps.isFirstInGroup === nextProps.isFirstInGroup &&
+    prevProps.isLastInGroup === nextProps.isLastInGroup &&
+    prevProps.isConsecutive === nextProps.isConsecutive &&
+    prevProps.onReply === nextProps.onReply &&
+    prevProps.onReact === nextProps.onReact &&
+    prevProps.onDelete === nextProps.onDelete &&
+    prevProps.onEdit === nextProps.onEdit &&
+    prevProps.onCopy === nextProps.onCopy &&
+    prevProps.onVote === nextProps.onVote &&
+    prevProps.onRSVP === nextProps.onRSVP &&
+    prevProps.onPin === nextProps.onPin &&
+    prevProps.onReplyClick === nextProps.onReplyClick
+  )
+}
+
 // Memoized version for better performance in virtual lists
-const MemoizedMessageBubble = memo(MessageBubble)
+const MemoizedMessageBubble = memo(MessageBubble, areMessageBubblePropsEqual)
 MemoizedMessageBubble.displayName = "MessageBubble"
 
 // Export the memoized version as MessageBubble

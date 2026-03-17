@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { ImageIcon, Camera, Video, FileText, Mic, MapPin, User, Paperclip, BarChart2, Calendar, X, HelpCircle, Palette, Eye, Music2, Sparkles, Plus } from "lucide-react"
+import { ImageIcon, Camera, Video, FileText, Mic, MapPin, User, Paperclip, BarChart2, Calendar, X, HelpCircle, Palette, Eye, Music2, Sparkles, Plus, Monitor, CheckSquare, MonitorPlay } from "lucide-react"
 import { toast } from "sonner"
 
 interface AttachmentMenuProps {
@@ -18,8 +18,15 @@ interface AttachmentMenuProps {
   onReactRoom?: () => void
   onAudioCall?: () => void
   onVideoCall?: () => void
+  onWhiteboard?: () => void
+  onPresentation?: () => void
+  onNotes?: () => void
+  onCheckList?: () => void
+  onQuizStart?: () => void
   onClose?: () => void
   isMobile?: boolean
+  hasUnreadNotes?: boolean
+  hasUnreadTasks?: boolean
 }
 
 export function AttachmentMenu({
@@ -35,8 +42,15 @@ export function AttachmentMenu({
   onReactRoom,
   onAudioCall,
   onVideoCall,
+  onWhiteboard,
+  onPresentation,
+  onNotes,
+  onCheckList,
+  onQuizStart,
   onClose,
-  isMobile = false
+  isMobile = false,
+  hasUnreadNotes = false,
+  hasUnreadTasks = false
 }: AttachmentMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
 
@@ -157,11 +171,68 @@ export function AttachmentMenu({
         handleClose()
       },
     },
+    {
+      icon: Monitor,
+      label: "Board",
+      type: "whiteboard",
+      action: () => {
+        onWhiteboard?.()
+        handleClose()
+      },
+    },
+    {
+      icon: MonitorPlay,
+      label: "Present",
+      type: "presentation",
+      action: () => {
+        onPresentation?.()
+        handleClose()
+      },
+    },
+    {
+      icon: FileText,
+      label: "Notes",
+      type: "notes",
+      action: () => {
+        onNotes?.()
+        handleClose()
+      },
+    },
+    {
+      icon: CheckSquare,
+      label: "Tasks",
+      type: "checklist",
+      action: () => {
+        onCheckList?.()
+        handleClose()
+      },
+    },
+    {
+      icon: HelpCircle,
+      label: "Quiz",
+      type: "quiz",
+      action: () => {
+        onQuizStart?.()
+        handleClose()
+      },
+    },
   ]
 
   const filteredOptions = isMobile
-    ? attachmentOptions.filter(opt => !["sounds", "react", "audio-call", "video-call"].includes(opt.type))
-    : attachmentOptions.filter(opt => !["audio-call", "video-call", "sounds", "vanish", "react"].includes(opt.type))
+    ? attachmentOptions.filter(
+      (opt) =>
+        [
+          "poll",
+          "event",
+          "vanish",
+          "whiteboard",
+          "presentation",
+          "notes",
+          "checklist",
+          "quiz",
+        ].includes(opt.type)
+    )
+    : attachmentOptions.filter(opt => !["audio-call", "video-call", "sounds", "vanish", "react", "gallery", "camera", "location", "contact", "document", "audio"].includes(opt.type))
 
   const triggerFileInput = (accept: string, type: string) => {
     const input = document.createElement("input")
@@ -282,7 +353,7 @@ export function AttachmentMenu({
     return (
       <div className="w-fit bg-slate-900/40 backdrop-blur-xl rounded-2xl p-2 shadow-2xl transition-all">
         {/* Mobile attachment menu - Compact Icon-only Grid */}
-        <div className="grid grid-cols-3 gap-1">
+        <div className="grid grid-cols-4 gap-1">
           {filteredOptions.map((option, index) => (
             <button
               key={index}
@@ -290,8 +361,11 @@ export function AttachmentMenu({
               className="flex items-center justify-center p-2 rounded-xl active:scale-95 transition-transform"
               aria-label={option.label}
             >
-              <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center shadow-lg hover:bg-white/10">
+              <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center shadow-lg hover:bg-white/10 relative">
                 <option.icon className="w-6 h-6 text-cyan-400" />
+                {((option.type === 'notes' && hasUnreadNotes) || (option.type === 'checklist' && hasUnreadTasks)) && (
+                  <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 border-2 border-slate-900 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+                )}
               </div>
             </button>
           ))}
@@ -335,10 +409,13 @@ export function AttachmentMenu({
                 aria-label={option.label}
               >
                 <div
-                  className="w-12 h-12 rounded-xl bg-cyan-500 flex items-center justify-center group-hover:bg-cyan-400 transition-colors"
+                  className="w-12 h-12 rounded-xl bg-cyan-500 flex items-center justify-center group-hover:bg-cyan-400 transition-colors relative"
                   aria-hidden="true"
                 >
                   <option.icon className="w-6 h-6 text-white" />
+                  {((option.type === 'notes' && hasUnreadNotes) || (option.type === 'checklist' && hasUnreadTasks)) && (
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-slate-800 rounded-full" />
+                  )}
                 </div>
                 <span className="text-white text-sm font-medium">{option.label}</span>
               </button>

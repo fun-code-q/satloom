@@ -10,6 +10,7 @@ import { ref, get, set, remove } from "firebase/database"
 import { signInAnonymously, onAuthStateChanged, type User } from "firebase/auth"
 import dynamic from "next/dynamic"
 import { telemetry } from "@/utils/core/telemetry"
+import { PwaInstallPrompt } from "@/components/pwa-install-prompt"
 
 // Forced re-compile comment to resolve 404 after cache clear
 // Lazy load components for code splitting
@@ -385,6 +386,7 @@ export default function Home() {
   return (
     <ThemeProvider>
       <div className="h-screen h-[100dvh] overflow-hidden bg-slate-950">
+        <PwaInstallPrompt />
         <div className="h-full w-full">
           {isLoading ? (
             <LoadingFallback />

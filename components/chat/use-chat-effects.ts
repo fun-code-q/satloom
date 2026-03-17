@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { ref, onValue, get, set } from "firebase/database"
+import { ref, onValue, get, set, runTransaction } from "firebase/database"
 import { getFirebaseDatabase } from "../../lib/firebase"
 import { NotificationSystem } from "@/utils/core/notification-system"
 import { MessageStorage } from "@/utils/infra/message-storage"
@@ -16,6 +16,7 @@ import { p2pFileTransfer } from "@/utils/infra/p2p-file-transfer"
 import { karaokeManager } from "@/utils/games/karaoke"
 import type { Message } from "../message-bubble"
 import type { RoomMember } from "@/stores/chat-store"
+import type { GameSeries } from "@/utils/games/game-series-manager"
 
 interface UseChatEffectsParams {
     roomId: string
@@ -47,6 +48,7 @@ interface UseChatEffectsParams {
     setTheaterInvite: (val: any) => void
     setIsTheaterHost: (val: boolean) => void
     setGameInvite: (val: any) => void
+    setActiveGameSeries: (val: any) => void
     setKaraokeInvite: (val: any) => void
     setCurrentKaraokeSession: (val: any) => void
     setPresentationInvite: (val: any) => void
@@ -88,7 +90,7 @@ export function useChatEffects(params: UseChatEffectsParams) {
         setIncomingCall, currentCall, setCurrentCall, setIsInCall, setShowAudioCall, setShowVideoCall,
         setCurrentQuizSession, setQuizAnswers, setQuizResults, setUserQuizAnswer, setShowQuizResults, setQuizTimeRemaining,
         setCurrentTheaterSession, setTheaterInvite, setIsTheaterHost,
-        setGameInvite, setKaraokeInvite, setPresentationInvite, setWhiteboardInvite, setPinnedMessageId, setPinnedMessage, setIsHost,
+        setGameInvite, setActiveGameSeries, setKaraokeInvite, setPresentationInvite, setWhiteboardInvite, setPinnedMessageId, setPinnedMessage, setIsHost,
         setCurrentKaraokeSession,
         setRoomIsProtected, setPasswordValidated, setMoodBackgroundImage, setMoodBackgroundMusic, setMoodPlaylist,
         setHasUnreadNotes, setHasUnreadTasks, showSharedNotes, showSharedTaskList,
@@ -190,6 +192,7 @@ export function useChatEffects(params: UseChatEffectsParams) {
         setOnlineUsers([])
         setRoomMembers([])
         setGameInvite(null)
+        setActiveGameSeries(null)
         setKaraokeInvite(null)
         prevOnlineUsersRef.current = []
 
@@ -473,6 +476,65 @@ export function useChatEffects(params: UseChatEffectsParams) {
             }
         }
     }, [roomId, currentUserId, userProfile.name, (userProfile as any).avatar, themeContext])
+
+    // Host-only system feed for game-series progress updates.
+    useEffect(() => {
+        const db = getFirebaseDatabase()
+        if (!db || !roomId || !isHost) return
+
+        const sendSeriesMessage = async (text: string) => {
+            await messageStorage.sendMessage(roomId, {
+                text,
+                sender: "System",
+                timestamp: new Date(),
+                type: "game-series",
+                reactions: { heart: [], thumbsUp: [] }
+            }, "system")
+        }
+
+        const seriesRef = ref(db, `rooms/${roomId}/gameSeries`)
+        const unsubscribe = onValue(seriesRef, async (snapshot) => {
+            const seriesMap = snapshot.val() as Record<string, GameSeries> | null
+            if (!seriesMap) return
+
+            try {
+                for (const [seriesId, series] of Object.entries(seriesMap)) {
+                    if (!series?.matches?.length) continue
+
+                    for (const match of series.matches) {
+                        if (match.status !== "completed" || !match.winnerId || !match.winnerName) continue
+
+                        const markerValue = `${match.winnerId}|${match.winnerName}`
+                        const markerRef = ref(db, `rooms/${roomId}/gameSeriesAnnouncements/${seriesId}/matches/${match.id}`)
+                        const markerResult = await runTransaction(markerRef, (current) => current ?? markerValue)
+                        const shouldAnnounce = markerResult.committed && markerResult.snapshot.val() === markerValue
+                        if (!shouldAnnounce) continue
+
+                        const isForfeit = /forfeit/i.test(match.winnerName || "")
+                        const cleanWinnerName = (match.winnerName || "Unknown").replace(/\s*\(forfeit\)\s*$/i, "")
+                        const summary = isForfeit
+                            ? `[FORFEIT] Round ${match.round} Match ${match.position}: ${cleanWinnerName} won by forfeit.`
+                            : `[RESULT] Round ${match.round} Match ${match.position}: ${cleanWinnerName} won.`
+                        await sendSeriesMessage(summary)
+                    }
+
+                    if (series.status === "completed" && series.finalWinnerId && series.finalWinnerName) {
+                        const finalMarker = `${series.finalWinnerId}|${series.finalWinnerName}`
+                        const finalMarkerRef = ref(db, `rooms/${roomId}/gameSeriesAnnouncements/${seriesId}/finalWinner`)
+                        const finalResult = await runTransaction(finalMarkerRef, (current) => current ?? finalMarker)
+                        const shouldAnnounceFinal = finalResult.committed && finalResult.snapshot.val() === finalMarker
+                        if (shouldAnnounceFinal) {
+                            await sendSeriesMessage(`[WINNER] ${series.gameType.toUpperCase()} series winner: ${series.finalWinnerName}`)
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to broadcast series updates:", error)
+            }
+        })
+
+        return () => unsubscribe()
+    }, [roomId, isHost, messageStorage])
 
     // Update pinned message
     useEffect(() => {

@@ -1,90 +1,104 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Film, Play, Youtube, Video, Loader2, Monitor, Globe, Paperclip } from "lucide-react"
+import { Film, Loader2, Paperclip, Upload } from "lucide-react"
 import { toast } from "sonner"
 import { fetchArchiveVideoInfo, extractArchiveId } from "@/utils/infra/archive-org"
 import { buildVimeoEmbedUrl, extractVimeoVideoRef } from "@/utils/infra/vimeo-url"
+
+type TheaterVideoType = "direct" | "youtube" | "vimeo" | "twitch" | "dailymotion" | "archive" | "soundcloud" | "webrtc"
 
 interface TheaterSetupModalProps {
   isOpen: boolean
   onClose: () => void
   onCreateSession: (
     videoUrl: string,
-    videoType: "direct" | "youtube" | "vimeo" | "dailymotion" | "archive" | "soundcloud" | "webrtc",
+    videoType: TheaterVideoType,
     file?: File
   ) => void
 }
 
+function normalizeInputUrl(input: string): string {
+  const trimmed = input.trim()
+  if (!trimmed) return ""
+  if (/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(trimmed)) return trimmed
+  return `https://${trimmed}`
+}
+
+function detectVideoType(input: string): Exclude<TheaterVideoType, "webrtc"> {
+  const normalized = normalizeInputUrl(input).toLowerCase()
+  if (!normalized) return "direct"
+
+  if (
+    normalized.includes("youtube.com/watch") ||
+    normalized.includes("youtube.com/shorts/") ||
+    normalized.includes("youtube.com/live/") ||
+    normalized.includes("youtu.be/")
+  ) {
+    return "youtube"
+  }
+
+  if (normalized.includes("vimeo.com/") || normalized.includes("player.vimeo.com/")) {
+    return "vimeo"
+  }
+
+  if (normalized.includes("dailymotion.com/video/") || normalized.includes("dai.ly/")) {
+    return "dailymotion"
+  }
+
+  if (normalized.includes("archive.org/")) {
+    return "archive"
+  }
+
+  if (normalized.includes("soundcloud.com/") || normalized.includes("snd.sc/") || normalized.includes("w.soundcloud.com/")) {
+    return "soundcloud"
+  }
+
+  if (normalized.includes("twitch.tv/") || normalized.includes("clips.twitch.tv/")) {
+    return "twitch"
+  }
+
+  return "direct"
+}
+
+function getTypeLabel(videoType: Exclude<TheaterVideoType, "webrtc">): string {
+  switch (videoType) {
+    case "youtube":
+      return "YouTube"
+    case "vimeo":
+      return "Vimeo"
+    case "dailymotion":
+      return "Dailymotion"
+    case "archive":
+      return "Archive.org"
+    case "soundcloud":
+      return "SoundCloud"
+    case "twitch":
+      return "Twitch"
+    default:
+      return "Direct URL"
+  }
+}
+
 export function TheaterSetupModal({ isOpen, onClose, onCreateSession }: TheaterSetupModalProps) {
   const [videoUrl, setVideoUrl] = useState("")
-  const [selectedType, setSelectedType] = useState<"direct" | "youtube" | "vimeo" | "dailymotion" | "archive" | "soundcloud" | "webrtc">("direct")
   const [isLoading, setIsLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const videoTypes = [
-    {
-      id: "direct" as const,
-      label: "Direct Video",
-      icon: Video,
-      description: "MP4, WebM files",
-    },
-    {
-      id: "youtube" as const,
-      label: "YouTube",
-      icon: Youtube,
-      description: "YouTube videos",
-    },
-    {
-      id: "vimeo" as const,
-      label: "Vimeo",
-      icon: Play,
-      description: "Vimeo videos",
-    },
-    {
-      id: "dailymotion" as const,
-      label: "Dailymotion",
-      icon: Monitor,
-      description: "Dailymotion videos",
-    },
-    {
-      id: "archive" as const,
-      label: "Archive.org",
-      icon: Globe,
-      description: "Public Domain Movies",
-    },
-    {
-      id: "soundcloud" as const,
-      label: "Soundcloud",
-      icon: Paperclip, // Use Paperclip or Music if available, but Paperclip is imported
-      description: "Audio & Podcasts",
-    },
-  ]
+  const detectedType = useMemo(() => detectVideoType(videoUrl), [videoUrl])
 
   const handleLoadVideo = async () => {
-    if (selectedType !== "webrtc" && !videoUrl.trim()) return
+    if (!videoUrl.trim()) return
 
     setIsLoading(true)
     try {
-      // Validate URL based on type
-      // Keep original URL for ReactPlayer - it handles conversion internally
-      let processedUrl = videoUrl.trim()
-      let embedUrl = videoUrl.trim() // Separate embed URL for iframe fallback
+      const normalizedUrl = normalizeInputUrl(videoUrl)
+      let processedUrl = normalizedUrl
+      const autoType = detectVideoType(normalizedUrl)
 
-      if (selectedType === "webrtc") {
-        processedUrl = "local://stream"
-        embedUrl = "local://stream"
-      } else if (selectedType === "youtube") {
-        // Handle youtube.com, youtu.be, and shorts
-        const youtubeRegex = /(?:youtube\.com\/(?:watch\?v=|shorts\/|live\/)|youtu\.be\/)([^&\n?#]+)/
-        const match = processedUrl.match(youtubeRegex)
-        if (match) {
-          embedUrl = `https://www.youtube.com/embed/${match[1]}?enablejsapi=1&controls=1&origin=${typeof window !== 'undefined' ? window.location.origin : '*'}`
-        }
-      } else if (selectedType === "vimeo") {
+      if (autoType === "vimeo") {
         const vimeoInfo = extractVimeoVideoRef(processedUrl)
         if (!vimeoInfo) {
           toast.error("Invalid Vimeo URL")
@@ -95,39 +109,21 @@ export function TheaterSetupModal({ isOpen, onClose, onCreateSession }: TheaterS
         if (normalizedEmbed) {
           // Store canonical Vimeo embed URL so playback controls always have API enabled.
           processedUrl = normalizedEmbed
-          embedUrl = normalizedEmbed
         }
-      } else if (selectedType === "dailymotion") {
-        // Handle dailymotion.com and dai.ly
-        const dmRegex = /(?:dailymotion\.com\/video\/|dai\.ly\/)([a-zA-Z0-9]+)/
-        const match = processedUrl.match(dmRegex)
-        if (match) {
-          embedUrl = `https://www.dailymotion.com/embed/video/${match[1]}?autoplay=1`
-        }
-      } else if (selectedType === "archive") {
+      } else if (autoType === "archive") {
         const itemId = extractArchiveId(processedUrl)
         if (itemId) {
           const info = await fetchArchiveVideoInfo(itemId)
           if (info && info.directVideoUrl) {
             processedUrl = info.directVideoUrl
-            embedUrl = info.directVideoUrl
-          } else {
-            // Fallback to iframe if metadata fetch fails
-            embedUrl = processedUrl.replace("/details/", "/embed/")
           }
-        } else if (processedUrl.includes("/details/") || processedUrl.includes("/download/")) {
-          // Fallback regex-based replacement if extractArchiveId fails
-          embedUrl = processedUrl.replace("/details/", "/embed/")
         }
-      } else if (selectedType === "soundcloud") {
-        embedUrl = `https://w.soundcloud.com/player/?url=${encodeURIComponent(processedUrl)}&color=%23ff5500&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true`
       }
 
-      // Pass the ReactPlayer-compatible URL (not embed format)
-      onCreateSession(processedUrl, selectedType)
+      onCreateSession(processedUrl, autoType)
       onClose()
       setVideoUrl("")
-      toast.success(selectedType === "webrtc" ? "Local streaming mode entered!" : "Video loaded successfully!")
+      toast.success(`${getTypeLabel(autoType)} link loaded successfully.`)
     } catch (error) {
       console.error("Error loading video:", error)
       toast.error("Failed to load video")
@@ -147,102 +143,84 @@ export function TheaterSetupModal({ isOpen, onClose, onCreateSession }: TheaterS
 
   const handleClose = () => {
     setVideoUrl("")
-    setSelectedType("direct")
     onClose()
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-lg">
+      <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-md p-4 sm:p-5">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+          <DialogTitle className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
             Cinema Theater Setup
           </DialogTitle>
-          <DialogDescription className="text-slate-400">
-            Configure your video session and share media with everyone in the room.
+          <DialogDescription className="text-slate-400 text-sm">
+            Paste one link. SatLoom auto-detects the platform and syncs playback for everyone.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[280px] overflow-y-auto pr-1 custom-scrollbar">
-            {videoTypes.map((type) => (
-              <Button
-                key={type.id}
-                variant={selectedType === type.id ? "default" : "outline"}
-                className={`h-auto p-3 flex flex-col gap-2 transition-all duration-200 ${selectedType === type.id
-                  ? "bg-cyan-500 hover:bg-cyan-600 border-transparent shadow-md shadow-cyan-500/20"
-                  : "border-slate-600 hover:bg-slate-700 bg-transparent text-slate-300"
-                  }`}
-                onClick={() => setSelectedType(type.id)}
-              >
-                <div className={`p-1.5 rounded-lg ${selectedType === type.id ? "bg-white/20" : "bg-slate-700"}`}>
-                  <type.icon className="w-4 h-4" />
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[11px] font-bold truncate w-full">{type.label}</span>
-                  <span className="text-[9px] opacity-40 truncate w-full">{type.description}</span>
-                </div>
-              </Button>
-            ))}
-          </div>
-
+        <div className="space-y-4 py-2">
           <div className="space-y-2">
-            {selectedType === "webrtc" ? (
-              <div className="p-4 bg-slate-900/50 rounded-xl border border-cyan-500/30 text-center">
-                <p className="text-cyan-400 font-bold mb-1">Local Streaming Mode</p>
-                <p className="text-xs text-slate-400">Select a file below or click the paperclip to choose again.</p>
-              </div>
-            ) : (
-              <div className="relative flex items-center">
-                <Input
-                  id="theater-video-url"
-                  name="video-url"
-                  value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  placeholder={
-                    selectedType === "direct" ? "Paste direct video URL" :
-                      selectedType === "youtube" ? "Paste YouTube URL" :
-                        selectedType === "vimeo" ? "Paste Vimeo URL" :
-                          selectedType === "dailymotion" ? "Paste Dailymotion URL" :
-                            selectedType === "soundcloud" ? "Paste Soundcloud URL" : "Paste Archive.org URL"
-                  }
-                  className="bg-slate-700 border-slate-600 text-white placeholder-gray-400 pr-12 h-12 rounded-xl"
-                />
-                <input
-                  id="theater-file-input"
-                  name="theater-file"
-                  type="file"
-                  ref={fileInputRef}
-                  className="hidden"
-                  accept="video/*,audio/*"
-                  onChange={handleFileSelect}
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-2 text-slate-400 hover:text-cyan-400 hover:bg-slate-600/50 rounded-lg w-8 h-8"
-                  onClick={() => fileInputRef.current?.click()}
-                  title="Attach local video/audio file"
-                >
-                  <Paperclip className="w-4 h-4" />
-                </Button>
-              </div>
-            )}
-            <p className="text-xs text-gray-400">
-              Note: {selectedType === "webrtc" ? "Supports MP4, WebM, MP3, etc." : "Video must be served with proper CORS headers"}
+            <div className="relative flex items-center">
+              <Input
+                id="theater-video-url"
+                name="video-url"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="Paste video or audio link (YouTube, Vimeo, Archive, SoundCloud, etc.)"
+                className="bg-slate-700 border-slate-600 text-white placeholder-gray-400 pr-11 h-11 rounded-xl text-sm"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-1.5 text-slate-400 hover:text-cyan-400 hover:bg-slate-600/50 rounded-lg w-8 h-8"
+                onClick={() => fileInputRef.current?.click()}
+                title="Stream from local device"
+              >
+                <Paperclip className="w-4 h-4" />
+              </Button>
+            </div>
+            <input
+              id="theater-file-input"
+              name="theater-file"
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="video/*,audio/*"
+              onChange={handleFileSelect}
+            />
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <span className="text-slate-400">Detected platform:</span>
+              <span className="px-2 py-1 rounded-full border border-cyan-500/35 bg-cyan-500/10 text-cyan-300 font-semibold">
+                {videoUrl.trim() ? getTypeLabel(detectedType) : "Waiting for link"}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              If no platform matches, SatLoom treats it as direct media URL.
             </p>
           </div>
 
-          <div className="flex gap-4 justify-center pt-4">
+          <div className="grid grid-cols-2 gap-2">
             <Button
               onClick={handleLoadVideo}
-              disabled={(selectedType !== "webrtc" && !videoUrl.trim()) || isLoading}
-              className="bg-cyan-500 hover:bg-cyan-600 px-8"
+              disabled={!videoUrl.trim() || isLoading}
+              className="bg-cyan-500 hover:bg-cyan-600"
             >
               {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Film className="w-4 h-4 mr-2" />}
-              {selectedType === "webrtc" ? "Enter Local Mode" : "Load Video"}
+              Start Theater
             </Button>
-            <Button onClick={handleClose} variant="outline" className="border-slate-600 text-white px-8" disabled={isLoading}>
+            <Button
+              variant="outline"
+              className="border-slate-600 text-white"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Local File
+            </Button>
+          </div>
+
+          <div className="flex justify-end">
+            <Button onClick={handleClose} variant="outline" className="border-slate-600 text-white" disabled={isLoading}>
               Cancel
             </Button>
           </div>

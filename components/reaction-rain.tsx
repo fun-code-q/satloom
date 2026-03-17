@@ -96,7 +96,7 @@ export function ReactionRain({ roomId, userId, inline = false }: ReactionRainPro
                             <Sparkles className="w-5 h-5" />
                         </Button>
                     </PopoverTrigger>
-                    <PopoverContent side="top" align="center" sideOffset={10} className="w-auto p-3 bg-slate-800/95 backdrop-blur-md border border-slate-700 rounded-xl shadow-xl">
+                    <PopoverContent side="top" align="center" sideOffset={10} className="z-[900] w-auto p-3 bg-slate-800/95 backdrop-blur-md border border-slate-700 rounded-xl shadow-xl">
                         {renderEmojiList()}
                     </PopoverContent>
                 </Popover>

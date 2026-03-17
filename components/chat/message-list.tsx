@@ -7,7 +7,7 @@ import { useEffect, useRef, useCallback, useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { ChevronDown } from "lucide-react"
 import { useVirtualizer } from "@tanstack/react-virtual"
-import { ChatSearch } from "./chat-search"
+import { useShallow } from "zustand/react/shallow"
 
 interface MessageListProps {
     onReply: (message: Message) => void
@@ -23,6 +23,22 @@ interface MessageListProps {
     showSearch: boolean
 }
 
+interface SeparatorDisplayItem {
+    id: string
+    itemType: "separator"
+    label: string
+}
+
+interface MessageDisplayItem {
+    id: string
+    itemType: "message"
+    message: Message
+    isFirstInGroup: boolean
+    isLastInGroup: boolean
+}
+
+type DisplayItem = SeparatorDisplayItem | MessageDisplayItem
+
 export function MessageList({
     onReply,
     onReact,
@@ -35,12 +51,25 @@ export function MessageList({
     getUserColor,
     showSearch
 }: MessageListProps) {
-    const { messages, currentUser, onlineUsers, roomMembers, roomId, searchQuery } = useChatStore()
+    const { messages, currentUser, onlineUsers, roomMembers, roomId, searchQuery } = useChatStore(
+        useShallow((state) => ({
+            messages: state.messages,
+            currentUser: state.currentUser,
+            onlineUsers: state.onlineUsers,
+            roomMembers: state.roomMembers,
+            roomId: state.roomId,
+            searchQuery: state.searchQuery,
+        }))
+    )
     const parentRef = useRef<HTMLDivElement>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
+    const displayItemsRef = useRef<DisplayItem[]>([])
+    const previousMessageCountRef = useRef(messages.length)
+    const scrollRafRef = useRef<number | null>(null)
     const [headerHeight, setHeaderHeight] = useState(120)
     const [showJumpToBottom, setShowJumpToBottom] = useState(false)
     const [unreadInFab, setUnreadInFab] = useState(0)
+    const normalizedQuery = useMemo(() => searchQuery.trim().toLowerCase(), [searchQuery])
 
     // Dynamically measure actual header height so first message is never hidden beneath it
     useEffect(() => {
@@ -70,96 +99,165 @@ export function MessageList({
 
     // List of items including messages and date separators
     const filteredMessages = useMemo(() => {
+        if (!normalizedQuery) return messages
+
         return messages.filter((msg) => {
             const messageText = msg.text?.toLowerCase() || ""
             return (
-                messageText.includes(searchQuery.toLowerCase()) ||
-                msg.sender?.toLowerCase().includes(searchQuery.toLowerCase())
+                messageText.includes(normalizedQuery) ||
+                msg.sender?.toLowerCase().includes(normalizedQuery)
             )
         })
-    }, [messages, searchQuery])
+    }, [messages, normalizedQuery])
 
-    const displayItems = useMemo(() => {
-        const items: (Message | { id: string; type: 'separator'; label: string })[] = []
+    const displayItems = useMemo<DisplayItem[]>(() => {
+        const items: DisplayItem[] = []
         let lastDateString = ""
+        const today = new Date().toLocaleDateString([], {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        })
+        const yesterday = new Date(Date.now() - 86400000).toLocaleDateString([], {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        })
 
-        filteredMessages.forEach((msg: Message) => {
+        filteredMessages.forEach((msg: Message, index) => {
+            const prevMsg = index > 0 ? filteredMessages[index - 1] : null
+            const nextMsg = index < filteredMessages.length - 1 ? filteredMessages[index + 1] : null
             const date = new Date(msg.timestamp)
-            const dateString = date.toLocaleDateString([], { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
+            const dateString = date.toLocaleDateString([], {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
             })
 
             if (dateString !== lastDateString) {
-                // Determine display label (Today, Yesterday, or Full Date)
-                const today = new Date().toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-                const yesterday = new Date(Date.now() - 86400000).toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-                
                 let label = dateString
                 if (dateString === today) label = "Today"
                 else if (dateString === yesterday) label = "Yesterday"
 
-                items.push({ 
-                    id: `date-${dateString}`, 
-                    type: 'separator', 
-                    label 
+                items.push({
+                    id: `date-${dateString}`,
+                    itemType: "separator",
+                    label,
                 })
                 lastDateString = dateString
             }
-            items.push(msg)
+
+            items.push({
+                id: msg.id,
+                itemType: "message",
+                message: msg,
+                isFirstInGroup: !prevMsg || prevMsg.sender !== msg.sender,
+                isLastInGroup: !nextMsg || nextMsg.sender !== msg.sender,
+            })
         })
+
         return items
     }, [filteredMessages])
 
-    // Track scroll for FAB
-    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-        const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
-        const isFarUp = scrollHeight - scrollTop - clientHeight > 400
-        setShowJumpToBottom(isFarUp)
-        if (!isFarUp) setUnreadInFab(0)
-    }
+    useEffect(() => {
+        displayItemsRef.current = displayItems
+    }, [displayItems])
 
-    // Auto-scroll to bottom when new messages arrive
-    const scrollToBottom = useCallback(() => {
+    const avatarByName = useMemo(() => {
+        const map = new Map<string, string>()
+
+        roomMembers.forEach((member) => {
+            if (member.name && member.avatar) {
+                map.set(member.name, member.avatar)
+            }
+        })
+
+        onlineUsers.forEach((user) => {
+            if (user.name && user.avatar) {
+                map.set(user.name, user.avatar)
+            }
+        })
+
+        return map
+    }, [onlineUsers, roomMembers])
+
+    const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
         if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: "smooth" })
+            messagesEndRef.current.scrollIntoView({ behavior, block: "end" })
         }
     }, [])
 
-    useEffect(() => {
-        // Only auto-scroll if we're not searching and we're near the bottom
-        if (parentRef.current && !searchQuery) {
-            const { scrollTop, scrollHeight, clientHeight } = parentRef.current
-            const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
+    const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+        const container = e.currentTarget
+        if (scrollRafRef.current !== null) return
 
-            if (isNearBottom || messages.length <= 10) {
-                scrollToBottom()
+        scrollRafRef.current = window.requestAnimationFrame(() => {
+            scrollRafRef.current = null
+            const { scrollTop, scrollHeight, clientHeight } = container
+            const isFarUp = scrollHeight - scrollTop - clientHeight > 400
+
+            setShowJumpToBottom((prev) => (prev === isFarUp ? prev : isFarUp))
+            if (!isFarUp) {
+                setUnreadInFab((prev) => (prev === 0 ? prev : 0))
             }
-        }
-    }, [messages, scrollToBottom, searchQuery])
+        })
+    }, [])
 
     // Virtualizer for message list - significantly improves performance for large message lists
     const rowVirtualizer = useVirtualizer({
         count: displayItems.length,
         getScrollElement: () => parentRef.current,
-        estimateSize: (index) => displayItems[index]?.type === 'separator' ? 50 : 120,
-        overscan: 5,
+        getItemKey: (index) => displayItems[index]?.id ?? `row-${index}`,
+        estimateSize: (index) => displayItems[index]?.itemType === "separator" ? 50 : 120,
+        overscan: 8,
     })
 
-    // Force re-measurement when messages list changes to prevent overlaps
     useEffect(() => {
         rowVirtualizer.measure()
-        if (!showJumpToBottom) {
-             scrollToBottom()
-        } else {
-             setUnreadInFab(prev => prev + 1)
-        }
     }, [displayItems.length, rowVirtualizer])
 
-    const handleReplyClick = (replyId: string) => {
-        const index = displayItems.findIndex(item => item.id === replyId)
+    useEffect(() => {
+        const nextMessageCount = messages.length
+        const newMessageCount = Math.max(0, nextMessageCount - previousMessageCountRef.current)
+        previousMessageCountRef.current = nextMessageCount
+
+        const container = parentRef.current
+        if (!container) return
+
+        if (normalizedQuery) {
+            setUnreadInFab(0)
+            return
+        }
+
+        const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight
+        const isNearBottom = distanceFromBottom < 120
+
+        if (isNearBottom || nextMessageCount <= 10) {
+            scrollToBottom(nextMessageCount <= 10 ? "auto" : "smooth")
+            setShowJumpToBottom(false)
+            setUnreadInFab(0)
+            return
+        }
+
+        if (newMessageCount > 0) {
+            setShowJumpToBottom(true)
+            setUnreadInFab((prev) => prev + newMessageCount)
+        }
+    }, [messages.length, normalizedQuery, scrollToBottom])
+
+    useEffect(() => {
+        return () => {
+            if (scrollRafRef.current !== null) {
+                window.cancelAnimationFrame(scrollRafRef.current)
+            }
+        }
+    }, [])
+
+    const handleReplyClick = useCallback((replyId: string) => {
+        const index = displayItemsRef.current.findIndex(item => item.id === replyId)
         if (index !== -1) {
             rowVirtualizer.scrollToIndex(index, { align: 'center', behavior: 'smooth' })
             
@@ -172,7 +270,7 @@ export function MessageList({
                 }
             }, 600)
         }
-    }
+    }, [rowVirtualizer])
     return (
         <div className="flex-1 flex flex-col min-h-0 relative z-[10]">
             {/* Chat Messages Area */}
@@ -196,7 +294,7 @@ export function MessageList({
                     </div>
                 )}
  
-                {filteredMessages.length > 0 && (
+                {displayItems.length > 0 && (
                     <div
                         style={{
                             height: `${rowVirtualizer.getTotalSize()}px`,
@@ -207,7 +305,7 @@ export function MessageList({
                         {rowVirtualizer.getVirtualItems().map((virtualItem) => {
                             const item = displayItems[virtualItem.index]
                             
-                            if (item.type === 'separator') {
+                            if (item?.itemType === "separator") {
                                 return (
                                     <div
                                         key={virtualItem.key}
@@ -222,18 +320,20 @@ export function MessageList({
                                         }}
                                     >
                                         <div className="bg-slate-800/80 backdrop-blur-md px-4 py-1 rounded-full border border-white/5 text-[10px] uppercase tracking-[0.15em] font-bold text-gray-400 shadow-xl">
-                                            {(item as any).label}
+                                            {item.label}
                                         </div>
                                     </div>
                                 )
                             }
 
-                            const msg = item as Message
+                            if (!item || item.itemType !== "message") return null
+                            const msg = item.message
                             return (
                                 <div
                                     key={virtualItem.key}
                                     data-index={virtualItem.index}
                                     ref={rowVirtualizer.measureElement}
+                                    className="message-virtual-row"
                                     style={{
                                         position: "absolute",
                                         top: 0,
@@ -243,46 +343,26 @@ export function MessageList({
                                         transform: `translateY(${virtualItem.start}px)`,
                                     }}
                                 >
-                                    {(() => {
-                                        // Find neighbors while ignoring separators
-                                        let prevMsgIdx = virtualItem.index - 1
-                                        while (prevMsgIdx >= 0 && (displayItems[prevMsgIdx] as any).type === 'separator') prevMsgIdx--
-                                        const prevMsg = prevMsgIdx >= 0 ? displayItems[prevMsgIdx] as Message : null
-                                        
-                                        let nextMsgIdx = virtualItem.index + 1
-                                        while (nextMsgIdx < displayItems.length && (displayItems[nextMsgIdx] as any).type === 'separator') nextMsgIdx++
-                                        const nextMsg = nextMsgIdx < displayItems.length ? displayItems[nextMsgIdx] as Message : null
-                                        
-                                        const isFirstInGroup = !prevMsg || prevMsg.sender !== msg.sender
-                                        const isLastInGroup = !nextMsg || nextMsg.sender !== msg.sender
-                                        const isConsecutive = !isFirstInGroup
-                                        
-                                        return (
-                                            <MessageBubble
-                                                message={msg}
-                                                isOwnMessage={msg.sender === currentUser?.name}
-                                                userColor={getUserColor(msg.sender)}
-                                                currentUser={currentUser?.name || ""}
-                                                userAvatar={
-                                                    roomMembers.find((m) => m.name === msg.sender)?.avatar ||
-                                                    onlineUsers.find((u) => u.name === msg.sender)?.avatar
-                                                }
-                                                onReply={onReply}
-                                                onReact={onReact}
-                                                onDelete={onDelete}
-                                                onEdit={onEdit}
-                                                onCopy={onCopy}
-                                                onVote={onVote}
-                                                onRSVP={onRSVP}
-                                                onPin={onPin}
-                                                onReplyClick={handleReplyClick}
-                                                roomId={roomId || ""}
-                                                isFirstInGroup={isFirstInGroup}
-                                                isLastInGroup={isLastInGroup}
-                                                isConsecutive={isConsecutive}
-                                            />
-                                        )
-                                    })()}
+                                    <MessageBubble
+                                        message={msg}
+                                        isOwnMessage={msg.sender === currentUser?.name}
+                                        userColor={getUserColor(msg.sender)}
+                                        currentUser={currentUser?.name || ""}
+                                        userAvatar={avatarByName.get(msg.sender)}
+                                        onReply={onReply}
+                                        onReact={onReact}
+                                        onDelete={onDelete}
+                                        onEdit={onEdit}
+                                        onCopy={onCopy}
+                                        onVote={onVote}
+                                        onRSVP={onRSVP}
+                                        onPin={onPin}
+                                        onReplyClick={handleReplyClick}
+                                        roomId={roomId || ""}
+                                        isFirstInGroup={item.isFirstInGroup}
+                                        isLastInGroup={item.isLastInGroup}
+                                        isConsecutive={!item.isFirstInGroup}
+                                    />
                                 </div>
                             )
                         })}
@@ -315,11 +395,11 @@ export function MessageList({
             {showJumpToBottom && (
                 <div 
                     className="absolute bottom-24 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 zoom-in duration-300"
-                    onClick={scrollToBottom}
                 >
                     <Button
                         size="icon"
                         className="rounded-xl h-12 w-12 bg-slate-900/90 backdrop-blur-xl border border-white/10 text-cyan-400 shadow-2xl hover:scale-110 active:scale-95 transition-all relative"
+                        onClick={() => scrollToBottom("smooth")}
                     >
                         <ChevronDown className="w-6 h-6" />
                         {unreadInFab > 0 && (

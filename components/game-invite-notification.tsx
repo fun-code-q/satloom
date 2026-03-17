@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react"
+﻿import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Gamepad2, Check, X, Users, Eye, Clock } from "lucide-react"
+import { Gamepad2, Check, Users, Eye, Clock } from "lucide-react"
 import { NotificationCard } from "@/components/ui/notification-card"
 import type { GameInvite } from "@/utils/infra/game-signaling"
 
@@ -29,7 +29,7 @@ export function GameInviteNotification({
       setTimeLeft(remaining)
 
       if (remaining === 0) {
-        onDecline() // Auto-decline when expired
+        onDecline()
       }
     }
 
@@ -38,14 +38,11 @@ export function GameInviteNotification({
     return () => clearInterval(interval)
   }, [invite.expiresAt, onDecline])
 
-  const formatTimeAgo = (timestamp: number) => {
-    const seconds = Math.floor((Date.now() - timestamp) / 1000)
-    if (seconds < 60) return `${seconds}s ago`
-    const minutes = Math.floor(seconds / 60)
-    return `${minutes}m ago`
-  }
-
-  const isFull = currentPlayerCount >= invite.gameConfig.maxPlayers
+  const maxPlayers = Number(invite.gameConfig?.maxPlayers || 2)
+  const isSeriesInvite = invite.gameConfig?.matchmakingMode === "series"
+  const gameName = invite.gameConfig?.selectedGame || invite.gameConfig?.gameType || "game"
+  const displayedPlayerCount = isSeriesInvite ? maxPlayers : currentPlayerCount
+  const isFull = !isSeriesInvite && currentPlayerCount >= maxPlayers
 
   return (
     <NotificationCard
@@ -59,35 +56,38 @@ export function GameInviteNotification({
       <div>
         <div className="text-sm text-gray-200">
           <span className="font-semibold text-purple-400">{invite.hostName}</span> invited you to play{" "}
-          <span className="font-bold text-white">{invite.gameConfig.gameType}</span>
+          <span className="font-bold text-white">{gameName}</span>
         </div>
 
-        {/* Game Info */}
         <div className="mt-2 space-y-1">
           <div className="flex items-center gap-2 text-xs text-gray-400">
             <Users className="w-3 h-3" />
             <span>
-              {currentPlayerCount}/{invite.gameConfig.maxPlayers} players • {invite.gameConfig.gridSize}x{invite.gameConfig.gridSize} grid
+              {displayedPlayerCount}/{maxPlayers} players{invite.gameConfig?.gridSize ? ` • ${invite.gameConfig.gridSize}x${invite.gameConfig.gridSize} grid` : ""}
             </span>
           </div>
 
-          {invite.gameConfig.voiceChatEnabled && (
-            <div className="text-xs text-green-400">🎤 Voice chat enabled</div>
+          {isSeriesInvite && (
+            <div className="text-xs text-cyan-300">
+              Series mode: members are auto-grouped into 1v1 rooms.
+            </div>
           )}
 
-          {/* Countdown Timer */}
+          {invite.gameConfig?.voiceChatEnabled && (
+            <div className="text-xs text-green-400">Voice chat enabled</div>
+          )}
+
           <div className="flex items-center gap-2 text-xs">
             <Clock className="w-3 h-3 text-yellow-400" />
-            <span className={timeLeft <= 10 ? 'text-red-400 font-semibold' : 'text-gray-400'}>
+            <span className={timeLeft <= 10 ? "text-red-400 font-semibold" : "text-gray-400"}>
               Expires in {timeLeft}s
             </span>
           </div>
         </div>
 
-        {/* Status Messages */}
         {isFull && (
           <div className="mt-2 text-xs text-yellow-400 bg-yellow-500/10 rounded px-2 py-1">
-            Game is full - Join as spectator instead
+            Game is full. Join as viewer.
           </div>
         )}
 
@@ -101,7 +101,7 @@ export function GameInviteNotification({
               className="w-full bg-slate-800 border border-purple-500/30 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-purple-500 transition-all"
               autoFocus
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && guestName.trim()) {
+                if (e.key === "Enter" && guestName.trim()) {
                   onAccept(guestName.trim())
                 }
               }}
@@ -120,7 +120,6 @@ export function GameInviteNotification({
           </div>
         )}
 
-        {/* Action Buttons */}
         {!isEnteringName && (
           <div className="flex gap-2 mt-3">
             {!isFull && (
@@ -142,7 +141,7 @@ export function GameInviteNotification({
                 className="flex-1 border-slate-600 hover:bg-slate-700 text-gray-300 h-8"
               >
                 <Eye className="w-3 h-3 mr-1" />
-                Spectate
+                Join as Viewer
               </Button>
             )}
 
@@ -160,3 +159,4 @@ export function GameInviteNotification({
     </NotificationCard>
   )
 }
+

@@ -63,6 +63,7 @@ export function useChatUIState() {
     const [showPlaygroundSetup, setShowPlaygroundSetup] = useState(false)
     const [showPlayground, setShowPlayground] = useState(false)
     const [playgroundConfig, setPlaygroundConfig] = useState<GameConfig | null>(null)
+    const [showGameSeriesViewer, setShowGameSeriesViewer] = useState(false)
 
     // Theater state
     const [showTheaterSetup, setShowTheaterSetup] = useState(false)
@@ -123,6 +124,7 @@ export function useChatUIState() {
         showPlaygroundSetup, setShowPlaygroundSetup,
         showPlayground, setShowPlayground,
         playgroundConfig, setPlaygroundConfig,
+        showGameSeriesViewer, setShowGameSeriesViewer,
         showTheaterSetup, setShowTheaterSetup,
         showTheaterFullscreen, setShowTheaterFullscreen,
         isTheaterMinimized, setIsTheaterMinimized,

@@ -4,7 +4,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Mic, Video, Camera, Smile, Send, Plus, X, EyeOff, Eye, Music2, BarChart2, HelpCircle, Palette, Keyboard, Sparkles } from "lucide-react"
+import { Video, Camera, Smile, Send, Plus, X, EyeOff, Eye, Music2, BarChart2, HelpCircle, Palette, Keyboard, Sparkles } from "lucide-react"
 import { EmojiPicker } from "@/components/emoji-picker"
 import { PollCreator } from "./poll-creator"
 import { EventCreator } from "./event-creator"
@@ -19,16 +19,23 @@ import { UserPresenceSystem } from "@/utils/infra/user-presence"
 import { NotificationSystem } from "@/utils/core/notification-system"
 import { EncryptionManager } from "@/utils/infra/encryption-manager"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { debounce, throttle } from "@/utils/core/lazy-loader"
+import { throttle } from "@/utils/core/lazy-loader"
 import { SecurityUtils } from "@/utils/infra/security-utils"
 import { telemetry } from "@/utils/core/telemetry"
 import { VirtualKeyboard, useVirtualKeyboardStore } from "@/components/virtual-keyboard"
 import { cn } from "@/utils/core/cn"
+import { useOfflineSupport } from "@/hooks/use-offline"
+import { OfflineIndicator } from "@/components/offline-indicator"
+import { useShallow } from "zustand/react/shallow"
 
 interface ChatInputProps {
     onFileSelect: (type: string, file?: File | any) => void
     onStartRecording: (mode: "audio" | "video" | "photo") => void
     onQuizStart: () => void
+    onWhiteboard?: () => void
+    onPresentation?: () => void
+    onNotes?: () => void
+    onCheckList?: () => void
     onMoodTrigger?: () => void
     onSoundboard?: () => void
     showSoundboard: boolean
@@ -49,15 +56,21 @@ interface ChatInputProps {
     setVanishDuration: (val: number) => void
     showMobileReactions: boolean
     setShowMobileReactions: (val: boolean) => void
+    hasUnreadNotes?: boolean
+    hasUnreadTasks?: boolean
+    onSearch?: (query: string) => void
 }
 
 interface PendingMessage {
     id: string
-    tempId: string
     text: string
-    sender: string
-    timestamp: Date
-    status: 'sending' | 'sent' | 'failed'
+    replyTo?: {
+        id: string
+        text: string
+        sender: string
+    }
+    status: "sending" | "failed"
+    attempts: number
 }
 
 interface MentionCandidate {
@@ -70,6 +83,10 @@ export function ChatInput({
     onFileSelect,
     onStartRecording,
     onQuizStart,
+    onWhiteboard,
+    onPresentation,
+    onNotes,
+    onCheckList,
     onMoodTrigger,
     onSoundboard,
     showSoundboard,
@@ -90,12 +107,36 @@ export function ChatInput({
     setVanishDuration,
     showMobileReactions,
     setShowMobileReactions,
+    hasUnreadNotes,
+    hasUnreadTasks,
+    onSearch,
 }: ChatInputProps) {
-    const { roomId, currentUser, replyingTo, setReplyingTo, setIsTyping, isTyping, roomMembers, onlineUsers } = useChatStore()
+    const MAX_PENDING_MESSAGES = 4
+    const {
+        roomId,
+        currentUser,
+        replyingTo,
+        setReplyingTo,
+        setIsTyping,
+        isTyping,
+        roomMembers,
+        onlineUsers,
+    } = useChatStore(
+        useShallow((state) => ({
+            roomId: state.roomId,
+            currentUser: state.currentUser,
+            replyingTo: state.replyingTo,
+            setReplyingTo: state.setReplyingTo,
+            setIsTyping: state.setIsTyping,
+            isTyping: state.isTyping,
+            roomMembers: state.roomMembers,
+            onlineUsers: state.onlineUsers,
+        }))
+    )
     const [message, setMessage] = useState("")
+    const [pendingMessages, setPendingMessages] = useState<PendingMessage[]>([])
     const [showEmojiPicker, setShowEmojiPicker] = useState(false)
     const [showAttachments, setShowAttachments] = useState(false)
-    const [isRecording, setIsRecording] = useState(false)
     const [showMentionSuggestions, setShowMentionSuggestions] = useState(false)
     const [mentionQuery, setMentionQuery] = useState("")
     const [mentionStartIndex, setMentionStartIndex] = useState<number | null>(null)
@@ -111,6 +152,14 @@ export function ChatInput({
     const notificationSystem = NotificationSystem.getInstance()
     const lastSentTimeRef = useRef<number>(0)
     const mentionMenuRef = useRef<HTMLDivElement>(null)
+    const throttledTypingIndicatorRef = useRef<((typing: boolean) => void) | null>(null)
+
+    useEffect(() => {
+        throttledTypingIndicatorRef.current = throttle((typing: boolean) => {
+            if (!roomId || !currentUserId) return
+            userPresence.setTyping(roomId, currentUserId, typing)
+        }, 500)
+    }, [roomId, currentUserId, userPresence])
 
     const getMentionHandle = useCallback((name: string) => {
         const cleaned = name
@@ -232,94 +281,202 @@ export function ChatInput({
         updateMentionSuggestions(nextMessage, event.target.selectionStart)
     }
 
+    const createPendingMessageId = useCallback(() => {
+        return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+    }, [])
+
+    const removePendingMessage = useCallback((pendingId: string) => {
+        setPendingMessages((prev) => prev.filter((item) => item.id !== pendingId))
+    }, [])
+
+    const markPendingMessageFailed = useCallback((pendingId: string) => {
+        setPendingMessages((prev) =>
+            prev.map((item) =>
+                item.id === pendingId ? { ...item, status: "failed" } : item
+            )
+        )
+    }, [])
+
+    const sendEncryptedMessage = useCallback(async (plainText: string, replyTo?: PendingMessage["replyTo"]) => {
+        if (!roomId || !currentUser) {
+            throw new Error("Missing room or user for send")
+        }
+
+        const encryptionManager = EncryptionManager.getInstance()
+        const encryptedText = await encryptionManager.encrypt(plainText, roomId)
+
+        const newMessage = {
+            text: encryptedText,
+            sender: currentUser.name,
+            timestamp: new Date(),
+            replyTo,
+            reactions: {
+                heart: [],
+                thumbsUp: [],
+            },
+        }
+
+        await messageStorage.sendMessage(roomId, newMessage, currentUserId)
+
+        telemetry.logEvent("message_sent", roomId, currentUser.name, currentUser.name, { length: plainText.length })
+
+        const urlRegex = /(https?:\/\/[^\s]+)/g
+        const urls = plainText.match(urlRegex)
+        if (urls && urls.length > 0) {
+            telemetry.logEvent("link_shared", roomId, currentUser.name, currentUser.name, { url: urls[0], count: urls.length })
+        }
+
+        notificationSystem.newMessage(currentUser.name, plainText)
+    }, [currentUser, currentUserId, messageStorage, notificationSystem, roomId])
+
+    const handleReconnect = useCallback(() => {
+        notificationSystem.info("Back online. Syncing queued messages...")
+    }, [notificationSystem])
+
+    const handleOfflineSync = useCallback(async (queuedMessages: Array<{ text: string; replyTo?: PendingMessage["replyTo"] }>) => {
+        for (const queuedMessage of queuedMessages) {
+            await sendEncryptedMessage(queuedMessage.text, queuedMessage.replyTo)
+        }
+
+        if (queuedMessages.length > 0) {
+            notificationSystem.success(`Synced ${queuedMessages.length} queued message${queuedMessages.length === 1 ? "" : "s"}.`)
+        }
+    }, [notificationSystem, sendEncryptedMessage])
+
+    const {
+        isOnline,
+        isSyncing: isOfflineSyncing,
+        pendingCount: offlinePendingCount,
+        queueMessage,
+        syncPendingMessages,
+    } = useOfflineSupport({
+        onReconnect: handleReconnect,
+        onSyncMessages: handleOfflineSync,
+    })
+
     const handleSendMessage = async () => {
         if (!message.trim() || !roomId || !currentUser) return
 
-        let tempId = ""
-        try {
-            // Check for quiz trigger
-            if (message.trim().toLowerCase() === "?quiz?") {
-                onQuizStart()
-                setMessage("")
-                return
-            }
+        const draftMessage = message
 
-            // Check for mood trigger
-            if (message.trim().toLowerCase() === "?mood?" || message.trim().toLowerCase() === "/mood") {
-                onMoodTrigger?.()
-                setMessage("")
-                return
-            }
-
-            // Rate limiting (1s)
-            const now = Date.now()
-            if (now - lastSentTimeRef.current < 1000) {
-                notificationSystem.error("Slow down! 1 message per second.")
-                return
-            }
-            lastSentTimeRef.current = now
-
-            // Clean message
-            const cleanedMessage = SecurityUtils.cleanText(message.trim())
-            if (!cleanedMessage) {
-                setMessage("")
-                return
-            }
-
-            // Clear input immediately to prevent double-send or concatenation
+        // Check for quiz trigger
+        if (message.trim().toLowerCase() === "?quiz?") {
+            onQuizStart()
             setMessage("")
-            setReplyingTo(null)
-            setShowMentionSuggestions(false)
-            setMentionQuery("")
-            setMentionStartIndex(null)
-            setSelectedMentionIndex(0)
+            return
+        }
 
-            // Stop typing indicator
-            setIsTyping(false)
-            userPresence.setTyping(roomId, currentUserId, false)
+        // Check for mood trigger
+        if (message.trim().toLowerCase() === "?mood?" || message.trim().toLowerCase() === "/mood") {
+            onMoodTrigger?.()
+            setMessage("")
+            return
+        }
 
-            const encryptionManager = EncryptionManager.getInstance()
-            const encryptedText = await encryptionManager.encrypt(cleanedMessage, roomId)
+        // Check for search trigger (^s^ xxxxxxx)
+        if (message.trim().startsWith("^s^ ")) {
+            const query = message.trim().substring(4).trim()
+            if (query && onSearch) {
+                onSearch(query)
+            }
+            setMessage("")
+            return
+        }
 
-            const newMessage = {
-                text: encryptedText,
+        // Rate limiting (1s)
+        const now = Date.now()
+        if (now - lastSentTimeRef.current < 1000) {
+            notificationSystem.error("Slow down! 1 message per second.")
+            return
+        }
+        lastSentTimeRef.current = now
+
+        // Clean message
+        const cleanedMessage = SecurityUtils.cleanText(message.trim())
+        if (!cleanedMessage) {
+            setMessage("")
+            return
+        }
+
+        const replySnapshot = replyingTo
+            ? {
+                id: replyingTo.id,
+                text: replyingTo.text,
+                sender: replyingTo.sender,
+            }
+            : undefined
+
+        // Clear input immediately to prevent double-send or concatenation
+        setMessage("")
+        setReplyingTo(null)
+        setShowMentionSuggestions(false)
+        setMentionQuery("")
+        setMentionStartIndex(null)
+        setSelectedMentionIndex(0)
+
+        // Stop typing indicator
+        setIsTyping(false)
+        userPresence.setTyping(roomId, currentUserId, false)
+
+        if (!isOnline || !navigator.onLine) {
+            queueMessage({
+                text: cleanedMessage,
                 sender: currentUser.name,
                 timestamp: new Date(),
-                replyTo: replyingTo
-                    ? {
-                        id: replyingTo.id,
-                        text: replyingTo.text,
-                        sender: replyingTo.sender,
-                    }
-                    : undefined,
+                replyTo: replySnapshot,
                 reactions: {
                     heart: [],
                     thumbsUp: [],
                 },
-            }
+            })
+            notificationSystem.info("You are offline. Message queued and will auto-send when connection returns.")
+            return
+        }
 
-            // Send to server
-            await messageStorage.sendMessage(roomId, newMessage, currentUserId)
+        const pendingId = createPendingMessageId()
+        const nextPendingMessage: PendingMessage = {
+            id: pendingId,
+            text: cleanedMessage,
+            replyTo: replySnapshot,
+            status: "sending",
+            attempts: 1,
+        }
+        setPendingMessages((prev) =>
+            [...prev, nextPendingMessage].slice(-MAX_PENDING_MESSAGES)
+        )
 
-            // Log telemetry
-            telemetry.logEvent('message_sent', roomId, currentUser.name, currentUser.name, { length: cleanedMessage.length })
-
-            // Link detection
-            const urlRegex = /(https?:\/\/[^\s]+)/g;
-            const urls = cleanedMessage.match(urlRegex);
-            if (urls && urls.length > 0) {
-                telemetry.logEvent('link_shared', roomId, currentUser.name, currentUser.name, { url: urls[0], count: urls.length })
-            }
-
-            // Haptic feedback for successful send
-            notificationSystem.newMessage(currentUser.name, cleanedMessage)
-
+        try {
+            await sendEncryptedMessage(cleanedMessage, replySnapshot)
+            removePendingMessage(pendingId)
         } catch (error) {
             console.error("Error sending message:", error)
-
-            notificationSystem.error("Failed to send message")
+            markPendingMessageFailed(pendingId)
+            setMessage((currentValue) => (currentValue.trim().length > 0 ? currentValue : draftMessage))
+            notificationSystem.error("Failed to send message. Tap retry.")
         }
     }
+
+    const handleRetryPendingMessage = useCallback(async (pendingId: string) => {
+        const pendingMessage = pendingMessages.find((item) => item.id === pendingId)
+        if (!pendingMessage || pendingMessage.status !== "failed") return
+
+        setPendingMessages((prev) =>
+            prev.map((item) =>
+                item.id === pendingId
+                    ? { ...item, status: "sending", attempts: item.attempts + 1 }
+                    : item
+            )
+        )
+
+        try {
+            await sendEncryptedMessage(pendingMessage.text, pendingMessage.replyTo)
+            removePendingMessage(pendingId)
+        } catch (error) {
+            console.error("Error retrying pending message:", error)
+            markPendingMessageFailed(pendingId)
+            notificationSystem.error("Retry failed")
+        }
+    }, [markPendingMessageFailed, notificationSystem, pendingMessages, removePendingMessage, sendEncryptedMessage])
 
     const handleSendPoll = async (question: string, options: string[]) => {
         if (!roomId || !currentUser) return
@@ -378,18 +535,17 @@ export function ChatInput({
         }
     }
 
-    // Debounced typing indicator
+    // Stable throttled typing indicator
     const handleTypingIndicator = useCallback(
-        (isTyping: boolean) => {
-            throttle((isTyping: boolean) => {
-                if (!roomId || !currentUserId) return
-                userPresence.setTyping(roomId, currentUserId, isTyping)
-            }, 500)(isTyping)
+        (typing: boolean) => {
+            throttledTypingIndicatorRef.current?.(typing)
         },
-        [roomId, currentUserId, userPresence]
+        []
     )
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.nativeEvent.isComposing) return
+
         if (showMentionSuggestions) {
             if (e.key === "ArrowDown") {
                 e.preventDefault()
@@ -500,18 +656,6 @@ export function ChatInput({
         }
     }, [])
 
-    // Sync recording status with presence system
-    useEffect(() => {
-        if (!roomId || !currentUserId) return
-        userPresence.setRecordingVoice(roomId, currentUserId, isRecording)
-
-        return () => {
-            if (roomId && currentUserId) {
-                userPresence.setRecordingVoice(roomId, currentUserId, false)
-            }
-        }
-    }, [isRecording, roomId, currentUserId, userPresence])
-    
     const mobileContainerRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -581,6 +725,56 @@ export function ChatInput({
         )
     }
 
+    const visiblePendingMessages = useMemo(() => pendingMessages.slice(-3), [pendingMessages])
+
+    const renderPendingMessageQueue = (mobileLayout: boolean) => {
+        if (visiblePendingMessages.length === 0) return null
+
+        return (
+            <div
+                className={cn(
+                    "flex gap-2 overflow-x-auto scrollbar-hide",
+                    mobileLayout ? "px-3 pb-1" : "mb-2 px-1"
+                )}
+            >
+                {visiblePendingMessages.map((pendingMessage) => (
+                    <div
+                        key={pendingMessage.id}
+                        className={cn(
+                            "min-w-[170px] max-w-[240px] rounded-xl border px-2.5 py-2 backdrop-blur-sm",
+                            pendingMessage.status === "failed"
+                                ? "border-rose-500/50 bg-rose-500/10"
+                                : "border-cyan-500/35 bg-cyan-500/10"
+                        )}
+                    >
+                        <div className="flex items-center justify-between gap-2">
+                            <span
+                                className={cn(
+                                    "text-[10px] font-semibold uppercase tracking-wide",
+                                    pendingMessage.status === "failed" ? "text-rose-300" : "text-cyan-300"
+                                )}
+                            >
+                                {pendingMessage.status === "failed" ? "Failed" : "Sending"}
+                            </span>
+                            {pendingMessage.status === "failed" ? (
+                                <button
+                                    type="button"
+                                    onClick={() => void handleRetryPendingMessage(pendingMessage.id)}
+                                    className="text-[10px] font-semibold text-cyan-300 hover:text-cyan-200 transition-colors"
+                                >
+                                    Retry
+                                </button>
+                            ) : (
+                                <span className="text-[10px] text-slate-400">...</span>
+                            )}
+                        </div>
+                        <p className="mt-1 text-[11px] text-slate-200 truncate">{pendingMessage.text}</p>
+                    </div>
+                ))}
+            </div>
+        )
+    }
+
 
     if (isMobile) {
         // Hide bottom input controls when virtual keyboard is visible
@@ -600,20 +794,19 @@ export function ChatInput({
         return (
             <div ref={mobileContainerRef} className="flex flex-col z-30 flex-shrink-0 pb-safe pointer-events-none sticky bottom-0">
                 <div className="pointer-events-auto">
-                {/* Recording indicator */}
-                {isRecording && (
-                    <div className="px-4 py-2 bg-red-500/40 backdrop-blur-md border-t border-red-500/30 flex items-center justify-center gap-2">
-                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                        <span className="text-sm text-red-400">Recording...</span>
-                    </div>
-                )}
-
+                <OfflineIndicator
+                    pendingCount={offlinePendingCount}
+                    isSyncing={isOfflineSyncing}
+                    onSync={() => void syncPendingMessages()}
+                />
                 {/* Mobile Reactions Bar - Compact floating grid on the right */}
                 {showMobileReactions && (
                     <div className="absolute bottom-full right-2 mb-2 p-2 bg-slate-900/40 backdrop-blur-xl rounded-2xl shadow-2xl animate-in slide-in-from-bottom-2 duration-200 z-[80]">
                         <ReactionRain roomId={roomId || ""} userId={currentUserId} inline={true} />
                     </div>
                 )}
+
+                {renderPendingMessageQueue(true)}
 
                 {/* Reply indicator */}
                 {replyingTo && (
@@ -666,6 +859,13 @@ export function ChatInput({
                                 }}
                                 onAudioCall={onStartAudioCall}
                                 onVideoCall={onStartVideoCall}
+                                onWhiteboard={onWhiteboard}
+                                onPresentation={onPresentation}
+                                onNotes={onNotes}
+                                onCheckList={onCheckList}
+                                onQuizStart={onQuizStart}
+                                hasUnreadNotes={hasUnreadNotes}
+                                hasUnreadTasks={hasUnreadTasks}
                             />
                         </div>
                     </div>
@@ -685,13 +885,23 @@ export function ChatInput({
                         <Button
                             variant="ghost"
                             size="icon"
-                            className={`h-10 w-10 rounded-full shrink-0 transition-colors ${showAttachments ? 'bg-cyan-500 text-white shadow-lg' : 'bg-white/5 text-gray-300'}`}
+                            className={`h-10 w-10 rounded-full shrink-0 transition-colors ${showAttachments ? 'bg-cyan-500 text-white shadow-lg' : 'bg-white/5 text-gray-300'} relative`}
                             onClick={() => {
                                 setShowAttachments(!showAttachments)
                                 setShowEmojiPicker(false)
                             }}
                         >
                             <Plus className={`w-5 h-5 transition-transform ${showAttachments ? 'rotate-45' : ''}`} />
+                            {!showAttachments && (
+                                <>
+                                    {hasUnreadNotes && (
+                                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-slate-900 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+                                    )}
+                                    {hasUnreadTasks && (
+                                        <span className="absolute top-1.5 left-1.5 w-2 h-2 bg-red-500 rounded-full border border-slate-900 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+                                    )}
+                                </>
+                            )}
                         </Button>
 
                         <div className="flex-1 relative">
@@ -762,24 +972,14 @@ export function ChatInput({
                                 </Button>
                             </div>
 
-                            {message.trim() ? (
-                                <Button
-                                    type="submit"
-                                    size="icon"
-                                    className="h-10 w-10 rounded-full bg-cyan-500 hover:bg-cyan-600 text-white shrink-0 shadow-lg"
-                                >
-                                    <Send className="w-5 h-5" />
-                                </Button>
-                            ) : (
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-10 w-10 rounded-full bg-white/5 text-gray-300 shrink-0 haptic"
-                                    onClick={() => setIsRecording(!isRecording)}
-                                >
-                                    <Mic className={`w-5 h-5 ${isRecording ? 'text-red-400' : ''}`} />
-                                </Button>
-                            )}
+                            <Button
+                                type="submit"
+                                size="icon"
+                                className="h-10 w-10 rounded-full bg-cyan-500 hover:bg-cyan-600 text-white shrink-0 shadow-lg disabled:bg-white/10 disabled:text-gray-500 disabled:shadow-none"
+                                disabled={!message.trim()}
+                            >
+                                <Send className="w-5 h-5" />
+                            </Button>
                         </div>
                     </div>
                 </form>
@@ -801,6 +1001,13 @@ export function ChatInput({
 
     return (
         <div className="relative w-full max-w-4xl mx-auto">
+            <OfflineIndicator
+                pendingCount={offlinePendingCount}
+                isSyncing={isOfflineSyncing}
+                onSync={() => void syncPendingMessages()}
+            />
+            {renderPendingMessageQueue(false)}
+
             {/* Reply indicator */}
             {replyingTo && (
                 <div className="px-2 py-1.5 bg-slate-800/60 rounded-lg flex items-center justify-between">
@@ -841,6 +1048,8 @@ export function ChatInput({
                         onMoodTrigger={onMoodTrigger}
                         onAudioCall={onStartAudioCall}
                         onVideoCall={onStartVideoCall}
+                        hasUnreadNotes={hasUnreadNotes}
+                        hasUnreadTasks={hasUnreadTasks}
                     />
                 </div>
 

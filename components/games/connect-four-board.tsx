@@ -279,18 +279,18 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
     const isPlayer = game.players.red.id === currentUserId || game.players.yellow.id === currentUserId
 
     return (
-        <div className="flex flex-col items-center gap-4 sm:gap-6 p-3 sm:p-6 bg-slate-900/95 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl max-w-[650px] w-full mx-auto relative overflow-hidden">
+        <div className="game-shell flex flex-col items-center gap-2 sm:gap-6 p-2 sm:p-5 max-w-[650px] w-full mx-auto relative h-full">
             {/* Header */}
-            <div className="flex justify-between items-center w-full">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-500/10 rounded-xl">
-                        <Trophy className="w-5 h-5 text-blue-400" />
+            <div className="game-header-bar w-full">
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                    <div className="p-1 sm:p-2 bg-blue-500/10 rounded-lg sm:rounded-xl">
+                        <Trophy className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-blue-400" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-white tracking-tight">Connect Four</h2>
-                        <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                            <Clock className="w-3.5 h-3.5" />
-                            <span className="font-mono">{formatTime(gameTime)}</span>
+                        <h2 className="text-sm sm:text-xl font-bold text-white tracking-tight leading-tight">Connect Four</h2>
+                        <div className="flex items-center gap-1 text-[9px] sm:text-xs text-slate-400 mt-0.5">
+                            <Clock className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5" />
+                            <span className="font-mono text-cyan-400/80">{formatTime(gameTime)}</span>
                         </div>
                     </div>
                 </div>
@@ -298,7 +298,7 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 text-white"
+                        className="game-action-btn haptic"
                         onClick={handlePause}
                     >
                         {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
@@ -307,7 +307,7 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 text-white"
+                            className="game-action-btn haptic"
                             onClick={onMinimize}
                         >
                             <Minimize2 className="w-4 h-4" />
@@ -316,13 +316,13 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 text-white"
+                        className="game-action-btn haptic"
                         onClick={handleSettings}
                     >
                         <Settings className="w-4 h-4" />
                     </Button>
                     {onClose && (
-                        <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-white/10 text-slate-400">
+                        <Button variant="ghost" size="icon" onClick={onClose} className="game-action-btn game-action-btn-danger haptic">
                             <X className="w-5 h-5" />
                         </Button>
                     )}
@@ -330,7 +330,7 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
             </div>
 
             {/* Players */}
-            <div className="flex justify-between w-full items-center px-3 sm:px-4 py-2 sm:py-3 bg-white/5 rounded-2xl">
+            <div className="flex justify-between w-full items-center px-3 sm:px-4 py-2 sm:py-3 game-info-panel">
                 <C4PlayerBadge name={game?.players?.red?.name || "Red"} color="red" active={game?.currentPlayer === "red"} />
                 <div className="text-slate-600 font-bold italic text-[10px] sm:text-xs uppercase tracking-tighter">VS</div>
                 <C4PlayerBadge name={game?.players?.yellow?.name || "Yellow"} color="yellow" active={game?.currentPlayer === "yellow"} />
@@ -353,9 +353,9 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
                 </div>
 
                 {/* Grid */}
-                <div className="grid grid-rows-6 gap-1.5 sm:gap-5">
+                <div className="grid grid-rows-6 gap-1 sm:gap-5">
                     {(Array.isArray(game?.board) ? game.board : []).map((row, r) => (
-                        <div key={r} className="flex gap-1.5 sm:gap-5">
+                        <div key={r} className="flex gap-1 sm:gap-5">
                             {(Array.isArray(row) ? row : []).map((cell, c) => (
                                 <div
                                     key={c}
@@ -363,7 +363,7 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
                                     onMouseLeave={() => setHoverColumn(null)}
                                     onClick={() => handleColumnClick(c)}
                                     className={cn(
-                                        "w-9 h-9 sm:w-16 sm:h-16 rounded-full ring-inset ring-2 sm:ring-4 ring-blue-700 transition-all duration-300 transform",
+                                        "w-8 h-8 sm:w-16 sm:h-16 rounded-full ring-inset ring-2 sm:ring-4 ring-blue-700 transition-all duration-300 transform touch-manipulation",
                                         cell === "red" ? "bg-red-500 shadow-[0_3px_0_rgb(153,27,27)] sm:shadow-[0_6px_0_rgb(153,27,27)]" :
                                             cell === "yellow" ? "bg-yellow-400 shadow-[0_3px_0_rgb(161,98,7)] sm:shadow-[0_6px_0_rgb(161,98,7)]" :
                                                 "bg-slate-900/80 shadow-inner",
@@ -406,9 +406,9 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
             </div>
 
             {/* Turn Status */}
-            <div className="text-center h-6">
+            <div className="text-center min-h-6">
                 {game.status === "in_progress" && (
-                    <p className={cn("text-base font-bold animate-pulse tracking-tight", isMyTurn ? "text-blue-400" : "text-slate-500")}>
+                    <p className={cn("text-sm sm:text-base font-bold animate-pulse tracking-tight game-turn-chip inline-flex items-center", isMyTurn ? "text-blue-400" : "text-slate-500")}>
                         {isMyTurn ? "Your Strategy, General" : `Awaiting ${game.currentPlayer}'s deployment...`}
                     </p>
                 )}
@@ -423,20 +423,21 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
 
             {/* Pause Menu Overlay */}
             {showPauseMenu && (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] animate-in fade-in duration-300">
-                    <div className="bg-slate-800 rounded-3xl p-6 w-full max-w-xs mx-4 border border-white/10 shadow-2xl">
-                        <h2 className="text-xl font-black text-center mb-6 text-white uppercase tracking-tight">Game Paused</h2>
+                <div className="game-pause-overlay animate-in fade-in duration-300">
+                    <div className="game-pause-card">
+                        <h2 className="game-modal-title text-center mb-2">Game Paused</h2>
+                        <p className="game-modal-subtitle text-center mb-6">Review your board and continue when ready.</p>
                         <div className="space-y-3">
-                            <Button onClick={handleResume} className="w-full bg-cyan-500 hover:bg-cyan-600 text-white h-12 rounded-xl flex items-center justify-center gap-2 font-bold shadow-lg">
+                            <Button onClick={handleResume} className="w-full game-modal-btn bg-cyan-500 hover:bg-cyan-600 text-white flex items-center justify-center gap-2 font-bold shadow-lg">
                                 <Play className="w-4 h-4" /> Resume Game
                             </Button>
-                            <Button onClick={handleRestart} className="w-full bg-amber-500 hover:bg-amber-600 text-white h-12 rounded-xl flex items-center justify-center gap-2 font-bold shadow-lg">
+                            <Button onClick={handleRestart} className="w-full game-modal-btn bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center gap-2 font-bold shadow-lg">
                                 <RotateCcw className="w-4 h-4" /> Restart Game
                             </Button>
-                            <Button onClick={handleSettings} className="w-full bg-slate-700 hover:bg-slate-600 text-white h-12 rounded-xl flex items-center justify-center gap-2 font-bold shadow-lg">
+                            <Button onClick={handleSettings} className="w-full game-modal-btn bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center gap-2 font-bold shadow-lg">
                                 <Settings className="w-4 h-4" /> Game Settings
                             </Button>
-                            <Button onClick={handleExitGame} className="w-full bg-red-500 hover:bg-red-600 text-white h-12 rounded-xl flex items-center justify-center gap-2 font-bold shadow-lg">
+                            <Button onClick={handleExitGame} className="w-full game-modal-btn bg-red-500 hover:bg-red-600 text-white flex items-center justify-center gap-2 font-bold shadow-lg">
                                 <X className="w-4 h-4" /> Exit Game
                             </Button>
                         </div>

@@ -952,12 +952,34 @@ export function TheaterFullscreen({
     }
   }
 
+  const participantDisplayCount = Math.max(
+    participantsCount,
+    session.participants?.length || 0,
+    1
+  )
+
   if (!mounted) return null
 
   return createPortal(
     <PrivacyShield enabled={isOpen}>
       <div className={!isOpen ? "fixed top-[-9999px] left-[-9999px] opacity-0" : "fixed inset-0 bg-black z-[500] flex flex-col overflow-hidden select-none"}
         onMouseMove={reactivateControls} onMouseLeave={() => setShowControls(false)} onTouchStart={reactivateControls}>
+
+        {/* Top-left status badges */}
+        <div className="absolute top-4 left-4 flex flex-wrap items-center gap-2 z-[60] pointer-events-none">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/45 border border-white/15 backdrop-blur-md text-white text-[10px] sm:text-xs font-semibold tracking-wide">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+            <span>Host: {session.hostName || "Unknown"}</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/45 border border-white/15 backdrop-blur-md text-white text-[10px] sm:text-xs font-semibold tracking-wide">
+            <span className={`w-2 h-2 rounded-full ${isHost ? "bg-emerald-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]" : "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]"}`} />
+            <span>{isHost ? "You are Host" : "Host Controlled"}</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/45 border border-white/15 backdrop-blur-md text-white text-[10px] sm:text-xs font-semibold tracking-wide">
+            <Users className="w-3.5 h-3.5" />
+            <span>{participantDisplayCount}</span>
+          </div>
+        </div>
         
         {/* Top-right management controls */}
         <div className={`absolute top-4 right-4 flex items-center gap-2 z-[60] transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}>

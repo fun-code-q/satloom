@@ -17,6 +17,8 @@ interface OfflineMessage {
     retryCount: number
 }
 
+type QueueableOfflineMessage = Omit<OfflineMessage, "id" | "retryCount">
+
 interface UseOfflineSupportOptions {
     onReconnect?: () => void
     onSyncMessages?: (messages: OfflineMessage[]) => Promise<void>
@@ -32,6 +34,20 @@ export function useOfflineSupport({
     const [isSyncing, setIsSyncing] = useState(false)
     const [pendingMessages, setPendingMessages] = useState<OfflineMessage[]>([])
     const messageQueueRef = useRef<Map<string, OfflineMessage>>(new Map())
+    const syncPendingMessagesRef = useRef<() => Promise<void>>(async () => { })
+    const persistQueue = useCallback(() => {
+        const messages = Array.from(messageQueueRef.current.values())
+        setPendingMessages(messages)
+        try {
+            if (messages.length === 0) {
+                localStorage.removeItem("satloom-offline-queue")
+            } else {
+                localStorage.setItem("satloom-offline-queue", JSON.stringify(messages))
+            }
+        } catch (error) {
+            console.error("Failed to persist offline queue:", error)
+        }
+    }, [])
 
     // Load pending messages from localStorage on mount
     useEffect(() => {
@@ -44,7 +60,7 @@ export function useOfflineSupport({
                     timestamp: new Date(m.timestamp),
                 }))
                 messageQueueRef.current = new Map(messages.map((m) => [m.id, m]))
-                setPendingMessages(messages)
+                persistQueue()
             } catch (e) {
                 console.error("Failed to load offline queue:", e)
             }
@@ -52,25 +68,14 @@ export function useOfflineSupport({
 
         // Check initial online status
         setIsOnline(navigator.onLine)
-    }, [])
-
-    // Save to localStorage when queue changes
-    useEffect(() => {
-        const messages = Array.from(messageQueueRef.current.values())
-        setPendingMessages(messages)
-        try {
-            localStorage.setItem("satloom-offline-queue", JSON.stringify(messages))
-        } catch (error) {
-            console.error("Failed to save offline queue (Quota exceeded?):", error)
-        }
-    }, [messageQueueRef.current.size])
+    }, [persistQueue])
 
     // Listen for online/offline events
     useEffect(() => {
         const handleOnline = () => {
             setIsOnline(true)
             onReconnect?.()
-            syncPendingMessages()
+            void syncPendingMessagesRef.current()
         }
 
         const handleOffline = () => {
@@ -103,8 +108,7 @@ export function useOfflineSupport({
 
             // Clear queue after successful sync
             messageQueueRef.current.clear()
-            localStorage.removeItem("satloom-offline-queue")
-            setPendingMessages([])
+            persistQueue()
         } catch (error) {
             console.error("Failed to sync messages:", error)
 
@@ -119,13 +123,18 @@ export function useOfflineSupport({
                     })
                 }
             })
+            persistQueue()
         } finally {
             setIsSyncing(false)
         }
-    }, [onSyncMessages, maxRetryCount, isSyncing])
+    }, [onSyncMessages, maxRetryCount, isSyncing, persistQueue])
+
+    useEffect(() => {
+        syncPendingMessagesRef.current = syncPendingMessages
+    }, [syncPendingMessages])
 
     // Add message to queue
-    const queueMessage = useCallback((message: Omit<OfflineMessage, "retryCount">) => {
+    const queueMessage = useCallback((message: QueueableOfflineMessage) => {
         const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
         const offlineMessage: OfflineMessage = {
             ...message,
@@ -134,7 +143,7 @@ export function useOfflineSupport({
         }
 
         messageQueueRef.current.set(id, offlineMessage)
-        setPendingMessages(Array.from(messageQueueRef.current.values()))
+        persistQueue()
 
         // Try to send immediately if online
         if (navigator.onLine) {
@@ -142,20 +151,19 @@ export function useOfflineSupport({
         }
 
         return id
-    }, [syncPendingMessages])
+    }, [persistQueue, syncPendingMessages])
 
     // Remove message from queue
     const removeFromQueue = useCallback((id: string) => {
         messageQueueRef.current.delete(id)
-        setPendingMessages(Array.from(messageQueueRef.current.values()))
-    }, [])
+        persistQueue()
+    }, [persistQueue])
 
     // Clear entire queue
     const clearQueue = useCallback(() => {
         messageQueueRef.current.clear()
-        localStorage.removeItem("satloom-offline-queue")
-        setPendingMessages([])
-    }, [])
+        persistQueue()
+    }, [persistQueue])
 
     return {
         isOnline,

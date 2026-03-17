@@ -7,6 +7,7 @@ import { QuizSession, QuizAnswer, QuizResult } from "@/utils/games/quiz-system"
 import { GameInvite } from "@/utils/infra/game-signaling"
 import { WhiteboardInvite } from "@/utils/infra/whiteboard-signaling"
 import { Message } from "../message-bubble"
+import type { GameSeries } from "@/utils/games/game-series-manager"
 
 export function useChatFeatureState(initialAvatar?: string) {
     // Call-related
@@ -39,6 +40,7 @@ export function useChatFeatureState(initialAvatar?: string) {
 
     // Game & Invite
     const [gameInvite, setGameInvite] = useState<GameInvite | null>(null)
+    const [activeGameSeries, setActiveGameSeries] = useState<GameSeries | null>(null)
     const [mafiaConfig, setMafiaConfig] = useState<any>(null)
 
     // Feature Data
@@ -81,6 +83,7 @@ export function useChatFeatureState(initialAvatar?: string) {
         moodBackgroundMusic, setMoodBackgroundMusic,
         moodPlaylist, setMoodPlaylist,
         gameInvite, setGameInvite,
+        activeGameSeries, setActiveGameSeries,
         mafiaConfig, setMafiaConfig,
         currentKaraokeSession, setCurrentKaraokeSession,
         karaokeInvite, setKaraokeInvite,
