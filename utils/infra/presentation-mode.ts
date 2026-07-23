@@ -176,7 +176,11 @@ class PresentationModeManager {
         this.notify()
     }
 
-    async goToSlide(presentationId: string, slideIndex: number): Promise<void> {
+    async goToSlide(presentationId: string, slideIndex: number, isHost = true): Promise<void> {
+        if (!isHost) {
+            console.warn(`[Presentation] goToSlide rejected: caller is not the presenter.`)
+            return
+        }
         const presRef = getDbRef(`presentations/${presentationId}`)
         if (presRef) {
             await update(presRef, {
@@ -185,23 +189,27 @@ class PresentationModeManager {
         }
     }
 
-    async nextSlide(presentationId: string): Promise<void> {
+    async nextSlide(presentationId: string, isHost = true): Promise<void> {
         if (!this.state.presentation) return
 
         const nextIndex = this.state.presentation.currentSlideIndex + 1
         if (nextIndex < Object.keys(this.state.presentation.slides).length) {
-            await this.goToSlide(presentationId, nextIndex)
+            await this.goToSlide(presentationId, nextIndex, isHost)
         }
     }
 
-    async previousSlide(presentationId: string): Promise<void> {
+    async previousSlide(presentationId: string, isHost = true): Promise<void> {
         if (!this.state.presentation) return
 
         const prevIndex = Math.max(0, this.state.presentation.currentSlideIndex - 1)
-        await this.goToSlide(presentationId, prevIndex)
+        await this.goToSlide(presentationId, prevIndex, isHost)
     }
 
-    async pausePresentation(presentationId: string): Promise<void> {
+    async pausePresentation(presentationId: string, isHost = true): Promise<void> {
+        if (!isHost) {
+            console.warn(`[Presentation] pausePresentation rejected: caller is not the presenter.`)
+            return
+        }
         const presRef = getDbRef(`presentations/${presentationId}`)
         if (presRef) {
             await update(presRef, {
@@ -210,7 +218,11 @@ class PresentationModeManager {
         }
     }
 
-    async resumePresentation(presentationId: string): Promise<void> {
+    async resumePresentation(presentationId: string, isHost = true): Promise<void> {
+        if (!isHost) {
+            console.warn(`[Presentation] resumePresentation rejected: caller is not the presenter.`)
+            return
+        }
         const presRef = getDbRef(`presentations/${presentationId}`)
         if (presRef) {
             await update(presRef, {
@@ -268,14 +280,22 @@ class PresentationModeManager {
         this.notify()
     }
 
-    async updateSlideContent(presentationId: string, slideId: string, updates: Partial<Slide>): Promise<void> {
+    async updateSlideContent(presentationId: string, slideId: string, updates: Partial<Slide>, isHost = true): Promise<void> {
+        if (!isHost) {
+            console.warn(`[Presentation] updateSlideContent rejected: caller is not the presenter.`)
+            return
+        }
         const slideRef = getDbRef(`presentations/${presentationId}/slides/${slideId}`)
         if (slideRef) {
             await update(slideRef, this.cleanObject(updates))
         }
     }
 
-    async deleteSlide(presentationId: string, slideId: string): Promise<void> {
+    async deleteSlide(presentationId: string, slideId: string, isHost = true): Promise<void> {
+        if (!isHost) {
+            console.warn(`[Presentation] deleteSlide rejected: caller is not the presenter.`)
+            return
+        }
         const slideRef = getDbRef(`presentations/${presentationId}/slides/${slideId}`)
         if (slideRef) {
             await remove(slideRef)

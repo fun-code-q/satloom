@@ -193,7 +193,7 @@ export function TheaterFullscreen({
         if (currentHostGone) {
           const sortedUsers = [...users].sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0))
           if (sortedUsers[0].uid === currentUserId) {
-            theaterSignaling.transferHost(roomId, session.id, currentUserId, currentUser);
+            theaterSignaling.transferHost(roomId, session.id, currentUserId, currentUser, isHost);
           }
         }
       }
@@ -377,7 +377,7 @@ export function TheaterFullscreen({
       connectedPeersRef.current.add(participantId)
     })
     setIsBuffering(false); setIsPlaying(true); setCurrentTime(0)
-    try { await theaterSignaling.sendAction(roomId, session.id, "play", 0, currentUserId, currentUser) } catch (err) { console.error("Failed to send play action:", err) }
+    try { await theaterSignaling.sendAction(roomId, session.id, "play", 0, currentUserId, currentUser, undefined, isHost) } catch (err) { console.error("Failed to send play action:", err) }
     const videoTrack = stream.getVideoTracks()[0]
     if (videoTrack) {
       videoTrack.onended = () => {
@@ -897,7 +897,7 @@ export function TheaterFullscreen({
       videoStreamManagerRef.current.syncPlayback('seek', 0)
       videoStreamManagerRef.current.syncPlayback('pause')
       try {
-        await theaterSignaling.sendAction(roomId, session.id, "pause", 0, currentUserId, currentUser)
+        await theaterSignaling.sendAction(roomId, session.id, "pause", 0, currentUserId, currentUser, undefined, isHost)
       } catch (err) {
         console.error("Failed to send initial pause action:", err)
       }
@@ -923,8 +923,8 @@ export function TheaterFullscreen({
     try {
       const video = { url: newQueueUrl.trim(), title: "Added Video", duration: 0, addedBy: currentUserId, addedByName: currentUser, metadata: { type: 'stream' as const } }
       if (theaterQueue.addToQueue(video as any)) {
-        await theaterSignaling.updateQueue(roomId, session.id, (theaterQueue as any).queue)
-        await theaterSignaling.sendAction(roomId, session.id, "queue_update", 0, currentUserId, currentUser); setNewQueueUrl("")
+        await theaterSignaling.updateQueue(roomId, session.id, (theaterQueue as any).queue, isHost)
+        await theaterSignaling.sendAction(roomId, session.id, "queue_update", 0, currentUserId, currentUser, undefined, isHost); setNewQueueUrl("")
       }
     } catch (err) { console.error("Queue add error:", err) } finally { setIsAddingToQueue(false) }
   }
