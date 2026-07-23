@@ -614,7 +614,10 @@ export function ChatHeader({
                             <div className="flex items-center gap-1.5 md:gap-2 overflow-x-auto scrollbar-hide online-users-bar flex-nowrap">
                                 <span className="text-[10px] md:text-xs text-gray-400 whitespace-nowrap flex-shrink-0 hidden md:inline">Participants:</span>
                                 {(roomMembers || []).map((member) => {
-                                    const onlineUser = (onlineUsers || []).find(u => u.name === member.name)
+                                    // Match online status by uid (stable identity), not name
+                                    // (names can collide; uids cannot). UserPresence.id is the
+                                    // auth uid, which now equals the member key + member.uid.
+                                    const onlineUser = (onlineUsers || []).find(u => u.id === member.uid)
                                     const isOnline = !!onlineUser
 
                                     return (
@@ -659,7 +662,7 @@ export function ChatHeader({
                                                     )}
 
                                                     {/* Status Selector for Current User on Mobile */}
-                                                    {member.name === currentUserName && (
+                                                    {member.uid === currentUserId && (
                                                         <div className="md:hidden w-full mt-2">
                                                             <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-1.5 px-1 font-bold">Update Status</div>
                                                             <div className="bg-slate-700/30 border border-white/5 rounded-xl p-1">
@@ -678,7 +681,12 @@ export function ChatHeader({
                                                                 className="flex-1 text-xs text-white bg-red-500/80 hover:bg-red-600 rounded-xl flex items-center justify-center gap-1.5"
                                                                 onClick={() => {
                                                                     if (onKickUser) {
-                                                                        const targetUserId = onlineUser ? userPresence.createUniqueUserId(member.name) : ""
+                                                                        // Use the member's real auth uid (member.uid) — the old
+                                                                        // createUniqueUserId(member.name) heuristic produced a
+                                                                        // synthetic id that never matched the actual member key, so
+                                                                        // kick was silently broken. onKickUser → kickUser expects a
+                                                                        // uid that matches the members/{uid} + presence/{uid} keys.
+                                                                        const targetUserId = member.uid || (onlineUser ? onlineUser.id : "")
                                                                         if (targetUserId) {
                                                                             onKickUser(targetUserId)
                                                                         }

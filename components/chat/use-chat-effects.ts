@@ -237,9 +237,11 @@ export function useChatEffects(params: UseChatEffectsParams) {
         }
         userPresence.setUserOnline(currentUserId, roomId, cleanUserInfo)
 
-        // Add to persistent members collection
-        const memberRef = ref(db, `rooms/${roomId}/members/${userProfile.name}`)
+        // Add to persistent members collection — keyed by auth uid (matches
+        // the create/join paths in app/page.tsx and the security rules).
+        const memberRef = ref(db, `rooms/${roomId}/members/${currentUserId}`)
         set(memberRef, {
+            uid: currentUserId,
             name: userProfile.name,
             avatar: userProfile.avatar || null,
             joinedAt: Date.now()
@@ -407,7 +409,13 @@ export function useChatEffects(params: UseChatEffectsParams) {
         const membersUnsubscribe = onValue(membersRef, (snapshot) => {
             const data = snapshot.val()
             if (data) {
-                const membersList: RoomMember[] = Object.values(data)
+                // Materialize the Firebase key (the auth uid) into each
+                // member object as `uid`, since Object.values discards keys.
+                // Required by the RoomMember type and by consumers that need
+                // a stable identity (kick, online-status match).
+                const membersList: RoomMember[] = Object.entries(data).map(
+                    ([uid, v]) => ({ ...(v as object), uid }) as RoomMember
+                )
                 setRoomMembers(membersList)
                 console.log(`ChatEffects: Syncing ${membersList.length} members for room ${roomId}`)
             } else {

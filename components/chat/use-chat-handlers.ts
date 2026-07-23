@@ -303,7 +303,8 @@ export function useChatHandlers({
 
                 const db = getFirebaseDatabase()
                 if (db) {
-                    const memberRef = ref(db, `rooms/${roomId}/members/${userProfile.name}`)
+                    // Keyed by auth uid (matches create/join paths + rules).
+                    const memberRef = ref(db, `rooms/${roomId}/members/${currentUserId}`)
                     await remove(memberRef)
                 }
 

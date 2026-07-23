@@ -3,6 +3,8 @@ import { Message } from '@/components/message-bubble'
 import { UserPresence } from '@/utils/infra/user-presence'
 
 interface RoomMember {
+    /** Firebase auth UID — the canonical member key (matches presence.id). */
+    uid: string
     name: string
     avatar?: string
     joinedAt: number

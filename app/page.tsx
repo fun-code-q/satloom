@@ -300,7 +300,14 @@ export default function Home() {
             createdBy: profile.name,
             createdByUid: currentUser?.uid || "anonymous",
             members: {
-              [profile.name]: {
+              // Key members by Firebase auth UID (not display name) and
+              // include the uid field — the security rules' members/$uid
+              // validate requires newData.child('uid').val() === $uid, and
+              // every membership read-gate checks members/{auth.uid}.exists().
+              // Keying by name broke both: the create set() failed validate,
+              // and the read gate was never satisfiable.
+              [currentUser?.uid || "anonymous"]: {
+                uid: currentUser?.uid || "anonymous",
                 name: profile.name,
                 avatar: profile.avatar || null,
                 joinedAt: Date.now(),
@@ -319,10 +326,12 @@ export default function Home() {
         const database = getFirebaseDatabase()
 
         if (database) {
-          const memberRef = ref(database, `rooms/${roomId}/members/${profile.name}`)
+          // Key by auth uid (not display name) — see create-path comment.
+          const memberRef = ref(database, `rooms/${roomId}/members/${currentUser?.uid || "anonymous"}`)
           try {
             // Await the write so the user is registered before ChatInterface initialises its listeners
             await set(memberRef, {
+              uid: currentUser?.uid || "anonymous",
               name: profile.name,
               avatar: profile.avatar || null,
               joinedAt: Date.now(),
@@ -396,10 +405,10 @@ export default function Home() {
             // frozen tabs). This is a defensive explicit cleanup alongside
             // the onDisconnect path in user-presence.ts.
             await remove(ref(database, `rooms/${currentRoomId}/presence/${currentUser.uid}`)).catch(() => { })
-            // Membership is keyed by display name (see the create path), so
-            // remove by name. Best-effort: if the key shape differs the
-            // onDisconnect path still covers it.
-            await remove(ref(database, `rooms/${currentRoomId}/members/${userProfile.name}`)).catch(() => { })
+            // Membership is keyed by auth uid (see create path), so remove
+            // by uid. Best-effort: if the key shape differs the onDisconnect
+            // path still covers it.
+            await remove(ref(database, `rooms/${currentRoomId}/members/${currentUser.uid}`)).catch(() => { })
           }
         }
       }
