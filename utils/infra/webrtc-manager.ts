@@ -12,6 +12,10 @@ export class WebRTCManager {
     private isCleanupInProgress = false
     private iceCandidateBuffers: Map<string, RTCIceCandidateInit[]> = new Map()
     private signalingLock: Map<string, boolean> = new Map()
+    // Peers currently undergoing an ICE restart. Prevents a flapping
+    // connection (failed → restart → failed → ...) from spamming restart
+    // offers. Cleared when the restart offer is sent.
+    private restartInProgress: Set<string> = new Set()
 
     private config: RTCConfiguration = WEBRTC_CONFIG
 
@@ -143,6 +147,70 @@ export class WebRTCManager {
         })
         await pc.setLocalDescription(offer)
         return offer
+    }
+
+    /**
+     * Initiate an ICE restart for a peer whose connection has failed.
+     *
+     * Generates a new offer with `{ iceRestart: true }`, which forces the ICE
+     * agent to re-gather candidates (useful after a WiFi→cellular handoff or
+     * NAT rebind). The returned offer must be signaled to the remote peer via
+     * the normal offer/answer path — the remote's existing offer handler calls
+     * createAnswer(), which processes a restart offer like any other. Both
+     * sides then re-gather ICE candidates and the connection can recover
+     * without a hang-up/redial.
+     *
+     * Guards:
+     *   - Only restarts if a peer connection exists.
+     *   - One restart per peer at a time (restartInProgress) so a flapping
+     *     connection can't spam offers. The flag is cleared in cleanup() and
+     *     should be cleared by the caller once the offer is sent.
+     *   - Respects the signalingLock (won't restart mid-negotiation).
+     *
+     * Returns the restart offer, or null if a restart is already in progress
+     * or conditions aren't met (caller treats null as "skip").
+     */
+    async restartIce(targetUserId: string): Promise<RTCSessionDescriptionInit | null> {
+        const pc = this.peerConnections.get(targetUserId)
+        if (!pc) return null
+        if (this.restartInProgress.has(targetUserId)) {
+            console.log(`[WebRTC] ICE restart already in progress for ${targetUserId}, skipping`)
+            return null
+        }
+        if (this.signalingLock.get(targetUserId)) {
+            console.log(`[WebRTC] Signaling lock active for ${targetUserId}, deferring ICE restart`)
+            return null
+        }
+
+        this.restartInProgress.add(targetUserId)
+        try {
+            // iceRestart requires the PC to be in stable or have-local-offer
+            // state. On a "failed" connection the signaling state is normally
+            // stable (ICE failure doesn't change signaling state), so this is
+            // safe.
+            if (pc.signalingState !== "stable" && pc.signalingState !== "have-local-offer") {
+                console.warn(`[WebRTC] restartIce: PC ${targetUserId} in state ${pc.signalingState}, aborting`)
+                this.restartInProgress.delete(targetUserId)
+                return null
+            }
+            const offer = await pc.createOffer({
+                offerToReceiveAudio: true,
+                offerToReceiveVideo: true,
+                iceRestart: true,
+            })
+            await pc.setLocalDescription(offer)
+            console.log(`[WebRTC] ICE restart offer created for ${targetUserId}`)
+            return offer
+        } catch (err) {
+            console.error(`[WebRTC] restartIce failed for ${targetUserId}:`, err)
+            this.restartInProgress.delete(targetUserId)
+            throw err
+        }
+    }
+
+    /** Clear the restart-in-progress flag (caller invokes after sending the offer). */
+    clearRestartInProgress(targetUserId: string): void {
+        this.restartInProgress.delete(targetUserId)
     }
 
     async createAnswer(targetUserId: string, remoteOffer: RTCSessionDescriptionInit): Promise<RTCSessionDescriptionInit> {
@@ -334,12 +402,14 @@ export class WebRTCManager {
                 this.peerConnections.delete(targetUserId)
                 this.remoteStreams.delete(targetUserId)
                 this.iceCandidateBuffers.delete(targetUserId)
+                this.restartInProgress.delete(targetUserId)
             }
         } else {
             this.peerConnections.forEach(pc => pc.close())
             this.peerConnections.clear()
             this.remoteStreams.clear()
             this.iceCandidateBuffers.clear()
+            this.restartInProgress.clear()
             this.onRemoteStreamListeners.clear()
         }
     }

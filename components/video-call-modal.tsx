@@ -354,8 +354,24 @@ export function VideoCallModal({
           toast.success("Connection established")
         }
         if (state === "failed") {
-          console.error(`[VideoCall] Connection to ${uid} FAILED. Check network/ICE servers.`)
-          toast.error("Connection failed. Retrying...")
+          console.error(`[VideoCall] Connection to ${uid} FAILED. Attempting ICE restart...`)
+          toast.error("Connection dropped. Reconnecting...")
+          // Initiate an ICE restart: create a new offer with iceRestart:true
+          // and signal it to the peer. The remote's offer handler processes
+          // it via createAnswer() (no remote-side change needed), both sides
+          // re-gather candidates, and the call recovers without a redial.
+          // Only the caller side fires the restart to avoid glare; the remote
+          // will simply answer. Guarded by restartInProgress in the manager.
+          webrtc.restartIce(uid).then((offer) => {
+            if (offer) {
+              callSignaling.sendSignal(roomId, callData.id, "offer", offer, currentUserId)
+                .then(() => webrtc.clearRestartInProgress(uid))
+                .catch((err) => {
+                  console.error("[VideoCall] ICE restart offer send failed:", err)
+                  webrtc.clearRestartInProgress(uid)
+                })
+            }
+          }).catch((err) => console.error("[VideoCall] restartIce failed:", err))
         }
         if (state === "disconnected") {
           console.warn(`[VideoCall] Connection to ${uid} disconnected.`)
