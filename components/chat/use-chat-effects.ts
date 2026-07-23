@@ -111,6 +111,12 @@ export function useChatEffects(params: UseChatEffectsParams) {
     const lastMessageCountRef = useRef(messages.length)
     const wasCallAnsweredRef = useRef(false)
     const currentCallRef = useRef<CallData | null>(null)
+    // Message IDs we've already issued a markMessageAsRead write for in this
+    // room session. Without this, the read-receipt effect re-issued a write
+    // for every unread inbound message on every `messages` snapshot (the
+    // readBy guard only suppressed repeats once the write round-tripped back
+    // into the local snapshot). Dedup here to kill the write amplification.
+    const markedReadRef = useRef<Set<string>>(new Set())
 
     // Sync currentCallRef
     useEffect(() => {
@@ -150,6 +156,12 @@ export function useChatEffects(params: UseChatEffectsParams) {
         if (!roomId || !messages.length || !userProfile.name) return
         messages.forEach((msg) => {
             if (msg.sender !== userProfile.name && (!msg.readBy || !msg.readBy.includes(userProfile.name))) {
+                // Skip writes we've already issued this session; the readBy
+                // guard alone only suppresses repeats after the prior write
+                // round-trips back into the snapshot, which caused a burst of
+                // redundant writes on every snapshot in the meantime.
+                if (markedReadRef.current.has(msg.id)) return
+                markedReadRef.current.add(msg.id)
                 MessageStorage.getInstance().markMessageAsRead(roomId, msg.id, userProfile.name)
             }
         })
@@ -195,6 +207,14 @@ export function useChatEffects(params: UseChatEffectsParams) {
         setActiveGameSeries(null)
         setKaraokeInvite(null)
         prevOnlineUsersRef.current = []
+        // Reset the new-message counter so entering a new room doesn't fire
+        // a phantom notification for the backlog (the count was stale from
+        // the previous room, causing processedMessages.length > staleCount
+        // to misfire on the first snapshot). Verified bug: this ref was the
+        // only state not reset in this block.
+        lastMessageCountRef.current = 0
+        // Clear the read-receipt dedup set so a fresh room session re-marks.
+        markedReadRef.current = new Set()
 
         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
         if (quizTimerRef.current) clearInterval(quizTimerRef.current)

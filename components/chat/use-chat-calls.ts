@@ -133,6 +133,13 @@ export function useChatCalls(params: UseChatCallsParams) {
     const seriesBaseConfigRef = useRef<GameConfig | null>(null)
     const openedSeriesMatchRef = useRef<string | null>(null)
     const completedSeriesNoticeRef = useRef<string | null>(null)
+    // Tracks game-invite keys we've already surfaced a notification for, so
+    // each invite notifies the user exactly once. Replaces the previous
+    // `!gameInvite` guard which closed over a stale value and re-notified on
+    // every onValue snapshot (the listener never re-subscribed when
+    // gameInvite changed, so the guard was always evaluated against the
+    // mount-time null).
+    const notifiedGameInvitesRef = useRef<Set<string>>(new Set())
 
     useEffect(() => {
         if (!roomId || !activeGameSeries?.id) return
@@ -743,8 +750,16 @@ export function useChatCalls(params: UseChatCallsParams) {
         const unsubscribe = onValue(gameInvitesRef, (snapshot: any) => {
             const invites = snapshot.val()
             if (invites) {
-                Object.values(invites).forEach((invite: any) => {
-                    if (invite.hostId !== currentUserId && !gameInvite) {
+                // Use the push-key as a stable per-invite identity and track
+                // which we've already notified, so each invite surfaces
+                // exactly once regardless of snapshot re-fires (reconnect,
+                // other writes to the node). Previously the guard was
+                // `!gameInvite`, which closed over a stale mount-time null
+                // (the listener never re-subscribed when gameInvite changed)
+                // and re-notified on every snapshot.
+                Object.entries(invites).forEach(([inviteKey, invite]: [string, any]) => {
+                    if (invite.hostId !== currentUserId && !notifiedGameInvitesRef.current.has(inviteKey)) {
+                        notifiedGameInvitesRef.current.add(inviteKey)
                         params.setGameInvite(invite as any)
                         const isSeries = invite?.gameConfig?.matchmakingMode === "series"
                         notificationSystem.success(
@@ -757,7 +772,10 @@ export function useChatCalls(params: UseChatCallsParams) {
             }
         })
         return () => unsubscribe()
-    }, [roomId, currentUserId, gameInvite])
+        // gameInvite intentionally removed from deps: the dedup is now keyed
+        // by invite identity (notifiedGameInvitesRef), not by the current
+        // pending-invite state, so the closure no longer goes stale.
+    }, [roomId, currentUserId])
 
     // --- Karaoke handlers ---
     const handleStartKaraoke = useCallback(async (song: KaraokeSong, options?: { inviteAudience?: boolean }) => {
