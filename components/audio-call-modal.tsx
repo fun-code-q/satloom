@@ -237,6 +237,23 @@ export function AudioCallModal({
       },
       (state, uid) => {
         if (state === "connected") toast.success("Connected to audio")
+        if (state === "failed") {
+          console.error(`[AudioCall] Connection to ${uid} FAILED. Attempting ICE restart...`)
+          toast.error("Connection dropped. Reconnecting...")
+          // ICE restart: new offer with iceRestart:true, signaled to the peer.
+          // Remote processes it via createAnswer() and both sides re-gather
+          // candidates. See video-call-modal.tsx for the full rationale.
+          webrtc.restartIce(uid).then((offer) => {
+            if (offer) {
+              callSignaling.sendSignal(roomId, callData.id, "offer", offer, currentUserId)
+                .then(() => webrtc.clearRestartInProgress(uid))
+                .catch((err) => {
+                  console.error("[AudioCall] ICE restart offer send failed:", err)
+                  webrtc.clearRestartInProgress(uid)
+                })
+            }
+          }).catch((err) => console.error("[AudioCall] restartIce failed:", err))
+        }
       }
     )
 
