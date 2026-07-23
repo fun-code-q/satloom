@@ -1,3 +1,10 @@
+/**
+ * @deprecated DEAD CODE — zero importers (verified 2026-07 re-audit).
+ * Excluded from the build via tsconfig.json; kept in-repo for reference only.
+ * See DEPRECATED.md. Do NOT import from live code; revive only after
+ * re-confirming zero-importer status and fixing any drift.
+ */
+
 // CDN Manager for optimizing media delivery
 // Provides helpers for CDN URLs and optimization
 

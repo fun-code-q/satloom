@@ -40,6 +40,25 @@
     "node_modules",
     "sat-loom-web-app v5 latest 1",
     "beatdrop---south-indian-party",
-    "functions"
+    "functions",
+    "utils/core/analytics.ts",
+    "utils/core/enhanced-error-handler.ts",
+    "utils/core/worker-manager.ts",
+    "utils/infra/firebase-query-optimizer.ts",
+    "utils/infra/connection-pool.ts",
+    "utils/infra/knock-knock.ts",
+    "utils/infra/twitch-player.ts",
+    "utils/infra/prefetcher.ts",
+    "utils/infra/cdn-manager.ts",
+    "utils/infra/message-replies.ts",
+    "utils/infra/message-pins.ts",
+    "utils/infra/message-scheduler.ts",
+    "utils/infra/reaction-manager.ts",
+    "utils/hardware/noise-suppression.ts",
+    "utils/hardware/video-call-scaler.ts",
+    "utils/hardware/video-quality-scaler.ts",
+    "utils/hardware/local-recording.ts",
+    "utils/games/pictionary-game.ts",
+    "utils/games/turn-manager.ts"
   ]
 }
