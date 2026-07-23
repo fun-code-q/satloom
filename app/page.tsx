@@ -194,7 +194,15 @@ export default function Home() {
       return
     }
 
-    const cleanRoomId = roomId.trim().toUpperCase()
+    // Sanitize the room code: trim, uppercase, and strip characters that are
+    // illegal in Firebase Realtime Database path keys (`. # $ [ ] /`) plus
+    // any other non-alphanumeric. Without this, a pasted code like "A.B#C"
+    // would construct `ref(db, 'rooms/A.B#C')` which throws at runtime.
+    const cleanRoomId = roomId.trim().toUpperCase().replace(/[^A-Z0-9]/g, "")
+    if (!cleanRoomId) {
+      setError("Room ID must contain letters or numbers")
+      return
+    }
     console.log("App: Clean room ID:", cleanRoomId)
 
     setError("")
@@ -255,11 +263,33 @@ export default function Home() {
       let roomId = currentRoomId
 
       if (isCreatingRoom || !roomId) {
-        // Creating new room
-        roomId = generateRoomId()
-        console.log("App: Creating new room with ID:", roomId)
-
+        // Creating new room — generate an ID that doesn't collide with an
+        // existing room. Previously this was a single generateRoomId() + an
+        // unconditional set(), which would silently overwrite any existing
+        // room at the generated ID (catastrophic for that room's data).
+        // Collision probability is low (6-char base36 ≈ 2.1B space) but the
+        // overwrite is total when it happens, so we check existence and
+        // retry up to 3 times.
         const database = getFirebaseDatabase()
+        let attempts = 0
+        if (database) {
+          for (attempts = 0; attempts < 3; attempts++) {
+            const candidate = generateRoomId()
+            const candidateRef = ref(database, `rooms/${candidate}`)
+            const existing = await get(candidateRef)
+            if (!existing.exists()) {
+              roomId = candidate
+              break
+            }
+            console.warn(`App: room ID ${candidate} already exists, regenerating (attempt ${attempts + 1})`)
+          }
+        } else {
+          roomId = generateRoomId()
+        }
+        // If all 3 attempts collided (astronomically unlikely), fall back to
+        // the last candidate rather than blocking room creation entirely.
+        if (!roomId) roomId = generateRoomId()
+        console.log("App: Creating new room with ID:", roomId)
 
         if (database) {
           // Create room in Firebase
@@ -358,6 +388,18 @@ export default function Home() {
 
             const gamesRef = ref(database, `games/${currentRoomId}`)
             await remove(gamesRef)
+          } else if (currentUser?.uid) {
+            // Non-host leaving: remove this user's presence + membership
+            // nodes so they don't linger as ghosts. Previously the non-host
+            // branch did nothing to Firebase and relied entirely on
+            // onDisconnect().remove() firing (delayed/indefinite on mobile
+            // frozen tabs). This is a defensive explicit cleanup alongside
+            // the onDisconnect path in user-presence.ts.
+            await remove(ref(database, `rooms/${currentRoomId}/presence/${currentUser.uid}`)).catch(() => { })
+            // Membership is keyed by display name (see the create path), so
+            // remove by name. Best-effort: if the key shape differs the
+            // onDisconnect path still covers it.
+            await remove(ref(database, `rooms/${currentRoomId}/members/${userProfile.name}`)).catch(() => { })
           }
         }
       }
