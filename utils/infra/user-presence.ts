@@ -275,10 +275,11 @@ export class UserPresenceSystem {
           // lastSeen write from every user (O(users) writes × O(subscribers)
           // listeners = O(N²) re-fires per 30s), but those ticks don't change
           // who is online — they just refresh a timestamp. Comparing a stable
-          // signature (sorted uids + presence flags) suppresses the redundant
-          // re-renders while still emitting on real join/leave/status change.
+          // signature (sorted ids + status + activity) suppresses the
+          // redundant re-renders while still emitting on real join/leave or
+          // status/activity change.
           const sig = uniqueUsers
-            .map((u) => `${u.userId || u.name}:${u.status || ""}:${u.isOnline ? 1 : 0}`)
+            .map((u) => `${u.id || u.name}:${u.status || ""}:${u.currentActivity || ""}`)
             .sort()
             .join("|")
           if (sig !== this.lastPresenceSignature) {
