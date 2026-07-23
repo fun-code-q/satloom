@@ -44,7 +44,7 @@
           ".read":    "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
           ".indexOn": "timestamp",
           "$messageId": {
-            ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && ((!data.exists() && newData.child('userId').val() === auth.uid) || (data.exists() && data.child('userId').val() === auth.uid) || root.child('rooms/'+$roomId+'/createdByUid').val() === auth.uid)",
+            ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && ((!data.exists() && newData.child('userId').val() === auth.uid) || (data.exists() && data.child('userId').val() === auth.uid) || root.child('rooms/'+$roomId+'/createdByUid').val() === auth.uid || (data.exists() && !newData.exists() && data.child('expiresAt').isNumber() && data.child('expiresAt').val() <= now))",
 
             "text": {
               ".validate": "newData.isString() && newData.val().length <= 4096"

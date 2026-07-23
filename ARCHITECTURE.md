@@ -101,7 +101,7 @@ row to decide how much to trust a given feature.**
 | **Theater video broadcast (1 → up to 6 viewers)** | 🔒 Peer-to-peer media | Phase 3 — host's `videoElement.captureStream()` is added to each viewer's PC; cap enforced by host (`theater-full` signal sent to extras) | Phase 3 |
 | **Encryption at rest** (unprotected room) | ⚠️ Theater for link-holders | AES-GCM with PBKDF2 key derived from public `roomId` + per-room random salt. Useful against a Firebase data-center breach; useless against anyone with the URL. | Phase 6 (salt), 6.5 (mode) |
 | **Encryption at rest** (password-protected room, `encryptionMode: "password"`) | 🔒 Real password derivation | Same AES-GCM, but key derived from the **plaintext PIN** the user typed. Stored only in memory; cleared on room leave. Anyone with the PIN can decrypt — that's the model. | Phase 6.5 |
-| **Vanish-mode TTL** | ✅ Server-validated + best-effort prune | Rule rejects backdated `expiresAt`; read filter hides expired client-side; 30s pruner deletes author-owned expired rows. **Caveat:** if no author visits, the row may linger past TTL — but nobody renders it. | Phase 7 |
+| **Vanish-mode TTL** | ✅ Server-validated + best-effort prune | Rule rejects backdated `expiresAt`; read filter hides expired client-side. Two pruners: an in-app 30s pass (author-scoped, best-effort) AND a Cloud Function `pruneExpiredVanishMessages` that sweeps every 5 min with Admin privileges — so expired rows are deleted even if the author never returns. The Cloud Function is the authoritative cleanup; deploy it (see `docs/deploy.md`). **Caveat:** a row can linger up to ~5 min past TTL before the sweep runs, but no client renders it. | Phase 7, 13 |
 | **Vanish-mode "screenshot prevention"** | ❌ Not a guarantee | Browsers can't reliably detect or block screenshots. Phase 7 removed the false-claim copy and the bogus key intercepts. Watermark + tab-blur are deterrents only. | Phase 7 |
 | **Burner links (one-time-use invites)** | ✅ Transaction-protected | `runTransaction` on view counter with atomic expiry check | n/a |
 
@@ -147,15 +147,16 @@ out:
 - **SFU upgrade** for theater broadcast > 6 viewers (Phase 3 Option B).
   Contradicts the "no server" thesis.
 - **`read_once`** as true per-recipient read-tracking (Phase 7). Current
-  implementation is a 30s timer.
+  implementation is a 30s timer. *(Note: Phase 13 added `readBy/$uid` ack
+  tracking + the Cloud Function pruner, so the on-disk cleanup gap is
+  closed; what remains deferred is the per-recipient UX of "delete exactly
+  when the last reader has seen it" rather than on the 5-min sweep.)*
 - **Full Zustand modal-state migration** (Phase 8.3). ~90-prop drill
   from `ChatInterface` → `ChatModals` still exists.
 - **`vaul` drawer adoption** for mobile bottom-sheet modals (Phase 8.5).
 - **`motion` library** for staggered list / spring animations (Phase 8.7).
 - **Canvas-based reaction rain** respecting `prefers-reduced-motion`
   (Phase 8.8).
-- **Cloud Function vanish pruner** (Phase 7). Current pruner is
-  best-effort, runs in active sessions only.
 - **Real Signal-style E2EE** (Phase 6 / A3). Deferred *explicitly* —
   the recommended implementation is a Double-Ratchet (olm/megolm-style
   group ratchet) with persistent CryptoKey storage in IndexedDB, a
