@@ -203,6 +203,16 @@ export class MessageStorage {
             type: message.file.type || "",
             url: message.file.url || "",
             size: message.file.size || 0,
+            // P2P addressing — WITHOUT these the receiver's download guard
+            // (message-bubble.tsx handleP2PDownload: needs p2p + senderId +
+            // fileId) always bails and the file can never be fetched. The
+            // sender builds these in chat-input/use-chat-handlers; they were
+            // silently stripped here, so file sharing only "worked" for the
+            // sender (local blob URL) and was broken for every recipient.
+            p2p: message.file.p2p ?? false,
+            fileId: message.file.fileId || "",
+            senderId: message.file.senderId || "",
+            encrypted: message.file.encrypted ?? false,
           }
           : null,
         // Handle optional fields
