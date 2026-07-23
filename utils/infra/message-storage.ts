@@ -432,22 +432,23 @@ export class MessageStorage {
 
       const reactionRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/messages/${messageId}/reactions/${reaction}`)
 
-      // Get current reactions
-      const snapshot = await new Promise<any>((resolve) => {
-        onValue(reactionRef, resolve, { onlyOnce: true })
+      // Toggle atomically via a server-side transaction. The previous
+      // implementation was a read-modify-write (onValue onlyOnce → filter/
+      // spread → set), which lost updates when two users reacted in the same
+      // ~100-500ms window: both read ["a"], both write ["a","X"] / ["a","Y"],
+      // and the second clobbers the first. Reactions silently disappeared
+      // under concurrent use. vote() and rsvp() in this file already use
+      // runTransaction correctly; reactions were the outlier.
+      //
+      // The updater may receive null (no reactions yet), a non-array (legacy
+      // shape), or the current array. It must return the new value (NOT
+      // undefined, which would abort the transaction).
+      await runTransaction(reactionRef, (current) => {
+        const arr = Array.isArray(current) ? current : []
+        return arr.includes(userId)
+          ? arr.filter((id: string) => id !== userId)
+          : [...arr, userId]
       })
-
-      const currentReactions = snapshot.val() || []
-
-      // Toggle reaction
-      let newReactions
-      if (currentReactions.includes(userId)) {
-        newReactions = currentReactions.filter((id: string) => id !== userId)
-      } else {
-        newReactions = [...currentReactions, userId]
-      }
-
-      await set(reactionRef, newReactions)
     } catch (error) {
       console.error("Error adding reaction:", error)
       throw error
