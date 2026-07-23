@@ -1,12 +1,25 @@
 /**
  * Telemetry Manager
- * 
+ *
  * Handles granular logging of user activities (Games, Quizzes, Theater, Calls)
  * and session metadata for administrative monitoring.
+ *
+ * PRIVACY NOTE (Tier 0): event *collection* is currently neutralized.
+ * The README states "No third-party tracking. No Google Analytics, no Meta
+ * Pixel, no Sentry." Previously, logEvent() fetched the visitor's approximate
+ * geolocation from a third party (ipapi.co) and wrote display-name + geo +
+ * device metadata to Firebase — directly contradicting that promise.
+ *
+ * logEvent() is now a no-op: no third-party fetch, no device fingerprint, no
+ * Firebase write. All ~20 call sites are preserved unchanged, so a future,
+ * consented telemetry design can be wired back in here without touching them.
+ * The read-side helpers (listenToTelemetry, getGlobalHistory) remain so the
+ * admin panel (admin-central.ts) keeps working — it will simply show no new
+ * data, which is the intended "we stopped collecting" state.
  */
 
 import { getFirebaseDatabase } from "@/lib/firebase";
-import { ref, push, set, serverTimestamp, onValue, query, limitToLast, get } from "firebase/database";
+import { ref, onValue, query, limitToLast, get } from "firebase/database";
 
 export type TelemetryEventType =
     | 'room_created'
@@ -52,7 +65,6 @@ export interface TelemetryEvent {
 
 class TelemetryManager {
     private static instance: TelemetryManager;
-    private locationCache: { country: string; city: string } | null = null;
 
     private constructor() { }
 
@@ -64,98 +76,22 @@ class TelemetryManager {
     }
 
     /**
-     * Fetch approximate location based on IP
-     */
-    private async fetchLocation(): Promise<{ country: string; city: string }> {
-        if (this.locationCache) return this.locationCache;
-
-        try {
-            const response = await fetch('https://ipapi.co/json/');
-            const data = await response.json();
-            this.locationCache = {
-                country: data.country_name || 'Unknown',
-                city: data.city || 'Unknown'
-            };
-            return this.locationCache;
-        } catch (e) {
-            console.error("Telemetry: Failed to fetch location", e);
-            return { country: 'Unknown', city: 'Unknown' };
-        }
-    }
-
-    /**
-     * Get device metadata
-     */
-    private getDeviceMetadata() {
-        const ua = navigator.userAgent;
-        let type = 'desktop';
-        if (/tablet|ipad/i.test(ua)) type = 'tablet';
-        else if (/mobile|iphone|android/i.test(ua)) type = 'mobile';
-
-        return {
-            os: this.getOS(ua),
-            browser: this.getBrowser(ua),
-            type
-        };
-    }
-
-    private getOS(ua: string): string {
-        if (ua.includes('Windows')) return 'Windows';
-        if (ua.includes('Mac')) return 'macOS';
-        if (ua.includes('Linux')) return 'Linux';
-        if (ua.includes('Android')) return 'Android';
-        if (ua.includes('iOS') || ua.includes('iPhone')) return 'iOS';
-        return 'Unknown';
-    }
-
-    private getBrowser(ua: string): string {
-        if (ua.includes('Chrome')) return 'Chrome';
-        if (ua.includes('Safari')) return 'Safari';
-        if (ua.includes('Firefox')) return 'Firefox';
-        if (ua.includes('Edge')) return 'Edge';
-        return 'Unknown';
-    }
-
-    /**
-     * Log an event to Firebase
+     * Log an event.
+     *
+     * Tier 0 (privacy): neutralized to a no-op. See the file-level PRIVACY NOTE.
+     * Returns immediately without any network call or database write. The
+     * signature is unchanged so existing call sites compile and behave
+     * identically (they just stop collecting). A consented telemetry design
+     * can be implemented here later.
      */
     async logEvent(
-        type: TelemetryEventType,
-        roomId: string,
-        userId: string,
-        userName: string,
-        details?: Record<string, any>
+        _type: TelemetryEventType,
+        _roomId: string,
+        _userId: string,
+        _userName: string,
+        _details?: Record<string, any>
     ): Promise<void> {
-        try {
-            const db = getFirebaseDatabase();
-            if (!db) return;
-
-            const location = await this.fetchLocation();
-            const device = this.getDeviceMetadata();
-
-            const eventRef = ref(db, `telemetry/${roomId}`);
-            const newEventRef = push(eventRef);
-
-            const event: TelemetryEvent = {
-                type,
-                roomId,
-                userId,
-                userName,
-                timestamp: serverTimestamp(),
-                // details can contain undefined values which Firebase rejects.
-                // We clean it here while preserving the rest of the event structure.
-                details: details ? JSON.parse(JSON.stringify(details, (_, value) =>
-                    value === undefined ? null : value
-                )) : {},
-                location,
-                device
-            };
-
-            await set(newEventRef, event);
-            console.log(`Telemetry: Logged ${type} for room ${roomId}`);
-        } catch (e) {
-            console.error("Telemetry: Failed to log event", e);
-        }
+        return;
     }
 
     /**
