@@ -148,8 +148,19 @@ export class TheaterSignaling {
     currentTime: number,
     hostId: string,
     hostName: string,
-    payload?: any
+    payload?: any,
+    // Authorization: only the session host should broadcast playback actions.
+    // The React UI already gates calls with `if (!isHost) return`, but that is
+    // bypassable via DevTools or a direct call. This guard rejects non-host
+    // callers at the signaling layer (defense in depth) before the Firebase
+    // write. Defaults to true to preserve existing call-site behavior where
+    // the caller hasn't been updated yet.
+    isHost = true
   ) {
+    if (!isHost) {
+      console.warn(`[TheaterSignaling] sendAction("${type}") rejected: caller is not the session host.`)
+      return
+    }
     if (!getFirebaseDatabase()!) return
 
     // Firebase rejects objects with explicit undefined values → spread payload only when it exists
@@ -177,14 +188,22 @@ export class TheaterSignaling {
   }
 
   // Explicitly set session status
-  async setStatus(roomId: string, sessionId: string, status: TheaterSession["status"]) {
+  async setStatus(roomId: string, sessionId: string, status: TheaterSession["status"], isHost = true) {
+    if (!isHost) {
+      console.warn(`[TheaterSignaling] setStatus("${status}") rejected: caller is not the session host.`)
+      return
+    }
     if (!getFirebaseDatabase()!) return
     const statusRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}/status`)
     await set(statusRef, status)
   }
 
-  // Transfer host ownership
-  async transferHost(roomId: string, sessionId: string, newHostId: string, newHostName: string) {
+  // Transfer host ownership — only the CURRENT host may transfer.
+  async transferHost(roomId: string, sessionId: string, newHostId: string, newHostName: string, isHost = true) {
+    if (!isHost) {
+      console.warn(`[TheaterSignaling] transferHost rejected: caller is not the current host.`)
+      return
+    }
     if (!getFirebaseDatabase()!) return
     const sessionPath = `rooms/${roomId}/theater/${sessionId}`
     await set(ref(getFirebaseDatabase()!, `${sessionPath}/hostId`), newHostId)
@@ -334,21 +353,34 @@ export class TheaterSignaling {
   }
 
   // Update current time (Drift Correction Heartbeat)
-  async updateCurrentTime(roomId: string, sessionId: string, currentTime: number) {
+  async updateCurrentTime(roomId: string, sessionId: string, currentTime: number, isHost = true) {
+    if (!isHost) {
+      // Non-hosts don't broadcast position — only the host is the timing
+      // authority. Suppress silently (high frequency, no need to warn-spam).
+      return
+    }
     if (!getFirebaseDatabase()!) return
     const timeRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}/currentTime`)
     await set(timeRef, currentTime)
   }
 
   // Update theater queue
-  async updateQueue(roomId: string, sessionId: string, queue: any[]) {
+  async updateQueue(roomId: string, sessionId: string, queue: any[], isHost = true) {
+    if (!isHost) {
+      console.warn(`[TheaterSignaling] updateQueue rejected: caller is not the session host.`)
+      return
+    }
     if (!getFirebaseDatabase()!) return
     const queueRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}/queue`)
     await set(queueRef, queue)
   }
 
   // Update playback rate
-  async syncPlaybackRate(roomId: string, sessionId: string, rate: number, hostId: string, hostName: string) {
+  async syncPlaybackRate(roomId: string, sessionId: string, rate: number, hostId: string, hostName: string, isHost = true) {
+    if (!isHost) {
+      console.warn(`[TheaterSignaling] syncPlaybackRate rejected: caller is not the session host.`)
+      return
+    }
     if (!getFirebaseDatabase()!) return
     const action: TheaterAction = {
       type: "rate_change",

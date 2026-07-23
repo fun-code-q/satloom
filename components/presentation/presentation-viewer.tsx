@@ -135,22 +135,22 @@ export function PresentationViewer({ roomId, userId, userName, presentationId, i
     }, [screenStream])
 
     const handleNextSlide = async () => {
-        await presentationModeManager.nextSlide(presentationId)
+        await presentationModeManager.nextSlide(presentationId, canControl)
     }
 
     const handlePrevSlide = async () => {
-        await presentationModeManager.previousSlide(presentationId)
+        await presentationModeManager.previousSlide(presentationId, canControl)
     }
 
     const handleGoToSlide = async (index: number) => {
-        await presentationModeManager.goToSlide(presentationId, index)
+        await presentationModeManager.goToSlide(presentationId, index, canControl)
     }
 
     const handleTogglePlay = async () => {
         if (isPlaying) {
-            await presentationModeManager.pausePresentation(presentationId)
+            await presentationModeManager.pausePresentation(presentationId, canControl)
         } else {
-            await presentationModeManager.resumePresentation(presentationId)
+            await presentationModeManager.resumePresentation(presentationId, canControl)
         }
     }
 
