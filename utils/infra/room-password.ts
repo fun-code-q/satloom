@@ -122,12 +122,23 @@ async function hashPin(pin: string, saltB64: string): Promise<string> {
  */
 async function verifyPin(pin: string, storedHash: string, salt: string): Promise<boolean> {
     if (storedHash.startsWith(PBKDF2_PREFIX)) {
-        // New format: pbkdf2$<iters>$<saltB64>$<hashHex>
-        const parts = storedHash.split("$")
-        // parts: ["pbkdf2", "<iters>", "<saltB64>", "<hashHex>"]
-        const hashHex = parts[3]
-        const candidate = await derivePbkdf2(pin, b64ToBytes(parts[2]))
-        return constantTimeEqual(candidate, hashHex)
+        // New format: pbkdf2$<iters>$<saltB64>$<hashHex>. A corrupted or
+        // truncated stored hash/salt could make split()/b64ToBytes()/atob
+        // throw or produce undefined parts. Fail gracefully (treat as no
+        // match) instead of crashing the unlock flow — the caller counts
+        // this as a failed attempt, which is the safe default for malformed
+        // verifier data. The user can re-set the room password if needed.
+        try {
+            const parts = storedHash.split("$")
+            // parts: ["pbkdf2", "<iters>", "<saltB64>", "<hashHex>"]
+            if (parts.length < 4) return false
+            const hashHex = parts[3]
+            const candidate = await derivePbkdf2(pin, b64ToBytes(parts[2]))
+            return constantTimeEqual(candidate, hashHex)
+        } catch (e) {
+            console.warn("verifyPin: malformed PBKDF2 stored hash/salt, treating as no match", e)
+            return false
+        }
     }
     // Legacy format: single SHA-256(pin + salt), salt is the raw stored string.
     const encoder = new TextEncoder()
