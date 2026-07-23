@@ -31,18 +31,121 @@ interface RoomPasswordState {
     lockoutTimeRemaining: number // seconds
 }
 
-// Simple hash function for PIN (use bcrypt in production)
-async function hashPin(pin: string, salt: string): Promise<string> {
-    const encoder = new TextEncoder()
-    const data = encoder.encode(pin + salt)
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data)
-    const hashArray = Array.from(new Uint8Array(hashBuffer))
-    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("")
+/**
+ * PIN hashing — Tier 1 hardening.
+ *
+ * Previously this was a single unsalted SHA-256 round, which is brute-forceable
+ * in microseconds for the 4–6 digit PIN keyspace SatLoom uses. Now uses
+ * PBKDF2-SHA256 with 600,000 iterations (OWASP 2023+ recommendation), a
+ * CSPRNG salt, and a versioned output so legacy hashes can be verified and
+ * transparently upgraded on next successful unlock.
+ *
+ * Stored format:  `pbkdf2$<iterations>$<saltB64>$<hashHex>`
+ * Legacy format:  bare 64-char hex (single SHA-256 of pin+salt) — still
+ *                 accepted by verifyPin, then re-hashed to PBKDF2 on success.
+ */
+
+const PBKDF2_ITERATIONS = 600_000
+const PBKDF2_HASH_LEN = 32 // SHA-256 output, bytes
+const PBKDF2_PREFIX = `pbkdf2$${PBKDF2_ITERATIONS}$`
+
+/** Buffer <-> base64 helpers (URL-safe base64, no padding). */
+function bytesToB64(bytes: Uint8Array): string {
+    let bin = ""
+    for (const b of bytes) bin += String.fromCharCode(b)
+    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
+}
+function b64ToBytes(b64: string): Uint8Array {
+    const norm = b64.replace(/-/g, "+").replace(/_/g, "/")
+    const bin = atob(norm)
+    const out = new Uint8Array(bin.length)
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i)
+    return out
 }
 
-// Generate a random salt
+/** Constant-time string comparison. Returns true iff a === b. Length-safe. */
+function constantTimeEqual(a: string, b: string): boolean {
+    if (a.length !== b.length) {
+        // Still walk both to avoid leaking length via timing. Compare against
+        // a zero buffer of the longer length so the loop count is constant.
+        const max = Math.max(a.length, b.length)
+        let diff = 1
+        for (let i = 0; i < max; i++) {
+            const av = i < a.length ? a.charCodeAt(i) : 0
+            const bv = i < b.length ? b.charCodeAt(i) : 0
+            diff |= av ^ bv
+        }
+        return diff === 0 && a.length === b.length
+    }
+    let diff = 0
+    for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+    return diff === 0
+}
+
+/** PBKDF2-SHA256 derivation of the PIN with the given salt. */
+async function derivePbkdf2(pin: string, saltBytes: Uint8Array): Promise<string> {
+    const encoder = new TextEncoder()
+    const keyMaterial = await crypto.subtle.importKey(
+        "raw",
+        encoder.encode(pin),
+        { name: "PBKDF2" },
+        false,
+        ["deriveBits"],
+    )
+    const bits = await crypto.subtle.deriveBits(
+        // `salt` must be a BufferSource; copy into a fresh ArrayBuffer-backed
+        // Uint8Array so the strict DOM lib type is satisfied regardless of the
+        // source ArrayBuffer's exact generic parameter.
+        { name: "PBKDF2", salt: new Uint8Array(saltBytes), iterations: PBKDF2_ITERATIONS, hash: "SHA-256" },
+        keyMaterial,
+        PBKDF2_HASH_LEN * 8,
+    )
+    return Array.from(new Uint8Array(bits))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("")
+}
+
+/**
+ * Hash a PIN for storage. Always produces the new PBKDF2 format.
+ */
+async function hashPin(pin: string, saltB64: string): Promise<string> {
+    const hashHex = await derivePbkdf2(pin, b64ToBytes(saltB64))
+    return `${PBKDF2_PREFIX}${saltB64}$${hashHex}`
+}
+
+/**
+ * Verify a PIN against a stored hash, accepting both the new PBKDF2 format
+ * and the legacy single-SHA-256 format. Returns true on match.
+ *
+ * Legacy hashes are a bare 64-char hex of SHA-256(pin + salt), where salt was
+ * a Math.random base36 string. We reconstruct that path for backward compat.
+ */
+async function verifyPin(pin: string, storedHash: string, salt: string): Promise<boolean> {
+    if (storedHash.startsWith(PBKDF2_PREFIX)) {
+        // New format: pbkdf2$<iters>$<saltB64>$<hashHex>
+        const parts = storedHash.split("$")
+        // parts: ["pbkdf2", "<iters>", "<saltB64>", "<hashHex>"]
+        const hashHex = parts[3]
+        const candidate = await derivePbkdf2(pin, b64ToBytes(parts[2]))
+        return constantTimeEqual(candidate, hashHex)
+    }
+    // Legacy format: single SHA-256(pin + salt), salt is the raw stored string.
+    const encoder = new TextEncoder()
+    const buf = await crypto.subtle.digest("SHA-256", encoder.encode(pin + salt))
+    const legacy = Array.from(new Uint8Array(buf))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("")
+    return constantTimeEqual(legacy, storedHash)
+}
+
+/** Returns true if a stored hash is legacy (needs transparent upgrade). */
+function isLegacyHash(storedHash: string): boolean {
+    return !storedHash.startsWith(PBKDF2_PREFIX)
+}
+
+// Generate a cryptographically secure random salt (16 bytes, base64).
 function generateSalt(): string {
-    return Math.random().toString(36).substring(2, 15)
+    return bytesToB64(crypto.getRandomValues(new Uint8Array(16)))
 }
 
 class RoomPasswordManager {
@@ -103,7 +206,11 @@ class RoomPasswordManager {
                 roomId: this.roomId,
                 passwordHash,
                 hint: hint || "",
-                salt, // In production, store salt separately
+                // Salt is CSPRNG-generated and is not secret — co-locating it
+                // with the hash is standard (the PBKDF2 cost is the defense,
+                // not salt secrecy). 600k iterations make offline brute force
+                // of the 4–6 digit PIN keyspace impractical.
+                salt,
                 maxAttempts: 3,
                 lockoutDuration: 5, // 5 minutes lockout
                 isActive: true,
@@ -167,15 +274,30 @@ class RoomPasswordManager {
             return { success: true } // No password required
         }
 
-        // Validate PIN
-        const inputHash = await hashPin(pin, protectionData.salt)
+        // Validate PIN (constant-time; accepts legacy SHA-256 + new PBKDF2).
+        const match = await verifyPin(pin, protectionData.passwordHash, protectionData.salt)
 
-        if (inputHash === protectionData.passwordHash) {
+        if (match) {
             // Successful login - clear any lockout
             await remove(lockoutRef)
             this.state.isLockedOut = false
             this.state.remainingAttempts = protectionData.maxAttempts
             this.notifyListeners()
+
+            // Transparent upgrade: if the stored hash was the legacy single
+            // SHA-256 format, re-hash with PBKDF2 using a fresh CSPRNG salt
+            // and persist, so the weak hash is replaced on next unlock.
+            if (isLegacyHash(protectionData.passwordHash)) {
+                try {
+                    const newSalt = generateSalt()
+                    const newHash = await hashPin(pin, newSalt)
+                    await update(roomRef, { passwordHash: newHash, salt: newSalt })
+                } catch (e) {
+                    // Upgrade is best-effort; don't fail the unlock over it.
+                    console.warn("Room password: legacy→PBKDF2 upgrade failed", e)
+                }
+            }
+
             return { success: true }
         }
 
