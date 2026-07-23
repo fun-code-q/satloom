@@ -5,7 +5,7 @@
 
     "rooms": {
       "$roomId": {
-        ".read":  "auth != null",
+        ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
         ".write": "auth != null && (!data.exists() || data.child('createdByUid').val() === auth.uid || (newData.exists() && newData.child('createdByUid').val() === auth.uid && !root.child('rooms/'+$roomId+'/presence/'+data.child('createdByUid').val()).exists() && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()))",
 
         "createdAt":    { ".validate": "newData.isNumber()" },
@@ -18,7 +18,7 @@
         },
 
         "members": {
-          ".read": "auth != null",
+          ".read": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
           "$uid": {
             ".write":    "auth != null && ($uid === auth.uid || root.child('rooms/'+$roomId+'/createdByUid').val() === auth.uid)",
             ".validate": "newData.hasChildren(['uid','name','joinedAt']) && newData.child('uid').val() === $uid && newData.child('name').isString() && newData.child('name').val().length < 64 && newData.child('joinedAt').isNumber()"
@@ -26,14 +26,14 @@
         },
 
         "banned": {
-          ".read": "auth != null",
+          ".read": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
           "$uid": {
             ".write": "auth != null && root.child('rooms/'+$roomId+'/createdByUid').val() === auth.uid"
           }
         },
 
         "presence": {
-          ".read":    "auth != null",
+          ".read":    "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
           ".indexOn": ["lastSeen"],
           "$uid": {
             ".write": "auth != null && ($uid === auth.uid || root.child('rooms/'+$roomId+'/createdByUid').val() === auth.uid)"
@@ -41,7 +41,7 @@
         },
 
         "messages": {
-          ".read":    "auth != null",
+          ".read":    "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
           ".indexOn": "timestamp",
           "$messageId": {
             ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && ((!data.exists() && newData.child('userId').val() === auth.uid) || (data.exists() && data.child('userId').val() === auth.uid) || root.child('rooms/'+$roomId+'/createdByUid').val() === auth.uid)",
@@ -111,7 +111,7 @@
         },
 
         "protection": {
-          ".read":  "auth != null",
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
           ".write": "auth != null && root.child('rooms/'+$roomId+'/createdByUid').val() === auth.uid",
 
           "encryptionMode": {
@@ -124,7 +124,7 @@
         },
 
         "encryption": {
-          ".read":  "auth != null",
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
           ".write": "auth != null && root.child('rooms/'+$roomId+'/createdByUid').val() === auth.uid",
 
           "salt": {
@@ -133,12 +133,12 @@
         },
 
         "quiz": {
-          ".read": "auth != null",
+          ".read": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
           "$sessionId": {
-            ".read": "auth != null",
+            ".read": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
 
             "answers": {
-              ".read": "auth != null",
+              ".read": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
               "$answerId": {
                 ".write":    "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && (!data.exists() || root.child('rooms/'+$roomId+'/quiz/'+$sessionId+'/hostId').val() === auth.uid)",
                 ".validate": "!newData.exists() || (newData.child('playerId').val() === auth.uid && newData.child('isCorrect').val() === null) || root.child('rooms/'+$roomId+'/quiz/'+$sessionId+'/hostId').val() === auth.uid",
@@ -307,7 +307,7 @@
     "burnerLinks": {
       ".indexOn": ["expiresAt", "createdByUid"],
       "$linkId": {
-        ".read":  "auth != null",
+        ".read":  "auth != null && data.child('createdByUid').val() === auth.uid",
         ".write": "auth != null && (!data.exists() || data.child('createdByUid').val() === auth.uid)",
 
         "createdByUid": {
