@@ -7,6 +7,7 @@ import { Loader2, X, RotateCcw, Trophy, Clock, ChevronDown, Pause, Play, Setting
 import { PlaygroundSetupModal } from "../playground-setup-modal"
 import { toast } from "sonner"
 import { cn } from "@/utils/core/cn"
+import { TrustModeBadge } from "./trust-mode-badge"
 import type { GameConfig } from "../playground-setup-modal"
 
 interface ConnectFourBoardProps {
@@ -289,9 +290,11 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
                     <div>
                         <h2 className="text-sm sm:text-xl font-bold text-white tracking-tight leading-tight">Connect Four</h2>
                         <div className="flex items-center gap-1 text-[9px] sm:text-xs text-slate-400 mt-0.5">
-                            <Clock className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5" />
+                            <Clock className="w-2.5 h-2.5 sm:w-3.5 h-3.5" />
                             <span className="font-mono text-cyan-400/80">{formatTime(gameTime)}</span>
                         </div>
+                        {/* Moves are client-authored — see README "Game integrity" + trust-mode-badge.tsx. */}
+                        <TrustModeBadge gameName="Connect Four" className="mt-1" />
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
