@@ -49,8 +49,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
-    // Force dark theme on mount
+    // Force dark theme on mount. SatLoom is intentionally dark-only — the
+    // persisted `satloom-theme` preference is ignored by design (see the
+    // load effect above) and toggleTheme is a no-op. We still actively add
+    // the `dark` class (not just remove `light`) so consumers like Tailwind's
+    // `dark:` variant and the theme.spec.ts smoke test can detect it.
     document.documentElement.classList.remove("light")
+    document.documentElement.classList.add("dark")
   }, [])
 
   useEffect(() => {

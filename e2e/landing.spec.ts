@@ -6,6 +6,10 @@ import { test, expect } from "@playwright/test"
  * These don't require Firebase to actually work; they just verify the
  * static UI surface renders. If Phase 9's later tasks add Firebase-real
  * tests they live in their own spec and skip gracefully via `_helpers`.
+ *
+ * Copy assertions match the committed landing-page.tsx:
+ *   - tagline: "Secure, anonymous, real-time communication" (landing-page.tsx:97)
+ *   - region:  aria-label "Chat room options" (landing-page.tsx:90)
  */
 
 test.describe("landing page", () => {
@@ -13,16 +17,14 @@ test.describe("landing page", () => {
         await page.goto("/satloom/")
     })
 
-    test("renders the Phase 8.9 headline", async ({ page }) => {
-        // The headline change from Phase 8 — verifying it stuck.
-        await expect(page.getByText("Paste a room code. No app. No account.")).toBeVisible({ timeout: 15_000 })
-        await expect(page.getByText("Talk, play, watch — together.")).toBeVisible()
+    test("renders the landing tagline", async ({ page }) => {
+        await expect(page.getByText("Secure, anonymous, real-time communication")).toBeVisible({ timeout: 15_000 })
     })
 
     test("offers room creation + join controls", async ({ page }) => {
-        // The two primary CTAs the value prop promises. We don't click
-        // them here (that would need Firebase auth) — just confirm the
-        // shape of the entry is what users see in the screenshot.
+        // The primary card the value prop promises. We don't click the
+        // buttons here (that would need Firebase auth) — just confirm the
+        // shape of the entry is what users see.
         const main = page.getByRole("region", { name: /chat room options/i })
         await expect(main).toBeVisible({ timeout: 15_000 })
     })
@@ -32,7 +34,7 @@ test.describe("landing page", () => {
         // any `console.error` on initial paint with the test Firebase
         // config — if it does, it's a real regression and we want CI to
         // flag it. We filter out the well-known Firebase-not-configured
-        // warning since the dev-server boots with stub env vars.
+        // noise since the dev-server boots with stub env vars.
         const noise: string[] = []
         page.on("console", (msg) => {
             if (msg.type() !== "error") return
