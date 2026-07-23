@@ -1,0 +1,26 @@
+{
+  "name": "satloom-functions",
+  "version": "1.0.0",
+  "description": "Server-side helpers for SatLoom. Currently: vanish-mode pruner.",
+  "private": true,
+  "engines": {
+    "node": "20"
+  },
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "lint": "eslint src --ext .ts",
+    "serve": "npm run build && firebase emulators:start --only functions,database",
+    "shell": "npm run build && firebase functions:shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

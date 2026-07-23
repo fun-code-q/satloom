@@ -16,6 +16,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
+.lint_output.txt
 
 # Environment files (NEVER commit these)
 .env
@@ -48,10 +50,22 @@ next-env.d.ts
 # Testing
 /screenshots/
 /coverage/
+/playwright-report/
+/test-results/
 
 # Misc
-*.log
-firebase-rules.json
 db-init.json
+# NOTE: firebase-rules.json is intentionally tracked. It contains only
+# declarative rule logic — no secrets, keys, or credentials. Keeping it in
+# version control is required so security-rule changes are code-reviewed.
+# (Previously gitignored, which made the entire security model invisible to git.)
+
+# Agent/tooling artifacts
+.zcode/
+
+# Repo pollution — kept out permanently (see Phase 0 of the implementation plan)
 /sat-loom-web-app v5 latest 1/
 /beatdrop---south-indian-party/
+/plans/
+/archive.html
+/archive_meta.json
