@@ -743,7 +743,7 @@ export function TheaterFullscreen({
           if (ytDuration > 0 && duration !== ytDuration) setDuration(ytDuration)
           setCurrentTime(ytTime)
           if (isHost && ytPlayerRef.current.getPlayerState() === 1 /* PLAYING */ && ytTime % 5 < 0.2) {
-            theaterSignaling.updateCurrentTime(roomId, session.id, ytTime)
+            theaterSignaling.updateCurrentTime(roomId, session.id, ytTime, isHost)
           }
         }
       }, 1000)
@@ -763,7 +763,7 @@ export function TheaterFullscreen({
           soundcloudControllerRef.current.getPosition((scTime) => {
             setCurrentTime(scTime)
             if (isHost && isPlaying && scTime % 5 < 0.2) {
-              theaterSignaling.updateCurrentTime(roomId, session.id, scTime)
+              theaterSignaling.updateCurrentTime(roomId, session.id, scTime, isHost)
             }
           })
         }
@@ -828,7 +828,7 @@ export function TheaterFullscreen({
       syncIframePlayer(newIsPlaying ? 'play' : 'pause')
     }
     if (session.videoType === "webrtc" && videoStreamManagerRef.current) videoStreamManagerRef.current.syncPlayback(newIsPlaying ? 'play' : 'pause')
-    try { await theaterSignaling.sendAction(roomId, session.id, newIsPlaying ? "play" : "pause", currentTime, currentUserId, currentUser) } catch (err) { console.error("Failed to send playback action:", err) }
+    try { await theaterSignaling.sendAction(roomId, session.id, newIsPlaying ? "play" : "pause", currentTime, currentUserId, currentUser, undefined, isHost) } catch (err) { console.error("Failed to send playback action:", err) }
   }
 
   const handleSeek = async (newTime: number) => {
@@ -838,7 +838,7 @@ export function TheaterFullscreen({
     if (session.videoType === "soundcloud" && soundcloudControllerRef.current) soundcloudControllerRef.current.seekTo(newTime * 1000)
     if (session.videoType === "webrtc" && videoStreamManagerRef.current) videoStreamManagerRef.current.syncPlayback('seek', newTime)
     syncIframePlayer("seek", newTime); setCurrentTime(newTime)
-    await theaterSignaling.sendAction(roomId, session.id, "seek", newTime, currentUserId, currentUser)
+    await theaterSignaling.sendAction(roomId, session.id, "seek", newTime, currentUserId, currentUser, undefined, isHost)
   }
 
   const handleSkip = async (seconds: number) => {
@@ -850,12 +850,12 @@ export function TheaterFullscreen({
   const handleProgress = () => {
     const video = videoRef.current; if (!video || isDragging) return
     setCurrentTime(video.currentTime)
-    if (isHost && isPlaying && video.currentTime % 5 < 0.2) theaterSignaling.updateCurrentTime(roomId, session.id, video.currentTime)
+    if (isHost && isPlaying && video.currentTime % 5 < 0.2) theaterSignaling.updateCurrentTime(roomId, session.id, video.currentTime, isHost)
   }
 
   const handleMetadata = () => { if (videoRef.current) { setDuration(videoRef.current.duration || 0); setPlayerReady(true) } }
   const handleBuffer = () => { if (isHost && !isBuffering) { theaterSignaling.sendBuffering(roomId, session.id, currentUserId, currentUser); setIsBuffering(true) } }
-  const handleBufferEnd = () => { if (isHost && isBuffering) { theaterSignaling.sendAction(roomId, session.id, "play", videoRef.current ? videoRef.current.currentTime : 0, currentUserId, currentUser); setIsBuffering(false) } }
+  const handleBufferEnd = () => { if (isHost && isBuffering) { theaterSignaling.sendAction(roomId, session.id, "play", videoRef.current ? videoRef.current.currentTime : 0, currentUserId, currentUser, undefined, isHost); setIsBuffering(false) } }
 
   const toggleMute = () => setIsMuted(!isMuted)
 
