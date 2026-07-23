@@ -81,7 +81,9 @@ export function initializeFirebase(): {
   }
 
   const config = getFirebaseConfig()
-  console.log("Firebase: Config attempt:", config ? "Found" : "Missing")
+  if (process.env.NODE_ENV !== "production") {
+    console.log("Firebase: Config attempt:", config ? "Found" : "Missing")
+  }
   if (!config) return { app: null, database: null, auth: null }
 
   const apps = getApps()
@@ -102,10 +104,14 @@ export function initializeFirebase(): {
       auth = getAuth(app)
       initialized = true
 
-      // Diagnostic logging
-      console.log("Firebase: Initialization Successful")
-      console.log("Firebase: Project ID:", config.projectId)
-      console.log("Firebase: Database URL:", config.databaseURL.substring(0, 20) + "...")
+      // Diagnostic logging — gated to dev only. The project ID and DB-URL
+      // prefix are operator/config info that shouldn't ship to every user's
+      // browser console in production.
+      if (process.env.NODE_ENV !== "production") {
+        console.log("Firebase: Initialization Successful")
+        console.log("Firebase: Project ID:", config.projectId)
+        console.log("Firebase: Database URL:", config.databaseURL.substring(0, 20) + "...")
+      }
 
       // Expose for debugging (masked)
       if (typeof window !== "undefined") {
