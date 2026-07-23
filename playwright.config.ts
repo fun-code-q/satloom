@@ -33,7 +33,11 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? "line" : "list",
-  timeout: 30_000,
+  // 60s: next dev cold-compiles the first request per worker, and the
+  // landing/theme goto calls wait for the "load" event which Firebase
+  // long-polling can delay past 30s under parallel workers. 30s caused
+  // intermittent e2e failures (re-audit NEW-ISSUE 1).
+  timeout: 60_000,
 
   use: {
     baseURL: BASE_URL,
