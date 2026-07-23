@@ -24,7 +24,9 @@ export interface BurnerLink {
     fileName?: string
     fileSize?: number
     fileType?: string
-    createdBy: string
+    /** Auth uid of the creator. Named to match the Firebase security rule's
+     *  createdByUid check (owner read/write gate). */
+    createdByUid: string
     createdAt: number
     expiresAt: number
     views: number
@@ -125,7 +127,7 @@ class BurnerLinkManager {
             fileName,
             fileSize,
             fileType,
-            createdBy: this.userId,
+            createdByUid: this.userId,
             createdAt: Date.now(),
             expiresAt: Date.now() + expiryMs,
             views: 0,
@@ -269,7 +271,7 @@ class BurnerLinkManager {
     }
 
     getMyLinks(): BurnerLink[] {
-        return this.state.activeLinks.filter(l => l.createdBy === this.userId)
+        return this.state.activeLinks.filter(l => l.createdByUid === this.userId)
     }
 
     destroy(): void {

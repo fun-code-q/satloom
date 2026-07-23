@@ -307,7 +307,7 @@
     "burnerLinks": {
       ".indexOn": ["expiresAt", "createdByUid"],
       "$linkId": {
-        ".read":  "auth != null && data.child('createdByUid').val() === auth.uid",
+        ".read":  "auth != null && (data.child('createdByUid').val() === auth.uid || (data.child('isActive').val() === true && data.child('expiresAt').val() > now))",
         ".write": "auth != null && (!data.exists() || data.child('createdByUid').val() === auth.uid)",
 
         "createdByUid": {

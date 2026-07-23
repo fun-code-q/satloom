@@ -39,7 +39,7 @@ export function BurnerLinkModal({ isOpen, onClose, roomId, userId }: BurnerLinkM
             burnerLinkManager.refreshLinks()
 
             const unsubscribe = burnerLinkManager.subscribe((state) => {
-                setActiveLinks(state.activeLinks.filter(l => l.createdBy === userId))
+                setActiveLinks(state.activeLinks.filter(l => l.createdByUid === userId))
                 setIsGenerating(state.isGenerating)
             })
 
