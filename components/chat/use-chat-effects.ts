@@ -22,6 +22,8 @@ interface UseChatEffectsParams {
     roomId: string
     userProfile: { name: string; avatar?: string }
     currentUserId: string
+    /** Bare auth uid (no session suffix) — for membership node keying. */
+    authUid: string
     themeContext: any
     // Store
     messages: Message[]
@@ -85,7 +87,7 @@ interface UseChatEffectsParams {
 
 export function useChatEffects(params: UseChatEffectsParams) {
     const {
-        roomId, userProfile, currentUserId, themeContext,
+        roomId, userProfile, currentUserId, authUid, themeContext,
         messages, setMessages, setOnlineUsers, roomMembers, setRoomMembers, setReplyingTo,
         setIncomingCall, currentCall, setCurrentCall, setIsInCall, setShowAudioCall, setShowVideoCall,
         setCurrentQuizSession, setQuizAnswers, setQuizResults, setUserQuizAnswer, setShowQuizResults, setQuizTimeRemaining,
@@ -239,9 +241,13 @@ export function useChatEffects(params: UseChatEffectsParams) {
 
         // Add to persistent members collection — keyed by auth uid (matches
         // the create/join paths in app/page.tsx and the security rules).
-        const memberRef = ref(db, `rooms/${roomId}/members/${currentUserId}`)
+        // Use the BARE auth uid (authUid), not the session-suffixed
+        // currentUserId — the rules' members/$uid validate requires
+        // newData.child('uid').val() === $uid === auth.uid, which the
+        // session-suffixed id would fail (and the write would be denied).
+        const memberRef = ref(db, `rooms/${roomId}/members/${authUid}`)
         set(memberRef, {
-            uid: currentUserId,
+            uid: authUid,
             name: userProfile.name,
             avatar: userProfile.avatar || null,
             joinedAt: Date.now()

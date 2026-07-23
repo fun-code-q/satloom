@@ -33,6 +33,8 @@ interface UseChatCallsParams {
     roomId: string
     userProfile: { name: string; avatar?: string }
     currentUserId: string
+    /** Bare auth uid (no session suffix) — for membership node keying. */
+    authUid: string
     isHost: boolean
     onlineUsersCount: number
     onlineUsers: UserPresence[]
@@ -111,7 +113,7 @@ interface UseChatCallsParams {
 
 export function useChatCalls(params: UseChatCallsParams) {
     const {
-        roomId, userProfile, currentUserId, isHost,
+        roomId, userProfile, currentUserId, authUid: _authUid, isHost,
         incomingCall, currentCall, isInCall,
         currentTheaterSession, isTheaterHost, theaterInvite, gameInvite, activeGameSeries,
         currentQuizSession, quizTimeRemaining, userQuizAnswer, currentKaraokeSession,
