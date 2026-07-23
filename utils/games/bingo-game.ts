@@ -5,7 +5,7 @@
  */
 
 import { getFirebaseDatabase } from "@/lib/firebase"
-import { ref, set, get, update, onValue, remove } from "firebase/database"
+import { ref, set, get, update, onValue, remove, runTransaction } from "firebase/database"
 
 // Safe database reference with null check
 const getDbRef = (path: string) => {
@@ -228,13 +228,25 @@ class BingoGameManager {
                 })
             }
 
-            // Declare winner
+            // Declare winner — atomically. Previously this was a plain
+            // update() with a local `!this.state.game.winner` guard, so two
+            // players hitting bingo in the same ~100ms window both passed the
+            // local check and both wrote (last-write-wins). Now a transaction
+            // reads the authoritative winner and only sets it if still null,
+            // so concurrent wins resolve to exactly one winner. The local
+            // guard above remains as a fast-path to skip the transaction when
+            // we already know (client-side) someone won.
             if (!this.state.game.winner) {
                 const gameRef = getDbRef(`bingoGames/${gameId}`)
                 if (gameRef) {
-                    await update(gameRef, {
-                        winner: this.userId,
-                        status: "finished",
+                    await runTransaction(gameRef, (game) => {
+                        if (!game) return game
+                        // Only claim the win if no winner is set authoritatively.
+                        if (!game.winner) {
+                            game.winner = this.userId
+                            game.status = "finished"
+                        }
+                        return game
                     })
                 }
             }
