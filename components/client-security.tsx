@@ -36,7 +36,7 @@ export function ClientSecurity() {
         }
 
         // === 4. DEVTOOLS DETECTION (Disabled for debugging) ===
-        let devtoolsInterval: NodeJS.Timeout | null = null
+        const devtoolsInterval: NodeJS.Timeout | null = null
         /*
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
 
