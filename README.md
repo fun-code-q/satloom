@@ -36,9 +36,13 @@ SatLoom is a privacy-first, real-time communication web app built with Next.js a
 
 ### 🔒 Security & Privacy
 - **No Login Required** — Fully anonymous usage
-- **End-to-End Encryption** — Messages encrypted with room-derived keys
+- **No Third-Party Tracking** — No analytics, ads, Sentry, or IP geolocation.
+  Telemetry hooks exist in code but are no-ops; nothing is collected or sent
+  off-device. (See `utils/core/telemetry.ts`.)
+- **Encrypted at Rest** — Messages are AES-GCM encrypted with a key derived
+  from the room password (or the room ID for unprotected rooms). This is
+  room-level encryption-at-rest, not per-user end-to-end encryption.
 - **Password Protection** — Optional room passwords
-- **Privacy Shield** — Screenshot prevention & console blocking
 - **Burner Links** — One-time-use invite links
 
 ---
