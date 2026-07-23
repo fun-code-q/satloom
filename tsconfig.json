@@ -16,7 +16,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "incremental": true,
     "plugins": [
       {
@@ -39,6 +39,7 @@
   "exclude": [
     "node_modules",
     "sat-loom-web-app v5 latest 1",
-    "beatdrop---south-indian-party"
+    "beatdrop---south-indian-party",
+    "functions"
   ]
 }

@@ -424,7 +424,7 @@ export class TheaterSignaling {
   async sendSignal(
     roomId: string,
     sessionId: string,
-    type: "offer" | "answer" | "ice-candidate" | "bye",
+    type: "offer" | "answer" | "ice-candidate" | "bye" | "theater-full",
     payload: any,
     fromUserId: string,
     toUserId: string

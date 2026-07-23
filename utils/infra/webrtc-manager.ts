@@ -391,7 +391,20 @@ export class WebRTCManager {
                 }
             }
         }
-        return cameraStream
+                return cameraStream
+    }
+
+    /**
+     * Read-only accessor for a peer's RTCPeerConnection.
+     *
+     * Used by host-side broadcast modules (e.g. theater-broadcast) that need
+     * to inspect sender parameters (encodings/bitrate) to ramp quality with
+     * audience size, without re-implementing peer tracking. Returns undefined
+     * if no connection exists for the given user — callers must null-check.
+     * The returned PC is NOT to be closed by the caller; use cleanup(uid).
+     */
+    getPeerConnection(targetUserId: string): RTCPeerConnection | undefined {
+        return this.peerConnections.get(targetUserId)
     }
 
     cleanup(targetUserId?: string) {
