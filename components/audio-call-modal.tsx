@@ -236,7 +236,11 @@ export function AudioCallModal({
         }
       },
       (state, uid) => {
-        if (state === "connected") toast.success("Connected to audio")
+        if (state === "connected") {
+          toast.success("Connected to audio")
+          // Connection recovered — reset the ICE-restart backoff budget.
+          webrtc.resetRestartHistory(uid)
+        }
         if (state === "failed") {
           console.error(`[AudioCall] Connection to ${uid} FAILED. Attempting ICE restart...`)
           toast.error("Connection dropped. Reconnecting...")
