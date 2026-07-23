@@ -60,6 +60,8 @@ interface ChatHeaderProps {
     // Online users
     onlineUsers: UserPresence[]
     currentUserId: string
+    /** Bare auth uid (no session suffix) — for member identity matching. */
+    authUid: string
     currentUserName: string
     // Pinned message
     pinnedMessage: Message | null
@@ -88,7 +90,7 @@ export function ChatHeader({
     isMenuOpen, setIsMenuOpen, isMediaMenuOpen, setIsMediaMenuOpen,
     isGamesMenuOpen, setIsGamesMenuOpen, isProductivityMenuOpen, setIsProductivityMenuOpen,
     isSettingsMenuOpen, setIsSettingsMenuOpen, isAppMenuOpen, setIsAppMenuOpen,
-    onlineUsers, currentUserId, currentUserName, pinnedMessage, onKickUser,
+    onlineUsers, currentUserId, authUid, currentUserName, pinnedMessage, onKickUser,
     firebaseConnected,
     showChatSearch, setShowChatSearch,
     showParticipants, setShowParticipants,
@@ -614,10 +616,10 @@ export function ChatHeader({
                             <div className="flex items-center gap-1.5 md:gap-2 overflow-x-auto scrollbar-hide online-users-bar flex-nowrap">
                                 <span className="text-[10px] md:text-xs text-gray-400 whitespace-nowrap flex-shrink-0 hidden md:inline">Participants:</span>
                                 {(roomMembers || []).map((member) => {
-                                    // Match online status by uid (stable identity), not name
-                                    // (names can collide; uids cannot). UserPresence.id is the
-                                    // auth uid, which now equals the member key + member.uid.
-                                    const onlineUser = (onlineUsers || []).find(u => u.id === member.uid)
+                                    // Match online status by bare uid. member.uid is the bare auth
+                                    // uid; presence ids are session-suffixed (bareUid:sessionId),
+                                    // so match on the prefix. (Names can collide; uids cannot.)
+                                    const onlineUser = (onlineUsers || []).find(u => u.id === member.uid || u.id.startsWith(member.uid + ":"))
                                     const isOnline = !!onlineUser
 
                                     return (
@@ -662,7 +664,7 @@ export function ChatHeader({
                                                     )}
 
                                                     {/* Status Selector for Current User on Mobile */}
-                                                    {member.uid === currentUserId && (
+                                                    {member.uid === authUid && (
                                                         <div className="md:hidden w-full mt-2">
                                                             <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-1.5 px-1 font-bold">Update Status</div>
                                                             <div className="bg-slate-700/30 border border-white/5 rounded-xl p-1">

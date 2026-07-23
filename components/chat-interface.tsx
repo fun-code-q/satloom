@@ -332,6 +332,12 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
   }
 
   const currentUserId = useRef(resolveUserId()).current
+  // Bare auth uid (no session suffix). Used for membership node keying
+  // (members/{uid}) and identity matching, where the session-suffixed
+  // currentUserId above is wrong — the security rules gate on auth.uid,
+  // and member nodes are keyed by the bare uid. Presence keeps the
+  // session-suffixed id so each browser tab has its own presence node.
+  const authUid = useRef(currentUserIdProp?.trim() || "").current
 
   // --- Soundboard Global Initialization ---
   React.useEffect(() => {
@@ -350,14 +356,14 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
 
   // --- Custom Hooks ---
   const handlers = useChatHandlers({
-    roomId, userProfile, currentUserId, isHost, onLeave,
+    roomId, userProfile, currentUserId, authUid, isHost, onLeave,
     setReplyingTo, setShowMediaRecorder, setMediaRecorderMode,
     setShowLeaveConfirmation, setPasswordValidated, setCurrentUserMood, fileInputRef,
     setPendingChatFile: feature.setPendingChatFile
   })
 
   const calls = useChatCalls({
-    roomId, userProfile, currentUserId, isHost,
+    roomId, userProfile, currentUserId, authUid, isHost,
     onlineUsersCount: onlineUsers.length,
     onlineUsers,
     roomMembers,
@@ -405,7 +411,7 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
   })
 
   useChatEffects({
-    roomId, userProfile, currentUserId, themeContext,
+    roomId, userProfile, currentUserId, authUid, themeContext,
     messages, setMessages, setOnlineUsers, roomMembers, setRoomMembers, setReplyingTo,
     setIncomingCall, currentCall: feature.currentCall, setCurrentCall, setIsInCall, setShowAudioCall, setShowVideoCall,
     setCurrentQuizSession, setQuizAnswers, setQuizResults, setUserQuizAnswer,
@@ -548,6 +554,7 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
           setIsAppMenuOpen={setIsAppMenuOpen}
           onlineUsers={onlineUsers}
           currentUserId={currentUserId}
+          authUid={authUid}
           currentUserName={userProfile.name}
           pinnedMessage={pinnedMessage}
           onKickUser={handlers.handleKickUser}

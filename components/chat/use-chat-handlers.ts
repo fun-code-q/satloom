@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback } from "react"
-import { ref, remove } from "firebase/database"
+import { ref, remove, set } from "firebase/database"
 import { getFirebaseDatabase } from "../../lib/firebase"
 import { NotificationSystem } from "@/utils/core/notification-system"
 import { MessageStorage } from "@/utils/infra/message-storage"
@@ -15,6 +15,8 @@ interface UseChatHandlersParams {
     roomId: string
     userProfile: { name: string; avatar?: string }
     currentUserId: string
+    /** Bare auth uid (no session suffix) — for membership node keying. */
+    authUid: string
     isHost: boolean
     onLeave: () => void
     // State setters
@@ -32,6 +34,7 @@ export function useChatHandlers({
     roomId,
     userProfile,
     currentUserId,
+    authUid,
     isHost,
     onLeave,
     setReplyingTo,
@@ -303,8 +306,9 @@ export function useChatHandlers({
 
                 const db = getFirebaseDatabase()
                 if (db) {
-                    // Keyed by auth uid (matches create/join paths + rules).
-                    const memberRef = ref(db, `rooms/${roomId}/members/${currentUserId}`)
+                    // Keyed by the BARE auth uid (authUid), not the session-
+                    // suffixed currentUserId — matches create/join paths + rules.
+                    const memberRef = ref(db, `rooms/${roomId}/members/${authUid}`)
                     await remove(memberRef)
                 }
 
@@ -402,7 +406,19 @@ export function useChatHandlers({
 
     const handleKickUser = useCallback(async (userId: string) => {
         try {
+            // userId is the target's bare auth uid (member.uid). Kick by:
+            //  1. setting isKicked on their presence node(s) — best-effort,
+            //     works if they have a matching presence key
+            //  2. removing their member node — this is what actually revokes
+            //     access under the membership-gated rules (members/{uid}.exists()
+            //     becomes false), so the kicked user can no longer read the room
+            //  3. setting a banned flag so they can't immediately re-join
             await userPresence.kickUser(roomId, userId)
+            const db = getFirebaseDatabase()
+            if (db) {
+                await remove(ref(db, `rooms/${roomId}/members/${userId}`)).catch(() => { })
+                await set(ref(db, `rooms/${roomId}/banned/${userId}`), { uid: userId, bannedAt: Date.now() }).catch(() => { })
+            }
             notificationSystem.success("User kicked from the room")
             telemetry.logEvent('user_kicked', roomId, currentUserId, userProfile.name, { targetUserId: userId })
         } catch (error) {
