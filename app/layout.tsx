@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { ClientSecurity } from '@/components/client-security'
 import { ThemeProvider } from '@/contexts/theme-context'
+import { AccessibilityProvider } from '@/contexts/accessibility-context'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://fun-code-q.github.io/satloom'),
@@ -61,8 +62,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body suppressHydrationWarning>
         <ThemeProvider>
-          <ClientSecurity />
-          {children}
+          <AccessibilityProvider>
+            <ClientSecurity />
+            {children}
+          </AccessibilityProvider>
         </ThemeProvider>
       </body>
     </html>

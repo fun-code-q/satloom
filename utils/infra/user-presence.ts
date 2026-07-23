@@ -25,6 +25,10 @@ export class UserPresenceSystem {
   private currentUserId: string | null = null
   private activityInterval: NodeJS.Timeout | null = null
   private typingTimeout: NodeJS.Timeout | null = null
+  // Last-emitted presence signature, used to suppress redundant re-renders
+  // when the 30s lastSeen heartbeat re-fires the listener without changing
+  // the set of online users.
+  private lastPresenceSignature = ""
 
   static getInstance(): UserPresenceSystem {
     if (!UserPresenceSystem.instance) {
@@ -266,9 +270,26 @@ export class UserPresenceSystem {
             return acc
           }, [])
 
-          onPresenceUpdate(uniqueUsers)
+          // Dedup: only invoke the callback when the *set of online users*
+          // actually changes. The presence node re-fires on every 30s
+          // lastSeen write from every user (O(users) writes × O(subscribers)
+          // listeners = O(N²) re-fires per 30s), but those ticks don't change
+          // who is online — they just refresh a timestamp. Comparing a stable
+          // signature (sorted uids + presence flags) suppresses the redundant
+          // re-renders while still emitting on real join/leave/status change.
+          const sig = uniqueUsers
+            .map((u) => `${u.userId || u.name}:${u.status || ""}:${u.isOnline ? 1 : 0}`)
+            .sort()
+            .join("|")
+          if (sig !== this.lastPresenceSignature) {
+            this.lastPresenceSignature = sig
+            onPresenceUpdate(uniqueUsers)
+          }
         } else {
-          onPresenceUpdate([])
+          if (this.lastPresenceSignature !== "") {
+            this.lastPresenceSignature = ""
+            onPresenceUpdate([])
+          }
         }
       },
       (error) => {
