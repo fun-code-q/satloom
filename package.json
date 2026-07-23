@@ -18,7 +18,8 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev",
-    "lint": "eslint .",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "start": "next start",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
