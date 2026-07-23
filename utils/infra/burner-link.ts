@@ -5,7 +5,7 @@
  */
 
 import { getFirebaseDatabase } from "@/lib/firebase"
-import { ref, set, get, update, onValue, remove } from "firebase/database"
+import { ref, set, get, update, onValue, remove, query, orderByChild, equalTo } from "firebase/database"
 
 // Safe database reference with null check
 const getDbRef = (path: string) => {
@@ -159,13 +159,25 @@ class BurnerLinkManager {
         }
 
         if (!getFirebaseDatabase()!) return null
-        const snapshot = await get(ref(getFirebaseDatabase()!, "burnerLinks"))
+        // Query by the indexed `code` field instead of reading the whole
+        // burnerLinks node. The previous whole-node `get("burnerLinks")`
+        // combined with the broadened read rule (which permits any authed
+        // user to read active links) delivered EVERY active link's payload —
+        // including the plaintext password field — to the client, even though
+        // only one was returned. An indexed query returns only the matching
+        // child, so only that one link's data crosses the wire.
+        const codeQuery = query(
+            ref(getFirebaseDatabase()!, "burnerLinks"),
+            orderByChild("code"),
+            equalTo(code),
+        )
+        const snapshot = await get(codeQuery)
         if (snapshot.exists()) {
             const allLinks = snapshot.val() as Record<string, BurnerLink>
             for (const key in allLinks) {
                 const l = allLinks[key]
-                if (l.code === code && l.isActive) {
-                    return l
+                if (l.isActive) {
+                    return { ...l, id: key }
                 }
             }
         }
