@@ -352,6 +352,9 @@ export function VideoCallModal({
         if (state === "connected") {
           console.log(`[VideoCall] SUCCESSFULLY CONNECTED to ${uid}`)
           toast.success("Connection established")
+          // Connection recovered (or fresh) — reset the ICE-restart backoff
+          // budget so a future failure gets a full retry count.
+          webrtc.resetRestartHistory(uid)
         }
         if (state === "failed") {
           console.error(`[VideoCall] Connection to ${uid} FAILED. Attempting ICE restart...`)

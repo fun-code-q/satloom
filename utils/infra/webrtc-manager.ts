@@ -12,10 +12,14 @@ export class WebRTCManager {
     private isCleanupInProgress = false
     private iceCandidateBuffers: Map<string, RTCIceCandidateInit[]> = new Map()
     private signalingLock: Map<string, boolean> = new Map()
-    // Peers currently undergoing an ICE restart. Prevents a flapping
-    // connection (failed → restart → failed → ...) from spamming restart
-    // offers. Cleared when the restart offer is sent.
+    // Peers currently undergoing an ICE restart. Prevents CONCURRENT restart
+    // offers for the same peer. Cleared when the restart offer is sent.
     private restartInProgress: Set<string> = new Set()
+    // Per-peer restart history for backoff/cap. Prevents a persistently-
+    // broken link from looping failed→restart→failed indefinitely. The
+    // restartInProgress Set above only blocks concurrency, NOT repeated
+    // restarts across time; this Map adds the time-domain dampening.
+    private restartHistory: Map<string, { count: number; lastAttemptAt: number }> = new Map()
 
     private config: RTCConfiguration = WEBRTC_CONFIG
 
@@ -162,13 +166,23 @@ export class WebRTCManager {
      *
      * Guards:
      *   - Only restarts if a peer connection exists.
-     *   - One restart per peer at a time (restartInProgress) so a flapping
-     *     connection can't spam offers. The flag is cleared in cleanup() and
-     *     should be cleared by the caller once the offer is sent.
+     *   - One restart per peer at a time (restartInProgress) — blocks
+     *     CONCURRENT restart offers. Cleared in cleanup() and by the caller
+     *     once the offer is sent.
+     *   - Backoff/cap (restartHistory): max ICE_MAX_RESTARTS attempts per
+     *     peer within ICE_RESTART_COOLDOWN_MS, so a persistently-broken link
+     *     can't loop failed→restart→failed indefinitely. The concurrency
+     *     guard alone does NOT prevent repeated restarts across time.
      *   - Respects the signalingLock (won't restart mid-negotiation).
      *
-     * Returns the restart offer, or null if a restart is already in progress
-     * or conditions aren't met (caller treats null as "skip").
+     * Note: this does NOT implement perfect-negotiation glare avoidance —
+     * if both peers hit "failed" simultaneously both may fire restartIce.
+     * The remote createAnswer() path + signalingLock keep that non-fatal,
+     * but only one side's restart will land.
+     *
+     * Returns the restart offer, or null if a restart is already in progress,
+     * the backoff/cap is exhausted, or conditions aren't met (caller treats
+     * null as "skip").
      */
     async restartIce(targetUserId: string): Promise<RTCSessionDescriptionInit | null> {
         const pc = this.peerConnections.get(targetUserId)
@@ -180,6 +194,28 @@ export class WebRTCManager {
         if (this.signalingLock.get(targetUserId)) {
             console.log(`[WebRTC] Signaling lock active for ${targetUserId}, deferring ICE restart`)
             return null
+        }
+
+        // Backoff/cap: count restarts per peer within the cooldown window.
+        // If the cap is exceeded, stop retrying — the link is persistently
+        // broken and the user should hang up rather than loop forever.
+        const ICE_MAX_RESTARTS = 3
+        const ICE_RESTART_COOLDOWN_MS = 30_000
+        const now = Date.now()
+        const hist = this.restartHistory.get(targetUserId)
+        if (hist) {
+            if (now - hist.lastAttemptAt > ICE_RESTART_COOLDOWN_MS) {
+                // Window elapsed — reset the counter.
+                this.restartHistory.set(targetUserId, { count: 0, lastAttemptAt: now })
+            } else if (hist.count >= ICE_MAX_RESTARTS) {
+                console.warn(
+                    `[WebRTC] ICE restart cap hit for ${targetUserId} (${hist.count} attempts in ${ICE_RESTART_COOLDOWN_MS}ms). ` +
+                        `Giving up — connection appears persistently broken; user should hang up.`,
+                )
+                return null
+            }
+        } else {
+            this.restartHistory.set(targetUserId, { count: 0, lastAttemptAt: now })
         }
 
         this.restartInProgress.add(targetUserId)
@@ -199,7 +235,13 @@ export class WebRTCManager {
                 iceRestart: true,
             })
             await pc.setLocalDescription(offer)
-            console.log(`[WebRTC] ICE restart offer created for ${targetUserId}`)
+            // Count this attempt toward the backoff cap.
+            const h = this.restartHistory.get(targetUserId)
+            if (h) {
+                h.count += 1
+                h.lastAttemptAt = Date.now()
+            }
+            console.log(`[WebRTC] ICE restart offer created for ${targetUserId} (attempt ${h?.count ?? "?"})`)
             return offer
         } catch (err) {
             console.error(`[WebRTC] restartIce failed for ${targetUserId}:`, err)
@@ -211,6 +253,16 @@ export class WebRTCManager {
     /** Clear the restart-in-progress flag (caller invokes after sending the offer). */
     clearRestartInProgress(targetUserId: string): void {
         this.restartInProgress.delete(targetUserId)
+    }
+
+    /**
+     * Reset the per-peer restart backoff history. Callers should invoke this
+     * when a connection transitions to "connected" (a successful recovery),
+     * so a link that flapped once then stabilized gets a fresh restart budget
+     * for future failures rather than staying near the cap.
+     */
+    resetRestartHistory(targetUserId: string): void {
+        this.restartHistory.delete(targetUserId)
     }
 
     async createAnswer(targetUserId: string, remoteOffer: RTCSessionDescriptionInit): Promise<RTCSessionDescriptionInit> {
@@ -416,6 +468,7 @@ export class WebRTCManager {
                 this.remoteStreams.delete(targetUserId)
                 this.iceCandidateBuffers.delete(targetUserId)
                 this.restartInProgress.delete(targetUserId)
+                this.restartHistory.delete(targetUserId)
             }
         } else {
             this.peerConnections.forEach(pc => pc.close())
@@ -423,6 +476,7 @@ export class WebRTCManager {
             this.remoteStreams.clear()
             this.iceCandidateBuffers.clear()
             this.restartInProgress.clear()
+            this.restartHistory.clear()
             this.onRemoteStreamListeners.clear()
         }
     }
