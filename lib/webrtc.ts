@@ -6,31 +6,72 @@ export type ConnectionState = RTCPeerConnectionState | "unknown"
 export type IceConnectionState = RTCIceConnectionState | "unknown"
 
 /**
+ * Build the iceServers list from environment variables.
+ *
+ * env files (.env.local / .env.example) define STUN + TURN servers with
+ * suffixed names: NEXT_PUBLIC_STUN_SERVER_1..N, NEXT_PUBLIC_TURN_SERVER_1..N
+ * plus NEXT_PUBLIC_TURN_USERNAME_N / NEXT_PUBLIC_TURN_CREDENTIAL_N.
+ *
+ * IMPORTANT: a TURN entry is only added when its server URL, username, AND
+ * credential are all present. There is intentionally NO hardcoded fallback —
+ * the previous code fell back to the publicly-leaked `openrelayproject`
+ * credentials (which this file's own history warns against) when the env vars
+ * were absent, AND it read the wrong (unsuffixed) var names, so TURN silently
+ * never loaded and ~15-20% of users behind symmetric NAT couldn't connect.
+ *
+ * If no TURN creds are configured, the app falls back to STUN-only (works on
+ * most networks but not symmetric NAT). Operators must supply their own TURN
+ * (Cloudflare Calls / Twilio / self-hosted coturn) for full connectivity.
+ */
+function buildIceServers(): RTCIceServer[] {
+  const iceServers: RTCIceServer[] = []
+
+  // STUN servers — collected from NEXT_PUBLIC_STUN_SERVER_1..N. If none are
+  // set, fall back to Google's public STUN so discovery still works.
+  let stunCount = 0
+  for (let i = 1; i <= 12; i++) {
+    const url = process.env[`NEXT_PUBLIC_STUN_SERVER_${i}`]
+    if (url) {
+      iceServers.push({ urls: url })
+      stunCount++
+    }
+  }
+  if (stunCount === 0) {
+    iceServers.push(
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+    )
+  }
+
+  // TURN servers — collected from NEXT_PUBLIC_TURN_SERVER_1..N with matching
+  // _USERNAME_N / _CREDENTIAL_N. All three must be present to be included;
+  // no silent fallback to leaked creds.
+  for (let i = 1; i <= 6; i++) {
+    const url = process.env[`NEXT_PUBLIC_TURN_SERVER_${i}`]
+    const username = process.env[`NEXT_PUBLIC_TURN_USERNAME_${i}`]
+    const credential = process.env[`NEXT_PUBLIC_TURN_CREDENTIAL_${i}`]
+    if (url && username && credential) {
+      iceServers.push({ urls: url, username, credential })
+    }
+  }
+
+  if (!iceServers.some((s) => s.urls.toString().startsWith("turn:"))) {
+    // Surface the config gap so operators know connectivity will be limited.
+    // One warn per module load, not per call.
+    console.warn(
+      "[webrtc] No TURN servers configured (NEXT_PUBLIC_TURN_SERVER_*/USERNAME_*/CREDENTIAL_*). " +
+        "Falling back to STUN-only — users behind symmetric NAT (~15-20%) will be unable to connect.",
+    )
+  }
+
+  return iceServers
+}
+
+/**
  * WebRTC configuration
  */
 export const WEBRTC_CONFIG: RTCConfiguration = {
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" },
-    { urls: "stun:stun2.l.google.com:19302" },
-    { urls: "stun:stun3.l.google.com:19302" },
-    { urls: "stun:stun4.l.google.com:19302" },
-    {
-      urls: process.env.NEXT_PUBLIC_TURN_SERVER_URL || "turn:openrelay.metered.ca:80",
-      username: process.env.NEXT_PUBLIC_TURN_SERVER_USERNAME || "openrelayproject",
-      credential: process.env.NEXT_PUBLIC_TURN_SERVER_CREDENTIAL || "openrelayproject",
-    },
-    {
-      urls: process.env.NEXT_PUBLIC_TURN_SERVER_URL_SECURE || "turn:openrelay.metered.ca:443",
-      username: process.env.NEXT_PUBLIC_TURN_SERVER_USERNAME || "openrelayproject",
-      credential: process.env.NEXT_PUBLIC_TURN_SERVER_CREDENTIAL || "openrelayproject",
-    },
-    {
-      urls: process.env.NEXT_PUBLIC_TURN_SERVER_URL_TCP || "turn:openrelay.metered.ca:443?transport=tcp",
-      username: process.env.NEXT_PUBLIC_TURN_SERVER_USERNAME || "openrelayproject",
-      credential: process.env.NEXT_PUBLIC_TURN_SERVER_CREDENTIAL || "openrelayproject",
-    },
-  ],
+  iceServers: buildIceServers(),
   iceCandidatePoolSize: 10,
 }
 
