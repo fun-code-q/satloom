@@ -595,6 +595,24 @@ export function VideoCallModal({
         setIsScreenSharing(true)
         updateLocalStream(screenStream)
         if (localVideoRef.current) localVideoRef.current.srcObject = screenStream
+
+        // Register onended so the browser's native "Stop sharing" bar (or
+        // the OS ending the share) cleanly tears down: stops the screen
+        // tracks, restores the camera, and resets UI state. Without this,
+        // the camera stream captured above is abandoned, the UI stays
+        // "sharing", and the peer keeps receiving a dead track.
+        const screenVideoTrack = screenStream.getVideoTracks()[0]
+        if (screenVideoTrack) {
+          screenVideoTrack.onended = async () => {
+            setIsScreenSharing(false)
+            screenStream.getTracks().forEach(t => t.stop())
+            const restoredStream = await webrtc.stopScreenShare(cameraStreamRef.current || undefined)
+            if (restoredStream) {
+              updateLocalStream(restoredStream)
+              if (localVideoRef.current) localVideoRef.current.srcObject = restoredStream
+            }
+          }
+        }
       }
     } catch (err: any) {
       console.error("Screen share failed:", err)
