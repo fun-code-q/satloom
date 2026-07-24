@@ -12,7 +12,6 @@ const Icon = ({ icon: LucideIcon, ...props }: any) => {
   return <LucideIcon {...props} />
 }
 import { CallSignaling, type CallData } from "@/utils/infra/call-signaling"
-import { useCallRecording } from "@/hooks/use-call-recording"
 import { WebRTCManager } from "@/utils/infra/webrtc-manager"
 import { AudioVisualizer } from "@/components/audio-visualizer"
 import { VoiceFilterModal } from "@/components/voice-filter-modal"
@@ -120,11 +119,6 @@ export function VideoCallModal({
   const unsubscribeSignalsRef = useRef<() => void>(() => { })
   const wasOpenRef = useRef(false)
   const callSignaling = CallSignaling.getInstance()
-
-  const { isRecording, startRecording, stopRecording } = useCallRecording({
-    stream: remoteStream,
-    fileType: "video/webm"
-  })
 
   const cleanupMedia = (reason?: string) => {
     if (reason) console.log(`VideoCall: Cleanup (${reason})`)

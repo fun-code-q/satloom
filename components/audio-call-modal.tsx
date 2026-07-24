@@ -13,7 +13,6 @@ const Icon = ({ icon: LucideIcon, ...props }: any) => {
 }
 
 import { CallSignaling, type CallData } from "@/utils/infra/call-signaling"
-import { useCallRecording } from "@/hooks/use-call-recording"
 import { voiceFilterProcessor, type VoiceFilterType } from "@/utils/hardware/voice-filters"
 import { VoiceFilterModal } from "./voice-filter-modal"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -76,11 +75,6 @@ export function AudioCallModal({
   const wasOpenRef = useRef(false)
   const [switchRequest, setSwitchRequest] = useState<{ fromUserId: string } | null>(null)
   const [isAwaitingSwitchResponse, setIsAwaitingSwitchResponse] = useState(false)
-
-  const { isRecording, startRecording, stopRecording } = useCallRecording({
-    stream: remoteStream,
-    fileType: "audio/webm"
-  })
 
   const cleanupMedia = (reason?: string) => {
     if (reason) console.log(`AudioCall: Cleanup (${reason})`)
