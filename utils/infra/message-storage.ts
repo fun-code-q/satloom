@@ -369,6 +369,16 @@ export class MessageStorage {
                 return false
               }
 
+              // Vanish-mode TTL: hide expired messages client-side. Without
+              // this, a timed vanish message stayed visible up to 5 min until
+              // the server pruner removed it from disk — breaking the user-
+              // facing "vanish after TTL" contract (P2). The server pruner is
+              // still the authoritative disk cleanup; this is the client view.
+              const expiresAt = (msg as any).expiresAt
+              if (typeof expiresAt === "number" && expiresAt <= Date.now()) {
+                return false
+              }
+
               return true
             })
 

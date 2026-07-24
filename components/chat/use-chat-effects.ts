@@ -155,19 +155,23 @@ export function useChatEffects(params: UseChatEffectsParams) {
 
     // Mark messages as read
     useEffect(() => {
-        if (!roomId || !messages.length || !userProfile.name) return
+        if (!roomId || !messages.length || !userProfile.name || !authUid) return
         messages.forEach((msg) => {
-            if (msg.sender !== userProfile.name && (!msg.readBy || !msg.readBy.includes(userProfile.name))) {
+            // sender is keyed by display name in messages; readBy must be
+            // keyed by auth UID (not name) so the vanish pruner's
+            // readKeys.has(memberUid) match succeeds — keying readBy by name
+            // made read_once messages never prune (P1).
+            if (msg.sender !== userProfile.name && (!msg.readBy || !msg.readBy.includes(authUid))) {
                 // Skip writes we've already issued this session; the readBy
                 // guard alone only suppresses repeats after the prior write
                 // round-trips back into the snapshot, which caused a burst of
                 // redundant writes on every snapshot in the meantime.
                 if (markedReadRef.current.has(msg.id)) return
                 markedReadRef.current.add(msg.id)
-                MessageStorage.getInstance().markMessageAsRead(roomId, msg.id, userProfile.name)
+                MessageStorage.getInstance().markMessageAsRead(roomId, msg.id, authUid)
             }
         })
-    }, [messages, roomId, userProfile.name])
+    }, [messages, roomId, userProfile.name, authUid])
 
     // Validate roomId
     useEffect(() => {
