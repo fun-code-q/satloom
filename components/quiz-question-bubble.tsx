@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react"
 import { Timer, Users, CheckCircle2, XCircle, Trophy, Gamepad2, Maximize, Minus, X, Clock } from "lucide-react"
 import { Button } from "./ui/button"
+import { TrustModeBadge } from "./games/trust-mode-badge"
 import type { QuizQuestion, QuizAnswer } from "@/utils/games/quiz-system"
 import { NotificationSystem } from "@/utils/core/notification-system"
 
@@ -150,6 +151,7 @@ export function QuizQuestionBubble({
               <p className="text-gray-400 text-sm">
                 {currentQuestionNumber} of {totalQuestions}
               </p>
+              <TrustModeBadge gameName="Quiz" className="mt-1" />
             </div>
           </div>
 

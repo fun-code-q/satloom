@@ -90,7 +90,7 @@ row to decide how much to trust a given feature.**
 | **Mafia — vote tally + lynch** | ✅ Transaction-protected | Phase 5: `runTransaction` on `players`; phase-flip lock prevents duplicate lynches | Phase 5 |
 | **Karaoke score** | ✅ Transaction-protected | `runTransaction` on `players/$id/score` (concurrent +N adds add up) | Phase 5 |
 | **Bingo word-call** | ✅ Transaction-protected | `runTransaction` on `wordCallSeq` with 5s min-delay dedup | Phase 5 |
-| **Quiz — answer key** | ✅ Server-validated | `quizAnswerKeys/$sessionId` readable only by the host | Phase 1 |
+| **Quiz — answer key** | ⚠️ Trust mode | QuizSystem is a client-side in-memory singleton — `correctAnswer` lives in the host's JS heap, not in a Firebase node. A DevTools-equipped player can read it. The `quizAnswerKeys` rule path exists but is unused (the engine never persists the key to Firebase). The TrustModeBadge surfaces this to players. | n/a |
 | **Quiz — `timeToAnswer`** | ✅ Server-validated | Rule caps `0 ≤ x ≤ 600`; client-side clamp belt-and-braces | Phase 5 |
 | **Tic-Tac-Toe, Connect Four** | ✅ Referee-validated | Phase 14: distributed referee (lowest-UID election + handoff) is the only writer allowed by Firebase rules; pure rule adapter (`tic-tac-toe-rules.ts`, `connect-four-rules.ts`) re-runs the validator on every proposal | Phase 14 |
 | **Dots & Boxes** | ⚠️ Trust mode | Migration template in `utils/games/referee.ts` + `tic-tac-toe-rules.ts`. Pending. | Phase 5 marks the UI; Phase 14 template ready |
