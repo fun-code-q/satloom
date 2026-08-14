@@ -1,88 +1,62 @@
 import { test } from "@playwright/test"
-import { skipWithoutFirebase, spawnPeer, closePeer, newTestRoomId, waitFor, expect } from "./_helpers"
+import { skipWithoutFirebase, spawnPeer, closePeer, newTestRoomId, waitFor, expect, enterRoom, rtdbRead, rtdbPush } from "./_helpers"
 
 /**
- * Theater broadcast smoke — Phase 12 / E1.
+ * Theater session signalling smoke.
  *
- * The host opens a theater session backed by a synthetic camera stream
- * (Chromium `--use-fake-device-for-media-stream`), a viewer joins, and
- * we verify the viewer's `<video>` element ends up with a non-null
- * `srcObject` populated by `setRemoteMovieStream`. That signal proves:
- *   - Phase 3 `TheaterBroadcast.reconcile` opened a PC for the viewer
- *   - SDP offer/answer + ICE candidates flowed through theaterSignaling
- *   - The viewer's `WebRTCManager.initialize(..., { recvOnly: true })`
- *     accepted the track and called `setRemoteMovieStream`
- *   - Phase 1 `theater/$roomId/$sessionId` rule allows member writes
+ * WHAT THIS COVERS: a host publishes a theater session into the room, and
+ * a second member can read it back. That exercises the `theater` write and
+ * the member read-gate, which is the part that actually broke when the
+ * hardened rules went in.
  *
- * Note: we don't actually verify pixels reach the viewer's canvas
- * (would need video frame inspection). The `srcObject != null` + a
- * connected `RTCPeerConnection` are strong enough signals for a smoke.
+ * WHAT THIS DOES NOT COVER: media. No `RTCPeerConnection` is established
+ * and no track is exchanged, so this says nothing about whether a viewer
+ * really receives the host's stream.
+ *
+ * It used to claim otherwise. The previous version was titled "viewer
+ * receives the host's media stream" but dynamic-imported
+ * `/satloom/_next/static/utils/infra/theater-signaling.js` — a path that
+ * does not exist in a static export — swallowed the failure with
+ * `.catch(() => null)`, and fell through to asserting `lastActivityAt > 0`
+ * via `window.firebase` (the v8 compat namespace this app never creates,
+ * so it read 0 and the whole spec was unfalsifiable). Verifying real media
+ * needs two live peer connections and frame inspection; until someone
+ * builds that, this spec is scoped to what it can actually prove.
  */
 
-test.describe("@firebase theater broadcast", () => {
+test.describe("@firebase theater session", () => {
     test.beforeEach(() => skipWithoutFirebase())
 
-    test("viewer receives the host's media stream", async ({ browser }) => {
+    test("a room member can read a theater session published by the host", async ({ browser }) => {
         const host = await spawnPeer(browser, "TheaterHost")
         const viewer = await spawnPeer(browser, "TheaterViewer")
         const roomId = newTestRoomId()
 
         try {
-            await host.page.goto(`/satloom/?room=${roomId}`)
-            await viewer.page.goto(`/satloom/?room=${roomId}`)
-            await host.uid()
-            await viewer.uid()
+            await enterRoom(host, roomId)
+            await enterRoom(viewer, roomId)
+            const hostUid = await host.uid()
+            const viewerUid = await viewer.uid()
 
-            // Wait for the chat surface so both peers are authenticated.
-            const inputSelector = "textarea[placeholder*='Type'], textarea[placeholder*='Vanish']"
-            await host.page.locator(inputSelector).first().waitFor({ timeout: 20_000 })
-            await viewer.page.locator(inputSelector).first().waitFor({ timeout: 20_000 })
+            // A theater session is readable by the room's members and by
+            // nobody else. That read-gate is what this spec can honestly
+            // verify end-to-end; see the note above about media.
+            await rtdbPush(host, `rooms/${roomId}/theater`, {
+                hostId: hostUid,
+                hostName: "TheaterHost",
+                mediaType: "webrtc",
+                startedAt: Date.now(),
+                status: "playing",
+            })
 
-            // Drive theater start by constructing the session directly via
-            // the theater signaling module. The full attach-menu → setup-modal
-            // → file-pick path is brittle to test through the UI; the contract
-            // we care about is "session in Firebase + host adds tracks →
-            // viewer ontrack fires", which is layer-correct at the
-            // signaling-module entry point.
-            const sessionId = await host.page.evaluate(async (rid) => {
-                const { TheaterSignaling } = await import("/satloom/_next/static/utils/infra/theater-signaling.js" as unknown as string)
-                    .catch(() => ({ TheaterSignaling: null as unknown as { getInstance(): { createSession(rid: string, name: string, uid: string, url: string, type: string): Promise<string> } } }))
-                if (!TheaterSignaling || typeof TheaterSignaling.getInstance !== "function") {
-                    throw new Error("TheaterSignaling not loadable from test bundle path")
-                }
-                const w = window as unknown as { __SATLOOM_CURRENT_UID__?: string }
-                const uid = w.__SATLOOM_CURRENT_UID__ ?? "unknown"
-                return await TheaterSignaling.getInstance()
-                    .createSession(rid, "TheaterHost", uid, "local://stream", "webrtc")
-            }, roomId).catch(() => null)
-
-            // The dynamic-import path is best-effort — if it fails the
-            // test falls back to a softer assertion: simply that the
-            // session was created (or that the room has a theater
-            // sub-tree). When the maintainer wires real Firebase + a
-            // stable test build, this can be tightened.
-            if (sessionId !== null) {
-                expect(sessionId).toMatch(/^theater_/)
-            }
-
-            // Soft assertion: room has activity (lastActivityAt updated).
-            const lastActivity = await waitFor(host.page, async () => {
-                const t = await host.page.evaluate(async (rid) => {
-                    const w = window as unknown as {
-                        firebase?: { database?: () => { ref: (p: string) => { get: () => Promise<{ val: () => unknown }> } } }
-                    }
-                    const db = w.firebase?.database?.()
-                    if (!db) return 0
-                    try {
-                        const snap = await db.ref(`rooms/${rid}/lastActivityAt`).get()
-                        return Number(snap.val()) || 0
-                    } catch {
-                        return 0
-                    }
-                }, roomId)
-                return t > 0 ? t : false
+            const seen = await waitFor(viewer.page, async () => {
+                const t = await rtdbRead(viewer, `rooms/${roomId}/theater`).catch(() => null)
+                return t && typeof t === "object" && Object.keys(t).length > 0 ? t : false
             }, 15_000)
-            expect(lastActivity).toBeGreaterThan(0)
+
+            const sessions = Object.values(seen as Record<string, { hostId?: string; status?: string }>)
+            expect(sessions.some((s) => s.hostId === hostUid && s.status === "playing")).toBe(true)
+            expect(hostUid).not.toBe(viewerUid)
         } finally {
             await closePeer(host)
             await closePeer(viewer)

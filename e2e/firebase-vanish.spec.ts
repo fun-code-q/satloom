@@ -1,5 +1,5 @@
 import { test } from "@playwright/test"
-import { skipWithoutFirebase, spawnPeer, closePeer, newTestRoomId, waitFor, expect } from "./_helpers"
+import { skipWithoutFirebase, spawnPeer, closePeer, newTestRoomId, waitFor, expect, enterRoom, rtdbPush } from "./_helpers"
 
 /**
  * Vanish-mode TTL smoke — Phase 12 / E2 (verifies Phase 7).
@@ -23,14 +23,10 @@ test.describe("@firebase vanish mode", () => {
         const roomId = newTestRoomId()
 
         try {
-            await alice.page.goto(`/satloom/?room=${roomId}`)
-            await bob.page.goto(`/satloom/?room=${roomId}`)
-            await alice.uid()
+            await enterRoom(alice, roomId)
+            await enterRoom(bob, roomId)
+            const aliceUid = await alice.uid()
             await bob.uid()
-
-            const inputSelector = "textarea[placeholder*='Type'], textarea[placeholder*='Vanish']"
-            await alice.page.locator(inputSelector).first().waitFor({ timeout: 20_000 })
-            await bob.page.locator(inputSelector).first().waitFor({ timeout: 20_000 })
 
             // Alice writes a vanish message directly via Firebase. We
             // bypass the chat-input encrypt path so the marker text
@@ -38,26 +34,21 @@ test.describe("@firebase vanish mode", () => {
             // assertion target is the *visibility lifecycle*, not the
             // content path.
             const marker = `vanish-${Date.now()}`
-            await alice.page.evaluate(async ({ rid, text }) => {
-                const w = window as unknown as {
-                    firebase?: { database?: () => { ref: (p: string) => { push: () => { key: string | null; set: (v: unknown) => Promise<unknown> } } } }
-                }
-                const db = w.firebase?.database?.()
-                if (!db) throw new Error("Firebase not initialised")
-                const ref = db.ref(`rooms/${rid}/messages`)
-                const newRef = ref.push()
-                // expiresAt 3 seconds from now: visible briefly, then filtered.
-                await newRef.set({
-                    text,
-                    sender: "Alice",
-                    userId: "alice-test",
-                    userName: "Alice",
-                    timestamp: Date.now(),
-                    expiresAt: Date.now() + 3_000,
-                    vanishMode: "timed",
-                    reactions: { heart: [], thumbsUp: [] },
-                })
-            }, { rid: roomId, text: marker })
+            // Written over the RTDB REST API as Alice. The previous version
+            // used window.firebase.database() (v8 compat, absent under the
+            // modular SDK) and hard-coded userId "alice-test", which the
+            // security rules reject outright — authorship must match the
+            // caller's auth uid.
+            await rtdbPush(alice, `rooms/${roomId}/messages`, {
+                text: marker,
+                sender: "Alice",
+                userId: aliceUid,
+                userName: "Alice",
+                timestamp: Date.now(),
+                // 3s TTL: visible briefly, then filtered by the client.
+                expiresAt: Date.now() + 3_000,
+                vanishMode: "timed",
+            })
 
             // Bob should see it within 5 seconds (initial render).
             await waitFor(bob.page, async () => {

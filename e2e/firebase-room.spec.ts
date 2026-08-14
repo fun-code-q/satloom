@@ -1,5 +1,5 @@
 import { test } from "@playwright/test"
-import { skipWithoutFirebase, spawnPeer, closePeer, newTestRoomId, waitFor, expect } from "./_helpers"
+import { skipWithoutFirebase, spawnPeer, closePeer, newTestRoomId, waitFor, expect, enterRoom, rtdbRead } from "./_helpers"
 
 /**
  * Credentialed Firebase room-flow smoke — Phase 12.
@@ -26,38 +26,32 @@ test.describe("@firebase room flow", () => {
             // The app's "join existing" flow accepts any room ID from
             // the URL; if Firebase doesn't know it, Alice becomes the
             // creator.
-            await alice.page.goto(`/satloom/?room=${roomId}`)
-            await bob.page.goto(`/satloom/?room=${roomId}`)
+            await enterRoom(alice, roomId)
+            await enterRoom(bob, roomId)
 
-            // Both peers should reach the chat surface — wait for the
-            // member list panel to be present (any element tagged with
-            // either room id or members container).
             const aliceUid = await alice.uid()
             const bobUid = await bob.uid()
             expect(aliceUid).not.toBe(bobUid)
 
-            // Confirm both see at least 2 distinct UIDs in the live
-            // Firebase members snapshot (read via the page's evaluate
-            // since Playwright can't poke Firebase directly from CI).
+            // Confirm each peer can read the members node and sees both of
+            // them. Read over the RTDB REST API as that peer, so the live
+            // security rules are exercised as that real user — this is the
+            // canary for the membership read-gate.
+            //
+            // The previous version called window.firebase.database(), the v8
+            // compat namespace. The app uses the modular SDK, which never
+            // creates it, so the count was always 0 and this spec could not
+            // pass regardless of whether the room flow worked.
             for (const peer of [alice, bob]) {
                 const memberCount = await waitFor(peer.page, async () => {
-                    const n = await peer.page.evaluate(async (rid) => {
-                        const w = window as unknown as {
-                            firebase?: { database?: () => { ref: (p: string) => { get: () => Promise<{ val: () => unknown }> } } }
-                        }
-                        const db = w.firebase?.database?.()
-                        if (!db) return 0
-                        try {
-                            const snap = await db.ref(`rooms/${rid}/members`).get()
-                            const v = snap.val()
-                            return v && typeof v === "object" ? Object.keys(v).length : 0
-                        } catch {
-                            return 0
-                        }
-                    }, roomId)
+                    const members = await rtdbRead(peer, `rooms/${roomId}/members`).catch(() => null)
+                    const n = members && typeof members === "object" ? Object.keys(members).length : 0
                     return n >= 2 ? n : false
                 }, 20_000)
                 expect(memberCount).toBeGreaterThanOrEqual(2)
+
+                const members = (await rtdbRead(peer, `rooms/${roomId}/members`)) as Record<string, unknown>
+                expect(Object.keys(members)).toEqual(expect.arrayContaining([aliceUid, bobUid]))
             }
         } finally {
             await closePeer(alice)

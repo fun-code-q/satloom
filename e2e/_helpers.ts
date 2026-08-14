@@ -164,18 +164,84 @@ export async function closePeer(p: PeerContext): Promise<void> {
 export const CHAT_INPUT = "input[placeholder*='Type'], input[placeholder*='Vanish']"
 
 /**
- * Generate a fresh room id prefixed `_E2E_` so cleanup can sweep them.
+ * Generate a fresh room id prefixed `E2E` so cleanup can sweep them.
  *
- * Deliberately UPPERCASE: app/page.tsx does
- * `roomFromUrl.trim().toUpperCase()`, so a lowercase `_e2e_` id is stored
- * as `_E2E_`. Generating it uppercase keeps the id we hand out identical
- * to the key that lands in the database — otherwise the documented sweep
- * (`firebase database:remove /rooms/_e2e_*`) matches nothing and test
- * rooms accumulate forever. Sweep with `/rooms/_E2E_*`.
+ * Deliberately uppercase and free of separators, because the app rewrites
+ * whatever the URL carries: `app/page.tsx` uppercases it and the room-code
+ * sanitiser strips underscores. A `_e2e_abc` id therefore lands in the
+ * database as `E2EABC`, which broke two things at once — the documented
+ * sweep (`/rooms/_e2e_*`) matched nothing so test rooms accumulated
+ * forever, and any spec doing a direct DB read of `rooms/{roomId}` looked
+ * up a key that does not exist.
+ *
+ * Emitting the final form keeps the id we hand out identical to the stored
+ * key. Sweep with: firebase database:remove /rooms/E2E...
  */
 export function newTestRoomId(): string {
-    const rand = Math.random().toString(36).slice(2, 10).toUpperCase()
-    return `_E2E_${rand}`
+    const rand = Math.random().toString(36).replace(/[^a-z0-9]/g, "").slice(0, 8).toUpperCase()
+    return `E2E${rand}`
+}
+
+/**
+ * Read the peer's current Firebase ID token out of Auth's IndexedDB
+ * persistence — same source as `uid()`, for the same reason: the modular
+ * SDK exposes nothing on `window`.
+ */
+export async function idToken(peer: PeerContext): Promise<string> {
+    const token = await peer.page.evaluate(async () => {
+        type Row = { fbase_key?: string; value?: { stsTokenManager?: { accessToken?: string } } }
+        const read = (): Promise<string | null> =>
+            new Promise((resolve) => {
+                const req = indexedDB.open("firebaseLocalStorageDb")
+                req.onerror = () => resolve(null)
+                req.onsuccess = () => {
+                    const db = req.result
+                    if (!db.objectStoreNames.contains("firebaseLocalStorage")) { db.close(); return resolve(null) }
+                    const all = db.transaction("firebaseLocalStorage", "readonly").objectStore("firebaseLocalStorage").getAll()
+                    all.onsuccess = () => {
+                        const row = (all.result as Row[]).find(
+                            (r) => typeof r?.fbase_key === "string" && r.fbase_key.startsWith("firebase:authUser:"),
+                        )
+                        db.close()
+                        resolve(row?.value?.stsTokenManager?.accessToken ?? null)
+                    }
+                    all.onerror = () => { db.close(); resolve(null) }
+                }
+            })
+        const start = Date.now()
+        while (Date.now() - start < 15_000) {
+            const t = await read()
+            if (t) return t
+            await new Promise((r) => setTimeout(r, 150))
+        }
+        throw new Error("timed out waiting for a Firebase ID token")
+    })
+    return token
+}
+
+const DB_URL = (process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ?? "").replace(/\/$/, "")
+
+/**
+ * Read a database path as the given peer, via the RTDB REST API.
+ *
+ * Specs previously poked `window.firebase.database()` — the v8 compat
+ * namespace, which this app (modular SDK) never creates, so those calls
+ * silently returned undefined and the assertions could never pass. Going
+ * through REST with the peer's own ID token exercises the real security
+ * rules as that real user, which is the point of these tests.
+ */
+export async function rtdbRead(peer: PeerContext, path: string): Promise<unknown> {
+    const token = await idToken(peer)
+    const res = await peer.page.request.get(`${DB_URL}/${path}.json?auth=${token}`)
+    if (!res.ok()) throw new Error(`rtdbRead ${path} -> ${res.status()} ${await res.text()}`)
+    return res.json()
+}
+
+/** Write a database path as the given peer. Subject to the live rules. */
+export async function rtdbPush(peer: PeerContext, path: string, value: unknown): Promise<void> {
+    const token = await idToken(peer)
+    const res = await peer.page.request.post(`${DB_URL}/${path}.json?auth=${token}`, { data: value })
+    if (!res.ok()) throw new Error(`rtdbPush ${path} -> ${res.status()} ${await res.text()}`)
 }
 
 /**

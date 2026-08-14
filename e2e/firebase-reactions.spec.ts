@@ -1,5 +1,5 @@
 import { test } from "@playwright/test"
-import { skipWithoutFirebase, spawnPeer, closePeer, newTestRoomId, waitFor, expect } from "./_helpers"
+import { skipWithoutFirebase, spawnPeer, closePeer, newTestRoomId, waitFor, expect, enterRoom, CHAT_INPUT } from "./_helpers"
 
 /**
  * Reaction toggle smoke — Phase 12 / E2 (verifies Phase 8.2).
@@ -18,14 +18,11 @@ test.describe("@firebase reaction toggle", () => {
         const roomId = newTestRoomId()
 
         try {
-            await alice.page.goto(`/satloom/?room=${roomId}`)
+            await enterRoom(alice, roomId)
             await alice.uid()
 
-            const inputSelector = "textarea[placeholder*='Type'], textarea[placeholder*='Vanish']"
-            await alice.page.locator(inputSelector).first().waitFor({ timeout: 20_000 })
-
             const marker = `reaction-${Date.now()}`
-            const input = alice.page.locator(inputSelector).first()
+            const input = alice.page.locator(CHAT_INPUT).first()
             await input.fill(marker)
             await input.press("Enter")
 

@@ -1,5 +1,5 @@
 import { test } from "@playwright/test"
-import { skipWithoutFirebase, spawnPeer, closePeer, newTestRoomId, waitFor, expect } from "./_helpers"
+import { skipWithoutFirebase, spawnPeer, closePeer, newTestRoomId, waitFor, expect, enterRoom } from "./_helpers"
 
 /**
  * P2P file-message smoke — Phase 12 / E1.
@@ -37,14 +37,10 @@ test.describe("@firebase P2P file message", () => {
         const roomId = newTestRoomId()
 
         try {
-            await alice.page.goto(`/satloom/?room=${roomId}`)
-            await bob.page.goto(`/satloom/?room=${roomId}`)
+            await enterRoom(alice, roomId)
+            await enterRoom(bob, roomId)
             await alice.uid()
             await bob.uid()
-
-            const inputSelector = "textarea[placeholder*='Type'], textarea[placeholder*='Vanish']"
-            await alice.page.locator(inputSelector).first().waitFor({ timeout: 20_000 })
-            await bob.page.locator(inputSelector).first().waitFor({ timeout: 20_000 })
 
             // Find and feed Alice's hidden file input. The chat-handlers
             // path triggers a click on a hidden <input type="file"/> when
