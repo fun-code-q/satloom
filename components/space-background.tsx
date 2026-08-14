@@ -35,8 +35,12 @@ export function SpaceBackground({ backgroundImage }: SpaceBackgroundProps) {
     }
 
     const createParticles = () => {
-      // Reduced particle count if background image is present to avoid clutter
-      const count = backgroundImage ? 30 : 50
+      // Halve the count on phone-sized viewports. These are large blurred
+      // fills covering the whole viewport, and fill cost is what actually
+      // hurts on mobile GPUs — not the particle bookkeeping.
+      const isSmall = window.innerWidth < 768
+      const base = backgroundImage ? 30 : 50
+      const count = isSmall ? Math.round(base / 2) : base
       for (let i = 0; i < count; i++) {
         particles.push({
           x: Math.random() * canvas.width,
@@ -50,32 +54,65 @@ export function SpaceBackground({ backgroundImage }: SpaceBackgroundProps) {
       }
     }
 
-    const animate = () => {
+    const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-      particles.forEach((particle) => {
-        particle.x += particle.speedX
-        particle.y += particle.speedY
-
-        if (particle.x < 0 || particle.x > canvas.width) particle.speedX *= -1
-        if (particle.y < 0 || particle.y > canvas.height) particle.speedY *= -1
-
+      for (const particle of particles) {
         ctx.globalAlpha = particle.opacity
         ctx.fillStyle = particle.color
         ctx.beginPath()
         ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2)
         ctx.fill()
-      })
+      }
+    }
 
-      requestAnimationFrame(animate)
+    const step = () => {
+      for (const particle of particles) {
+        particle.x += particle.speedX
+        particle.y += particle.speedY
+        if (particle.x < 0 || particle.x > canvas.width) particle.speedX *= -1
+        if (particle.y < 0 || particle.y > canvas.height) particle.speedY *= -1
+      }
+      draw()
     }
 
     resizeCanvas()
     createParticles()
-    animate()
 
+    // Honour the OS "reduce motion" setting: paint one static frame and stop.
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    if (reduceMotion) {
+      draw()
+      window.addEventListener("resize", resizeCanvas)
+      return () => window.removeEventListener("resize", resizeCanvas)
+    }
+
+    // Cap at ~30fps. At 60 this redraws 50 full-viewport blurred circles every
+    // frame for decoration nobody looks at; halving it is invisible here and
+    // halves the GPU work.
+    const FRAME_MS = 1000 / 30
+    let rafId = 0
+    let last = 0
+
+    const animate = (now: number) => {
+      // Stored so cleanup can cancel it. The previous version re-armed rAF
+      // unconditionally and never cancelled, so the loop outlived the
+      // component: navigating landing -> chat left the landing page's loop
+      // running forever, and every backgroundImage change started another
+      // concurrent loop drawing to the same canvas. They compounded.
+      rafId = requestAnimationFrame(animate)
+      if (document.hidden) return
+      if (now - last < FRAME_MS) return
+      last = now
+      step()
+    }
+
+    rafId = requestAnimationFrame(animate)
     window.addEventListener("resize", resizeCanvas)
-    return () => window.removeEventListener("resize", resizeCanvas)
+
+    return () => {
+      cancelAnimationFrame(rafId)
+      window.removeEventListener("resize", resizeCanvas)
+    }
   }, [backgroundImage])
 
   return (
