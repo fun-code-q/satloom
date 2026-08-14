@@ -5,6 +5,17 @@ import type { Message } from "@/components/message-bubble"
 export class MessageStorage {
   private static instance: MessageStorage
   private messageListeners: Map<string, () => void> = new Map()
+  /**
+   * Pending re-emit for the next vanish expiry, per room.
+   *
+   * The expiry filter below only runs when a Firebase snapshot arrives. In a
+   * quiet room nothing arrives, so an expired vanish message stayed on the
+   * recipient's screen indefinitely — the author-scoped 30s pruner was the
+   * only thing that eventually forced a refresh, and it never runs at all if
+   * the author has left. These timers re-run the filter when the soonest
+   * expiry actually passes.
+   */
+  private vanishTimers: Map<string, ReturnType<typeof setTimeout>> = new Map()
   private currentRoomId: string | null = null
   private lastActivityTime: number = Date.now()
   private activityTimeout: NodeJS.Timeout | null = null
@@ -307,19 +318,12 @@ export class MessageStorage {
     // before old snapshots finish arriving, causing them to wipe the new room's messages.
     const subscribedRoomId = roomId
 
-    const unsubscribe = onValue(
-      messagesRef,
-      (snapshot) => {
-        // If this listener is for a room we've already left, silently discard.
-        if (this.currentRoomId !== subscribedRoomId) {
-          console.log("Discarding stale snapshot for old room:", subscribedRoomId, "current:", this.currentRoomId)
-          return
-        }
-
-        console.log("Received message snapshot for room:", subscribedRoomId)
-        const data = snapshot.val()
-
-        if (data) {
+    // Re-runs the map+filter over the last snapshot and re-emits. Called both
+    // when Firebase pushes an update and, via scheduleVanishSweep, when a
+    // vanish TTL elapses in an otherwise quiet room.
+    const emit = (data: Record<string, unknown> | null) => {
+      if (this.currentRoomId !== subscribedRoomId) return
+      if (data) {
           const messages: Message[] = Object.entries(data)
             .map(([id, msg]: [string, any]) => {
               // Bulletproof timestamp parsing
@@ -390,6 +394,7 @@ export class MessageStorage {
           this.saveToLocalCache(subscribedRoomId, messages)
 
           onMessage(messages)
+          this.scheduleVanishSweep(subscribedRoomId, data, () => emit(data))
         } else {
           console.log("No messages found for room:", subscribedRoomId)
           // If no Firebase messages but we have cached, keep showing cached
@@ -397,6 +402,19 @@ export class MessageStorage {
             onMessage([])
           }
         }
+    }
+
+    const unsubscribe = onValue(
+      messagesRef,
+      (snapshot) => {
+        // If this listener is for a room we've already left, silently discard.
+        if (this.currentRoomId !== subscribedRoomId) {
+          console.log("Discarding stale snapshot for old room:", subscribedRoomId, "current:", this.currentRoomId)
+          return
+        }
+
+        console.log("Received message snapshot for room:", subscribedRoomId)
+        emit(snapshot.val())
       },
       (error) => {
         // Log the error but do NOT wipe messages — transient errors should not blank the chat
@@ -408,9 +426,48 @@ export class MessageStorage {
       },
     )
 
+    // Wrap so leaving the room also cancels any pending vanish re-emit;
+    // otherwise the timer fires against a room the user has left.
+    const teardown = () => {
+      const timer = this.vanishTimers.get(subscribedRoomId)
+      if (timer) {
+        clearTimeout(timer)
+        this.vanishTimers.delete(subscribedRoomId)
+      }
+      unsubscribe()
+    }
+
     // Store the unsubscribe function with room ID
-    this.messageListeners.set(roomId, unsubscribe)
-    return unsubscribe
+    this.messageListeners.set(roomId, teardown)
+    return teardown
+  }
+
+  /**
+   * Schedule a re-emit for when the soonest un-expired vanish message lapses.
+   *
+   * Only one timer per room; each snapshot replaces it. Clamped to at least
+   * 250ms (so a burst of already-due messages cannot spin) and at most five
+   * minutes (so a far-future TTL doesn't pin a long-lived timer).
+   */
+  private scheduleVanishSweep(roomId: string, data: Record<string, unknown> | null, rerun: () => void): void {
+    const existing = this.vanishTimers.get(roomId)
+    if (existing) clearTimeout(existing)
+    this.vanishTimers.delete(roomId)
+
+    if (!data) return
+    const now = Date.now()
+    let soonest = Number.POSITIVE_INFINITY
+    for (const msg of Object.values(data)) {
+      const expiresAt = (msg as { expiresAt?: unknown } | null)?.expiresAt
+      if (typeof expiresAt === "number" && expiresAt > now && expiresAt < soonest) {
+        soonest = expiresAt
+      }
+    }
+    if (!Number.isFinite(soonest)) return
+
+    // +250ms so the message is unambiguously past its deadline when we re-filter.
+    const delay = Math.min(Math.max(soonest - now + 250, 250), 5 * 60_000)
+    this.vanishTimers.set(roomId, setTimeout(rerun, delay))
   }
 
 
