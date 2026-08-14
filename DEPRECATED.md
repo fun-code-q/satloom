@@ -46,3 +46,8 @@ whatever drift has accumulated.
 - `utils/p2p/theater-broadcast.ts` — zero importers but recently made to
   compile (T3 fix); represents intended host-broadcast encapsulation. Wire
   before deleting.
+- `utils/p2p/file-transfer.ts` — hardened P2P replacement (SHA-256 integrity,
+  accept handshake, backpressure, uid-keyed) that is NOT wired into the live
+  app. The UI uses the older `utils/infra/p2p-file-transfer.ts`. Switching
+  requires a 3-call-site API refactor + multiplayer testing. Do not delete —
+  this is the intended security upgrade; it needs wiring, not removal.

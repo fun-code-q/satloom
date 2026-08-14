@@ -1,4 +1,14 @@
 /**
+ * @deprecated UNWIRED — this hardened replacement (SHA-256 integrity,
+ * accept handshake, buffered-amount backpressure, uid-keyed signaling) is
+ * NOT used by the live app. The UI still imports the OLD module at
+ * utils/infra/p2p-file-transfer.ts (no integrity check, name-keyed
+ * signaling). Switching requires a non-trivial API refactor (registerFile→
+ * registerOutgoing, requestFile→receiveFile, fileId string→FileOffer
+ * object, name→uid) across 3 call sites and CANNOT be e2e-tested without
+ * two real WebRTC peers. Tracked as a dedicated future task requiring
+ * multiplayer testing. See DEPRECATED.md.
+ *
  * P2P file transfer over WebRTC DataChannel.
  *
  * Files NEVER touch Firebase. Only short-lived signaling messages
