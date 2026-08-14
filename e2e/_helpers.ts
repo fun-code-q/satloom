@@ -187,7 +187,15 @@ export function newTestRoomId(): string {
  * persistence — same source as `uid()`, for the same reason: the modular
  * SDK exposes nothing on `window`.
  */
+const tokenCache = new WeakMap<PeerContext, string>()
+
 export async function idToken(peer: PeerContext): Promise<string> {
+    // Cached: callers poll rtdbRead inside waitFor loops, and re-opening
+    // IndexedDB through page.evaluate several times a second is slow enough
+    // to blow the test timeout on its own.
+    const cached = tokenCache.get(peer)
+    if (cached) return cached
+
     const token = await peer.page.evaluate(async () => {
         type Row = { fbase_key?: string; value?: { stsTokenManager?: { accessToken?: string } } }
         const read = (): Promise<string | null> =>
@@ -216,6 +224,7 @@ export async function idToken(peer: PeerContext): Promise<string> {
         }
         throw new Error("timed out waiting for a Firebase ID token")
     })
+    tokenCache.set(peer, token)
     return token
 }
 

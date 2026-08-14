@@ -697,7 +697,18 @@ function MessageBubble({
       id={messageId}
       className={`flex ${isOwnMessage ? "justify-end" : "justify-start"} ${isFirstInGroup ? "mt-6" : "mt-1"} mb-1 min-h-[auto] scroll-mt-20 transition-colors duration-300 relative z-0 hover:z-50`}
     >
-      <div className={`max-w-[85%] ${isOwnMessage ? "order-2" : "order-1"} flex flex-col ${isOwnMessage ? "items-end" : "items-start"}`}>
+      {/*
+        `relative group/msg` anchors the reaction toolbar below.
+        The toolbar cannot live inside the bubble (that div is
+        `overflow-hidden`, which would clip a `-bottom-8` child), so it sits
+        here as a sibling — but that put it outside the bubble's `group`,
+        so its `group-hover:opacity-100` never matched and the toolbar stayed
+        at opacity 0 permanently: the reaction buttons were invisible and
+        unclickable for every user.
+        A NAMED group is used so this does not also fire the plain
+        `group-hover:` media effects inside the bubble.
+      */}
+      <div className={`relative group/msg max-w-[85%] ${isOwnMessage ? "order-2" : "order-1"} flex flex-col ${isOwnMessage ? "items-end" : "items-start"}`}>
         {/* Reply indicator */}
         {message.replyTo && (
           <div
@@ -897,9 +908,14 @@ function MessageBubble({
           </div>
         </div>
 
-        {/* Reaction buttons (show on hover) */}
+        {/*
+          Reaction buttons (revealed on hover of the group/msg wrapper).
+          pointer-events-none while hidden: this bar sits 32px below every
+          message and, at opacity 0, still swallowed clicks aimed at whatever
+          was underneath it.
+        */}
         {!isEditing && (
-        <div className="absolute -bottom-8 right-0 flex gap-1 bg-slate-800 rounded-full p-1 shadow-lg border border-slate-700 opacity-0 group-hover:opacity-100 transition-opacity z-[60]">
+        <div className="absolute -bottom-8 right-0 flex gap-1 bg-slate-800 rounded-full p-1 shadow-lg border border-slate-700 opacity-0 pointer-events-none group-hover/msg:opacity-100 group-hover/msg:pointer-events-auto transition-opacity z-[60]">
             <Button
             variant="ghost"
             size="icon"
