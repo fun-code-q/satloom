@@ -42,7 +42,10 @@ test.describe("@firebase reaction toggle", () => {
             const row = bubble.locator("xpath=ancestor::div[contains(@class,'message-virtual-row')][1]").first()
             const heartBtn = row.locator("button[title='Love']").first()
 
-            await row.hover()
+            // Hover the BUBBLE, not the row: the row spans the full chat width
+            // while the toolbar's hover trigger is the narrow, side-aligned
+            // message wrapper, so hovering the row's centre misses it entirely.
+            await bubble.hover()
             await heartBtn.click()
 
             // Assert on the canonical Firebase state rather than scraping the
@@ -63,7 +66,7 @@ test.describe("@firebase reaction toggle", () => {
             expect(heartsAfterFirst).toBe(1)
 
             // Click again → toggle off.
-            await row.hover()
+            await bubble.hover()
             await heartBtn.click()
 
             const clearedAgain = await waitFor(alice.page, async () => {

@@ -31,7 +31,13 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // Serial by default, not just in CI. Each credentialed spec drives TWO
+  // browser contexts, so Playwright's default (one worker per core) puts
+  // 8+ contexts and the dev server's first compile on the machine at once.
+  // Under that load the specs time out and contexts die with
+  // "Failed to find context" — the same tests pass in ~5x less wall-clock
+  // each when run one at a time.
+  workers: 1,
   reporter: process.env.CI ? "line" : "list",
   // 60s: next dev cold-compiles the first request per worker, and the
   // landing/theme goto calls wait for the "load" event which Firebase

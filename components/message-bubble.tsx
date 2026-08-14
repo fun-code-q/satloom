@@ -708,7 +708,7 @@ function MessageBubble({
         A NAMED group is used so this does not also fire the plain
         `group-hover:` media effects inside the bubble.
       */}
-      <div className={`relative group/msg max-w-[85%] ${isOwnMessage ? "order-2" : "order-1"} flex flex-col ${isOwnMessage ? "items-end" : "items-start"}`}>
+      <div className={`relative group/msg pb-8 z-10 hover:z-50 max-w-[85%] ${isOwnMessage ? "order-2" : "order-1"} flex flex-col ${isOwnMessage ? "items-end" : "items-start"}`}>
         {/* Reply indicator */}
         {message.replyTo && (
           <div
@@ -915,7 +915,7 @@ function MessageBubble({
           was underneath it.
         */}
         {!isEditing && (
-        <div className="absolute -bottom-8 right-0 flex gap-1 bg-slate-800 rounded-full p-1 shadow-lg border border-slate-700 opacity-0 pointer-events-none group-hover/msg:opacity-100 group-hover/msg:pointer-events-auto transition-opacity z-[60]">
+        <div className="absolute bottom-0 right-0 flex gap-1 bg-slate-800 rounded-full p-1 shadow-lg border border-slate-700 opacity-0 pointer-events-none group-hover/msg:opacity-100 group-hover/msg:pointer-events-auto transition-opacity z-[60]">
             <Button
             variant="ghost"
             size="icon"

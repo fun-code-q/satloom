@@ -78,7 +78,7 @@ export function FilePreviewModal({ fileData, onClose, onSend }: FilePreviewModal
             onClick={onClose}
         >
             <div
-                className="bg-slate-900 border border-slate-700/50 rounded-3xl overflow-hidden w-full max-w-3xl shadow-2xl flex flex-col relative"
+                className="bg-slate-900 border border-slate-700/50 rounded-3xl overflow-hidden w-full max-w-3xl max-h-[90dvh] shadow-2xl flex flex-col relative"
                 onClick={(event) => event.stopPropagation()}
             >
                 {/* Header */}
@@ -95,8 +95,16 @@ export function FilePreviewModal({ fileData, onClose, onSend }: FilePreviewModal
                     </Button>
                 </div>
 
-                {/* Preview Area */}
-                <div className="flex-1 min-h-[340px] sm:min-h-[420px] flex items-center justify-center bg-slate-950 p-4 sm:p-6 relative overflow-hidden">
+                {/*
+                  Preview Area.
+                  Sized in viewport units with `min-h-0` so it SHRINKS when the
+                  window is short. The old fixed `min-h-[420px]` could not
+                  shrink, so on a short window the card outgrew the screen and
+                  pushed the footer (Cancel / Send File) below the fold — on a
+                  1280x800 window Send File rendered at y=798, leaving 2px of a
+                  44px button visible and effectively unclickable.
+                */}
+                <div className="flex-1 min-h-0 h-[40dvh] sm:h-[48dvh] flex items-center justify-center bg-slate-950 p-4 sm:p-6 relative overflow-hidden">
                     {isImage && previewUrl ? (
                         <div className="relative w-full h-full min-h-[280px] rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-[radial-gradient(circle_at_20%_20%,rgba(6,182,212,0.12),transparent_50%),radial-gradient(circle_at_80%_80%,rgba(16,185,129,0.1),transparent_50%),#020617]">
                             <img

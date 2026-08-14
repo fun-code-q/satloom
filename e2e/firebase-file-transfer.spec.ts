@@ -29,6 +29,9 @@ const TINY_PNG = Buffer.from(
 )
 
 test.describe("@firebase P2P file message", () => {
+    // Two peers each go through enterRoom (up to 50s apiece on a cold
+    // compile) before the attachment flow even starts; 60s is not enough.
+    test.setTimeout(120_000)
     test.beforeEach(() => skipWithoutFirebase())
 
     test("Alice attaching an image yields a P2P file message in Bob's chat", async ({ browser }) => {
@@ -47,19 +50,24 @@ test.describe("@firebase P2P file message", () => {
             // the attach-menu choice is "input"; in the e2e environment
             // we set files directly so we don't need to click through
             // the attach menu DOM.
-            const fileInput = alice.page.locator("input[type='file']").first()
+            // Target the chat input by id. `input[type=file]`.first() can
+            // resolve to a different picker on the page (avatar upload), whose
+            // change handler is not the chat one, so the attachment silently
+            // went nowhere.
+            const fileInput = alice.page.locator("#chat-file-input")
             await fileInput.setInputFiles({
                 name: "alice-test.png",
                 mimeType: "image/png",
                 buffer: TINY_PNG,
             })
 
-            // Some flows require a "Send" confirmation step. Find and
-            // click any button containing "Send" if visible.
-            const maybeSend = alice.page.getByRole("button", { name: /^send$/i })
-            if (await maybeSend.isVisible().catch(() => false)) {
-                await maybeSend.click()
-            }
+            // Attaching opens a confirmation step whose button reads
+            // "Send File" — the previous anchored /^send$/ matched nothing, so
+            // the confirmation was never clicked and no message was ever
+            // written. This step is required, not optional: wait for it.
+            const sendFile = alice.page.getByRole("button", { name: /send file/i }).first()
+            await sendFile.waitFor({ state: "visible", timeout: 15_000 })
+            await sendFile.click()
 
             // Bob should see a bubble that contains the filename or its
             // P2P indicator within 10 s.
