@@ -28,25 +28,41 @@ Lint is configured to report `no-unused-vars`, `no-explicit-any` and
 intentional so the gate stays green while the backlog is worked down; it
 does mean lint will not fail CI on new occurrences.
 
-## Blocking for production: Firebase must be deployed
+## Security rules: deployed and verified
 
-The application's entire security model lives in `firebase-rules.json` and
-`functions/`, and **neither is deployed by CI**. Shipping the static bundle
-without them leaves the documented privacy contract unenforced.
+`firebase-rules.json` is live on `satloom-ef3db`. Verified against the
+**deployed** GitHub Pages site rather than a local build:
 
-From `docs/deploy.md`: without the rules deployed, *"every `auth != null`
-user can read every room's messages, PIN hash+salt, and encryption salt."*
+- two isolated peers exchange a message with 0 `PERMISSION_DENIED` and 0
+  console errors, across 3 consecutive runs
+- a non-member anonymous user is denied (401) on `messages`, `protection`
+  (PIN hash+salt) and `encryption` (salt) — the three things that were
+  previously readable by any signed-in user
+
+Getting there required fixing the ruleset itself. It had never been
+deployed, and it turned out to be **incompatible with the client**:
+presence keys and message `userId`s carry a `:<sessionId>` suffix, and
+`timestamp` is written as an ISO string where the rule demanded a number.
+Deploying it as-committed took the live app down until it was rolled back.
+Validate any rule change against the emulator first:
 
 ```bash
-firebase deploy --only database,functions
+firebase emulators:start --only database
 ```
 
-Then verify in the Firebase Console that the deployed rules match
-`firebase-rules.json`, and run the vanish-TTL verification in
-`docs/deploy.md` §4. The Cloud Functions pruner requires the **Blaze** plan.
+Deploying rules is still an explicit operator action — CI does not do it:
 
-This is an explicit operator action on every rules/functions change. There
-is no automation for it, by design.
+```bash
+firebase deploy --only database
+```
+
+The pre-existing `/rooms` data was purged as part of this. Every room
+predated the uid-keying migration, so all of them would have been
+permanently unreadable under the membership gate. A full database backup
+was taken first and is retained outside version control.
+
+The Cloud Functions pruner is a separate matter and remains undeployed —
+it needs the Blaze plan (see the vanish section below).
 
 ## Degraded until configured: TURN relay
 
