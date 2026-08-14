@@ -199,38 +199,109 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
   const wasFullscreenRef = useRef(false)
   const [showFullscreenRestore, setShowFullscreenRestore] = useState(false)
 
+  /**
+   * Does the current activity actually justify keeping the screen awake?
+   *
+   * Only passive-viewing / hands-off states qualify: a call, a theater
+   * broadcast, a presentation, or an un-minimised karaoke stage. In all of
+   * these the user may go minutes without touching the screen, and letting
+   * the display sleep mid-call is a real bug.
+   *
+   * Plain text chat does NOT qualify. Reading and typing messages resets
+   * the idle timer on its own, so a lock there buys nothing and costs a
+   * lot: the display is a phone's single largest power draw, and this
+   * component previously took a screen lock unconditionally on mount and
+   * held it for the entire session. That is the main reason phones ran hot
+   * and drained fast while simply sitting in a room.
+   *
+   * Games and the whiteboard are also excluded — both are touch-driven.
+   */
+  // The karaoke term is recomputed here rather than reusing
+  // `canViewKaraokeStage` (declared further down): that declaration sits
+  // after an early return, so a hook depending on it could not run
+  // unconditionally. It reads the `currentUserIdProp` prop rather than the
+  // `currentUserId` ref for the same reason — the ref is initialised later
+  // in the body. They agree whenever the prop is supplied, which is the
+  // real path (app/page.tsx always passes the auth uid); the ref's
+  // generated fallback only matters pre-auth, when there is no karaoke
+  // session to be on anyway. Keep in sync with `canViewKaraokeStage`.
+  const wakeLockUserId = currentUserIdProp?.trim() || ""
+  const isOnKaraokeStage = Boolean(
+    wakeLockUserId &&
+    feature.currentKaraokeSession &&
+    (
+      feature.currentKaraokeSession.hostId === wakeLockUserId ||
+      feature.currentKaraokeSession.players?.[wakeLockUserId]?.hasJoined
+    )
+  )
+
+  const needsWakeLock = !!(
+    isInCall ||
+    showAudioCall || showVideoCall ||
+    showTheaterFullscreen ||
+    showPresentationViewer ||
+    (isOnKaraokeStage && !isKaraokeMinimized)
+  )
+
   React.useEffect(() => {
-    const requestWakeLock = async () => {
+    if (!needsWakeLock) return
+    if (!('wakeLock' in navigator)) return
+
+    let cancelled = false
+
+    const acquire = async () => {
+      if (cancelled || document.visibilityState !== 'visible') return
+      if (wakeLockRef.current) return
       try {
-        if ('wakeLock' in navigator) {
-          wakeLockRef.current = await (navigator as any).wakeLock.request('screen')
-        }
-      } catch (err) {
-        console.error('Wake Lock failed:', err)
+        wakeLockRef.current = await (navigator as unknown as {
+          wakeLock: { request: (t: 'screen') => Promise<{ release: () => Promise<void> }> }
+        }).wakeLock.request('screen')
+      } catch {
+        // Denied (no user gesture), unsupported, or the tab lost focus
+        // mid-request. Not an error worth a console.error on every load —
+        // the feature is a nicety and the app works fine without it.
       }
     }
 
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible') {
-        await requestWakeLock()
+    const release = async () => {
+      const lock = wakeLockRef.current
+      wakeLockRef.current = null
+      if (lock) { try { await lock.release() } catch { /* already gone */ } }
+    }
 
-        // If they were in fullscreen before, show the restore button
+    // The browser drops the lock whenever the tab is hidden, so it has to
+    // be re-taken on return — but only while it's still warranted.
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') void acquire()
+      else void release()
+    }
+
+    void acquire()
+    document.addEventListener('visibilitychange', onVisibility)
+
+    return () => {
+      cancelled = true
+      document.removeEventListener('visibilitychange', onVisibility)
+      void release()
+    }
+  }, [needsWakeLock])
+
+  // Fullscreen persistence is independent of the wake lock and must keep
+  // running for the whole session, so it lives in its own effect. Bundling
+  // the two meant the fullscreen-restore prompt was wired up only as a side
+  // effect of taking a screen lock.
+  React.useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
         if (wasFullscreenRef.current && !document.fullscreenElement && isMobile) {
           setShowFullscreenRestore(true)
         }
       } else {
-        // App is hidden - track if they were in fullscreen
         wasFullscreenRef.current = !!document.fullscreenElement
-
-        if (wakeLockRef.current) {
-          await wakeLockRef.current.release()
-          wakeLockRef.current = null
-        }
       }
     }
 
     const handleFullscreenChange = () => {
-      // If user manually enters fullscreen, clear the restore prompt
       if (document.fullscreenElement) {
         setShowFullscreenRestore(false)
         wasFullscreenRef.current = true
@@ -239,14 +310,11 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
       }
     }
 
-    requestWakeLock()
     document.addEventListener('visibilitychange', handleVisibilityChange)
     document.addEventListener('fullscreenchange', handleFullscreenChange)
-
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       document.removeEventListener('fullscreenchange', handleFullscreenChange)
-      if (wakeLockRef.current) wakeLockRef.current.release()
     }
   }, [isMobile])
   const [viewportStyles, setViewportStyles] = useState<React.CSSProperties>({
