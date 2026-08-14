@@ -59,6 +59,25 @@ jobs:
           NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
           NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
           NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+          # NEXT_PUBLIC_* values are inlined at build time, so a secret that is
+          # not listed here can never reach the bundle no matter what is set in
+          # repository settings. Without the TURN trio below, lib/webrtc.ts
+          # builds a STUN-only ICE config and users behind symmetric NAT
+          # (~15-20%) cannot connect. Unset secrets expand to "", which
+          # buildIceServers() skips — so this is safe to list before the
+          # secrets exist. See docs/deploy.md §5.
+          NEXT_PUBLIC_STUN_SERVER_1: ${{ secrets.NEXT_PUBLIC_STUN_SERVER_1 }}
+          NEXT_PUBLIC_STUN_SERVER_2: ${{ secrets.NEXT_PUBLIC_STUN_SERVER_2 }}
+          NEXT_PUBLIC_STUN_SERVER_3: ${{ secrets.NEXT_PUBLIC_STUN_SERVER_3 }}
+          NEXT_PUBLIC_STUN_SERVER_4: ${{ secrets.NEXT_PUBLIC_STUN_SERVER_4 }}
+          NEXT_PUBLIC_STUN_SERVER_5: ${{ secrets.NEXT_PUBLIC_STUN_SERVER_5 }}
+          NEXT_PUBLIC_TURN_SERVER_1: ${{ secrets.NEXT_PUBLIC_TURN_SERVER_1 }}
+          NEXT_PUBLIC_TURN_USERNAME_1: ${{ secrets.NEXT_PUBLIC_TURN_USERNAME_1 }}
+          NEXT_PUBLIC_TURN_CREDENTIAL_1: ${{ secrets.NEXT_PUBLIC_TURN_CREDENTIAL_1 }}
+          NEXT_PUBLIC_TURN_SERVER_2: ${{ secrets.NEXT_PUBLIC_TURN_SERVER_2 }}
+          NEXT_PUBLIC_TURN_USERNAME_2: ${{ secrets.NEXT_PUBLIC_TURN_USERNAME_2 }}
+          NEXT_PUBLIC_TURN_CREDENTIAL_2: ${{ secrets.NEXT_PUBLIC_TURN_CREDENTIAL_2 }}
       - name: Debug Output Directory
         run: |
           echo "Listing current directory:"

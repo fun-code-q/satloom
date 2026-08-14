@@ -70,12 +70,48 @@ firebase deploy --only database,functions
    `rooms/$rid/messages`. If it remains, the function isn't deployed or
    errored — check `firebase functions:log`.
 
+## 5. TURN credentials — GitHub Actions secrets
+
+The web build reads STUN/TURN endpoints from `NEXT_PUBLIC_*` variables
+(`lib/webrtc.ts` → `buildIceServers`). These are **inlined at build time**,
+which has one consequence worth stating plainly: a secret that is not listed
+in the `env:` block of `.github/workflows/github-pages.yml` can never reach
+the bundle, no matter what is configured in repository settings.
+
+The workflow now forwards the STUN/TURN variables, so configuring TURN is
+just a matter of adding the secrets under
+**Settings → Secrets and variables → Actions**:
+
+| Secret | Example |
+|---|---|
+| `NEXT_PUBLIC_TURN_SERVER_1` | `turn:turn.example.com:3478` |
+| `NEXT_PUBLIC_TURN_USERNAME_1` | issued by your TURN provider |
+| `NEXT_PUBLIC_TURN_CREDENTIAL_1` | issued by your TURN provider |
+
+A TURN entry is used only when all three are present. With none configured
+the app falls back to STUN-only, which works on most networks but **not
+behind symmetric NAT — roughly 15-20% of users cannot connect a call**. The
+app logs a `[webrtc] No TURN servers configured` warning once per load so
+this is visible rather than silent.
+
+`NEXT_PUBLIC_STUN_SERVER_1..5` are optional; without them the app falls back
+to Google's public STUN, which is fine for discovery.
+
+Recommended providers are listed in `.env.example` — Cloudflare Calls, or
+self-hosted coturn with per-user time-limited credentials (best for privacy,
+since a TURN relay sees connection metadata).
+
+Note that TURN credentials shipped in a static bundle are, by definition,
+public. Use short-lived/rotating credentials rather than a long-lived
+account secret.
+
 ## What each piece actually enforces
 
 | Piece | Enforces | If NOT deployed |
 |---|---|---|
 | Security rules | membership-gated reads, authorship writes, `expiresAt`/`now` validation, quiz-key isolation | any authed user reads any room; backdated vanish TTLs accepted |
 | `pruneExpiredVanishMessages` | vanish rows are deleted from disk after TTL even if author never returns | expired vanish rows linger on disk (still hidden from clients) |
+| TURN secrets (Actions) | relayed connectivity for peers behind symmetric NAT | STUN-only; ~15-20% of users cannot connect a call |
 
 ## Updating rules / functions
 

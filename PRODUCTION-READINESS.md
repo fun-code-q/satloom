@@ -48,6 +48,20 @@ Then verify in the Firebase Console that the deployed rules match
 This is an explicit operator action on every rules/functions change. There
 is no automation for it, by design.
 
+## Degraded until configured: TURN relay
+
+`.github/workflows/github-pages.yml` originally forwarded only the seven
+Firebase secrets to the build. Because `NEXT_PUBLIC_*` values are inlined at
+build time, the STUN/TURN variables `lib/webrtc.ts` expects could never reach
+the deployed bundle — setting them in repository settings would have had no
+effect. The workflow now forwards them.
+
+Configuring TURN is now just adding the secrets (see `docs/deploy.md` §5).
+Until then the live site runs **STUN-only**: fine on most networks, but peers
+behind symmetric NAT (~15-20% of users) cannot connect a call. This is a
+connectivity limitation, not a security one, and the app warns about it in
+the console rather than failing silently.
+
 ## Known dependency advisories — accepted, not fixed
 
 `npm audit` reports 10 remaining advisories. Both clusters require major
