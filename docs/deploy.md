@@ -34,7 +34,15 @@ firebase deploy --only database
 Verify in the Firebase Console → Realtime Database → Rules that the deployed
 JSON matches `firebase-rules.json` in the repo.
 
-## 2. Cloud Functions — the vanish-TTL pruner
+## 2. Cloud Functions — the vanish-TTL pruner (NOT DEPLOYED)
+
+> **Current status: not deployed, and not deployable on the current plan.**
+> `satloom-ef3db` is on the **Spark (free)** plan; scheduled Cloud Functions
+> require **Blaze**. Until that changes, vanish mode is **client-side
+> enforcement only**: clients hide expired messages, but the rows stay on
+> disk. Do not describe vanish mode as server-enforced deletion. The rest of
+> this section applies only once the project is on Blaze.
+
 
 `functions/src/index.ts` exports `pruneExpiredVanishMessages`, a scheduled
 function (every 5 minutes, Admin-privileged) that removes any chat message
@@ -110,7 +118,7 @@ account secret.
 | Piece | Enforces | If NOT deployed |
 |---|---|---|
 | Security rules | membership-gated reads, authorship writes, `expiresAt`/`now` validation, quiz-key isolation | any authed user reads any room; backdated vanish TTLs accepted |
-| `pruneExpiredVanishMessages` | vanish rows are deleted from disk after TTL even if author never returns | expired vanish rows linger on disk (still hidden from clients) |
+| `pruneExpiredVanishMessages` (**not deployed** — needs Blaze) | would delete vanish rows from disk after TTL even if the author never returns | **current state:** expired vanish rows linger on disk indefinitely, hidden from clients but not removed |
 | TURN secrets (Actions) | relayed connectivity for peers behind symmetric NAT | STUN-only; ~15-20% of users cannot connect a call |
 
 ## Updating rules / functions

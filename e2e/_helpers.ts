@@ -84,19 +84,58 @@ export async function spawnPeer(browser: Browser, name: string): Promise<PeerCon
         name,
         async uid() {
             return await page.evaluate(async () => {
-                const w = window as unknown as {
-                    firebase?: { auth?: () => { currentUser?: { uid: string } } }
-                }
-                // Most reliable: read the global auth state via the SDK.
-                // The app exposes it via the `lib/firebase` module's
-                // imperative singleton; we can poll for it.
+                // Read the uid from Firebase Auth's own IndexedDB persistence.
+                //
+                // This deliberately does NOT poll `window.firebase` — that
+                // global only exists in the v8 *compat* build. The app uses
+                // the v9+ modular SDK (`import { getAuth } from
+                // "firebase/auth"`), which never touches `window`, so the
+                // previous check could never succeed and every credentialed
+                // spec failed with "timed out waiting for auth uid".
+                //
+                // `firebaseLocalStorageDb` / `firebaseLocalStorage` is the
+                // documented default persistence for browser auth and is
+                // stable across v9-v12. Reading it needs no app-side test
+                // hook, so nothing ships to production for the tests' sake.
+                type AuthRow = { fbase_key?: string; value?: { uid?: string } }
+
+                const readUid = (): Promise<string | null> =>
+                    new Promise((resolve) => {
+                        const req = indexedDB.open("firebaseLocalStorageDb")
+                        req.onerror = () => resolve(null)
+                        req.onsuccess = () => {
+                            const db = req.result
+                            if (!db.objectStoreNames.contains("firebaseLocalStorage")) {
+                                db.close()
+                                return resolve(null)
+                            }
+                            const tx = db.transaction("firebaseLocalStorage", "readonly")
+                            const all = tx.objectStore("firebaseLocalStorage").getAll()
+                            all.onsuccess = () => {
+                                const row = (all.result as AuthRow[]).find(
+                                    (r) => typeof r?.fbase_key === "string" && r.fbase_key.startsWith("firebase:authUser:"),
+                                )
+                                db.close()
+                                resolve(row?.value?.uid ?? null)
+                            }
+                            all.onerror = () => {
+                                db.close()
+                                resolve(null)
+                            }
+                        }
+                    })
+
+                // 15s, not 8s: anonymous sign-in has to round-trip to
+                // Firebase on a cold dev-server compile before the row exists.
                 const start = Date.now()
-                while (Date.now() - start < 8000) {
-                    const u = w.firebase?.auth?.()?.currentUser?.uid
+                while (Date.now() - start < 15_000) {
+                    const u = await readUid()
                     if (u) return u
-                    await new Promise((r) => setTimeout(r, 100))
+                    await new Promise((r) => setTimeout(r, 150))
                 }
-                throw new Error("timed out waiting for auth uid")
+                throw new Error(
+                    "timed out waiting for auth uid (no firebase:authUser:* row in firebaseLocalStorageDb)",
+                )
             })
         },
     }
