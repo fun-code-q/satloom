@@ -72,11 +72,20 @@ export async function spawnPeer(browser: Browser, name: string): Promise<PeerCon
         permissions: ["clipboard-read", "clipboard-write", "microphone", "camera"],
     })
     const page = await context.newPage()
-    // Stub the user profile so we land directly in chat after auth,
-    // skipping the ProfileModal step. Persisted by Zustand `persist`.
+    // Seed the display name that ProfileModal pre-fills.
+    //
+    // NOTE: this is the plain `satloom-profile` key that app/page.tsx reads
+    // directly (see its "Check for saved profile" effect) — NOT the Zustand
+    // `satloom-session` store. The previous version wrote
+    // satloom-session.state.profile, which nothing reads: the store's field
+    // is `userProfile`, and page.tsx doesn't consult the store for this at
+    // all. The name silently fell back to a generated "User-NNN".
+    //
+    // Seeding only pre-fills the field. It does NOT skip the modal —
+    // handleJoinRoom() calls setShowProfileModal(true) unconditionally, so
+    // every URL join shows it. Use `enterRoom()` to drive it.
     await page.addInitScript((n) => {
-        const profile = { state: { profile: { name: n }, activeRoomId: null }, version: 0 }
-        window.localStorage.setItem("satloom-session", JSON.stringify(profile))
+        window.localStorage.setItem("satloom-profile", JSON.stringify({ name: n }))
     }, name)
     return {
         context,
@@ -146,12 +155,46 @@ export async function closePeer(p: PeerContext): Promise<void> {
 }
 
 /**
- * Generate a fresh room id prefixed `_e2e_` so cleanup can sweep them.
- * Length matches the app's own room id format (8 chars after prefix).
+ * The chat composer.
+ *
+ * The app renders an `<input>`, not a `<textarea>` — every credentialed
+ * spec previously waited on `textarea[placeholder*='Type']`, which matches
+ * nothing, and timed out even after reaching a fully working chat screen.
+ */
+export const CHAT_INPUT = "input[placeholder*='Type'], input[placeholder*='Vanish']"
+
+/**
+ * Generate a fresh room id prefixed `_E2E_` so cleanup can sweep them.
+ *
+ * Deliberately UPPERCASE: app/page.tsx does
+ * `roomFromUrl.trim().toUpperCase()`, so a lowercase `_e2e_` id is stored
+ * as `_E2E_`. Generating it uppercase keeps the id we hand out identical
+ * to the key that lands in the database — otherwise the documented sweep
+ * (`firebase database:remove /rooms/_e2e_*`) matches nothing and test
+ * rooms accumulate forever. Sweep with `/rooms/_E2E_*`.
  */
 export function newTestRoomId(): string {
-    const rand = Math.random().toString(36).slice(2, 10)
-    return `_e2e_${rand}`
+    const rand = Math.random().toString(36).slice(2, 10).toUpperCase()
+    return `_E2E_${rand}`
+}
+
+/**
+ * Take a peer from a cold page to a usable chat surface in the given room.
+ *
+ * Joining by URL always opens ProfileModal — handleJoinRoom() calls
+ * setShowProfileModal(true) before any profile check — so the modal has to
+ * be driven like a user would, not bypassed via storage. The name is
+ * already pre-filled by spawnPeer's seed; Save commits it and creates/joins
+ * the room.
+ */
+export async function enterRoom(peer: PeerContext, roomId: string): Promise<void> {
+    await peer.page.goto(`/satloom/?room=${roomId}`)
+    // Accessible name is "Save profile" (aria-label), not the "Save" label
+    // text — an anchored /^save$/ matches nothing here.
+    const save = peer.page.getByRole("dialog").getByRole("button", { name: /save/i })
+    await save.waitFor({ state: "visible", timeout: 25_000 })
+    await save.click()
+    await peer.page.locator(CHAT_INPUT).first().waitFor({ state: "visible", timeout: 25_000 })
 }
 
 /**

@@ -64,6 +64,13 @@ db-init.json
 
 # Agent/tooling artifacts
 .zcode/
+.playwright-mcp/
+
+# Local operator notes + throwaway probe scripts. Deliberately untracked:
+# .local/ holds environment-specific runbooks (project ids, console links,
+# secret *names*) and ad-hoc scripts that should never be published on a
+# public repo. See .local/README.md.
+.local/
 
 # Repo pollution — kept out permanently (see Phase 0 of the implementation plan)
 /sat-loom-web-app v5 latest 1/

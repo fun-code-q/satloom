@@ -1,5 +1,5 @@
 import { test } from "@playwright/test"
-import { skipWithoutFirebase, spawnPeer, closePeer, newTestRoomId, waitFor, expect } from "./_helpers"
+import { skipWithoutFirebase, spawnPeer, closePeer, newTestRoomId, waitFor, expect, enterRoom, CHAT_INPUT } from "./_helpers"
 
 /**
  * Credentialed Firebase message round-trip — Phase 12 / E1.
@@ -20,19 +20,15 @@ test.describe("@firebase chat message round-trip", () => {
         const roomId = newTestRoomId()
 
         try {
-            await alice.page.goto(`/satloom/?room=${roomId}`)
-            await bob.page.goto(`/satloom/?room=${roomId}`)
+            // enterRoom drives the profile modal and waits for the composer.
+            await enterRoom(alice, roomId)
+            await enterRoom(bob, roomId)
             await alice.uid()
             await bob.uid()
 
-            // Wait until both peers have a usable chat input.
-            const inputSelector = "textarea[placeholder*='Type'], textarea[placeholder*='Vanish']"
-            await alice.page.locator(inputSelector).first().waitFor({ timeout: 15_000 })
-            await bob.page.locator(inputSelector).first().waitFor({ timeout: 15_000 })
-
             // Alice sends a message with a unique marker.
             const marker = `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-            const input = alice.page.locator(inputSelector).first()
+            const input = alice.page.locator(CHAT_INPUT).first()
             await input.fill(marker)
             await input.press("Enter")
 
