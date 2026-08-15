@@ -1,5 +1,5 @@
 import { getFirebaseDatabase } from "@/lib/firebase"
-import { ref, push, set, onChildAdded, off, serverTimestamp } from "firebase/database"
+import { ref, push, set, onChildAdded, serverTimestamp } from "firebase/database"
 import { ReactionEmoji } from "./reaction-rain"
 
 export interface RoomReaction {
@@ -54,8 +54,16 @@ class RoomSignaling {
             }
         })
 
+        // Call the Unsubscribe that onChildAdded returned.
+        //
+        // This used to be `off(reactionsRef, "child_added", unsubscribe)`.
+        // off()'s third argument is the ORIGINAL snapshot callback, and it
+        // matches by identity — passing the unsubscribe function instead
+        // matched nothing, so the listener was never detached. Every
+        // re-subscribe stacked another live listener, and each one re-fired
+        // the same remote reaction, multiplying the 60fps rain animation.
         return () => {
-            off(reactionsRef, "child_added", unsubscribe)
+            unsubscribe()
         }
     }
 }

@@ -13,6 +13,14 @@ export function ReactionRainView({ roomId }: ReactionRainViewProps) {
     const containerRef = useRef<HTMLDivElement>(null)
     const { onlineUsers } = useChatStore()
 
+    // Read the live count inside the callback without making it a dependency.
+    // The subscription used to re-run on every onlineUsers.length change —
+    // i.e. every join and leave — which, combined with the unsubscribe bug in
+    // room-signaling, stacked a new permanent listener each time. In a busy
+    // room one remote emoji then triggered N simultaneous 60fps rain bursts.
+    const onlineCountRef = useRef(onlineUsers.length)
+    onlineCountRef.current = onlineUsers.length
+
     useEffect(() => {
         if (!containerRef.current) return
 
@@ -22,14 +30,14 @@ export function ReactionRainView({ roomId }: ReactionRainViewProps) {
         // Listen for remote reactions from signaling
         const unsubscribeSignaling = roomSignaling.listenForReactions(roomId, (reaction) => {
             // Pass total users count from store to calculate majority threshold
-            reactionRain.addReaction(reaction.emoji, reaction.userId, onlineUsers.length)
+            reactionRain.addReaction(reaction.emoji, reaction.userId, onlineCountRef.current)
         })
 
         return () => {
             unsubscribeSignaling()
             reactionRain.clear()
         }
-    }, [roomId, onlineUsers.length])
+    }, [roomId])
 
     return (
         <div

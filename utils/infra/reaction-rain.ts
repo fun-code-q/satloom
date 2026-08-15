@@ -32,6 +32,8 @@ class ReactionRainManager {
     private listeners: ((emoji: ReactionEmoji, count: number) => void)[] = []
     private animationFrameId: number | null = null
     private container: HTMLElement | null = null
+    /** Live DOM node per drop id, so frames mutate instead of re-creating. */
+    private dropElements: Map<string, HTMLElement> = new Map()
     private readonly TRIGGER_COUNT = 5
     private readonly WINDOW_MS = 3000 // 3 seconds window for "simultaneous" reactions
 
@@ -132,8 +134,12 @@ class ReactionRainManager {
     private animate(): void {
         if (!this.container) return
 
-        const containerRect = this.container.getBoundingClientRect()
-        const height = containerRect.height
+        // Nothing to draw while the tab is hidden — keep the loop alive so the
+        // burst resumes on return, but skip the work.
+        if (typeof document !== "undefined" && document.hidden) {
+            this.animationFrameId = requestAnimationFrame(() => this.animate())
+            return
+        }
 
         this.drops.forEach((drops, emojiKey) => {
             const emoji = emojiKey as ReactionEmoji
@@ -196,26 +202,48 @@ class ReactionRainManager {
             this.container.appendChild(emojiContainer)
         }
 
-        // Update drops
-        emojiContainer.innerHTML = drops
-            .map(
-                (drop) => `
-      <div
-        style="
-          position: absolute;
-          left: ${drop.x}%;
-          top: ${drop.y}%;
-          font-size: ${drop.scale * (drop.isMajority ? 4 : 2)}rem;
-          transform: translate(-50%, -50%) rotate(${drop.rotation}deg);
-          opacity: ${drop.opacity};
-          transition: opacity 0.1s ease-out;
-        "
-      >
-        ${emoji}
-      </div>
-    `
-            )
-            .join("")
+        // Reconcile by drop id instead of rewriting innerHTML.
+        //
+        // The previous version re-serialised and re-parsed up to 100 emoji
+        // elements EVERY frame at 60fps, throwing away and rebuilding the DOM
+        // subtree each time. Now each drop's element is created once and only
+        // its transform/opacity is touched per frame, which the compositor can
+        // handle without layout or parsing.
+        const seen = new Set<string>()
+
+        // One size read per emoji-layer per frame, not one per drop. The x/y
+        // model is percentage-based, so it has to be converted to px to be
+        // expressible as a composited transform.
+        const w = emojiContainer.clientWidth
+        const h = emojiContainer.clientHeight
+
+        for (const drop of drops) {
+            seen.add(drop.id)
+            let el = this.dropElements.get(drop.id)
+            if (!el) {
+                el = document.createElement("div")
+                el.textContent = emoji
+                el.style.position = "absolute"
+                el.style.left = "0"
+                el.style.top = "0"
+                el.style.willChange = "transform, opacity"
+                el.style.fontSize = `${drop.scale * (drop.isMajority ? 4 : 2)}rem`
+                emojiContainer.appendChild(el)
+                this.dropElements.set(drop.id, el)
+            }
+            // translate3d keeps this on the compositor: no layout, no paint of
+            // the surrounding tree, unlike the old per-frame innerHTML rebuild.
+            el.style.transform =
+                `translate3d(${(drop.x / 100) * w}px, ${(drop.y / 100) * h}px, 0) translate(-50%, -50%) rotate(${drop.rotation}deg)`
+            el.style.opacity = String(drop.opacity)
+        }
+
+        // Drop elements whose drop has fallen off screen.
+        for (const [id, el] of this.dropElements) {
+            if (seen.has(id)) continue
+            if (el.parentElement === emojiContainer) el.remove()
+            this.dropElements.delete(id)
+        }
     }
 
     /**
@@ -245,6 +273,7 @@ class ReactionRainManager {
         }
 
         this.drops.clear()
+        this.dropElements.clear()
         this.reactionQueue.forEach((queue) => queue.splice(0))
 
         if (this.container) {
