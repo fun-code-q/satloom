@@ -78,3 +78,7 @@ db-init.json
 /plans/
 /archive.html
 /archive_meta.json
+
+# Stray screenshots from .local probe scripts
+peer-*.png
+fail-*.png
