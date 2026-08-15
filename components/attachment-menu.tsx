@@ -218,10 +218,23 @@ export function AttachmentMenu({
     },
   ]
 
+  // Attaching a file was unreachable from this menu on EVERY viewport.
+  //
+  // The mobile allow-list omitted gallery/camera/document/audio, and the
+  // desktop deny-list excluded the same four — so both branches produced an
+  // identical eight-item list with no way to pick a file. There is no
+  // drag-and-drop or paste-to-upload path either, so the entire file-transfer
+  // stack (validation, 50MB cap, encryption, previews, P2P) was dead UI.
+  //
+  // The four file entries are restored on both. Still hidden deliberately:
+  // audio-call and video-call live in the header menu, and sounds/react have
+  // their own composer buttons, so listing them here would only duplicate.
+  const FILE_OPTIONS = ["gallery", "camera", "document", "audio"]
   const filteredOptions = isMobile
     ? attachmentOptions.filter(
       (opt) =>
         [
+          ...FILE_OPTIONS,
           "poll",
           "event",
           "vanish",
@@ -232,7 +245,7 @@ export function AttachmentMenu({
           "quiz",
         ].includes(opt.type)
     )
-    : attachmentOptions.filter(opt => !["audio-call", "video-call", "sounds", "react", "gallery", "camera", "location", "contact", "document", "audio"].includes(opt.type))
+    : attachmentOptions.filter(opt => !["audio-call", "video-call", "sounds", "react", "location", "contact"].includes(opt.type))
 
   const triggerFileInput = (accept: string, type: string) => {
     const input = document.createElement("input")
