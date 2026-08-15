@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useMemo } from "react"
 import { Card } from "@/components/ui/card"
-import type { Player, GameState } from "@/utils/games/dots-and-boxes-game"
+import type { GameState } from "@/utils/games/dots-and-boxes-game"
 import { PlayerAvatar } from "./player-avatar"
 import { Trophy, Medal, Award, TrendingUp, Target } from "lucide-react"
 
@@ -17,16 +17,19 @@ export function MultiplayerScoreboard({
     currentPlayerId,
     compact = false,
 }: MultiplayerScoreboardProps) {
-    const [sortedPlayers, setSortedPlayers] = useState<Player[]>([])
-
-    useEffect(() => {
-        // Sort players by score (descending)
-        const sorted = [...gameState.players].sort((a, b) => {
+    // Derived, not state.
+    //
+    // This was state written from an effect, so every score change rendered
+    // once with the stale order, ran the effect, then rendered again with the
+    // new order — a guaranteed double render (and a visible frame of stale
+    // ranking) on every box completion. It is a pure function of props, so it
+    // belongs in the render pass.
+    const sortedPlayers = useMemo(() => {
+        return [...gameState.players].sort((a, b) => {
             const scoreA = gameState.scores[a.id] || 0
             const scoreB = gameState.scores[b.id] || 0
             return scoreB - scoreA
         })
-        setSortedPlayers(sorted)
     }, [gameState.players, gameState.scores])
 
     const totalBoxes = gameState.boxes.reduce(

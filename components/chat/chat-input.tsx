@@ -214,6 +214,28 @@ export function ChatInput({
             .slice(0, 8)
     }, [getMentionHandle, mentionCandidates, mentionQuery])
 
+    // Reset the mention highlight when the suggestion list changes identity.
+    //
+    // This replaces an effect that called setSelectedMentionIndex(0) on
+    // [mentionQuery, showMentionSuggestions]. Adjusting state during render is
+    // React's documented pattern for "reset state when something changes": it
+    // re-runs this component immediately, before children render or the DOM is
+    // touched, instead of committing a throwaway render and then correcting it
+    // in an effect — which is a wasted commit on every keystroke while an @
+    // mention is open.
+    const mentionListKey = `${showMentionSuggestions}|${mentionQuery}`
+    const [lastMentionListKey, setLastMentionListKey] = useState(mentionListKey)
+    if (lastMentionListKey !== mentionListKey) {
+        setLastMentionListKey(mentionListKey)
+        setSelectedMentionIndex(0)
+    }
+
+    // Clamp for reading rather than correcting after the fact. The second
+    // effect used to notice an out-of-range index and reset it in a follow-up
+    // render; deriving it here means the highlight is never briefly wrong.
+    const activeMentionIndex =
+        selectedMentionIndex < filteredMentionCandidates.length ? selectedMentionIndex : 0
+
     const updateMentionSuggestions = useCallback((nextMessage: string, caretPosition?: number | null) => {
         const fallbackCaret = nextMessage.length
         const caret = typeof caretPosition === "number" ? caretPosition : fallbackCaret
@@ -563,7 +585,7 @@ export function ChatInput({
 
             if ((e.key === "Enter" || e.key === "Tab") && filteredMentionCandidates.length > 0) {
                 e.preventDefault()
-                handleMentionSelect(filteredMentionCandidates[selectedMentionIndex])
+                handleMentionSelect(filteredMentionCandidates[activeMentionIndex])
                 return
             }
 
@@ -617,15 +639,6 @@ export function ChatInput({
         })
         setShowEmojiPicker(false)
     }
-
-    useEffect(() => {
-        setSelectedMentionIndex(0)
-    }, [mentionQuery, showMentionSuggestions])
-
-    useEffect(() => {
-        if (selectedMentionIndex < filteredMentionCandidates.length) return
-        setSelectedMentionIndex(0)
-    }, [filteredMentionCandidates.length, selectedMentionIndex])
 
     useEffect(() => {
         if (!showMentionSuggestions) return
@@ -699,7 +712,7 @@ export function ChatInput({
                                 type="button"
                                 className={cn(
                                     "w-full px-3 py-2 flex items-center justify-between text-left transition-colors",
-                                    index === selectedMentionIndex ? "bg-cyan-500/20 text-white" : "hover:bg-white/5 text-slate-200"
+                                    index === activeMentionIndex ? "bg-cyan-500/20 text-white" : "hover:bg-white/5 text-slate-200"
                                 )}
                                 onMouseDown={(event) => {
                                     event.preventDefault()

@@ -19,10 +19,19 @@ export function ChatSearch({ onClose }: { onClose?: () => void }) {
         return () => clearTimeout(timer)
     }, [localQuery, setSearchQuery])
 
-    // Sync with store if changed externally
-    useEffect(() => {
+    // Adopt an externally-changed store value during render.
+    //
+    // This was an effect that copied searchQuery into localQuery on every
+    // change — including the changes this component itself caused via the
+    // debounce above, so each keystroke committed a render, ran the effect,
+    // and committed again with an identical value. Comparing against the last
+    // value we synced means we only re-sync on a genuine external change, and
+    // React re-runs this component before touching the DOM instead of after.
+    const [lastSyncedQuery, setLastSyncedQuery] = useState(searchQuery)
+    if (lastSyncedQuery !== searchQuery) {
+        setLastSyncedQuery(searchQuery)
         setLocalQuery(searchQuery)
-    }, [searchQuery])
+    }
 
     // Force focus on mount
     useEffect(() => {
