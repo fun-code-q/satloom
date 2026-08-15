@@ -1,5 +1,5 @@
 import { getFirebaseDatabase } from "@/lib/firebase"
-import { ref, set, onValue, remove, off, get, update, onChildAdded } from "firebase/database"
+import { ref, set, onValue, remove, off, get, update, onChildAdded, runTransaction } from "firebase/database"
 
 export interface TheaterSession {
   id: string
@@ -114,20 +114,30 @@ export class TheaterSignaling {
 
   // Join theater session
   async joinSession(roomId: string, sessionId: string, userId: string) {
-    if (!getFirebaseDatabase()!) return
+    const db = getFirebaseDatabase()
+    if (!db) return
 
-    const sessionRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}`)
-
-    // Get current session data
-    const snapshot = await new Promise<any>((resolve) => {
-      onValue(sessionRef, resolve, { onlyOnce: true })
+    // Append inside a transaction rather than read-then-set.
+    //
+    // This was a read-modify-write on the whole participants array: each
+    // joiner read the pre-join list and wrote its own copy back, so two
+    // people joining at the same time both started from the same snapshot
+    // and the second write erased the first. The erased joiner stayed in the
+    // room believing they had joined but was never in the host's participant
+    // list, so the host never sent them an offer and they silently never
+    // received the stream.
+    //
+    // runTransaction re-runs the updater against the server's current value
+    // if it changed underneath, which makes concurrent appends safe. The
+    // array shape is preserved because plenty of callers iterate
+    // session.participants directly.
+    const participantsRef = ref(db, `rooms/${roomId}/theater/${sessionId}/participants`)
+    await runTransaction(participantsRef, (current: string[] | null) => {
+      // Firebase drops empty arrays, so an absent node is a legitimate state.
+      const participants = Array.isArray(current) ? current : []
+      if (participants.includes(userId)) return participants
+      return [...participants, userId]
     })
-
-    const session = snapshot.val()
-    if (session && !session.participants.includes(userId)) {
-      const updatedParticipants = [...session.participants, userId]
-      await set(ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}/participants`), updatedParticipants)
-    }
 
     // Clear stale signals for this user
     await this.clearSignals(roomId, sessionId, userId)
