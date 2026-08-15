@@ -90,6 +90,10 @@ export function TheaterFullscreen({
   const videoStreamManagerRef = useRef<VideoStreamManager | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const connectedPeersRef = useRef<Set<string>>(new Set())
+  /** Last media time pushed into React state, to throttle re-renders. */
+  const lastRenderedTimeRef = useRef(0)
+  /** Wall-clock stamp of the last host clock write, to throttle Firebase. */
+  const lastTimePublishRef = useRef(0)
   const [remoteMovieStream, setRemoteMovieStream] = useState<MediaStream | null>(null)
   const [localMovieStream, setLocalMovieStream] = useState<MediaStream | null>(null)
   const [transcodingProgress, setTranscodingProgress] = useState<number | null>(null)
@@ -762,12 +766,22 @@ export function TheaterFullscreen({
     let interval: NodeJS.Timeout
     if (session?.videoType === 'youtube' && playerReady) {
       interval = setInterval(() => {
+        // Nothing to show while the tab is hidden, and the poller used to
+        // setState at 1Hz regardless of whether the player was even playing.
+        if (typeof document !== "undefined" && document.hidden) return
         if (ytPlayerRef.current && ytPlayerRef.current.getCurrentTime && !isDragging) {
+          const playing = ytPlayerRef.current.getPlayerState?.() === 1 /* PLAYING */
           const ytTime = ytPlayerRef.current.getCurrentTime()
           const ytDuration = ytPlayerRef.current.getDuration()
           if (ytDuration > 0 && duration !== ytDuration) setDuration(ytDuration)
+          if (!playing && Math.abs(ytTime - lastRenderedTimeRef.current) < 0.25) return
+          lastRenderedTimeRef.current = ytTime
           setCurrentTime(ytTime)
-          if (isHost && ytPlayerRef.current.getPlayerState() === 1 /* PLAYING */ && ytTime % 5 < 0.2) {
+          // Wall-clock throttle, same reasoning as handleProgress: the old
+          // `ytTime % 5 < 0.2` is a media-time window, so it fired on a
+          // schedule set by playback rather than by elapsed time.
+          if (isHost && playing && Date.now() - lastTimePublishRef.current >= 5000) {
+            lastTimePublishRef.current = Date.now()
             theaterSignaling.updateCurrentTime(roomId, session.id, ytTime, isHost)
           }
         }
@@ -781,13 +795,20 @@ export function TheaterFullscreen({
     let interval: NodeJS.Timeout
     if (session?.videoType === 'soundcloud' && playerReady) {
       interval = setInterval(() => {
+        // Skip entirely while hidden or paused: this ran two async player
+        // callbacks and a setState every second regardless.
+        if (typeof document !== "undefined" && document.hidden) return
+        if (!isPlaying) return
         if (soundcloudControllerRef.current && !isDragging) {
           soundcloudControllerRef.current.getDuration((scDuration) => {
             if (scDuration > 0 && duration !== scDuration) setDuration(scDuration)
           })
           soundcloudControllerRef.current.getPosition((scTime) => {
+            lastRenderedTimeRef.current = scTime
             setCurrentTime(scTime)
-            if (isHost && isPlaying && scTime % 5 < 0.2) {
+            // Wall-clock throttle rather than the media-time `% 5` window.
+            if (isHost && Date.now() - lastTimePublishRef.current >= 5000) {
+              lastTimePublishRef.current = Date.now()
               theaterSignaling.updateCurrentTime(roomId, session.id, scTime, isHost)
             }
           })
@@ -874,8 +895,31 @@ export function TheaterFullscreen({
 
   const handleProgress = () => {
     const video = videoRef.current; if (!video || isDragging) return
-    setCurrentTime(video.currentTime)
-    if (isHost && isPlaying && video.currentTime % 5 < 0.2) theaterSignaling.updateCurrentTime(roomId, session.id, video.currentTime, isHost)
+    const t = video.currentTime
+
+    // `timeupdate` fires ~4Hz in Chrome but up to ~60Hz in other engines.
+    //
+    // Re-render at most every 250ms. This used to setCurrentTime on EVERY
+    // event, and currentTime is state on this ~1200-line component, so a
+    // high-firing engine re-rendered the whole theater dozens of times a
+    // second to move a progress bar. 250ms is still smooth to the eye.
+    if (Math.abs(t - lastRenderedTimeRef.current) >= 0.25) {
+      lastRenderedTimeRef.current = t
+      setCurrentTime(t)
+    }
+
+    // Publish the host clock on a wall-clock throttle.
+    //
+    // The old condition was `video.currentTime % 5 < 0.2` — a window measured
+    // in *media* time, not event count. At 4Hz that admits roughly one write
+    // per crossing by luck; at 60Hz it admits about a dozen, each waking
+    // every other client's session listener. Wall-clock throttling makes the
+    // rate independent of how often the engine fires.
+    if (!isHost || !isPlaying) return
+    const now = Date.now()
+    if (now - lastTimePublishRef.current < 5000) return
+    lastTimePublishRef.current = now
+    theaterSignaling.updateCurrentTime(roomId, session.id, t, isHost)
   }
 
   const handleMetadata = () => { if (videoRef.current) { setDuration(videoRef.current.duration || 0); setPlayerReady(true) } }

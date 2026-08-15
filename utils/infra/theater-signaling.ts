@@ -183,18 +183,24 @@ export class TheaterSignaling {
       ...(payload !== undefined ? { payload } : {}),
     }
 
-    const actionRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}/lastAction`)
-    await set(actionRef, action)
-
-    // Update session status only for play/pause, not for seek/queue
+    // One atomic multi-path update instead of three sequential set() calls.
+    //
+    // Each write was its own round trip AND woke every viewer's session
+    // listener separately, so a single play or pause fanned out three
+    // snapshots to every client in the room — each re-running the drift
+    // comparison and re-rendering. Batching also means viewers can never
+    // observe the intermediate state where lastAction says "play" but status
+    // still says "paused".
+    const updates: Record<string, unknown> = {
+      [`rooms/${roomId}/theater/${sessionId}/lastAction`]: action,
+      [`rooms/${roomId}/theater/${sessionId}/currentTime`]: currentTime,
+    }
+    // Session status changes only for play/pause, not for seek/queue.
     if (type === "play" || type === "pause") {
-      const statusRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}/status`)
-      await set(statusRef, type === "play" ? "playing" : "paused")
+      updates[`rooms/${roomId}/theater/${sessionId}/status`] = type === "play" ? "playing" : "paused"
     }
 
-    // Update current time
-    const timeRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}/currentTime`)
-    await set(timeRef, currentTime)
+    await update(ref(getFirebaseDatabase()!), updates)
   }
 
   // Explicitly set session status
