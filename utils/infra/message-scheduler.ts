@@ -267,7 +267,7 @@ class MessageScheduler {
      */
     private calculateNextOccurrence(message: ScheduledMessage): number | null {
         const { type, interval = 1, endDate } = message.recurrence;
-        let nextDate = new Date(message.scheduledFor);
+        const nextDate = new Date(message.scheduledFor);
 
         // Check if past end date
         if (endDate && nextDate.getTime() > endDate) {

@@ -78,29 +78,44 @@ behind symmetric NAT (~15-20% of users) cannot connect a call. This is a
 connectivity limitation, not a security one, and the app warns about it in
 the console rather than failing silently.
 
-## Known dependency advisories — accepted, not fixed
+## Dependency advisories — all high-severity cleared
 
-`npm audit` reports 10 remaining advisories. Both clusters require major
-version bumps that are not safe to apply blind:
+`npm audit --omit=dev` reports **2 remaining** (1 low, 1 moderate), down
+from 10 (8 high). What changed:
 
-**`sharp` (< 0.35.0, high)** — inherits libvips CVEs (GHSA-f88m-g3jw-g9cj).
-It is a transitive dependency of Next.js. `npm audit fix --force` resolves
-it by installing `next@16.3.1`, a major upgrade across the App Router.
+- **Next 16.3.1.** Clears the `sharp` libvips CVEs
+  (GHSA-f88m-g3jw-g9cj), which came in transitively.
+- **`next-pwa` removed.** It was declared but never wired in —
+  `next.config.mjs` has no `withPWA` wrapper and nothing imports it. It was
+  dragging in the unmaintained `workbox-build` → `rollup-plugin-terser`
+  chain for nothing. PWA behaviour is unaffected: `public/sw.js`,
+  `public/workbox-*.js` and `public/manifest.json` are committed static
+  assets, and `pwa-install-prompt.tsx` registers the service worker
+  directly from `/satloom/sw.js`.
 
-**`next-pwa` → `workbox-webpack-plugin` → `workbox-build` →
-`rollup-plugin-terser`** — `next-pwa` 5.6.0 pins an unmaintained workbox
-chain. There is no patched release on the 5.x line; `next-pwa` itself is
-effectively unmaintained.
+The remaining two are `dompurify <= 3.4.12`, transitive and build-time.
 
-Both are **build-time/SSR-side** dependencies. This app ships as a static
-export (`output: 'export'`) to GitHub Pages, so neither `sharp` nor the
-workbox build chain executes in the served artifact — which is why these
-are tolerable short-term rather than release-blocking.
+**Caveat on the service worker:** because `public/sw.js` is a committed
+artifact rather than generated per build, its precache manifest is frozen
+at whenever it was last generated. It will not learn about new assets. If
+stale-cache behaviour ever shows up in the field, that is the first place
+to look; regenerating it (or moving to `@serwist/next`) is the fix.
 
-Recommended path, as one deliberate piece of work with its own testing:
-upgrade to Next 16 (clears `sharp`) and replace `next-pwa` with
-`@serwist/next` (the maintained successor). Do not bundle this with
-unrelated changes.
+### Next 16 upgrade notes
+
+- Turbopack is now the default for `next build`. This project has no custom
+  webpack config, so no `--webpack` fallback is needed.
+- `next lint` was **removed**. `npm run lint` is now `eslint .`, driven by
+  a flat `eslint.config.mjs` (ESLint 9). `.eslintrc.json` is gone.
+- `eslint-plugin-react-hooks` v6 adds the React Compiler-adjacent rules
+  (`set-state-in-effect`, `refs`, `purity`, `immutability`, …). They flag
+  ~130 pre-existing spots and are set to **warn**, on the same terms as the
+  other backlog rules — visible, not build-breaking. Worth working down:
+  `set-state-in-effect` flags render-loop-prone patterns, and this app has
+  already shown re-render churn.
+- `next build` no longer prints `size` / `First Load JS`; Next removed
+  those metrics as inaccurate.
+- tsconfig `jsx` was auto-migrated `preserve` → `react-jsx` by the build.
 
 ## Known unwired code
 

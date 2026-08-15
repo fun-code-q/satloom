@@ -10,7 +10,7 @@ interface MediaRecorderConstructor {
 }
 
 // MediaRecorder global declarations
-declare var MediaRecorder: MediaRecorderConstructor
+declare let MediaRecorder: MediaRecorderConstructor
 
 // BlobEvent interface
 interface BlobEvent extends Event {

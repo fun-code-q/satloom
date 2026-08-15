@@ -422,7 +422,7 @@ class MafiaManager {
             const players = { ...this.state.session.players }
 
             const killActions = Object.values(actions).filter((a: any) => a.action === "kill") as NightAction[]
-            let killTarget = killActions[0]?.targetId
+            const killTarget = killActions[0]?.targetId
 
             if (killTarget && players[killTarget]?.isAlive) {
                 const protectActions = Object.values(actions).filter((a: any) =>

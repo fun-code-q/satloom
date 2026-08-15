@@ -465,8 +465,8 @@ export class ConnectFourManager {
             }
         }
 
-        let bestScore = -Infinity
-        let bestMove = -1
+        const bestScore = -Infinity
+        const bestMove = -1
         const availableCols = []
 
         for (let c = 0; c < cols; c++) {

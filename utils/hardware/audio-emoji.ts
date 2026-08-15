@@ -142,7 +142,7 @@ class AudioEmojiManager {
 
     // Determine signal parameters for procedural fallback
     let freq = 440;
-    let duration = emoji.duration / 1000;
+    const duration = emoji.duration / 1000;
     let type: 'sine' | 'square' | 'sawtooth' = 'sine';
 
     if (emoji.id === "celebration") {
