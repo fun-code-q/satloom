@@ -107,6 +107,17 @@ export function AudioCallModal({
     setCallDuration(0)
   }
 
+  // Keep the latest cleanup reachable from the unmount-only effect below.
+  const cleanupMediaRef = useRef(cleanupMedia)
+  cleanupMediaRef.current = cleanupMedia
+
+  // Unmount safety net. cleanupMedia otherwise runs only on the !isOpen
+  // transition or from handleEndCall, so unmounting while a call is live left
+  // the microphone capturing and the RTCPeerConnection open.
+  useEffect(() => {
+    return () => cleanupMediaRef.current("unmount")
+  }, [])
+
   useEffect(() => {
     let mounted = true
     if (isOpen) {

@@ -92,7 +92,15 @@ export function VideoCallModal({
   const updateLocalStream = (stream: MediaStream | null) => {
     setLocalStream(stream)
     localStreamRef.current = stream
-    if (stream) cameraStreamRef.current = stream
+    // Deliberately does NOT touch cameraStreamRef. It used to, which broke
+    // screen sharing: handleToggleScreenShare saves the camera into
+    // cameraStreamRef and then calls updateLocalStream(screenStream), so the
+    // camera reference was immediately overwritten by the screen stream. The
+    // camera was then unreachable by cleanupMedia and its track kept running
+    // — camera indicator on for the rest of the session — and stopping the
+    // share restored the (already stopped) screen stream instead of the
+    // camera. cameraStreamRef is now only assigned where a camera is actually
+    // acquired.
   }
 
   const updateRemoteStream = (stream: MediaStream | null) => {
@@ -144,12 +152,35 @@ export function VideoCallModal({
     if (localVideoRef.current) localVideoRef.current.srcObject = null
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null
 
+    // Release the screen wake lock here, not only in the !isOpen effect.
+    // That effect cannot run if this component unmounts while the call is
+    // open, which left the display locked awake for the rest of the session —
+    // the single largest battery drain available to a web app.
+    if (wakeLockRef.current) {
+      try { wakeLockRef.current.release() } catch { }
+      wakeLockRef.current = null
+    }
+
     WebRTCManager.getInstance().cleanup()
     isInitializedRef.current = false
     offerSentRef.current = false
     pendingOfferRef.current = null
     setCallDuration(0)
   }
+
+  // Keep the latest cleanup reachable from the unmount-only effect below
+  // without making that effect depend on render-scoped values.
+  const cleanupMediaRef = useRef(cleanupMedia)
+  cleanupMediaRef.current = cleanupMedia
+
+  // Unmount safety net. Every other cleanup path is conditional — the !isOpen
+  // transition, callData.status === "ended", or handleEndCall — so if the tree
+  // unmounts while a call is live (route change, parent re-render dropping the
+  // branch) the camera and microphone kept capturing and the
+  // RTCPeerConnection was never closed.
+  useEffect(() => {
+    return () => cleanupMediaRef.current("unmount")
+  }, [])
   useEffect(() => {
     if (isOpen && callData?.status === "answered") {
       callTimerRef.current = setInterval(() => {
@@ -271,6 +302,8 @@ export function VideoCallModal({
           return
         }
         updateLocalStream(stream)
+        // This is the camera, so it is the one thing that may claim this ref.
+        cameraStreamRef.current = stream
       } catch (e: any) {
         console.error("Failed to get local media", e)
         const reason =
@@ -529,9 +562,20 @@ export function VideoCallModal({
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { deviceId: { exact: deviceId } }
       })
+
+      // Stop the outgoing camera before swapping, and adopt the new stream
+      // into the refs. Previously neither happened: the old video track kept
+      // running (a second camera left live for the rest of the call) and the
+      // new stream was never stored, so cleanupMedia could not stop it either
+      // — it outlived the call entirely. handleSwitchCamera below already did
+      // this correctly; this path did not.
+      localStreamRef.current?.getVideoTracks().forEach(t => t.stop())
+
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream
       }
+      updateLocalStream(stream)
+      cameraStreamRef.current = stream
       await WebRTCManager.getInstance().switchCamera(stream)
     } catch (e) {
       console.error("Failed to switch camera device:", e)

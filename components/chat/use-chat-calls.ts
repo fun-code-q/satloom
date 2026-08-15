@@ -339,11 +339,21 @@ export function useChatCalls(params: UseChatCallsParams) {
     const [pendingMediaFile, setPendingMediaFile] = useState<File | null>(null)
 
     const handleStartScreenShareStandalone = useCallback(async () => {
-        try {
-            console.log("Starting standalone screen share...")
-            notificationSystem.info("Requesting screen capture...")
+        console.log("Starting standalone screen share...")
+        notificationSystem.info("Requesting screen capture...")
 
-            const stream = await navigator.mediaDevices.getDisplayMedia({
+        // Held so every failure path can stop the capture. Without this, a
+        // rejection from createSession/sendInvite — or getCurrentSession()
+        // returning null — left the user's screen being captured indefinitely
+        // with no session and no UI: the catch below only logged.
+        let stream: MediaStream | null = null
+        const stopCapture = () => {
+            stream?.getTracks().forEach(t => t.stop())
+            stream = null
+        }
+
+        try {
+            stream = await navigator.mediaDevices.getDisplayMedia({
                 video: { cursor: "always" } as any,
                 audio: true
             })
@@ -364,21 +374,24 @@ export function useChatCalls(params: UseChatCallsParams) {
                 "Screen Share Session"
             )
 
-            params.setPendingScreenStream(stream)
-
             const session = theaterSignaling.getCurrentSession()
-            if (session) {
-                params.setCurrentTheaterSession(session)
-                params.setIsTheaterHost(true)
-                params.setShowTheaterFullscreen(true)
-                userPresence.updateActivity(roomId, currentUserId, "theater")
+            if (!session) {
+                stopCapture()
+                notificationSystem.error("Could not start the screen share session.")
+                return
             }
+
+            params.setPendingScreenStream(stream)
+            params.setCurrentTheaterSession(session)
+            params.setIsTheaterHost(true)
+            params.setShowTheaterFullscreen(true)
+            userPresence.updateActivity(roomId, currentUserId, "theater")
 
             telemetry.logEvent('screen_share_started', roomId, currentUserId, userProfile.name)
             notificationSystem.success("Screen sharing started!")
         } catch (error) {
             console.error("Error starting screen share:", error)
-            // notificationSystem.error("Failed to start screen share")
+            stopCapture()
         }
     }, [roomId, userProfile.name, currentUserId, params])
 

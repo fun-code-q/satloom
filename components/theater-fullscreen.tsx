@@ -478,6 +478,15 @@ export function TheaterFullscreen({
         localStreamRef.current.getTracks().forEach(track => track.stop())
         localStreamRef.current = null
       }
+      // Also stop the MOVIE stream. This used to stop only the microphone, so
+      // a host who left the theater kept capturing their screen (or the
+      // captured media element) with no UI anywhere indicating it — the
+      // parent unmounts this component when the session ends, so the
+      // browser's own "stop sharing" affordance was the only way out.
+      if (localMovieStreamRef.current) {
+        localMovieStreamRef.current.getTracks().forEach(track => track.stop())
+        localMovieStreamRef.current = null
+      }
     }
   }, [])
 
