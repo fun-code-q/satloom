@@ -225,7 +225,18 @@ export function ChatHeader({
                 <div className="bg-black/40 backdrop-blur-2xl shadow-xl border-b border-white/10 flex flex-col">
                     {/* Header Row */}
                     <div className="flex items-center justify-between px-2 md:px-4 py-1.5 md:py-2 flex-shrink-0 gap-px md:gap-2">
-                        <div className={`flex items-center gap-px md:gap-4 flex-shrink-0 ${(showChatSearch && !isMobile) ? 'opacity-50 grayscale scale-95 pointer-events-none' : ''} ${showChatSearch ? 'hidden sm:flex' : 'flex'}`}>
+                        {/*
+                          `min-w-0 shrink` (not flex-shrink-0) so this group
+                          yields when space runs out. Both this and the action
+                          group were flex-shrink-0 with only a collapsible
+                          spacer between them, so at narrow widths their fixed
+                          widths simply overflowed: at 375px the row needed
+                          8+137+244+8=397px and Leave Room / Destroy Room hung
+                          16px off the right edge, unreachable. The buttons are
+                          all functional controls, so the branding is what
+                          gives way — the icon stays, the wordmark truncates.
+                        */}
+                        <div className={`flex items-center gap-px md:gap-4 min-w-0 shrink overflow-hidden ${(showChatSearch && !isMobile) ? 'opacity-50 grayscale scale-95 pointer-events-none' : ''} ${showChatSearch ? 'hidden sm:flex' : 'flex'}`}>
                             <div 
                                 className="scale-110 transform-gpu overflow-visible flex-shrink-0 mr-0 md:mr-10 cursor-pointer hover:opacity-80 transition-opacity active:scale-105"
                                 onClick={() => setShowParticipants(!showParticipants)}

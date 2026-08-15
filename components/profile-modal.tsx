@@ -119,7 +119,12 @@ export function ProfileModal({ isOpen, onClose, onSave, defaultProfile }: Profil
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent
-          className="bg-slate-800 border-slate-700 text-white w-full max-w-md mx-4 sm:mx-auto max-h-[90vh] overflow-y-auto"
+          // Width, max-height and scrolling come from DialogContent. This used
+          // to re-declare `w-full ... mx-4`, and tailwind-merge let that
+          // `w-full` beat the base inset — 100% width PLUS horizontal margins,
+          // so the card overflowed and the close button sat off the right edge
+          // on every phone width.
+          className="bg-slate-800 border-slate-700 text-white"
           aria-label="Profile setup modal"
         >
           <DialogHeader>
