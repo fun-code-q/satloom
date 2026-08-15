@@ -101,7 +101,7 @@ export function MoodSetupModal({ isOpen, onClose, roomId }: MoodSetupModalProps)
                         </div>
                         <h2 className="text-xl font-semibold text-white">Set the Mood</h2>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={onClose} className="text-gray-400 hover:text-white">
+                    <Button variant="ghost" size="icon" aria-label="Close room vibe" onClick={onClose} className="text-gray-400 hover:text-white">
                         <X className="w-5 h-5" />
                     </Button>
                 </div>

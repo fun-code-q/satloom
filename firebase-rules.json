@@ -215,6 +215,130 @@
           ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
         },
 
+        "productivity": {
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+        },
+
+        "sounds": {
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+        },
+
+        "reactions": {
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+        },
+
+        "pinnedMessageId": {
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+        },
+
+        "theaterInvites": {
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+        },
+
+        "whiteboardInvites": {
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+        },
+
+        "presentationInvites": {
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+        },
+
+        "activePresentation": {
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+        },
+
+        "whiteboard": {
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+        },
+
+        "cursors": {
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+        },
+
+        "gameSeries": {
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+        },
+
+        "gameSeriesAnnouncements": {
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+        },
+
+        "gameVoiceSignals": {
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+        },
+
+        "game": {
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+        },
+
+        "playground": {
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+        },
+
+        "tournaments": {
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+        },
+
+        "tournamentInvites": {
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+        },
+
+        "breakoutRooms": {
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+        },
+
+        "breakoutInvites": {
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+        },
+
+        "password": {
+          ".read": "auth != null",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/createdByUid').val() === auth.uid"
+        },
+
+        "attempts": {
+          "$uid": {
+            ".read":  "auth != null && ($uid === auth.uid || root.child('rooms/'+$roomId+'/createdByUid').val() === auth.uid)",
+            ".write": "auth != null && ($uid === auth.uid || root.child('rooms/'+$roomId+'/createdByUid').val() === auth.uid)"
+          }
+        },
+
+        "lockout": {
+          "$uid": {
+            ".read":  "auth != null && ($uid === auth.uid || root.child('rooms/'+$roomId+'/createdByUid').val() === auth.uid)",
+            ".write": "auth != null && ($uid === auth.uid || root.child('rooms/'+$roomId+'/createdByUid').val() === auth.uid)"
+          }
+        },
+
+        "muted": {
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/createdByUid').val() === auth.uid"
+        },
+
+        "moderationLogs": {
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/createdByUid').val() === auth.uid",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/createdByUid').val() === auth.uid"
+        },
+
         "activeQuiz": {
           ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
           ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"

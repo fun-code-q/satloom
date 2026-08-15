@@ -278,6 +278,26 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
     } = props
 
     const [mounted, setMounted] = useState(false)
+
+    // Escape closes the Shared Notes and Task List overlays.
+    //
+    // Both are plain divs rather than a Dialog, so they inherited none of the
+    // usual dismissal behaviour: Escape did nothing, and their only way out was
+    // an icon-only X with no accessible name. A keyboard or screen-reader user
+    // who opened either one had no way to close it at all.
+    const { showSharedNotes, showSharedTaskList, setShowSharedNotes, setShowSharedTaskList } = props
+    useEffect(() => {
+        if (!showSharedNotes && !showSharedTaskList) return
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key !== "Escape") return
+            // Close only the topmost one, matching how stacked dialogs behave.
+            if (showSharedTaskList) setShowSharedTaskList(false)
+            else if (showSharedNotes) setShowSharedNotes(false)
+        }
+        document.addEventListener("keydown", onKeyDown)
+        return () => document.removeEventListener("keydown", onKeyDown)
+    }, [showSharedNotes, showSharedTaskList, setShowSharedNotes, setShowSharedTaskList])
+
     const [gameUnreadCount, setGameUnreadCount] = useState(0)
     const lastGameMessageIdRef = React.useRef<string | null>(null)
     const [showGameMessageComposer, setShowGameMessageComposer] = useState(false)
@@ -602,14 +622,14 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
 
             {/* PRODUCTIVITY MODALS - Portalled for true layout independence */}
             {props.showSharedNotes && renderModal(
-                <div className="fixed inset-0 z-[520] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+                <div role="dialog" aria-modal="true" aria-label="Shared notes" className="fixed inset-0 z-[520] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
                     <div className="w-full max-w-2xl mx-4 bg-slate-900/95 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[85vh] glass-morphism animate-in zoom-in-95 duration-200">
                         <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/80 backdrop-blur-md">
                             <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-widest flex items-center gap-3">
                                 <span className="w-2.5 h-2.5 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
                                 Shared Notes
                             </h3>
-                            <Button variant="ghost" size="icon" onClick={() => props.setShowSharedNotes(false)} className="h-9 w-9 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-all">
+                            <Button variant="ghost" size="icon" aria-label="Close shared notes" onClick={() => props.setShowSharedNotes(false)} className="h-9 w-9 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-all">
                                 <X className="h-5 w-5" />
                             </Button>
                         </div>
@@ -621,14 +641,14 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
             )}
 
             {props.showSharedTaskList && renderModal(
-                <div className="fixed inset-0 z-[520] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+                <div role="dialog" aria-modal="true" aria-label="Shared task list" className="fixed inset-0 z-[520] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
                     <div className="w-full max-w-2xl mx-4 bg-slate-900/95 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[85vh] glass-morphism animate-in zoom-in-95 duration-200">
                         <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/80 backdrop-blur-md">
                             <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-widest flex items-center gap-3">
                                 <span className="w-2.5 h-2.5 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
                                 Shared Task List
                             </h3>
-                            <Button variant="ghost" size="icon" onClick={() => props.setShowSharedTaskList(false)} className="h-9 w-9 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-all">
+                            <Button variant="ghost" size="icon" aria-label="Close task list" onClick={() => props.setShowSharedTaskList(false)} className="h-9 w-9 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-all">
                                 <X className="h-5 w-5" />
                             </Button>
                         </div>
