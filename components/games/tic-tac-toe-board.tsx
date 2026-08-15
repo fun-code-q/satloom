@@ -104,9 +104,15 @@ export function TicTacToeBoard({ gameConfig, roomId, currentUserId, onClose, onM
     }, [roomId, gameId, gameConfig.gameType, currentUserId, gameConfig.players])
 
     // Game Timer
+    //
+    // Skips the state update while the tab is hidden — each tick re-renders
+    // the whole board for two digits nobody is looking at.
     useEffect(() => {
         if (game?.status === "in_progress" && !isPaused) {
-            timerRef.current = setInterval(() => setGameTime(prev => prev + 1), 1000)
+            timerRef.current = setInterval(() => {
+                if (typeof document !== "undefined" && document.hidden) return
+                setGameTime(prev => prev + 1)
+            }, 1000)
         } else {
             if (timerRef.current) clearInterval(timerRef.current)
         }

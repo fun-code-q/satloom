@@ -105,9 +105,16 @@ export function ConnectFourBoard({ gameConfig, roomId, currentUserId, onClose, o
     }, [roomId, gameId, gameConfig.gameType, currentUserId, gameConfig.players])
 
     // Game Timer
+    //
+    // Skips the state update while the tab is hidden: each tick re-renders the
+    // whole 42-cell board to change two digits nobody is looking at. The clock
+    // resumes from the next visible tick.
     useEffect(() => {
         if (game?.status === "in_progress" && !isPaused) {
-            timerRef.current = setInterval(() => setGameTime(prev => prev + 1), 1000)
+            timerRef.current = setInterval(() => {
+                if (typeof document !== "undefined" && document.hidden) return
+                setGameTime(prev => prev + 1)
+            }, 1000)
         } else {
             if (timerRef.current) clearInterval(timerRef.current)
         }

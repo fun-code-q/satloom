@@ -55,9 +55,14 @@ export function DotsAndBoxesGameComponent({
     restartGame
   } = useGameSync({ gameConfig, roomId, currentUserId, onExit: handleExit, isPaused })
 
+  // Skips the state update while the tab is hidden — each tick re-renders the
+  // whole dots grid for two digits nobody is looking at.
   useEffect(() => {
     if (gameState?.gameStatus !== "playing" || isPaused) return
-    const timer = setInterval(() => setGameTime((prev) => prev + 1), 1000)
+    const timer = setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden) return
+      setGameTime((prev) => prev + 1)
+    }, 1000)
     return () => clearInterval(timer)
   }, [gameState?.gameStatus, isPaused])
 

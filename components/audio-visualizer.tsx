@@ -56,10 +56,26 @@ export function AudioVisualizer({
 
             if (!ctx) return
 
-            const draw = () => {
+            // Repaint at ~20fps rather than the display refresh rate, and not
+            // at all while the tab is hidden.
+            //
+            // This is a decorative level meter that ran an unconditional 60fps
+            // loop — FFT read plus a full canvas repaint every frame — for the
+            // entire duration of an audio call. On a phone that is a constant
+            // CPU/GPU wakeup for something nobody is looking at, and audio
+            // levels are indistinguishable at 20fps.
+            const FRAME_MS = 1000 / 20
+            let lastDraw = 0
+
+            const draw = (now?: number) => {
                 if (!analyserRef.current) return
 
                 animationRef.current = requestAnimationFrame(draw)
+
+                if (typeof document !== "undefined" && document.hidden) return
+                const t = now ?? performance.now()
+                if (t - lastDraw < FRAME_MS) return
+                lastDraw = t
 
                 analyser.getByteFrequencyData(dataArray)
 

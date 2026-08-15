@@ -93,10 +93,22 @@ export function ChessBoard({ gameConfig, roomId, currentUserId, onClose, onMinim
     }, [roomId, gameId, gameConfig.gameType, currentUserId, gameConfig.players])
 
     // Timer
+    //
+    // "waiting" deliberately removed: the clock used to tick while a player
+    // sat alone waiting for an opponent who might never arrive, re-rendering
+    // all 64 squares once a second indefinitely. The elapsed time only means
+    // anything once the game is actually running.
+    //
+    // The document.hidden guard skips the state update (and therefore the
+    // board re-render) while the tab is backgrounded; the clock catches up
+    // from the next visible tick.
     useEffect(() => {
-        if ((session?.status === "in_progress" || session?.status === "check" || session?.status === "waiting") && !isPaused) {
+        if ((session?.status === "in_progress" || session?.status === "check") && !isPaused) {
             if (!timerRef.current) {
-                timerRef.current = setInterval(() => setGameTime(prev => prev + 1), 1000)
+                timerRef.current = setInterval(() => {
+                    if (typeof document !== "undefined" && document.hidden) return
+                    setGameTime(prev => prev + 1)
+                }, 1000)
             }
         } else {
             if (timerRef.current) {

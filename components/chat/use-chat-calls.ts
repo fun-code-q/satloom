@@ -150,15 +150,19 @@ export function useChatCalls(params: UseChatCallsParams) {
             params.setActiveGameSeries(series)
         })
 
-        const sync = async () => {
-            await gameSeriesManager.syncSeriesProgress(roomId, activeGameSeries.id)
-        }
-        sync()
-        const timer = setInterval(sync, 5000)
+        // Reconcile once on mount instead of polling every 5 seconds.
+        //
+        // The series node is already subscribed above, so the poll was a
+        // second, redundant source of the same data — and not a cheap one:
+        // syncSeriesProgress reads the series plus one match outcome per
+        // pending match, then writes the whole matches array back. Every
+        // client in the room did that on its own 5s cadence, so they also
+        // raced each other writing the same array. The listener already
+        // delivers any change.
+        void gameSeriesManager.syncSeriesProgress(roomId, activeGameSeries.id)
 
         return () => {
             unsubscribe()
-            clearInterval(timer)
         }
     }, [roomId, activeGameSeries?.id])
 

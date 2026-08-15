@@ -126,6 +126,8 @@ class KaraokeManager {
     private userName: string = "Anonymous"
     private unsubscribers: (() => void)[] = []
     private animationFrameId: number | null = null
+    /** Audience-side clock ticker. Separate from the host's rAF loop. */
+    private audienceTickId: ReturnType<typeof setInterval> | null = null
     private lastDbUpdateTime: number = 0
     private lastLocalTime: number = 0
 
@@ -389,8 +391,17 @@ class KaraokeManager {
             // Update local state for immediate UI feedback (smooth lyrics)
             this.state.currentTime = currentTime
 
-            // Throttled Firebase update (every 1000ms)
-            if (now - this.lastDbUpdateTime >= 1000) {
+            // Heartbeat the host clock every 5s, not every 1s.
+            //
+            // Each write wakes every other client's listenForSession, which
+            // runs notifyListeners and re-renders every subscribed component.
+            // At 1 Hz a three-minute song with six people was ~180 writes and
+            // ~1000 listener callbacks, on radio and CPU, purely to nudge a
+            // clock that the audience already interpolates locally between
+            // heartbeats — and which hard-snaps anyway once drift exceeds
+            // 2000ms (see listenForSession). 5s stays well inside that
+            // tolerance for a quarter of the traffic.
+            if (now - this.lastDbUpdateTime >= 5000) {
                 const db = getFirebaseDatabase()
                 if (db && this.roomId) {
                     const sessionRef = ref(db, `karaoke/${this.roomId}`)
@@ -554,9 +565,8 @@ class KaraokeManager {
                         console.log(`[Karaoke] Significant drift detected (${drift}ms), snapping to host time`)
                         this.state.currentTime = session.currentTime
                     }
-                    if (!this.animationFrameId) {
-                        this.startTimeSyncForAudience()
-                    }
+                    // startTimeSyncForAudience guards against double-start.
+                    this.startTimeSyncForAudience()
                 }
 
                 this.state.isSinging = session.status === "playing"
@@ -564,6 +574,7 @@ class KaraokeManager {
                 this.state.isActive = false
                 this.state.session = null
                 this.state.isSinging = false
+                this.stopTimeSyncForAudience()
                 if (this.animationFrameId) {
                     cancelAnimationFrame(this.animationFrameId)
                     this.animationFrameId = null
@@ -582,29 +593,46 @@ class KaraokeManager {
      * Clients also need to increment time locally between heartbeats
      */
     private startTimeSyncForAudience(): void {
-        if (this.animationFrameId) return
+        if (this.audienceTickId !== null) return
 
-        const syncLoop = () => {
+        // 4 Hz, not requestAnimationFrame.
+        //
+        // This loop produces no visual output of its own — it advances a clock
+        // and asks updateLyricsProgress whether the highlighted line changed,
+        // which happens a handful of times per MINUTE. Running it at the
+        // display refresh rate meant ~60 wake-ups a second, on every audience
+        // member's device, for the whole song. 250ms is far finer than the
+        // lyric granularity and cannot be perceived as less accurate.
+        //
+        // setInterval also keeps working when the tab is backgrounded (where
+        // rAF stops entirely), so the clock no longer silently freezes and
+        // then jumps on return.
+        const TICK_MS = 250
+
+        const tick = () => {
             if (!this.state.isActive || this.state.session?.status !== "playing" || this.state.session.hostId === this.userId) {
-                this.animationFrameId = null
+                this.stopTimeSyncForAudience()
                 return
             }
 
-            // Increment local time by ~16.7ms (assuming 60fps)
-            // for more accuracy we could use Date.now() difference
-            if (this.lastLocalTime === 0) this.lastLocalTime = Date.now()
             const now = Date.now()
+            if (this.lastLocalTime === 0) this.lastLocalTime = now
             const delta = now - this.lastLocalTime
             this.lastLocalTime = now
 
             this.state.currentTime += delta
             this.updateLyricsProgress(this.state.currentTime)
-
-            this.animationFrameId = requestAnimationFrame(syncLoop)
         }
 
         this.lastLocalTime = Date.now()
-        syncLoop()
+        this.audienceTickId = setInterval(tick, TICK_MS)
+    }
+
+    private stopTimeSyncForAudience(): void {
+        if (this.audienceTickId !== null) {
+            clearInterval(this.audienceTickId)
+            this.audienceTickId = null
+        }
     }
 
     /**
@@ -616,6 +644,7 @@ class KaraokeManager {
         this.roomId = null
         this.userId = null
 
+        this.stopTimeSyncForAudience()
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId)
             this.animationFrameId = null
