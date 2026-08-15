@@ -890,6 +890,9 @@ export function ChatInput({
                                 setShowAttachments(!showAttachments)
                                 setShowEmojiPicker(false)
                             }}
+                            aria-label={showAttachments ? "Close attachment menu" : "Attach file"}
+                            aria-expanded={showAttachments}
+                            title={showAttachments ? "Close attachment menu" : "Attach file"}
                         >
                             <Plus className={`w-5 h-5 transition-transform ${showAttachments ? 'rotate-45' : ''}`} />
                             {!showAttachments && (
@@ -967,6 +970,9 @@ export function ChatInput({
                                         }
                                         setShowAttachments(false)
                                     }}
+                                    aria-label={showEmojiPicker || showMobileReactions ? "Close quick actions" : "Add Emoji"}
+                                    aria-expanded={showEmojiPicker || showMobileReactions}
+                                    title={showEmojiPicker || showMobileReactions ? "Close quick actions" : "Add Emoji"}
                                 >
                                     <Smile className={`w-5 h-5 ${showEmojiPicker ? 'text-cyan-400' : ''}`} />
                                 </Button>
@@ -977,6 +983,8 @@ export function ChatInput({
                                 size="icon"
                                 className="h-10 w-10 rounded-full bg-cyan-500 hover:bg-cyan-600 text-white shrink-0 shadow-lg disabled:bg-white/10 disabled:text-gray-500 disabled:shadow-none"
                                 disabled={!message.trim()}
+                                aria-label="Send Message"
+                                title="Send Message"
                             >
                                 <Send className="w-5 h-5" />
                             </Button>

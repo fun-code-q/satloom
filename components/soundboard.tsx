@@ -36,6 +36,19 @@ export function Soundboard({ isOpen, onClose, roomId, userId, userName }: Soundb
         }
     }, [isOpen])
 
+    // Escape closes the popup. Clicking the backdrop already did, but Escape
+    // did nothing — for a portal'd overlay that covers the screen, dismissing
+    // with the keyboard is the expected way out and the only one available
+    // without a pointer.
+    useEffect(() => {
+        if (!isOpen) return
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") onClose()
+        }
+        document.addEventListener("keydown", onKeyDown)
+        return () => document.removeEventListener("keydown", onKeyDown)
+    }, [isOpen, onClose])
+
     const handlePlaySound = useCallback(
         async (soundId: string) => {
             // Browsers require a user interaction to resume AudioContext
@@ -65,10 +78,13 @@ export function Soundboard({ isOpen, onClose, roomId, userId, userName }: Soundb
     return createPortal(
         <>
             {/* Backdrop */}
-            <div className="fixed inset-0 z-[99998] bg-black/20" onClick={onClose} />
+            <div className="fixed inset-0 z-[99998] bg-black/20" onClick={onClose} aria-hidden="true" />
 
             {/* Popup */}
             <div
+                role="dialog"
+                aria-modal="true"
+                aria-label="Soundboard"
                 className="fixed bottom-24 md:bottom-20 right-4 md:right-8 z-[99999] bg-white/5 backdrop-blur-[20px] border border-white/10 rounded-2xl p-3 md:p-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-[280px] md:w-[320px] max-h-[70vh] flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-300 ring-1 ring-white/5"
                 onClick={(e) => e.stopPropagation()}
             >

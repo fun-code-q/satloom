@@ -37,6 +37,15 @@ export function EmojiPicker({ onEmojiSelect, isOpen, onClose }: EmojiPickerProps
     setMounted(true)
   }, [])
 
+  useEffect(() => {
+    if (!isOpen) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose()
+    }
+    document.addEventListener("keydown", onKeyDown)
+    return () => document.removeEventListener("keydown", onKeyDown)
+  }, [isOpen, onClose])
+
   const filteredEmojis = useMemo(() => {
     if (!searchQuery) return emojiCategories[activeCategory].emojis
     const allEmojis = Object.values(emojiCategories).flatMap(c => c.emojis)
@@ -47,8 +56,19 @@ export function EmojiPicker({ onEmojiSelect, isOpen, onClose }: EmojiPickerProps
 
   return (
     <>
-      <div className="fixed inset-0 z-[600] bg-black/20" onClick={onClose} />
-      <div className="fixed bottom-20 right-4 md:absolute md:bottom-16 md:right-[84px] md:translate-x-1/2 z-[601] bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-[32px] p-5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] w-[calc(100vw-32px)] max-w-[360px] max-h-[70vh] animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300 ease-out flex flex-col gap-4">
+      <div className="fixed inset-0 z-[600] bg-black/20" onClick={onClose} aria-hidden="true" />
+      {/*
+        role/aria-modal so assistive tech announces this as a modal surface and
+        tooling can tell "blocked because a modal is open" apart from a genuine
+        overlap bug. Escape closes it, matching the backdrop click — a keyboard
+        user otherwise had no way out.
+      */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Emoji picker"
+        className="fixed bottom-20 right-4 md:absolute md:bottom-16 md:right-[84px] md:translate-x-1/2 z-[601] bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-[32px] p-5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] w-[calc(100vw-32px)] max-w-[360px] max-h-[70vh] animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300 ease-out flex flex-col gap-4"
+      >
         {/* Search hidden as per user request */}
         <div className="hidden">
           <div className="relative group">
