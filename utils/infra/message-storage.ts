@@ -665,22 +665,20 @@ export class MessageStorage {
     try {
       if (!getFirebaseDatabase()!) return
 
-      const messageRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/messages/${messageId}`)
+      // Transact on readBy itself, not on the whole message.
+      //
+      // Running the transaction against the message node meant every read
+      // receipt was a write of the entire message, which the security rules
+      // only permit for the message's own author — so marking anyone else's
+      // message as read failed with permission_denied, i.e. read receipts
+      // worked for nobody but the sender. The rules grant any room member
+      // write access to the readBy child specifically, so target that.
+      const readByRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/messages/${messageId}/readBy`)
 
-      // Use transaction to safely add user to readBy array
-      await runTransaction(messageRef, (message) => {
-        if (message) {
-          if (!message.readBy) {
-            message.readBy = []
-          }
-          if (!Array.isArray(message.readBy)) {
-            message.readBy = []
-          }
-          if (!message.readBy.includes(userId)) {
-            message.readBy.push(userId)
-          }
-        }
-        return message
+      await runTransaction(readByRef, (readBy) => {
+        const list = Array.isArray(readBy) ? readBy : []
+        if (list.includes(userId)) return list
+        return [...list, userId]
       })
     } catch (error) {
       console.error("Error marking message as read:", error)

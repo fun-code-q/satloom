@@ -1,5 +1,13 @@
 import { generateWavDataUri } from "../hardware/audio-utility"
 
+export type InAppToastLevel = "error" | "success" | "info"
+
+export interface InAppToast {
+  id: number
+  level: InAppToastLevel
+  message: string
+}
+
 export class NotificationSystem {
   private static instance: NotificationSystem
   private audioCache: Map<string, HTMLAudioElement> = new Map()
@@ -11,6 +19,8 @@ export class NotificationSystem {
   private ringingInterval: any = null
   private currentRingingType: "audio" | "video" | null = null
   private audioActivityListeners: ((active: boolean) => void)[] = []
+  private toastListeners: ((toast: InAppToast) => void)[] = []
+  private toastSeq = 0
 
   static getInstance(): NotificationSystem {
     if (!NotificationSystem.instance) {
@@ -274,19 +284,47 @@ export class NotificationSystem {
     this.showNotification("Call Missed", "Call was not answered")
   }
 
+  // error/success/info are in-app feedback ("Failed to send message. Tap
+  // retry.", "Poll sent!"). They used to go only to showNotification, which
+  // no-ops unless the user granted OS notification permission — so on a default
+  // install every one of these was silently dropped, including the failure
+  // notices. They now also go to the in-app toast host, which always renders.
+  //
+  // The OS notification is still raised: it is the right channel when the tab
+  // is in the background, and it already no-ops when permission is absent.
+  //
+  // The toast is emitted BEFORE awaiting the tone — playTone resolves only
+  // after the sound finishes, which delayed the error toast by 800ms.
+
   async error(message: string) {
-    await this.playTone(200, 0.8)
+    this.emitToast("error", message)
     this.showNotification("Error", message)
+    await this.playTone(200, 0.8)
   }
 
   async success(message: string) {
-    await this.playTone(1200, 0.3)
+    this.emitToast("success", message)
     this.showNotification("Success", message)
+    await this.playTone(1200, 0.3)
   }
 
   async info(message: string) {
-    await this.playTone(800, 0.2)
+    this.emitToast("info", message)
     this.showNotification("Info", message)
+    await this.playTone(800, 0.2)
+  }
+
+  subscribeToToasts(callback: (toast: InAppToast) => void) {
+    this.toastListeners.push(callback)
+    return () => {
+      this.toastListeners = this.toastListeners.filter((cb) => cb !== callback)
+    }
+  }
+
+  private emitToast(level: InAppToastLevel, message: string) {
+    if (!message) return
+    const toast: InAppToast = { id: ++this.toastSeq, level, message }
+    this.toastListeners.forEach((cb) => cb(toast))
   }
 
   subscribeToAudioActivity(callback: (active: boolean) => void) {

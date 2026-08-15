@@ -4,6 +4,7 @@ import './globals.css'
 import { ClientSecurity } from '@/components/client-security'
 import { ThemeProvider } from '@/contexts/theme-context'
 import { AccessibilityProvider } from '@/contexts/accessibility-context'
+import { InAppToasts } from '@/components/in-app-toasts'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://fun-code-q.github.io/satloom'),
@@ -65,6 +66,7 @@ export default function RootLayout({
           <AccessibilityProvider>
             <ClientSecurity />
             {children}
+            <InAppToasts />
           </AccessibilityProvider>
         </ThemeProvider>
       </body>
