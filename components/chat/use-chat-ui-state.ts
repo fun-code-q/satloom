@@ -31,14 +31,10 @@ export function useChatUIState() {
     const [showPasswordEntry, setShowPasswordEntry] = useState(false)
     const [showHostPassword, setShowHostPassword] = useState(false)
     const [showKaraokeSetup, setShowKaraokeSetup] = useState(false)
-    const [showMafiaSetup, setShowMafiaSetup] = useState(false)
-    const [showMafiaGame, setShowMafiaGame] = useState(false)
     const [showSharedNotes, setShowSharedNotes] = useState(false)
     const [showSharedTaskList, setShowSharedTaskList] = useState(false)
     const [showRemoteBuzzer, setShowRemoteBuzzer] = useState(false)
     const [showRandomMatch, setShowRandomMatch] = useState(false)
-    const [showBingoSetup, setShowBingoSetup] = useState(false)
-    const [showBingoGame, setShowBingoGame] = useState(false)
     const [showPresentationSetup, setShowPresentationSetup] = useState(false)
     const [showPresentationViewer, setShowPresentationViewer] = useState(false)
     const [isPresentationMinimized, setIsPresentationMinimized] = useState(false)
@@ -100,14 +96,10 @@ export function useChatUIState() {
         showPasswordEntry, setShowPasswordEntry,
         showHostPassword, setShowHostPassword,
         showKaraokeSetup, setShowKaraokeSetup,
-        showMafiaSetup, setShowMafiaSetup,
-        showMafiaGame, setShowMafiaGame,
         showSharedNotes, setShowSharedNotes,
         showSharedTaskList, setShowSharedTaskList,
         showRemoteBuzzer, setShowRemoteBuzzer,
         showRandomMatch, setShowRandomMatch,
-        showBingoSetup, setShowBingoSetup,
-        showBingoGame, setShowBingoGame,
         showPresentationSetup, setShowPresentationSetup,
         showPresentationViewer, setShowPresentationViewer,
         isPresentationMinimized, setIsPresentationMinimized,

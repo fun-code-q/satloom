@@ -24,7 +24,7 @@ import type { RoomMember } from "@/stores/chat-store"
 import {
     Phone, Video, Monitor, Camera, BellRing, UserPlus, Users,
     Film, Music, Volume2, Music2,
-    Gamepad2, Ghost, Zap, Dices, Shuffle, Palette, Calendar, BarChart2,
+    Gamepad2, Zap, Shuffle, Palette, Calendar, BarChart2,
     MonitorPlay, FileText, CheckSquare, Globe, Share2,
     Briefcase, Link, Shield, Settings, ShieldCheck, Info,
 } from "lucide-react"
@@ -86,9 +86,7 @@ interface UseChatCallsParams {
     setShowQuizResults: (val: boolean) => void
     setShowGameMenu: (val: boolean) => void
     setShowSoundboard: (val: boolean) => void
-    setShowMafiaSetup: (val: boolean) => void
     setShowRemoteBuzzer: (val: boolean) => void
-    setShowBingoSetup: (val: boolean) => void
     setShowRandomMatch: (val: boolean) => void
     setShowWhiteboard: (val: boolean) => void
     setShowPresentationSetup: (val: boolean) => void
@@ -1013,8 +1011,6 @@ export function useChatCalls(params: UseChatCallsParams) {
         label: "Games & Entertainment",
         items: [
             { icon: Gamepad2, label: "Games Menu", action: () => params.setShowGameMenu(true) },
-            { icon: Ghost, label: "Mafia/Werewolf", action: () => params.setShowMafiaSetup(true) },
-            { icon: Dices, label: "Buzzword Bingo", action: () => params.setShowBingoSetup(true) },
         ]
     }
 

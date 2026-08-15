@@ -27,7 +27,7 @@ import { soundboard } from "@/utils/games/soundboard"
 import { FilePreviewModal } from "./chat/file-preview-modal"
 import {
   MessageSquare, Users, Settings, Gamepad2, Film, Music, Palette, Phone, Video, Monitor,
-  Camera, Zap, Ghost, Dices, Shuffle, Calendar, BarChart2,
+  Camera, Zap, Shuffle, Calendar, BarChart2,
   MonitorPlay, FileText, CheckSquare, Globe, Share2,
   Briefcase, Link, Shield, ShieldCheck, Info, BellRing, UserPlus,
   Mic, Maximize, X
@@ -110,10 +110,8 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
     showQuizResults, setShowQuizResults, showMoodSetup, setShowMoodSetup,
     showSoundboard, setShowSoundboard, showPasswordEntry, setShowPasswordEntry,
     showHostPassword, setShowHostPassword, showKaraokeSetup, setShowKaraokeSetup,
-    showMafiaSetup, setShowMafiaSetup, showMafiaGame, setShowMafiaGame,
     showSharedNotes, setShowSharedNotes, showSharedTaskList, setShowSharedTaskList,
     showRemoteBuzzer, setShowRemoteBuzzer, showRandomMatch, setShowRandomMatch,
-    showBingoSetup, setShowBingoSetup, showBingoGame, setShowBingoGame,
     showPresentationSetup, setShowPresentationSetup, showPresentationViewer, setShowPresentationViewer,
     isPresentationMinimized, setIsPresentationMinimized,
     isKaraokeMinimized, setIsKaraokeMinimized,
@@ -150,7 +148,7 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
     currentKaraokeSession, setCurrentKaraokeSession,
     karaokeInvite, setKaraokeInvite,
     moodBackgroundImage, setMoodBackgroundImage, moodBackgroundMusic, setMoodBackgroundMusic,
-    mafiaConfig, setMafiaConfig, currentPresentationId, setCurrentPresentationId,
+    currentPresentationId, setCurrentPresentationId,
     whiteboardInvite, setWhiteboardInvite
   } = feature
 
@@ -464,8 +462,8 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
     setQuizAnswers, setQuizResults,
     setQuizTimeRemaining, setUserQuizAnswer,
     setShowQuizResults, setShowGameMenu,
-    setShowSoundboard, setShowMafiaSetup,
-    setShowRemoteBuzzer, setShowBingoSetup,
+    setShowSoundboard,
+    setShowRemoteBuzzer,
     setShowRandomMatch, setShowWhiteboard,
     setShowPresentationSetup, setPresentationInvite,
     setShowPresentationViewer, setCurrentPresentationId,
@@ -755,12 +753,8 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
           setShowGameMenu={setShowGameMenu}
           showSoundboard={showSoundboard}
           setShowSoundboard={setShowSoundboard}
-          showMafiaSetup={showMafiaSetup}
-          setShowMafiaSetup={setShowMafiaSetup}
           showRemoteBuzzer={showRemoteBuzzer}
           setShowRemoteBuzzer={setShowRemoteBuzzer}
-          showBingoSetup={showBingoSetup}
-          setShowBingoSetup={setShowBingoSetup}
           showRandomMatch={showRandomMatch}
           setShowRandomMatch={setShowRandomMatch}
           showPresentationSetup={showPresentationSetup}
@@ -833,11 +827,6 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
           handleDeclineKaraokeInvite={calls.handleDeclineKaraokeInvite}
           handleStartKaraoke={calls.handleStartKaraoke}
           handleExitKaraoke={calls.handleExitKaraoke}
-          showMafiaGame={showMafiaGame}
-          setShowMafiaGame={setShowMafiaGame}
-          mafiaConfig={mafiaConfig}
-          setMafiaConfig={setMafiaConfig}
-          showBingoGame={showBingoGame}
           showLeaveConfirmation={showLeaveConfirmation}
           handleConfirmLeave={handlers.handleConfirmLeave}
           handleCancelLeave={handlers.handleCancelLeave}

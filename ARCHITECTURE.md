@@ -65,7 +65,7 @@ rooms/$roomId/
 └── p2pSignals/$uid/$sigId                ← Phase 2: WebRTC handshake mailbox
 ```
 
-Top-level (outside `rooms/`) also exists for `mafia*`, `quizAnswerKeys`,
+Top-level (outside `rooms/`) also exists for `quizAnswerKeys`,
 `burnerLinks`, `gameInvites/$roomId`, plus the mirrored `theater/$roomId`,
 `karaoke/$roomId`, `calls/$roomId`, `games/$roomId` paths — all locked
 down to room membership in Phase 1.
@@ -86,15 +86,11 @@ row to decide how much to trust a given feature.**
 | **Reactions / readBy / poll vote / event RSVP** | ✅ Server-validated | Member-only write rule | Phase 1 |
 | **Theater / karaoke / whiteboard / notes / tasks / calls / games** (room sub-paths AND top-level mirrors) | ✅ Server-validated | Member-only write rules everywhere | Phase 1 |
 | **`gameInvites/$roomId/$inviteId`** | ✅ Server-validated | Rule path now matches code path; member-only | Phase 1 |
-| **Mafia — private roles** | ✅ Server-validated | `mafiaRoles/$roomId/$uid` readable only by self or host | Phase 1 |
-| **Mafia — vote tally + lynch** | ⚠️ Trust mode | Vote/lynch use read-modify-write `update()` calls, NOT `runTransaction` (runTransaction is not imported in mafia-game.ts). Concurrent votes can be lost; there is no atomic phase-flip lock. The private-roles isolation (above) is server-validated, but the vote tally and lynch resolution are client-trusted. | n/a |
 | **Karaoke score** | ✅ Transaction-protected | `runTransaction` on `players/$id/score` (concurrent +N adds add up) | Phase 5 |
-| **Bingo word-call** | ✅ Transaction-protected | `runTransaction` on `wordCallSeq` with 5s min-delay dedup | Phase 5 |
 | **Quiz — answer key** | ⚠️ Trust mode | QuizSystem is a client-side in-memory singleton — `correctAnswer` lives in the host's JS heap, not in a Firebase node. A DevTools-equipped player can read it. The `quizAnswerKeys` rule path exists but is unused (the engine never persists the key to Firebase). The TrustModeBadge surfaces this to players. | n/a |
 | **Quiz — `timeToAnswer`** | ✅ Server-validated | Rule caps `0 ≤ x ≤ 600`; client-side clamp belt-and-braces | Phase 5 |
 | **Tic-Tac-Toe, Connect Four** | ✅ Referee-validated | Phase 14: distributed referee (lowest-UID election + handoff) is the only writer allowed by Firebase rules; pure rule adapter (`tic-tac-toe-rules.ts`, `connect-four-rules.ts`) re-runs the validator on every proposal | Phase 14 |
 | **Dots & Boxes** | ⚠️ Trust mode | Migration template in `utils/games/referee.ts` + `tic-tac-toe-rules.ts`. Pending. | Phase 5 marks the UI; Phase 14 template ready |
-| **Bingo — player self-mark** | ⚠️ Trust mode | Player marks words on their own card; word-call cadence is host-controlled | Phase 5 marks the UI |
 | **Karaoke — score application** | ⚠️ Trust mode | Host applies points; player can edit DOM (real-game-state is via the transaction above, but the *award* decision is host-only) | Phase 5 marks the UI |
 | **File transfer (images, audio, video, PDFs, docs, code, 3D)** | 🔒 Peer-to-peer only | Phase 2 — bytes flow over WebRTC DataChannel with SHA-256 integrity; Firebase only carries `{name, size, sha256, …}` metadata + signaling | Phase 2 |
 | **Inline image thumbnails (≤6 KB) / audio waveform / duration** | ✅ Server-validated derivatives | Phase 2.5 — small base64 thumbs ride the message; caps enforced by rules | Phase 2.5 |
@@ -106,6 +102,16 @@ row to decide how much to trust a given feature.**
 | **Burner links (one-time-use invites)** | ✅ Transaction-protected | `runTransaction` on view counter with atomic expiry check | n/a |
 
 Legend: ✅ enforced  ·  🔒 cryptographic or P2P-only  ·  ⚠️ trust mode  ·  ❌ false claim corrected
+
+**Removed features.** Mafia and Bingo were deleted. Neither worked in
+multiplayer: Mafia never called `listenForSession()` (zero call sites) while
+every player ran `createSession()`, whose full-node `set` wiped the previous
+player, and a tie-vote converted the players *map* into an *array* so every
+uid lookup then returned `undefined`. Bingo threw on the first word call —
+`calledWords: []` is not persisted by RTDB, so `.includes` hit `undefined`
+inside an un-awaited async call — and its host path never populated state, so
+"Start Game" was a no-op. The `mafia*` rules and the room-janitor sweeps are
+retained so pre-existing data can still be cleaned up.
 
 ---
 

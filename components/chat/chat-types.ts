@@ -108,19 +108,12 @@ export interface ChatState {
     showKaraokeSetup: boolean
     currentKaraokeSession: any
 
-    // Mafia
-    showMafiaSetup: boolean
-    showMafiaGame: boolean
-    mafiaConfig: any
 
     // Other features
     showSharedNotes: boolean
     showSharedTaskList: boolean
     showRemoteBuzzer: boolean
     showRandomMatch: boolean
-    showBingoSetup: boolean
-    showBingoGame: boolean
-    bingoGameId: string | null
     showPresentationSetup: boolean
     showPresentationViewer: boolean
     currentPresentationId: string | null

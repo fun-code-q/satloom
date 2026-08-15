@@ -10,12 +10,12 @@
  *
  * Wear it on:
  *   - Tic-Tac-Toe, Connect Four, Dots & Boxes (board state is client-authored)
- *   - Bingo (host calls words; players self-mark)
  *   - Karaoke (host scores; player can edit DOM)
  *
  * Don't wear it on:
- *   - Mafia (private roles + lynch tx are server-validated)
  *   - Quiz (host evaluates with answer key the player can't read)
+ *
+ * (Bingo and Mafia were removed; their multiplayer sync never worked.)
  *
  * Rationale lives in `firebase-rules.md` (Phase 1) and the README "Game
  * integrity is currently trust-based" disclosure.

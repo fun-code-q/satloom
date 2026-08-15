@@ -64,14 +64,10 @@ interface ModalState {
     showPasswordEntry: boolean
     showHostPassword: boolean
     showKaraokeSetup: boolean
-    showMafiaSetup: boolean
-    showMafiaGame: boolean
     showSharedNotes: boolean
     showSharedTaskList: boolean
     showRemoteBuzzer: boolean
     showRandomMatch: boolean
-    showBingoSetup: boolean
-    showBingoGame: boolean
     showPresentationSetup: boolean
     showPresentationViewer: boolean
     isPresentationMinimized: boolean
@@ -134,14 +130,10 @@ interface ModalState {
     setShowPasswordEntry: (v: boolean) => void
     setShowHostPassword: (v: boolean) => void
     setShowKaraokeSetup: (v: boolean) => void
-    setShowMafiaSetup: (v: boolean) => void
-    setShowMafiaGame: (v: boolean) => void
     setShowSharedNotes: (v: boolean) => void
     setShowSharedTaskList: (v: boolean) => void
     setShowRemoteBuzzer: (v: boolean) => void
     setShowRandomMatch: (v: boolean) => void
-    setShowBingoSetup: (v: boolean) => void
-    setShowBingoGame: (v: boolean) => void
     setShowPresentationSetup: (v: boolean) => void
     setShowPresentationViewer: (v: boolean) => void
     setIsPresentationMinimized: (v: boolean) => void
@@ -201,14 +193,10 @@ export const useModalStateStore = create<ModalState>((set) => ({
     showPasswordEntry: false,
     showHostPassword: false,
     showKaraokeSetup: false,
-    showMafiaSetup: false,
-    showMafiaGame: false,
     showSharedNotes: false,
     showSharedTaskList: false,
     showRemoteBuzzer: false,
     showRandomMatch: false,
-    showBingoSetup: false,
-    showBingoGame: false,
     showPresentationSetup: false,
     showPresentationViewer: false,
     isPresentationMinimized: false,
@@ -266,14 +254,10 @@ export const useModalStateStore = create<ModalState>((set) => ({
     setShowPasswordEntry: (v) => set({ showPasswordEntry: v }),
     setShowHostPassword: (v) => set({ showHostPassword: v }),
     setShowKaraokeSetup: (v) => set({ showKaraokeSetup: v }),
-    setShowMafiaSetup: (v) => set({ showMafiaSetup: v }),
-    setShowMafiaGame: (v) => set({ showMafiaGame: v }),
     setShowSharedNotes: (v) => set({ showSharedNotes: v }),
     setShowSharedTaskList: (v) => set({ showSharedTaskList: v }),
     setShowRemoteBuzzer: (v) => set({ showRemoteBuzzer: v }),
     setShowRandomMatch: (v) => set({ showRandomMatch: v }),
-    setShowBingoSetup: (v) => set({ showBingoSetup: v }),
-    setShowBingoGame: (v) => set({ showBingoGame: v }),
     setShowPresentationSetup: (v) => set({ showPresentationSetup: v }),
     setShowPresentationViewer: (v) => set({ showPresentationViewer: v }),
     setIsPresentationMinimized: (v) => set({ isPresentationMinimized: v }),

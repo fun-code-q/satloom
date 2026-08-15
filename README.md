@@ -17,8 +17,6 @@ SatLoom is a privacy-first, real-time communication web app built with Next.js a
 
 ### 🎮 Games & Entertainment
 - **Game Center** — Chess, Connect Four, Tic Tac Toe, Dots & Boxes
-- **Mafia/Werewolf** — Classic social deduction game
-- **Buzzword Bingo** — Interactive bingo with custom words
 - **Trivia Quiz** — Real-time multiplayer quizzes
 
 ### 🎬 Media & Watch Together

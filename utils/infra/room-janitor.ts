@@ -67,6 +67,10 @@ export async function purgeIfZombie(roomId: string, currentUserId: string): Prom
       remove(ref(db, `rooms/${roomId}`)),
       remove(ref(db, `calls/${roomId}`)),
       remove(ref(db, `games/${roomId}`)),
+      // Mafia was removed as a feature, but these nodes may still hold data
+      // written by older clients — keep sweeping them so zombie rooms don't
+      // leave orphans behind. The matching rules stay in firebase-rules.json
+      // for the same reason; without them these removes would be denied.
       remove(ref(db, `mafia/${roomId}`)),
       remove(ref(db, `mafiaRoles/${roomId}`)),
       remove(ref(db, `mafiaNightActions/${roomId}`)),

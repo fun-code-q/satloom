@@ -41,7 +41,6 @@ export function useChatFeatureState(initialAvatar?: string) {
     // Game & Invite
     const [gameInvite, setGameInvite] = useState<GameInvite | null>(null)
     const [activeGameSeries, setActiveGameSeries] = useState<GameSeries | null>(null)
-    const [mafiaConfig, setMafiaConfig] = useState<any>(null)
 
     // Feature Data
     const [currentKaraokeSession, setCurrentKaraokeSession] = useState<any>(null)
@@ -84,7 +83,6 @@ export function useChatFeatureState(initialAvatar?: string) {
         moodPlaylist, setMoodPlaylist,
         gameInvite, setGameInvite,
         activeGameSeries, setActiveGameSeries,
-        mafiaConfig, setMafiaConfig,
         currentKaraokeSession, setCurrentKaraokeSession,
         karaokeInvite, setKaraokeInvite,
         currentPresentationId, setCurrentPresentationId,

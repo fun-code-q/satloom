@@ -56,15 +56,11 @@ const WhiteboardModal = dynamic(() => import("../whiteboard-modal").then((mod) =
 const Soundboard = dynamic(() => import("../soundboard").then((mod) => mod.Soundboard), { ssr: false })
 const KaraokeSetupModal = dynamic(() => import("../karaoke").then((mod) => mod.KaraokeSetupModal), { ssr: false })
 const KaraokePlayer = dynamic(() => import("../karaoke").then((mod) => mod.KaraokePlayer), { ssr: false })
-const MafiaSetupModal = dynamic(() => import("../mafia").then((mod) => mod.MafiaSetupModal), { ssr: false })
-const MafiaGame = dynamic(() => import("../mafia").then((mod) => mod.MafiaGame), { ssr: false })
 const SharedNotesPanel = dynamic(() => import("../shared-notes-panel").then((mod) => mod.SharedNotesPanel), { ssr: false })
 const SharedTaskListPanel = dynamic(() => import("../shared-task-list-panel").then((mod) => mod.SharedTaskListPanel), { ssr: false })
 const RemoteBuzzerPanel = dynamic(() => import("../remote-buzzer-panel").then((mod) => mod.RemoteBuzzerPanel), { ssr: false })
 const BreakoutRoomsModal = dynamic(() => import("../breakout-rooms-modal").then((mod) => mod.BreakoutRoomsModal), { ssr: false })
 const RandomMatchButton = dynamic(() => import("../random-match-button").then((mod) => mod.RandomMatchButton), { ssr: false })
-const BingoSetupModal = dynamic(() => import("../bingo/bingo-setup-modal").then((mod) => mod.BingoSetupModal), { ssr: false })
-const BingoGame = dynamic(() => import("../bingo/bingo-game").then((mod) => mod.BingoGame), { ssr: false })
 const PresentationSetupModal = dynamic(() => import("../presentation/presentation-setup-modal").then((mod) => mod.PresentationSetupModal), { ssr: false })
 const PresentationViewer = dynamic(() => import("../presentation/presentation-viewer").then((mod) => mod.PresentationViewer), { ssr: false })
 const GameMenu = dynamic(() => import("../game-menu").then((mod) => mod.GameMenu), { ssr: false })
@@ -202,13 +198,6 @@ interface ChatModalsProps {
     setKaraokeInvite: (val: KaraokeInvite | null) => void
     handleAcceptKaraokeInvite: () => void
     handleDeclineKaraokeInvite: () => void
-    // Mafia
-    showMafiaSetup: boolean
-    setShowMafiaSetup: (val: boolean) => void
-    showMafiaGame: boolean
-    setShowMafiaGame: (val: boolean) => void
-    mafiaConfig: any
-    setMafiaConfig: (val: any) => void
     // Feature panels
     showSharedNotes: boolean
     setShowSharedNotes: (val: boolean) => void
@@ -218,9 +207,6 @@ interface ChatModalsProps {
     setShowRemoteBuzzer: (val: boolean) => void
     showRandomMatch: boolean
     setShowRandomMatch: (val: boolean) => void
-    showBingoSetup: boolean
-    setShowBingoSetup: (val: boolean) => void
-    showBingoGame: boolean
     showPresentationSetup: boolean
     showPollCreator: boolean
     setShowPollCreator: (val: boolean) => void
@@ -359,8 +345,6 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
     const isGameOverlayActive = Boolean(
         (props.showPlayground && !props.isPlaygroundMinimized && props.playgroundConfig) ||
         props.activeGame ||
-        props.showMafiaGame ||
-        props.showBingoGame ||
         (props.currentQuizSession && !props.isQuizMinimized) ||
         isKaraokeStageVisible
     )
@@ -902,14 +886,6 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
                 />
             )}
 
-            {/* Mafia */}
-            {props.showMafiaSetup && (
-                <MafiaSetupModal onClose={() => props.setShowMafiaSetup(false)} onStartSession={(config) => { props.setMafiaConfig(config); props.setShowMafiaSetup(false); props.setShowMafiaGame(true) }} />
-            )}
-            {props.showMafiaGame && props.mafiaConfig && renderModal(
-                <MafiaGame config={props.mafiaConfig} roomId={roomId} userId={currentUserId} userName={userProfile.name} isHost={isHost} onClose={() => { props.setShowMafiaGame(false); props.setMafiaConfig(null) }} />
-            )}
-
             {/* Quiz Modal Popup */}
             {props.currentQuizSession && !props.isQuizMinimized && renderModal(
                 <div className="fixed inset-0 z-[550] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
@@ -969,10 +945,6 @@ export const ChatModals = React.memo(function ChatModals(props: ChatModalsProps)
                 </div>
             )}
 
-            <BingoSetupModal isOpen={props.showBingoSetup} onClose={() => props.setShowBingoSetup(false)} roomId={roomId} userId={currentUserId} userName={userProfile.name} />
-            {props.showBingoGame && renderModal(
-                <BingoGame roomId={roomId} userId={currentUserId} userName={userProfile.name} />
-            )}
             <PresentationSetupModal
                 isOpen={props.showPresentationSetup}
                 onClose={() => props.setShowPresentationSetup(false)}
