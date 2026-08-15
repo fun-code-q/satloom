@@ -7,6 +7,19 @@ export class WebRTCManager {
     private remoteStreams: Map<string, Map<string, MediaStream>> = new Map() // userId -> (label -> Stream)
 
     private onRemoteStreamListeners: Set<(stream: MediaStream, userId: string, label: string) => void> = new Set()
+    /**
+     * The listener initialize() registered for a given `${userId}::${label}`.
+     *
+     * onRemoteStreamListeners is a flat Set, and initialize() is called with a
+     * NEW inline closure every time — theater re-initialises on each incoming
+     * offer signal, so the Set grew without bound and every ontrack invoked
+     * all the stale handlers as well as the live one. Keying them lets a
+     * repeat initialize for the same peer+label replace its predecessor.
+     */
+    private remoteStreamListenersByKey: Map<string, (stream: MediaStream, userId: string, label: string) => void> = new Map()
+    /** Same replace-don't-accumulate bookkeeping for the other two listener kinds. */
+    private iceListenersByKey: Map<string, (candidate: RTCIceCandidate, userId: string) => void> = new Map()
+    private stateListenersByKey: Map<string, (state: RTCPeerConnectionState, userId: string) => void> = new Map()
     private onIceCandidateListeners: Map<string, Set<(candidate: RTCIceCandidate, userId: string) => void>> = new Map() // userId -> listeners
     private onStateChangeListeners: Map<string, Set<(state: RTCPeerConnectionState, userId: string) => void>> = new Map() // userId -> listeners
     private isCleanupInProgress = false
@@ -52,14 +65,27 @@ export class WebRTCManager {
     ) {
         if (this.isCleanupInProgress) return
 
+        // Replace, don't accumulate: a repeat initialize() for the same peer
+        // and label supersedes its previous listener rather than stacking
+        // another one that also fires on every ontrack.
+        const streamListenerKey = `${targetUserId}::${label}`
+        const previousStreamListener = this.remoteStreamListenersByKey.get(streamListenerKey)
+        if (previousStreamListener) this.onRemoteStreamListeners.delete(previousStreamListener)
+        this.remoteStreamListenersByKey.set(streamListenerKey, onRemoteStream)
         this.onRemoteStreamListeners.add(onRemoteStream)
-        
-        // Add ICE candidate listener for this user
+
+        // Add ICE candidate listener for this user, replacing any previous one
+        // registered under the same key. onicecandidate fans out to every
+        // listener in this Set, so an accumulated duplicate means the same
+        // candidate gets written to Firebase once per stale listener.
         let userIceListeners = this.onIceCandidateListeners.get(targetUserId)
         if (!userIceListeners) {
             userIceListeners = new Set()
             this.onIceCandidateListeners.set(targetUserId, userIceListeners)
         }
+        const previousIceListener = this.iceListenersByKey.get(streamListenerKey)
+        if (previousIceListener) userIceListeners.delete(previousIceListener)
+        this.iceListenersByKey.set(streamListenerKey, onIceCandidate)
         userIceListeners.add(onIceCandidate)
 
         // Add state change listener if provided
@@ -69,6 +95,9 @@ export class WebRTCManager {
                 userStateListeners = new Set()
                 this.onStateChangeListeners.set(targetUserId, userStateListeners)
             }
+            const previousStateListener = this.stateListenersByKey.get(streamListenerKey)
+            if (previousStateListener) userStateListeners.delete(previousStateListener)
+            this.stateListenersByKey.set(streamListenerKey, onStateChange)
             userStateListeners.add(onStateChange)
         }
 
@@ -470,6 +499,19 @@ export class WebRTCManager {
                 this.restartInProgress.delete(targetUserId)
                 this.restartHistory.delete(targetUserId)
             }
+            // Drop this peer's listeners even when no PC existed.
+            //
+            // These were previously never removed by either branch, and
+            // initialize() adds a fresh closure per call. Calling the same
+            // peer a second time in one page session therefore left two ICE
+            // listeners registered, and onicecandidate fans out to all of
+            // them (see the handler in initialize) — so every candidate was
+            // written to Firebase twice, three times on the third call, and
+            // so on. The stale closures also pinned dead React state.
+            this.onIceCandidateListeners.delete(targetUserId)
+            this.onStateChangeListeners.delete(targetUserId)
+            this.removeRemoteStreamListenersFor(targetUserId)
+            this.forgetListenerKeys(targetUserId)
         } else {
             this.peerConnections.forEach(pc => pc.close())
             this.peerConnections.clear()
@@ -478,6 +520,32 @@ export class WebRTCManager {
             this.restartInProgress.clear()
             this.restartHistory.clear()
             this.onRemoteStreamListeners.clear()
+            this.remoteStreamListenersByKey.clear()
+            this.iceListenersByKey.clear()
+            this.stateListenersByKey.clear()
+            this.onIceCandidateListeners.clear()
+            this.onStateChangeListeners.clear()
+        }
+    }
+
+    /** Removes every remote-stream listener registered for a peer. */
+    private removeRemoteStreamListenersFor(targetUserId: string) {
+        const prefix = `${targetUserId}::`
+        for (const [key, listener] of this.remoteStreamListenersByKey) {
+            if (!key.startsWith(prefix)) continue
+            this.onRemoteStreamListeners.delete(listener)
+            this.remoteStreamListenersByKey.delete(key)
+        }
+    }
+
+    /** Drops the per-key bookkeeping for a peer so it cannot leak either. */
+    private forgetListenerKeys(targetUserId: string) {
+        const prefix = `${targetUserId}::`
+        for (const key of this.iceListenersByKey.keys()) {
+            if (key.startsWith(prefix)) this.iceListenersByKey.delete(key)
+        }
+        for (const key of this.stateListenersByKey.keys()) {
+            if (key.startsWith(prefix)) this.stateListenersByKey.delete(key)
         }
     }
 }

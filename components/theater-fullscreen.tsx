@@ -407,6 +407,11 @@ export function TheaterFullscreen({
           webrtc.initialize(fromUserId, streamToUse, (s, uid) => { if (uid === fromUserId) setRemoteMovieStream(s) },
             (c, uid) => { if (uid === fromUserId) theaterSignaling.sendSignal(roomId, session.id, "ice-candidate", toIcePayload(c), currentUserId, fromUserId) },
             undefined, "theater")
+          // Track it so unmount can tear down exactly the peers theater
+          // opened, and no others. The host path already recorded its peers;
+          // this viewer path did not, so its connections were only reachable
+          // by the old blanket cleanup().
+          connectedPeersRef.current.add(fromUserId)
           try {
             const answer = await webrtc.createAnswer(fromUserId, payload)
             await theaterSignaling.sendSignal(roomId, session.id, "answer", answer, currentUserId, fromUserId)
@@ -441,7 +446,18 @@ export function TheaterFullscreen({
         try { soundcloudControllerRef.current.destroy() } catch {}
         soundcloudControllerRef.current = null
       }
-      WebRTCManager.getInstance().cleanup()
+
+      // Tear down ONLY the peers this theater opened.
+      //
+      // This used to call cleanup() with no argument, which closes every
+      // RTCPeerConnection in the app-wide singleton — so leaving the theater
+      // also killed a concurrent audio or video call, and wiped the call
+      // modals' listeners with it. connectedPeersRef records exactly the
+      // peers theater connected to (host offers and viewer answers alike),
+      // so each can be closed individually and nothing else is touched.
+      const webrtcManager = WebRTCManager.getInstance()
+      connectedPeersRef.current.forEach((peerId) => webrtcManager.cleanup(peerId))
+      connectedPeersRef.current.clear()
     }
   }, [])
 

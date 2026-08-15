@@ -161,7 +161,16 @@ export function VideoCallModal({
       wakeLockRef.current = null
     }
 
-    WebRTCManager.getInstance().cleanup()
+    // Close only this call's peer, not every connection in the app-wide
+    // singleton. A blanket cleanup() here tore down a concurrent theater
+    // broadcast (and vice versa). Falls back to the blanket form only if the
+    // peer cannot be identified, which would otherwise leak the connection.
+    const callPeerId = callData?.participants?.find(p => p !== currentUserId) || callData?.callerId
+    if (callPeerId && callPeerId !== currentUserId) {
+      WebRTCManager.getInstance().cleanup(callPeerId)
+    } else {
+      WebRTCManager.getInstance().cleanup()
+    }
     isInitializedRef.current = false
     offerSentRef.current = false
     pendingOfferRef.current = null

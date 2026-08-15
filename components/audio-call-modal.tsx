@@ -100,7 +100,15 @@ export function AudioCallModal({
       remoteAudioRef.current.srcObject = null
     }
 
-    WebRTCManager.getInstance().cleanup()
+    // Close only this call's peer — a blanket cleanup() also tore down a
+    // concurrent theater broadcast. Falls back to the blanket form only when
+    // the peer cannot be identified, so the connection is never left open.
+    const callPeerId = callData?.participants?.find(p => p !== currentUserId) || callData?.callerId
+    if (callPeerId && callPeerId !== currentUserId) {
+      WebRTCManager.getInstance().cleanup(callPeerId)
+    } else {
+      WebRTCManager.getInstance().cleanup()
+    }
     isInitializedRef.current = false
     offerSentRef.current = false
     pendingOfferRef.current = null
