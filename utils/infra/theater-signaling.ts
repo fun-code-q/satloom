@@ -250,7 +250,7 @@ export class TheaterSignaling {
     }
 
     const sessionRef = ref(getFirebaseDatabase()!, `rooms/${roomId}/theater/${sessionId}`)
-    let checkInterval: NodeJS.Timeout | null = null
+    const checkInterval: NodeJS.Timeout | null = null
 
     const unsubscribe = onValue(sessionRef, async (snapshot) => {
       const session = snapshot.val()

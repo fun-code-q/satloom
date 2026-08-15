@@ -180,7 +180,7 @@ export class P2PFileTransfer {
         return new Promise(async (resolve, reject) => {
             const connectionKey = `${senderId}_${fileId}`
             const pc = this.createPeerConnection(senderId, fileId)
-            let receivedChunks: ArrayBuffer[] = []
+            const receivedChunks: ArrayBuffer[] = []
             let receivedSize = 0
 
             pc.ondatachannel = (event) => {

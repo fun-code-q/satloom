@@ -98,12 +98,15 @@ class ChunkManager {
 
         try {
             // This would be replaced with actual dynamic import in usage
-            const module = await this.executeImport(name);
+            // Named `mod`, not `module`: shadowing the CommonJS `module`
+            // binding trips @next/next/no-assign-module-variable and can
+            // confuse the bundler.
+            const mod = await this.executeImport(name);
             chunk.loaded = true;
             chunk.loading = false;
             this.currentLoads--;
 
-            return module;
+            return mod;
         } catch (error) {
             chunk.loading = false;
             this.currentLoads--;
@@ -272,9 +275,9 @@ export async function loadWithPriority(
     // Load high priority first
     const highPriority = sorted.filter(c => c.priority === 'high');
     for (const chunk of highPriority) {
-        const module = await loadChunkSafe(chunk.name);
-        if (module) {
-            results.set(chunk.name, module);
+        const mod = await loadChunkSafe(chunk.name);
+        if (mod) {
+            results.set(chunk.name, mod);
         }
     }
 
@@ -292,9 +295,9 @@ export async function loadWithPriority(
     // Load low priority sequentially to avoid bandwidth issues
     const lowPriority = sorted.filter(c => c.priority === 'low');
     for (const chunk of lowPriority) {
-        const module = await loadChunkSafe(chunk.name);
-        if (module) {
-            results.set(chunk.name, module);
+        const mod = await loadChunkSafe(chunk.name);
+        if (mod) {
+            results.set(chunk.name, mod);
         }
     }
 

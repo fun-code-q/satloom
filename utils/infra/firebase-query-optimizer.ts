@@ -56,7 +56,7 @@ interface CachedQueryResult<T> extends QueryResult<T> {
 }
 
 // Firebase app instance - would be from lib/firebase in production
-let firebaseApp: any = null;
+const firebaseApp: any = null;
 let database: any = null;
 
 function getDb(): any {
