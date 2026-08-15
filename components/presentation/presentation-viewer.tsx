@@ -404,6 +404,7 @@ export function PresentationViewer({ roomId, userId, userName, presentationId, i
                             <button
                                 onClick={handlePrevSlide}
                                 disabled={currentIndex === 0}
+                                aria-label="Previous slide"
                                 className="absolute left-4 top-1/2 -translate-y-1/2 h-14 w-14 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all disabled:hidden"
                             >
                                 <ChevronLeft className="h-8 w-8" />
@@ -411,6 +412,7 @@ export function PresentationViewer({ roomId, userId, userName, presentationId, i
                             <button
                                 onClick={handleNextSlide}
                                 disabled={currentIndex >= slideKeys.length - 1}
+                                aria-label="Next slide"
                                 className="absolute right-4 top-1/2 -translate-y-1/2 h-14 w-14 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all disabled:hidden"
                             >
                                 <ChevronRight className="h-8 w-8" />

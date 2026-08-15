@@ -80,9 +80,11 @@ export function InAppToasts() {
                 >
                     {LEVEL_STYLES[toast.level].icon}
                     <span className="text-xs text-white/90 flex-1 leading-snug">{toast.message}</span>
+                    {/* min-w/h 44px: the icon is small, but the tap target must
+                        not be — 44x44 is the documented minimum. */}
                     <button
                         onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
-                        className="text-white/50 hover:text-white transition-colors p-0.5"
+                        className="text-white/50 hover:text-white transition-colors shrink-0 flex items-center justify-center min-w-[44px] min-h-[44px] -my-2 -mr-2"
                         aria-label="Dismiss notification"
                     >
                         <X className="w-3.5 h-3.5" />
