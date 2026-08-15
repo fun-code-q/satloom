@@ -486,10 +486,10 @@ export function AudioCallModal({
             </div>
           </div>
           <div className="flex gap-1 shrink-0">
-            <Button variant="ghost" size="icon" className="w-6 h-6 text-gray-400" onClick={() => setIsMinimized(false)}>
+            <Button variant="ghost" size="icon" aria-label="Expand call" className="w-6 h-6 text-gray-400" onClick={() => setIsMinimized(false)}>
               <Maximize2 className="w-3 h-3" />
             </Button>
-            <Button variant="ghost" size="icon" className="w-6 h-6 text-red-400" onClick={handleEndCall}>
+            <Button variant="ghost" size="icon" aria-label="End call" className="w-6 h-6 text-red-400" onClick={handleEndCall}>
               <PhoneOff className="w-3 h-3" />
             </Button>
           </div>
@@ -561,19 +561,26 @@ export function AudioCallModal({
         <div className="p-8 bg-gradient-to-t from-slate-900 via-slate-900 to-transparent">
             {isIncoming && callData?.status === "ringing" ? (
                 <div className="flex justify-center gap-8">
-                    <Button onClick={handleEndCall} className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20 transition-transform active:scale-90">
+                    {/* Decline and answer are icon-only and differ visually by
+                        colour alone. Without names they announce identically,
+                        so a screen-reader user cannot tell which one hangs up. */}
+                    <Button aria-label="Decline call" onClick={handleEndCall} className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20 transition-transform active:scale-90">
                         <PhoneOff className="w-7 h-7" />
                     </Button>
-                    <Button onClick={handleAnswerCall} className="w-16 h-16 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/20 transition-transform active:scale-95 animate-bounce">
+                    <Button aria-label="Answer call" onClick={handleAnswerCall} className="w-16 h-16 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/20 transition-transform active:scale-95 animate-bounce">
                         <Phone className="w-7 h-7" />
                     </Button>
                 </div>
             ) : (
                 <div className="flex flex-col items-center gap-8">
                     <div className="flex items-center justify-center gap-4 sm:gap-6">
+                        {/* Toggles carry their state in the name as well as the
+                            icon, so it is announced on change. */}
                         <Button
                             variant="ghost"
                             size="icon"
+                            aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
+                            aria-pressed={isMuted}
                             className={`rounded-full w-12 h-12 sm:w-14 sm:h-14 transition-all ${isMuted ? "bg-red-500/20 text-red-500 border border-red-500/30" : "bg-slate-800 text-white border border-white/5"}`}
                             onClick={() => setIsMuted(!isMuted)}
                         >
@@ -583,6 +590,8 @@ export function AudioCallModal({
                         <Button
                             variant="ghost"
                             size="icon"
+                            aria-label={isSpeakerOn ? "Turn speaker off" : "Turn speaker on"}
+                            aria-pressed={isSpeakerOn}
                             className={`rounded-full w-12 h-12 sm:w-14 sm:h-14 transition-all ${!isSpeakerOn ? "bg-slate-800 text-gray-500 border border-white/5" : "bg-indigo-500/20 text-indigo-500 border border-indigo-500/30"}`}
                             onClick={() => setIsSpeakerOn(!isSpeakerOn)}
                         >
@@ -591,6 +600,7 @@ export function AudioCallModal({
 
                         <Button
                             onClick={handleEndCall}
+                            aria-label="End call"
                             className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20 transition-transform active:scale-90"
                         >
                             <PhoneOff className="w-6 h-6 sm:w-7 sm:h-7" />
@@ -599,7 +609,7 @@ export function AudioCallModal({
                         <div className="flex gap-4">
                             <Popover open={showSettings} onOpenChange={setShowSettings}>
                                 <PopoverTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="rounded-full w-12 h-12 bg-slate-800 text-white border border-white/5">
+                                    <Button variant="ghost" size="icon" aria-label="Call settings" className="rounded-full w-12 h-12 bg-slate-800 text-white border border-white/5">
                                         <Settings className="w-5 h-5" />
                                     </Button>
                                 </PopoverTrigger>

@@ -858,7 +858,7 @@ export function VideoCallModal({
               <Button
                 variant="ghost"
                 size="icon"
-                className="w-6 h-6 text-gray-400 hover:text-white bg-black/50"
+                aria-label="Expand call" className="w-6 h-6 text-gray-400 hover:text-white bg-black/50"
                 onClick={() => setIsMinimized(false)}
               >
                 <Maximize2 className="w-3 h-3" />
@@ -866,7 +866,7 @@ export function VideoCallModal({
               <Button
                 variant="ghost"
                 size="icon"
-                className="w-6 h-6 text-red-400 hover:text-red-300 bg-black/50"
+                aria-label="End call" className="w-6 h-6 text-red-400 hover:text-red-300 bg-black/50"
                 onClick={handleEndCall}
               >
                 <PhoneOff className="w-3 h-3" />
@@ -916,7 +916,7 @@ export function VideoCallModal({
             <Button
               variant="ghost"
               size="icon"
-              className="w-8 h-8 rounded-full text-gray-400 hover:text-white"
+              aria-label="Minimize call" className="w-8 h-8 rounded-full text-gray-400 hover:text-white"
               onClick={() => setIsMinimized(true)}
             >
               <Minimize2 className="w-4 h-4" />
@@ -983,6 +983,8 @@ export function VideoCallModal({
               variant="ghost"
               size="icon"
               className={`rounded-full w-12 h-12 sm:w-14 sm:h-14 transition-all duration-300 ${isMuted ? "bg-red-500/20 text-red-500 border border-red-500/30" : "bg-slate-800/80 text-white hover:bg-slate-700 border border-white/5"}`}
+              aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
+              aria-pressed={isMuted}
               onClick={() => setIsMuted(!isMuted)}
             >
               {isMuted ? <MicOff className="w-5 h-5 sm:w-6 sm:h-6" /> : <Mic className="w-5 h-5 sm:w-6 sm:h-6" />}
@@ -992,6 +994,8 @@ export function VideoCallModal({
               variant="ghost"
               size="icon"
               className={`rounded-full w-12 h-12 sm:w-14 sm:h-14 transition-all duration-300 ${!isVideoOn ? "bg-red-500/20 text-red-500 border border-red-500/30" : "bg-slate-800/80 text-white hover:bg-slate-700 border border-white/5"}`}
+              aria-label={isVideoOn ? "Turn camera off" : "Turn camera on"}
+              aria-pressed={isVideoOn}
               onClick={() => setIsVideoOn(!isVideoOn)}
             >
               {!isVideoOn ? <VideoOff className="w-5 h-5 sm:w-6 sm:h-6" /> : <Video className="w-5 h-5 sm:w-6 sm:h-6" />}
@@ -999,6 +1003,7 @@ export function VideoCallModal({
 
             <Button
               onClick={handleEndCall}
+              aria-label={isIncoming && callData?.status === "ringing" ? "Decline call" : "End call"}
               className="bg-red-500 hover:bg-red-600 text-white rounded-full w-12 h-12 sm:w-14 sm:h-14 shadow-lg shadow-red-500/20 transition-transform active:scale-95"
             >
               <PhoneOff className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -1007,6 +1012,7 @@ export function VideoCallModal({
             {isIncoming && callData?.status === "ringing" && (
                 <Button
                 onClick={handleAnswerCall}
+                aria-label="Answer call"
                 className="bg-green-500 hover:bg-green-600 text-white rounded-full w-12 h-12 sm:w-14 sm:h-14 shadow-lg shadow-green-500/20 transition-transform active:scale-95"
                 >
                 <Phone className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -1018,7 +1024,7 @@ export function VideoCallModal({
                 variant="ghost"
                 size="icon"
                 className={`rounded-full w-12 h-12 bg-slate-800/80 text-white hover:bg-slate-700 border border-white/5 ${isScreenSharing ? "text-blue-400 bg-blue-500/10" : ""}`}
-                onClick={handleToggleScreenShare}
+                onClick={handleToggleScreenShare} aria-label={isScreenSharing ? "Stop sharing screen" : "Share screen"} aria-pressed={isScreenSharing}
                 title="Share Screen"
               >
                 <Monitor className="w-5 h-5" />
@@ -1029,6 +1035,7 @@ export function VideoCallModal({
                   <Button
                     variant="ghost"
                     size="icon"
+                    aria-label="Call settings"
                     className="rounded-full w-12 h-12 bg-slate-800/80 text-white hover:bg-slate-700 border border-white/5"
                   >
                     <Settings className="w-5 h-5" />

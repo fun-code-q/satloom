@@ -336,62 +336,62 @@ export function useChatEffects(params: UseChatEffectsParams) {
             },
             (call: CallData) => {
                 console.log("[Signaling] Call update received:", call)
-                // Ignore updates if they don't relate to our current call or incoming call
-                // and we are already in call state
-                setCurrentCall((prev: CallData | null) => {
-                    // If no call tracked, take this one if it's active
-                    if (!prev) {
-                        if (call.status !== "ended") return call
-                        return null
-                    }
 
-                    // If we have a tracked call, only take updates for it
-                    if (prev.id === call.id) {
-                        return call
-                    }
-
-                    return prev
-                })
-
-                if (call.status === "answered") {
-                    // Only process 'answered' for the relevant call
-                    setCurrentCall((prev: CallData | null) => {
-                        if (prev && prev.id === call.id) {
-                            if (!wasCallAnsweredRef.current) {
-                                notificationSystem.callConnected()
-                            }
-                            wasCallAnsweredRef.current = true
-                            setIsInCall(true)
-
-                            // Handle modal visibility based on call type
-                            if (call.type === "video") {
-                                setShowVideoCall(true)
-                                setShowAudioCall(false)
-                            } else {
-                                setShowVideoCall(false)
-                                setShowAudioCall(true)
-                            }
-                        }
-                        return prev
-                    })
-                } else if (call.status === "ended") {
-                    setCurrentCall((prev: CallData | null) => {
-                        if (prev && prev.id === call.id) {
-                            setIsInCall(false)
-                            setShowAudioCall(false)
-                            setShowVideoCall(false)
-
-                            if (!wasCallAnsweredRef.current && call.callerId !== currentUserId) {
-                                notificationSystem.callNotAnswered()
-                            } else {
-                                notificationSystem.callEnded()
-                            }
-                            wasCallAnsweredRef.current = false
-                            return null
-                        }
-                        return prev
-                    })
+                // Read the tracked call from the ref, not from inside a
+                // setState updater.
+                //
+                // These three blocks were setCurrentCall(prev => ...) calls
+                // whose only purpose was to READ prev: they returned it
+                // unchanged and did the real work — playing call tones,
+                // toggling the call modals — inside the updater. React is free
+                // to run an updater during the render phase, and runs it twice
+                // under StrictMode, so this fired the call tones twice and
+                // reached MoodPlayer's audio-ducking subscriber mid-render:
+                // "Cannot update a component (MoodPlayer) while rendering a
+                // different component (ChatInterface)".
+                //
+                // Resolving the next value up front keeps the side effects in
+                // the Firebase callback, where they are allowed to run.
+                const prev = currentCallRef.current
+                let next: CallData | null = prev
+                if (!prev) {
+                    next = call.status !== "ended" ? call : null
+                } else if (prev.id === call.id) {
+                    next = call
                 }
+
+                const isTrackedCall = !!next && next.id === call.id
+                if (call.status === "answered" && isTrackedCall) {
+                    if (!wasCallAnsweredRef.current) {
+                        notificationSystem.callConnected()
+                    }
+                    wasCallAnsweredRef.current = true
+                    setIsInCall(true)
+
+                    // Handle modal visibility based on call type
+                    if (call.type === "video") {
+                        setShowVideoCall(true)
+                        setShowAudioCall(false)
+                    } else {
+                        setShowVideoCall(false)
+                        setShowAudioCall(true)
+                    }
+                } else if (call.status === "ended" && isTrackedCall) {
+                    setIsInCall(false)
+                    setShowAudioCall(false)
+                    setShowVideoCall(false)
+
+                    if (!wasCallAnsweredRef.current && call.callerId !== currentUserId) {
+                        notificationSystem.callNotAnswered()
+                    } else {
+                        notificationSystem.callEnded()
+                    }
+                    wasCallAnsweredRef.current = false
+                    next = null
+                }
+
+                currentCallRef.current = next
+                setCurrentCall(next)
             },
         )
 
