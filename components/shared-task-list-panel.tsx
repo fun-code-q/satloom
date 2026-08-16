@@ -94,10 +94,14 @@ export function SharedTaskListPanel({ roomId, userId, userName }: SharedTaskList
                     </span>
                 </div>
                 <div className="flex items-center gap-1">
+                    {/* These cycle through states, so the name carries the
+                        CURRENT state — otherwise the control is unidentifiable
+                        and its effect is invisible to a screen reader. */}
                     <Button
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
+                        aria-label={`Filter: showing ${filter} tasks. Change filter`}
                         onClick={() => setFilter(filter === "all" ? "active" : filter === "active" ? "completed" : "all")}
                     >
                         <Filter className="h-4 w-4" />
@@ -106,6 +110,7 @@ export function SharedTaskListPanel({ roomId, userId, userName }: SharedTaskList
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
+                        aria-label={`Sort: by ${sortBy}. Change sort order`}
                         onClick={() => setSortBy(sortBy === "date" ? "priority" : sortBy === "priority" ? "alphabetical" : "date")}
                     >
                         <ArrowUpDown className="h-4 w-4" />

@@ -139,10 +139,13 @@ export function SharedNotesPanel({ roomId, userId, userName }: SharedNotesPanelP
                                 ))}
                             </div>
                             <div className="flex gap-1 ml-auto">
-                                <Button size="sm" onClick={handleCreateNote}>
+                                {/* Icon-only confirm/cancel. Without names these
+                                    announce as bare "button", so creating a note
+                                    was not possible without sight. */}
+                                <Button size="sm" aria-label="Save note" onClick={handleCreateNote}>
                                     <Check className="h-4 w-4" />
                                 </Button>
-                                <Button size="sm" variant="ghost" onClick={() => setIsCreating(false)}>
+                                <Button size="sm" variant="ghost" aria-label="Discard note" onClick={() => setIsCreating(false)}>
                                     <X className="h-4 w-4" />
                                 </Button>
                             </div>
