@@ -138,6 +138,10 @@
             ".read": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
             ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && (!data.exists() || !data.child('hostId').exists() || (data.child('hostId').val() === auth.uid || (data.child('hostId').isString() && data.child('hostId').val().beginsWith(auth.uid + ':'))))",
 
+            "participants": {
+              ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+            },
+
             "answers": {
               ".read": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
               "$answerId": {
