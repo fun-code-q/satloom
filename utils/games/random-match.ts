@@ -164,8 +164,15 @@ class RandomMatchManager {
                 createdAt: Date.now(),
             })
 
-            // Update both sessions
+            // Update both sessions.
+            //
+            // userId is included deliberately: the session node is never
+            // created up front, so without it this payload carries nothing
+            // identifying the writer and the security rules cannot tell an
+            // owner from a stranger. The rule scopes writes to the session's
+            // own user or its partner, so this is what authorises the write.
             await update(ref(getFirebaseDatabase()!, `randomMatchSessions/${this.state.session.sessionId}`), {
+                userId: this.userId,
                 partnerId,
                 partnerName: partnerData.userName,
                 status: "connected",
@@ -237,6 +244,10 @@ class RandomMatchManager {
         // Update session status
         if (this.state.session.status === "searching") {
             await update(ref(getFirebaseDatabase()!, `randomMatchSessions/${this.state.session.sessionId}`), {
+                // userId identifies the writer to the security rules. The
+                // session node may not exist yet, so a status-only payload
+                // would carry nothing to authorise the write against.
+                userId: this.userId,
                 status: "ended",
             })
         }
@@ -252,6 +263,10 @@ class RandomMatchManager {
         try {
             // Update session status
             await update(ref(getFirebaseDatabase()!, `randomMatchSessions/${this.state.session.sessionId}`), {
+                // userId identifies the writer to the security rules. The
+                // session node may not exist yet, so a status-only payload
+                // would carry nothing to authorise the write against.
+                userId: this.userId,
                 status: "ended",
             })
 
