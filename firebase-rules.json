@@ -136,12 +136,13 @@
           ".read": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
           "$sessionId": {
             ".read": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+            ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && (!data.exists() || !data.child('hostId').exists() || (data.child('hostId').val() === auth.uid || (data.child('hostId').isString() && data.child('hostId').val().beginsWith(auth.uid + ':'))))",
 
             "answers": {
               ".read": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
               "$answerId": {
-                ".write":    "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && (!data.exists() || root.child('rooms/'+$roomId+'/quiz/'+$sessionId+'/hostId').val() === auth.uid)",
-                ".validate": "!newData.exists() || (newData.child('playerId').val() === auth.uid && newData.child('isCorrect').val() === null) || root.child('rooms/'+$roomId+'/quiz/'+$sessionId+'/hostId').val() === auth.uid",
+                ".write":    "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && (!data.exists() || (root.child('rooms/'+$roomId+'/quiz/'+$sessionId+'/hostId').val() === auth.uid || (root.child('rooms/'+$roomId+'/quiz/'+$sessionId+'/hostId').isString() && root.child('rooms/'+$roomId+'/quiz/'+$sessionId+'/hostId').val().beginsWith(auth.uid + ':'))))",
+                ".validate": "!newData.exists() || (newData.child('playerId').val() === auth.uid && newData.child('isCorrect').val() === null) || (root.child('rooms/'+$roomId+'/quiz/'+$sessionId+'/hostId').val() === auth.uid || (root.child('rooms/'+$roomId+'/quiz/'+$sessionId+'/hostId').isString() && root.child('rooms/'+$roomId+'/quiz/'+$sessionId+'/hostId').val().beginsWith(auth.uid + ':')))",
 
                 "timeToAnswer": {
                   ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 600"
@@ -153,11 +154,11 @@
             },
 
             "revealedAnswers": {
-              ".write": "auth != null && root.child('rooms/'+$roomId+'/quiz/'+$sessionId+'/hostId').val() === auth.uid"
+              ".write": "auth != null && (root.child('rooms/'+$roomId+'/quiz/'+$sessionId+'/hostId').val() === auth.uid || (root.child('rooms/'+$roomId+'/quiz/'+$sessionId+'/hostId').isString() && root.child('rooms/'+$roomId+'/quiz/'+$sessionId+'/hostId').val().beginsWith(auth.uid + ':')))"
             },
 
             "$other": {
-              ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && (!data.parent().child('hostId').exists() || data.parent().child('hostId').val() === auth.uid)"
+              ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && (!data.parent().child('hostId').exists() || (data.parent().child('hostId').val() === auth.uid || (data.parent().child('hostId').isString() && data.parent().child('hostId').val().beginsWith(auth.uid + ':'))))"
             }
           }
         },
@@ -398,13 +399,13 @@
 
     "mafiaRoles": {
       "$roomId": {
-        ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && root.child('mafia/'+$roomId+'/hostId').val() === auth.uid",
-        ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && root.child('mafia/'+$roomId+'/hostId').val() === auth.uid",
+        ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && (root.child('mafia/'+$roomId+'/hostId').val() === auth.uid || (root.child('mafia/'+$roomId+'/hostId').isString() && root.child('mafia/'+$roomId+'/hostId').val().beginsWith(auth.uid + ':')))",
+        ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && (root.child('mafia/'+$roomId+'/hostId').val() === auth.uid || (root.child('mafia/'+$roomId+'/hostId').isString() && root.child('mafia/'+$roomId+'/hostId').val().beginsWith(auth.uid + ':')))",
 
         "$uid": {
           "role": {
-            ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && ($uid === auth.uid || root.child('mafia/'+$roomId+'/hostId').val() === auth.uid)",
-            ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && root.child('mafia/'+$roomId+'/hostId').val() === auth.uid"
+            ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && ($uid === auth.uid || (root.child('mafia/'+$roomId+'/hostId').val() === auth.uid || (root.child('mafia/'+$roomId+'/hostId').isString() && root.child('mafia/'+$roomId+'/hostId').val().beginsWith(auth.uid + ':'))))",
+            ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && (root.child('mafia/'+$roomId+'/hostId').val() === auth.uid || (root.child('mafia/'+$roomId+'/hostId').isString() && root.child('mafia/'+$roomId+'/hostId').val().beginsWith(auth.uid + ':')))"
           }
         }
       }
@@ -412,20 +413,20 @@
 
     "mafiaNightActions": {
       "$roomId": {
-        ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && root.child('mafia/'+$roomId+'/hostId').val() === auth.uid",
-        ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && root.child('mafia/'+$roomId+'/hostId').val() === auth.uid",
+        ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && (root.child('mafia/'+$roomId+'/hostId').val() === auth.uid || (root.child('mafia/'+$roomId+'/hostId').isString() && root.child('mafia/'+$roomId+'/hostId').val().beginsWith(auth.uid + ':')))",
+        ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && (root.child('mafia/'+$roomId+'/hostId').val() === auth.uid || (root.child('mafia/'+$roomId+'/hostId').isString() && root.child('mafia/'+$roomId+'/hostId').val().beginsWith(auth.uid + ':')))",
 
         "$uid": {
-          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && ($uid === auth.uid || root.child('mafia/'+$roomId+'/hostId').val() === auth.uid)",
-          ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && ($uid === auth.uid || root.child('mafia/'+$roomId+'/hostId').val() === auth.uid)"
+          ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && ($uid === auth.uid || (root.child('mafia/'+$roomId+'/hostId').val() === auth.uid || (root.child('mafia/'+$roomId+'/hostId').isString() && root.child('mafia/'+$roomId+'/hostId').val().beginsWith(auth.uid + ':'))))",
+          ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists() && ($uid === auth.uid || (root.child('mafia/'+$roomId+'/hostId').val() === auth.uid || (root.child('mafia/'+$roomId+'/hostId').isString() && root.child('mafia/'+$roomId+'/hostId').val().beginsWith(auth.uid + ':'))))"
         }
       }
     },
 
     "quizAnswerKeys": {
       "$sessionId": {
-        ".read":  "auth != null && data.child('hostId').val() === auth.uid",
-        ".write": "auth != null && (!data.exists() || data.child('hostId').val() === auth.uid || newData.child('hostId').val() === auth.uid)"
+        ".read":  "auth != null && (data.child('hostId').val() === auth.uid || (data.child('hostId').isString() && data.child('hostId').val().beginsWith(auth.uid + ':')))",
+        ".write": "auth != null && (!data.exists() || data.child('hostId').val() === auth.uid || (newData.child('hostId').val() === auth.uid || (newData.child('hostId').isString() && newData.child('hostId').val().beginsWith(auth.uid + ':'))))"
       }
     },
 
@@ -493,9 +494,65 @@
     },
 
     "presentations": {
+      "$presentationId": {
+        ".read":  "auth != null && data.child('roomId').isString() && root.child('rooms/'+data.child('roomId').val()+'/members/'+auth.uid).exists()",
+        ".write": "auth != null && ((data.exists() && data.child('roomId').isString() && root.child('rooms/'+data.child('roomId').val()+'/members/'+auth.uid).exists()) || (!data.exists() && newData.child('roomId').isString() && root.child('rooms/'+newData.child('roomId').val()+'/members/'+auth.uid).exists()))"
+      }
+    },
+
+    "karaokeInvites": {
       "$roomId": {
         ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
         ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+      }
+    },
+
+    "lobbies": {
+      "$roomId": {
+        ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+        ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+      }
+    },
+
+    "buzzer": {
+      "$roomId": {
+        ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+        ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+      }
+    },
+
+    "audioEmojiPlays": {
+      "$roomId": {
+        ".read":  "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()",
+        ".write": "auth != null && root.child('rooms/'+$roomId+'/members/'+auth.uid).exists()"
+      }
+    },
+
+    "templates": {
+      ".read": "auth != null",
+      "$templateId": {
+        ".write": "auth != null"
+      }
+    },
+
+    "randomMatchPool": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && $uid === auth.uid"
+      }
+    },
+
+    "randomMatchSessions": {
+      "$sessionId": {
+        ".read":  "auth != null",
+        ".write": "auth != null"
+      }
+    },
+
+    "randomMatchConnections": {
+      "$connectionId": {
+        ".read":  "auth != null",
+        ".write": "auth != null"
       }
     },
 

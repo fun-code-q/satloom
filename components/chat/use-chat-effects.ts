@@ -402,6 +402,15 @@ export function useChatEffects(params: UseChatEffectsParams) {
             }
         })
 
+        // The manager has to know the room before it can listen.
+        //
+        // listenForInvites() reads `rooms/${this.roomId}/presentationInvites`,
+        // and roomId is "" until initialize() runs — so this was subscribing to
+        // `rooms//presentationInvites`, a path nothing ever writes. initialize()
+        // was only ever called when ACCEPTING an invite, which cannot happen if
+        // the invite is never received. karaokeManager is initialized the same
+        // way further up; the presentation manager was just omitted.
+        presentationModeManager.initialize(roomId, currentUserId, userProfile.name)
         const presentationUnsubscribe = presentationModeManager.listenForInvites((invite) => {
             setPresentationInvite(invite)
             notificationSystem.presentationInvite(invite.hostName)

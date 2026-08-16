@@ -93,6 +93,15 @@ export function PresentationSetupModal({ isOpen, onClose, roomId, userId, userNa
     const handleStartPresentation = async () => {
         if (presentationId) {
             await presentationModeManager.startPresentation(presentationId)
+            // Tell the room the presentation has started.
+            //
+            // broadcastInvite() existed but had no callers, so starting a
+            // presentation notified nobody — the only way for another member to
+            // get in was for the host to copy the session reference and pass it
+            // along by hand. use-chat-effects already listens for these invites
+            // and renders the notification; nothing was ever writing one.
+            // Karaoke and the whiteboard both broadcast at the equivalent point.
+            await presentationModeManager.broadcastInvite(presentationId)
             if (onStartPresentation) {
                 onStartPresentation(presentationId)
             }
