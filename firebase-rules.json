@@ -312,7 +312,8 @@
 
         "password": {
           ".read": "auth != null",
-          ".write": "auth != null && root.child('rooms/'+$roomId+'/createdByUid').val() === auth.uid"
+          ".write": false,
+          ".validate": "!newData.exists()"
         },
 
         "attempts": {
