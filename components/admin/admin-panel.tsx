@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,7 @@ interface AdminPanelProps {
 export function AdminPanelLogin({ children }: AdminPanelProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [clicks, setClicks] = useState(0);
+    const shouldOpenRef = useRef(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -71,14 +72,29 @@ export function AdminPanelLogin({ children }: AdminPanelProps) {
     }, [clicks]);
 
     const handleClick = () => {
-        const newClicks = clicks + 1;
-        setClicks(newClicks);
-
-        if (newClicks >= 7) {
-            setIsOpen(true);
-            setClicks(0);
-        }
+        // Functional update: reading `clicks` from the closure meant several
+        // clicks landing in one render batch all saw the same stale value, so
+        // the counter stalled and the panel needed more than seven clicks to
+        // open. Deciding inside the updater keeps every click counted.
+        setClicks((prev) => {
+            const next = prev + 1;
+            if (next >= 7) {
+                // Opening is queued rather than done here — a state updater may
+                // be re-run by React, and must stay free of side effects.
+                shouldOpenRef.current = true;
+                return 0;
+            }
+            return next;
+        });
     };
+
+    // Opening the panel is the side effect the updater above deferred.
+    useEffect(() => {
+        if (shouldOpenRef.current) {
+            shouldOpenRef.current = false;
+            setIsOpen(true);
+        }
+    });
 
     const handleAuthSubmit = () => {
         handleLogin();
