@@ -847,19 +847,32 @@ export function useChatCalls(params: UseChatCallsParams) {
     }, [])
 
     // --- Quiz handlers ---
+
+    // Always points at the CURRENT handleQuizTimeout.
+    //
+    // startQuizTimer has [] deps but closed over handleQuizTimeout, which is
+    // declared below it with [currentQuizSession] deps — so the timer captured
+    // the very first instance, where currentQuizSession is still null. Its
+    // `if (currentQuizSession)` was therefore never true and the quiz never
+    // advanced when a question timed out.
+    const handleQuizTimeoutRef = useRef<(() => void) | null>(null)
+
     const startQuizTimer = useCallback((timePerQuestion: number) => {
         params.setQuizTimeRemaining(timePerQuestion)
         if (params.quizTimerRef.current) {
             clearInterval(params.quizTimerRef.current)
         }
+        // Count down locally and set a plain value, rather than calling the
+        // timeout handler from inside a setState updater. React may run an
+        // updater during the render phase, and runs it twice under StrictMode,
+        // so a side effect there fires at the wrong time and can fire twice.
+        let remaining = timePerQuestion
         params.quizTimerRef.current = setInterval(() => {
-            params.setQuizTimeRemaining((prev: number) => {
-                if (prev <= 1) {
-                    handleQuizTimeout()
-                    return 0
-                }
-                return prev - 1
-            })
+            remaining -= 1
+            params.setQuizTimeRemaining(Math.max(0, remaining))
+            if (remaining <= 0) {
+                handleQuizTimeoutRef.current?.()
+            }
         }, 1000)
     }, [])
 
@@ -871,6 +884,10 @@ export function useChatCalls(params: UseChatCallsParams) {
             handleNextQuestion()
         }
     }, [currentQuizSession])
+
+    useEffect(() => {
+        handleQuizTimeoutRef.current = handleQuizTimeout
+    }, [handleQuizTimeout])
 
     const handleStartQuiz = useCallback(async (topic?: string) => {
         try {
@@ -908,6 +925,14 @@ export function useChatCalls(params: UseChatCallsParams) {
         setTimeout(async () => {
             params.setShowQuizResults(false)
             params.setUserQuizAnswer("")
+            // Only the host advances the shared session.
+            //
+            // Every participant runs the question timer, so without this guard
+            // each non-host also tried to write currentQuestionIndex and was
+            // refused by the security rules — a PERMISSION_DENIED on every
+            // participant's console for every question. It also raced: two
+            // clients could advance the same question.
+            if (currentQuizSession.hostId !== currentUserId) return
             if (currentQuizSession.currentQuestionIndex + 1 >= currentQuizSession.totalQuestions) {
                 await quizSystem.endQuiz(roomId, currentQuizSession.id)
             } else {

@@ -179,8 +179,13 @@ export function VideoCallModal({
 
   // Keep the latest cleanup reachable from the unmount-only effect below
   // without making that effect depend on render-scoped values.
+  // The assignment belongs in an effect, not the render body — writing a ref
+  // while rendering is unsafe once React can render concurrently or discard a
+  // render, and it was flagged by react-hooks/refs.
   const cleanupMediaRef = useRef(cleanupMedia)
-  cleanupMediaRef.current = cleanupMedia
+  useEffect(() => {
+    cleanupMediaRef.current = cleanupMedia
+  })
 
   // Unmount safety net. Every other cleanup path is conditional — the !isOpen
   // transition, callData.status === "ended", or handleEndCall — so if the tree

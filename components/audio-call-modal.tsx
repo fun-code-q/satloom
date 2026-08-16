@@ -116,8 +116,13 @@ export function AudioCallModal({
   }
 
   // Keep the latest cleanup reachable from the unmount-only effect below.
+  // The assignment has to happen in an effect, not during render — writing a
+  // ref while rendering is unsafe once React can render concurrently or
+  // discard a render, and it was flagged by react-hooks/refs.
   const cleanupMediaRef = useRef(cleanupMedia)
-  cleanupMediaRef.current = cleanupMedia
+  useEffect(() => {
+    cleanupMediaRef.current = cleanupMedia
+  })
 
   // Unmount safety net. cleanupMedia otherwise runs only on the !isOpen
   // transition or from handleEndCall, so unmounting while a call is live left
