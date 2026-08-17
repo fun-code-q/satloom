@@ -239,9 +239,20 @@ class ReactionRainManager {
         }
 
         // Drop elements whose drop has fallen off screen.
+        //
+        // Only reclaim elements belonging to THIS emoji's layer. dropElements
+        // is shared across every emoji, while `seen` holds ids for the one
+        // being rendered — so without this guard, rendering emoji A evicts
+        // emoji B's elements from the map while leaving their DOM nodes in
+        // place (the remove() was already correctly skipped, the delete() was
+        // not). Those orphans are never updated again, so they freeze mid-air,
+        // and the next frame allocates replacements for them. Tapping a second
+        // emoji while the first was still falling left stuck emoji on screen
+        // and grew the DOM for as long as the two overlapped.
         for (const [id, el] of this.dropElements) {
             if (seen.has(id)) continue
-            if (el.parentElement === emojiContainer) el.remove()
+            if (el.parentElement !== emojiContainer) continue
+            el.remove()
             this.dropElements.delete(id)
         }
     }

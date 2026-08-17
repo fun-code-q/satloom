@@ -633,12 +633,21 @@ export function ChatInterface({ roomId, userProfile, onLeave, currentUserId: cur
           hasUnreadTasks={hasUnreadTasks}
           roomMembers={roomMembers}
           activeGameSeries={activeGameSeries}
+          // A MINIMISED surface must not keep the header hidden.
+          //
+          // autoHide slides the header off-screen after 3s and only restores it
+          // on pointer movement, so leaving it true after a surface is minimised
+          // makes the top menu bar vanish for good — the chat is visible again
+          // but the bar never comes back. Karaoke was the only entry that
+          // checked its minimised flag; every other surface has one too and
+          // none of them were consulted.
           autoHide={!!(
-            showPlayground || activeGame ||
-            showTheaterFullscreen ||
-            showWhiteboard ||
+            (showPlayground && !isPlaygroundMinimized) ||
+            (activeGame && !isPlaygroundMinimized) ||
+            (showTheaterFullscreen && !ui.isTheaterMinimized) ||
+            (showWhiteboard && !isWhiteboardMinimized) ||
             showAudioCall || showVideoCall ||
-            showPresentationViewer ||
+            (showPresentationViewer && !isPresentationMinimized) ||
             (canViewKaraokeStage && !isKaraokeMinimized) ||
             showBreakoutRooms
           )}
