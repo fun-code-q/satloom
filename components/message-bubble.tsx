@@ -913,9 +913,14 @@ function MessageBubble({
           pointer-events-none while hidden: this bar sits 32px below every
           message and, at opacity 0, still swallowed clicks aimed at whatever
           was underneath it.
+
+          Anchored to the side of the bubble that faces INWARD. right-0 for
+          every message put this 162px-wide bar to the left of a narrow
+          incoming bubble, pushing it 60px off the left edge of a 390px
+          screen, where the first option could not be reached.
         */}
         {!isEditing && (
-        <div className="absolute bottom-0 right-0 flex gap-1 bg-slate-800 rounded-full p-1 shadow-lg border border-slate-700 opacity-0 pointer-events-none group-hover/msg:opacity-100 group-hover/msg:pointer-events-auto transition-opacity z-[60]">
+        <div className={`absolute bottom-0 ${isOwnMessage ? "right-0" : "left-0"} flex gap-1 bg-slate-800 rounded-full p-1 shadow-lg border border-slate-700 opacity-0 pointer-events-none group-hover/msg:opacity-100 group-hover/msg:pointer-events-auto transition-opacity z-[60]`}>
             <Button
             variant="ghost"
             size="icon"

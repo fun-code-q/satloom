@@ -59,8 +59,14 @@ export function ReactionRain({ roomId, userId, inline = false }: ReactionRainPro
         setIsOpen(false)
     }
 
+    // w-max, not w-fit.
+    //
+    // fit-content is clamped by the containing block, and inside the game dock
+    // that block is only 110px wide — the four 32px buttons were squeezed into
+    // 18.5px columns and overlapped. max-content keeps the grid at its natural
+    // width wherever it is mounted.
     const renderEmojiList = () => (
-        <div className={`grid grid-cols-4 gap-1.5 ${inline ? 'w-fit' : 'w-[160px]'}`}>
+        <div className={`grid grid-cols-4 gap-1.5 ${inline ? 'w-max' : 'w-[160px]'}`}>
             {REACTIONS.map((reaction) => (
                 <button
                     key={reaction.emoji}

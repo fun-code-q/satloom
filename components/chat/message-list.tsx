@@ -65,6 +65,10 @@ export function MessageList({
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const displayItemsRef = useRef<DisplayItem[]>([])
     const previousMessageCountRef = useRef(messages.length)
+    // Whether this room has already been scrolled to its newest message.
+    const hasLandedAtBottomRef = useRef(false)
+    // Whether the reader was at the bottom BEFORE the newest render.
+    const wasAtBottomRef = useRef(true)
     const scrollRafRef = useRef<number | null>(null)
     const [headerHeight, setHeaderHeight] = useState(120)
     const [showJumpToBottom, setShowJumpToBottom] = useState(false)
@@ -185,9 +189,47 @@ export function MessageList({
     }, [onlineUsers, roomMembers])
 
     const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior, block: "end" })
+        const container = parentRef.current
+        if (!container) return
+
+        // An explicit jump from the button can animate over a long distance.
+        if (behavior === "smooth") {
+            container.scrollTo({ top: container.scrollHeight, behavior: "smooth" })
+            return
         }
+
+        // Everything else lands immediately, and has to force it.
+        //
+        // The container carries CSS scroll-behavior: smooth, which overrides a
+        // scrollTo({ behavior: "auto" }) — the jump still animates, and a second
+        // request mid-animation restarts it, so the list settled part-way:
+        // asked for 1003px, landed at 842. Setting the property per call makes
+        // the position take effect in the same frame.
+        //
+        // The list is also virtualised, so a newly arrived row is not measured
+        // until after paint and scrollHeight read now is the PREVIOUS height.
+        // Repeating once the virtualiser has measured corrects the landing.
+        const jumpToBottom = () => {
+            const previous = container.style.scrollBehavior
+            container.style.scrollBehavior = "auto"
+            container.scrollTop = container.scrollHeight
+            container.style.scrollBehavior = previous
+        }
+        // Hold the bottom while the virtualiser measures.
+        //
+        // A fixed couple of frames is not enough: a newly arrived bubble is
+        // measured after paint, and a taller one grew the content by 162px
+        // AFTER the correction had run, leaving the newest message off screen.
+        // Re-pinning for a short window absorbs however long measurement takes.
+        jumpToBottom()
+        const deadline = performance.now() + 400
+        const pin = () => {
+            if (!parentRef.current) return
+            jumpToBottom()
+            wasAtBottomRef.current = true
+            if (performance.now() < deadline) requestAnimationFrame(pin)
+        }
+        requestAnimationFrame(pin)
     }, [])
 
     const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
@@ -199,6 +241,7 @@ export function MessageList({
             const { scrollTop, scrollHeight, clientHeight } = container
             const isFarUp = scrollHeight - scrollTop - clientHeight > 400
 
+            wasAtBottomRef.current = scrollHeight - scrollTop - clientHeight < 120
             setShowJumpToBottom((prev) => (prev === isFarUp ? prev : isFarUp))
             if (!isFarUp) {
                 setUnreadInFab((prev) => (prev === 0 ? prev : 0))
@@ -214,6 +257,10 @@ export function MessageList({
         estimateSize: (index) => displayItems[index]?.itemType === "separator" ? 50 : 120,
         overscan: 8,
     })
+
+    useEffect(() => {
+        hasLandedAtBottomRef.current = false
+    }, [roomId])
 
     useEffect(() => {
         rowVirtualizer.measure()
@@ -232,11 +279,33 @@ export function MessageList({
             return
         }
 
-        const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight
-        const isNearBottom = distanceFromBottom < 120
+        // Use the position remembered from the last scroll, not a fresh
+        // measurement. This effect runs AFTER React commits the new message, so
+        // scrollHeight has already grown by the height of that message while
+        // scrollTop has not moved — a single 162px bubble made a reader sitting
+        // exactly at the bottom look 162px away from it, past the 120px
+        // threshold, so the view stopped following along.
+        const isNearBottom = wasAtBottomRef.current
 
-        if (isNearBottom || nextMessageCount <= 10) {
-            scrollToBottom(nextMessageCount <= 10 ? "auto" : "smooth")
+        // Land on the newest message when the room first opens, however much
+        // history it has. This used to be approximated by "10 or fewer
+        // messages", so opening a room with more than that left the reader
+        // part-way up with an unread badge instead of at the latest message.
+        const isFirstLanding = !hasLandedAtBottomRef.current && nextMessageCount > 0
+        if (isFirstLanding) hasLandedAtBottomRef.current = true
+
+        // Sending always brings you to your own message.
+        //
+        // Without this the reader only followed along while already near the
+        // bottom, so once they drifted up — which happens as soon as the
+        // history outgrows the viewport — their OWN messages stopped pulling
+        // them down and piled up out of sight. Every messenger snaps to the
+        // newest message when you are the one who sent it.
+        const newest = messages[nextMessageCount - 1]
+        const sentByMe = newMessageCount > 0 && !!newest && newest.sender === currentUser?.name
+
+        if (isFirstLanding || sentByMe || isNearBottom) {
+            scrollToBottom("auto")
             setShowJumpToBottom(false)
             setUnreadInFab(0)
             return
@@ -246,7 +315,8 @@ export function MessageList({
             setShowJumpToBottom(true)
             setUnreadInFab((prev) => prev + newMessageCount)
         }
-    }, [messages.length, normalizedQuery, scrollToBottom])
+        // messages is read for the newest sender, so it belongs in the deps.
+    }, [messages, normalizedQuery, scrollToBottom, currentUser?.name])
 
     useEffect(() => {
         return () => {
