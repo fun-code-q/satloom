@@ -776,7 +776,10 @@ function MessageBubble({
           {/* User info - only if first in group */}
           {isFirstInGroup && !isOwnMessage && (
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[11px] font-bold text-cyan-400 opacity-90">{message.sender}</span>
+              {/* White, not a fixed cyan. The bubble behind this is the sender's own
+                  colour — one of fifteen saturated hues — so cyan-on-blue and
+                  cyan-on-orange were barely legible. White reads on all of them. */}
+              <span className="text-[11px] font-bold text-white/95 opacity-90">{message.sender}</span>
             </div>
           )}
 

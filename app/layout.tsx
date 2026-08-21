@@ -5,6 +5,7 @@ import { ClientSecurity } from '@/components/client-security'
 import { ThemeProvider } from '@/contexts/theme-context'
 import { AccessibilityProvider } from '@/contexts/accessibility-context'
 import { InAppToasts } from '@/components/in-app-toasts'
+import { Toaster } from '@/components/ui/sonner'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://fun-code-q.github.io/satloom'),
@@ -67,6 +68,12 @@ export default function RootLayout({
             <ClientSecurity />
             {children}
             <InAppToasts />
+            {/* sonner's Toaster. 75 toast.success/error calls across 14 components
+                — games, calls, theater, breakout rooms, the media recorder, room
+                vibe, attachments — rendered nowhere, because the only Toaster was
+                inside profile-modal and therefore mounted only while THAT modal
+                was open. */}
+            <Toaster />
           </AccessibilityProvider>
         </ThemeProvider>
       </body>

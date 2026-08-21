@@ -166,7 +166,7 @@ export function MoodSetupModal({ isOpen, onClose, roomId }: MoodSetupModalProps)
                                 className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 flex-1"
                                 onKeyDown={(e) => e.key === "Enter" && handleAddSong()}
                             />
-                            <Button onClick={handleAddSong} size="icon" className="bg-slate-700 hover:bg-slate-600 text-white shrink-0">
+                            <Button onClick={handleAddSong} size="icon" aria-label="Add song to playlist" className="bg-slate-700 hover:bg-slate-600 text-white shrink-0">
                                 <Plus className="w-4 h-4" />
                             </Button>
                         </div>
